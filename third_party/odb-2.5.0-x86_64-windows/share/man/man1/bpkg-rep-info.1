@@ -1,0 +1,163 @@
+.\" Process this file with
+.\" groff -man -Tascii bpkg-rep-info.1
+.\"
+.TH bpkg-rep-info 1 "July 2020" "bpkg 0.13.0"
+.SH NAME
+\fBbpkg-rep-info\fR \- print repository information
+.SH "SYNOPSIS"
+.PP
+\fBbpkg rep-info\fR [\fIoptions\fR] \fIrep-loc\fR\fR
+.SH "DESCRIPTION"
+.PP
+The \fBrep-info\fR command prints various information about the specified
+repository\. By default it print the repository's name and location as the
+first line\. If the repository is signed, the certificate information
+(name/organization/email) is printed as the next line followed by the
+certificate fingerprint\. Then comes the list of complement and prerequisite
+repositories followed by the list of available packages\.
+.PP
+This default format can be altered in various ways using options listed
+below\. Note also that the information is written to \fBstdout\fR, not
+\fBstderr\fR\.
+.PP
+If the current working directory contains a \fBbpkg\fR configuration, then
+\fBrep-info\fR will use its certificate database for the repository
+authentication\. That is, it will trust the repository's certificate if it is
+already trusted by the configuration\. Otherwise it will add the certificate
+to the configuration if you confirm it is trusted\. You can specify an
+alternative configuration directory with the \fB--directory|-d\fR option\. To
+disable using the configuration in the current working directory pass this
+option with an empty path\.
+.SH "REP-INFO OPTIONS"
+.IP "\fB--name\fR|\fB-n\fR"
+Print the repository's name and location\.
+.IP "\fB--cert-fingerprint\fR"
+Print the repository's certificate fingerprint or empty line if the repository
+is unsigned\.
+.IP "\fB--cert-name\fR"
+Print the repository's certificate common name (CN) or empty line if the
+repository is unsigned\.
+.IP "\fB--cert-organization\fR"
+Print the repository's certificate organization name (O) or empty line if the
+repository is unsigned\.
+.IP "\fB--cert-email\fR"
+Print the repository's certificate email or empty line if the repository is
+unsigned\.
+.IP "\fB--repositories\fR|\fB-r\fR"
+Print the list of complement and prerequisite repositories\.
+.IP "\fB--packages\fR|\fB-p\fR"
+Print the list of available packages\.
+.IP "\fB--manifest\fR"
+Instead of printing the information in the human-readable form, dump it (to
+\fBstdout\fR) as manifest(s)\. Normally you would use this option in
+combination with \fB--packages|-p\fR or \fB--repositories|-r\fR to only dump
+one of the manifests\. If the \fB--deep\fR option is specified, then in the
+resulting packages manifest the \fB*-file\fR values are replaced with the
+contents of the referenced files\. See also \fB--repositories-file\fR and
+\fB--packages-file\fR\.
+.IP "\fB--deep\fR"
+Verify files referenced by the \fB*-file\fR manifest values\.
+.IP "\fB--repositories-file\fR \fIpath\fR"
+If \fB--manifest\fR is specified, then save the repositories manifest to the
+specified file instead of dumping it to \fBstdout\fR\.
+.IP "\fB--packages-file\fR \fIpath\fR"
+If \fB--manifest\fR is specified, then save the packages manifest to the
+specified file instead of dumping it to \fBstdout\fR\.
+.IP "\fB--type\fR \fItype\fR"
+Specify the repository type with valid values being \fBpkg\fR, \fBdir\fR, and
+\fBgit\fR\. Refer to \fBbpkg-rep-add(1)\fP for details\.
+.IP "\fB--directory\fR|\fB-d\fR \fIdir\fR"
+Use configuration in \fIdir\fR for the trusted certificate database\.
+.SH "COMMON OPTIONS"
+.PP
+The common options are summarized below with a more detailed description
+available in \fBbpkg-common-options(1)\fP\.
+.IP "\fB-v\fR"
+Print essential underlying commands being executed\.
+.IP "\fB-V\fR"
+Print all underlying commands being executed\.
+.IP "\fB--quiet\fR|\fB-q\fR"
+Run quietly, only printing error messages\.
+.IP "\fB--verbose\fR \fIlevel\fR"
+Set the diagnostics verbosity to \fIlevel\fR between 0 and 6\.
+.IP "\fB--jobs\fR|\fB-j\fR \fInum\fR"
+Number of jobs to perform in parallel\.
+.IP "\fB--no-result\fR"
+Don't print informational messages about the outcome of performing a command\.
+.IP "\fB--no-progress\fR"
+Suppress progress indicators for long-lasting operations, such as network
+transfers, building, etc\.
+.IP "\fB--build\fR \fIpath\fR"
+The build program to be used to build packages\.
+.IP "\fB--build-option\fR \fIopt\fR"
+Additional option to be passed to the build program\.
+.IP "\fB--fetch\fR \fIpath\fR"
+The fetch program to be used to download resources\.
+.IP "\fB--fetch-option\fR \fIopt\fR"
+Additional option to be passed to the fetch program\.
+.IP "\fB--fetch-timeout\fR \fIsec\fR"
+The fetch and fetch-like (for example, \fBgit\fR) program timeout\.
+.IP "\fB--pkg-proxy\fR \fIurl\fR"
+HTTP proxy server to use when fetching package manifests and archives from
+remote \fBpkg\fR repositories\.
+.IP "\fB--git\fR \fIpath\fR"
+The git program to be used to fetch git repositories\.
+.IP "\fB--git-option\fR \fIopt\fR"
+Additional common option to be passed to the git program\.
+.IP "\fB--sha256\fR \fIpath\fR"
+The sha256 program to be used to calculate SHA256 sums\.
+.IP "\fB--sha256-option\fR \fIopt\fR"
+Additional option to be passed to the sha256 program\.
+.IP "\fB--tar\fR \fIpath\fR"
+The tar program to be used to extract package archives\.
+.IP "\fB--tar-option\fR \fIopt\fR"
+Additional option to be passed to the tar program\.
+.IP "\fB--openssl\fR \fIpath\fR"
+The openssl program to be used for crypto operations\.
+.IP "\fB--openssl-option\fR \fIopt\fR"
+Additional option to be passed to the openssl program\.
+.IP "\fB--auth\fR \fItype\fR"
+Types of repositories to authenticate\.
+.IP "\fB--trust\fR \fIfingerprint\fR"
+Trust repository certificate with a SHA256 \fIfingerprint\fR\.
+.IP "\fB--trust-yes\fR"
+Assume the answer to all authentication prompts is \fByes\fR\.
+.IP "\fB--trust-no\fR"
+Assume the answer to all authentication prompts is \fBno\fR\.
+.IP "\fB--pager\fR \fIpath\fR"
+The pager program to be used to show long text\.
+.IP "\fB--pager-option\fR \fIopt\fR"
+Additional option to be passed to the pager program\.
+.IP "\fB--options-file\fR \fIfile\fR"
+Read additional options from \fIfile\fR\.
+.IP "\fB--default-options\fR \fIdir\fR"
+The directory to load additional default options files from\.
+.IP "\fB--no-default-options\fR"
+Don't load default options files\.
+.SH "DEFAULT OPTIONS FILES"
+.PP
+See \fBbpkg-default-options-files(1)\fP for an overview of the default options
+files\. If the \fBrep-info\fR command uses an existing bpkg\fR configuration,
+then the start directory is the configuration directory\. Otherwise, only the
+predefined directories (home, system, etc) are searched\. The following
+options files are searched for in each directory and, if found, loaded in the
+order listed:
+.PP
+.nf
+bpkg\.options
+bpkg-rep-info\.options
+.fi
+.PP
+The following \fBrep-info\fR command options cannot be specified in the
+default options files:
+.PP
+.nf
+--directory|-d
+.fi
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.

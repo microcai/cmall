@@ -1,0 +1,130 @@
+.\" Process this file with
+.\" groff -man -Tascii bpkg-rep-add.1
+.\"
+.TH bpkg-rep-add 1 "July 2020" "bpkg 0.13.0"
+.SH NAME
+\fBbpkg-rep-add\fR \- add repository to configuration
+.SH "SYNOPSIS"
+.PP
+\fBbpkg rep-add\fR|\fBadd\fR [\fIoptions\fR] \fIrep-loc\fR\.\.\.\fR
+.SH "DESCRIPTION"
+.PP
+The \fBrep-add\fR command adds the specified package repositories to the
+configuration\. The repository location \fIrep-loc\fR is a URL or a directory
+path\. If a repository with the same canonical name already exists in the
+configuration, then its location is replaced with the specified\.
+.PP
+Note that this command doesn't fetch the list of available packages for the
+newly added repository\. For that, use the \fBbpkg-rep-fetch(1)\fP command,
+normally, after adding all the repositories you wish to use\.
+.PP
+Currently three types of repositories are supported: archive-based \fBpkg\fR,
+directory-based \fBdir\fR, and version control-based \fBgit\fR\. See
+\fBbpkg-repository-types(1)\fP for details on their structure and URL format\.
+.PP
+Normally the repository type can be automatically guessed by examining its URL
+(for example, the presence of the \fB\.git\fR extension) or, in case of a
+local repository, its content (for example, the presence of the \fB\.git/\fR
+subdirectory)\. Without any identifying information the \fBpkg\fR type is
+assumed unless explicitly specified with the \fB--type\fR option or in the URL
+scheme\. Note, however, that the \fBdir\fR repository type is never guessed
+since it is not easily distinguishable from local \fBpkg\fR and \fBgit\fR
+repositories\.
+.SH "REP-ADD OPTIONS"
+.IP "\fB--type\fR \fItype\fR"
+Specify the repository type with valid values being \fBpkg\fR, \fBdir\fR, and
+\fBgit\fR\.
+.IP "\fB--directory\fR|\fB-d\fR \fIdir\fR"
+Assume configuration is in \fIdir\fR rather than in the current working
+directory\.
+.SH "COMMON OPTIONS"
+.PP
+The common options are summarized below with a more detailed description
+available in \fBbpkg-common-options(1)\fP\.
+.IP "\fB-v\fR"
+Print essential underlying commands being executed\.
+.IP "\fB-V\fR"
+Print all underlying commands being executed\.
+.IP "\fB--quiet\fR|\fB-q\fR"
+Run quietly, only printing error messages\.
+.IP "\fB--verbose\fR \fIlevel\fR"
+Set the diagnostics verbosity to \fIlevel\fR between 0 and 6\.
+.IP "\fB--jobs\fR|\fB-j\fR \fInum\fR"
+Number of jobs to perform in parallel\.
+.IP "\fB--no-result\fR"
+Don't print informational messages about the outcome of performing a command\.
+.IP "\fB--no-progress\fR"
+Suppress progress indicators for long-lasting operations, such as network
+transfers, building, etc\.
+.IP "\fB--build\fR \fIpath\fR"
+The build program to be used to build packages\.
+.IP "\fB--build-option\fR \fIopt\fR"
+Additional option to be passed to the build program\.
+.IP "\fB--fetch\fR \fIpath\fR"
+The fetch program to be used to download resources\.
+.IP "\fB--fetch-option\fR \fIopt\fR"
+Additional option to be passed to the fetch program\.
+.IP "\fB--fetch-timeout\fR \fIsec\fR"
+The fetch and fetch-like (for example, \fBgit\fR) program timeout\.
+.IP "\fB--pkg-proxy\fR \fIurl\fR"
+HTTP proxy server to use when fetching package manifests and archives from
+remote \fBpkg\fR repositories\.
+.IP "\fB--git\fR \fIpath\fR"
+The git program to be used to fetch git repositories\.
+.IP "\fB--git-option\fR \fIopt\fR"
+Additional common option to be passed to the git program\.
+.IP "\fB--sha256\fR \fIpath\fR"
+The sha256 program to be used to calculate SHA256 sums\.
+.IP "\fB--sha256-option\fR \fIopt\fR"
+Additional option to be passed to the sha256 program\.
+.IP "\fB--tar\fR \fIpath\fR"
+The tar program to be used to extract package archives\.
+.IP "\fB--tar-option\fR \fIopt\fR"
+Additional option to be passed to the tar program\.
+.IP "\fB--openssl\fR \fIpath\fR"
+The openssl program to be used for crypto operations\.
+.IP "\fB--openssl-option\fR \fIopt\fR"
+Additional option to be passed to the openssl program\.
+.IP "\fB--auth\fR \fItype\fR"
+Types of repositories to authenticate\.
+.IP "\fB--trust\fR \fIfingerprint\fR"
+Trust repository certificate with a SHA256 \fIfingerprint\fR\.
+.IP "\fB--trust-yes\fR"
+Assume the answer to all authentication prompts is \fByes\fR\.
+.IP "\fB--trust-no\fR"
+Assume the answer to all authentication prompts is \fBno\fR\.
+.IP "\fB--pager\fR \fIpath\fR"
+The pager program to be used to show long text\.
+.IP "\fB--pager-option\fR \fIopt\fR"
+Additional option to be passed to the pager program\.
+.IP "\fB--options-file\fR \fIfile\fR"
+Read additional options from \fIfile\fR\.
+.IP "\fB--default-options\fR \fIdir\fR"
+The directory to load additional default options files from\.
+.IP "\fB--no-default-options\fR"
+Don't load default options files\.
+.SH "DEFAULT OPTIONS FILES"
+.PP
+See \fBbpkg-default-options-files(1)\fP for an overview of the default options
+files\. For the \fBrep-add\fR command the search start directory is the
+configuration directory\. The following options files are searched for in each
+directory and, if found, loaded in the order listed:
+.PP
+.nf
+bpkg\.options
+bpkg-rep-add\.options
+.fi
+.PP
+The following \fBrep-add\fR command options cannot be specified in the default
+options files:
+.PP
+.nf
+--directory|-d
+.fi
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.

@@ -1,0 +1,249 @@
+.\" Process this file with
+.\" groff -man -Tascii bdep-init.1
+.\"
+.TH bdep-init 1 "July 2020" "bdep 0.13.0"
+.SH NAME
+\fBbdep-init\fR \- initialize project in build configurations
+.SH "SYNOPSIS"
+.PP
+\fBbdep init\fR [\fIoptions\fR] [\fIpkg-spec\fR] [\fIcfg-spec\fR]
+[\fIpkg-args\fR]
+.br
+\fBbdep init\fR [\fIoptions\fR] [\fIprj-spec\fR] \fB--empty|-E\fR
+.br
+\fBbdep init\fR [\fIoptions\fR] [\fIpkg-spec\fR] \fB--config-add|-A\fR
+\fIcfg-dir\fR [\fB@\fR\fIcfg-name\fR]
+.br
+\ \ \ \ \ \ \ \ \ \ [\fIpkg-args\fR]
+.br
+\fBbdep init\fR [\fIoptions\fR] [\fIpkg-spec\fR] \fB--config-create|-C\fR
+\fIcfg-dir\fR [\fB@\fR\fIcfg-name\fR]
+.br
+\ \ \ \ \ \ \ \ \ \ [\fIcfg-args\fR] [\fB--\fR \fIpkg-args\fR]\fR
+.PP
+\fIcfg-spec\fR = (\fB@\fR\fIcfg-name\fR | \fB--config\fR|\fB-c\fR
+\fIcfg-dir\fR)\.\.\. | \fB--all\fR|\fB-a\fR
+.br
+\fIpkg-spec\fR = (\fB--directory\fR|\fB-d\fR \fIpkg-dir\fR)\.\.\. |
+\fIprj-spec\fR
+.br
+\fIprj-spec\fR = \fB--directory\fR|\fB-d\fR \fIprj-dir\fR
+.br
+\fIpkg-args\fR = (\fIpkg\fR | \fIcfg-var\fR)\.\.\.
+.br
+\fIcfg-args\fR = [\fB--\fR \fIbpkg-options\fR] [\fB--existing\fR|\fB-e\fR |
+(\fImodule\fR | \fIcfg-var\fR)\.\.\.]\fR
+.SH "DESCRIPTION"
+.PP
+The \fBinit\fR command initializes a project in one or more build
+configurations\. The first form initializes the specified project packages
+(\fIpkg-spec\fR), or, if the project itself is specified (\fIprj-spec\fR), all
+its available packages, in one or more build configurations (\fIcfg-spec\fR)
+that have already been associated with the project (\fBbdep-config(1)\fP)\.
+.PP
+If no project directory is specified, then the current working directory is
+assumed\. If no configuration is specified, then the default configuration is
+assumed\. See \fBbdep-projects-configs(1)\fP for details on specifying
+projects and configurations\. Optional \fIpkg-args\fR are the additional
+dependency packages and/or configuration variables to pass to the underlying
+\fBbpkg-pkg-build(1)\fP command\.
+.PP
+The second form (\fB--empty\fR is specified) initializes an empty project
+database that can later be used to first add build configurations
+(\fBbdep-config(1)\fP) and then initialize project packages using the first
+form\.
+.PP
+The third (\fB--config-add\fR) and fourth (\fB--config-create\fR) forms are
+shortcuts to first adding an existing or newly created build configuration and
+then initializing project packages in that configuration\. Semantically they
+are equivalent to first performing the \fBconfig add\fR or \fBconfig create\fR
+commands (\fBbdep-config(1)\fP), respectively, followed by the first form\.
+Optional \fIcfg-args\fR in the fourth form are the additional arguments to the
+underlying \fBbpkg-cfg-create(1)\fP command\. Note that in this case to
+specify \fIpkg-args\fR without specifying \fIcfg-args\fR you have to use two
+\fB--\fR separators, for example:
+.PP
+.nf
+$ bdep init -C \.\./prj-gcc @gcc -- -- ?sys:libsqlite3/*
+.fi
+.SH "EXAMPLES"
+.PP
+As an example, consider project \fBprj\fR with two packages, \fBfoo\fR and
+\fBlibfoo\fR:
+.PP
+.nf
+prj/
+├── foo/
+└── libfoo/
+.fi
+.PP
+The following invocations illustrate the common \fBinit\fR use cases (the
+current working directory is shown before the shell prompt)\.
+.PP
+Create new build configuration in \fB\.\./prj-gcc\fR, call it \fBgcc\fR, and
+initialize project packages \fBfoo\fR and \fBlibfoo\fR in this configuration:
+.PP
+.nf
+prj/$ bdep init -C \.\./prj-gcc @gcc cc config\.cxx=g++
+.fi
+.PP
+Create new build configuration in \fB\.\./prj-clang\fR using
+\fBbpkg-cfg-create(1)\fP\. Then add it calling it \fBclang\fR and initialize
+project package \fBfoo\fR in this configuration:
+.PP
+.nf
+prj/$ bpkg create -d \.\./prj-clang cc config\.cxx=clang++
+prj/$ cd foo
+foo/$ bdep init -A \.\./\.\./prj-clang @clang
+.fi
+.PP
+Initialize project package \fBlibfoo\fR in the build configuration
+\fBclang\fR:
+.PP
+.nf
+foo/$ cd \.\.
+prj/$ bdep init -d libfoo @clang
+.fi
+.PP
+The following set of invocations achieves the same end result but using the
+\fBbdep-config(1)\fP command to manage configuration\.
+.PP
+Initialize an empty project database:
+.PP
+.nf
+prj/$ bdep init --empty
+.fi
+.PP
+Create new build configuration in \fB\.\./prj-gcc\fR, call it \fBgcc\fR:
+.PP
+.nf
+prj/$ bdep config create \.\./prj-gcc @gcc cc config\.cxx=g++
+.fi
+.PP
+Add existing build configuration in \fB\.\./prj-clang\fR, call it
+\fBclang\fR\.
+.PP
+.nf
+prj/$ bdep config add \.\./prj-clang @clang
+.fi
+.PP
+Initialize project packages \fBfoo\fR and \fBlibfoo\fR in build configurations
+\fBgcc\fR and \fBclang\fR\.
+.PP
+.nf
+prj/$ bdep init @gcc @clang
+.fi
+.PP
+Or, alternatively, in all the build configurations:
+.PP
+.nf
+prj/$ bdep init -a
+.fi
+.SH "INIT OPTIONS"
+.IP "\fB--empty\fR|\fB-E\fR"
+Initialize an empty build configuration set\.
+.IP "\fB--config-add\fR|\fB-A\fR \fIdir\fR"
+Add an existing build configuration \fIdir\fR\.
+.IP "\fB--config-create\fR|\fB-C\fR \fIdir\fR"
+Create a new build configuration in \fIdir\fR\.
+.IP "\fB--no-sync\fR"
+Enter the project into the database but do not initialize it in the build
+configurations\. The initialization can be finished later with an explicit
+\fBbdep-sync(1)\fP command\.
+.IP "\fB--default\fR"
+Make the added or created configuration the default\.
+.IP "\fB--no-default\fR"
+Don't make the first added or created configuration the default\.
+.IP "\fB--forward\fR"
+Make the added or created configuration forwarded\.
+.IP "\fB--no-forward\fR"
+Don't make the added or created configuration forwarded\.
+.IP "\fB--auto-sync\fR"
+Make the added or created configuration automatically synchronized\.
+.IP "\fB--no-auto-sync\fR"
+Don't make the added or created configuration automatically synchronized\.
+.IP "\fB--existing\fR|\fB-e\fR"
+Initialize a \fBbpkg\fR configuration based on an existing build system
+configuration\.
+.IP "\fB--wipe\fR"
+Wipe the configuration directory clean before creating the new configuration\.
+.IP "\fB--all\fR|\fB-a\fR"
+Use all build configurations\.
+.IP "\fB--config\fR|\fB-c\fR \fIdir\fR"
+Specify the build configuration as a directory\.
+.IP "\fB--directory\fR|\fB-d\fR \fIdir\fR"
+Assume project/package is in the specified directory rather than in the
+current working directory\.
+.IP "\fB--config-name\fR|\fB-n\fR \fIname\fR"
+Specify the build configuration as a name\.
+.IP "\fB--config-id\fR \fInum\fR"
+Specify the build configuration as an id\.
+.SH "COMMON OPTIONS"
+.PP
+The common options are summarized below with a more detailed description
+available in \fBbdep-common-options(1)\fP\.
+.IP "\fB-v\fR"
+Print essential underlying commands being executed\.
+.IP "\fB-V\fR"
+Print all underlying commands being executed\.
+.IP "\fB--quiet\fR|\fB-q\fR"
+Run quietly, only printing error messages\.
+.IP "\fB--verbose\fR \fIlevel\fR"
+Set the diagnostics verbosity to \fIlevel\fR between 0 and 6\.
+.IP "\fB--jobs\fR|\fB-j\fR \fInum\fR"
+Number of jobs to perform in parallel\.
+.IP "\fB--no-progress\fR"
+Suppress progress indicators for long-lasting operations, such as network
+transfers, building, etc\.
+.IP "\fB--bpkg\fR \fIpath\fR"
+The package manager program to be used for build configuration management\.
+.IP "\fB--bpkg-option\fR \fIopt\fR"
+Additional option to be passed to the package manager program\.
+.IP "\fB--build\fR \fIpath\fR"
+The build program to be used to build packages\.
+.IP "\fB--build-option\fR \fIopt\fR"
+Additional option to be passed to the build program\.
+.IP "\fB--curl\fR \fIpath\fR"
+The curl program to be used for network operations\.
+.IP "\fB--curl-option\fR \fIopt\fR"
+Additional option to be passed to the curl program\.
+.IP "\fB--pager\fR \fIpath\fR"
+The pager program to be used to show long text\.
+.IP "\fB--pager-option\fR \fIopt\fR"
+Additional option to be passed to the pager program\.
+.IP "\fB--options-file\fR \fIfile\fR"
+Read additional options from \fIfile\fR\.
+.IP "\fB--default-options\fR \fIdir\fR"
+The directory to load additional default options files from\.
+.IP "\fB--no-default-options\fR"
+Don't load default options files\.
+.SH "DEFAULT OPTIONS FILES"
+.PP
+See \fBbdep-default-options-files(1)\fP for an overview of the default options
+files\. For the \fBinit\fR command the search start directory is the project
+directory\. The following options files are searched for in each directory
+and, if found, loaded in the order listed:
+.PP
+.nf
+bdep\.options
+bdep-{config config-add}\.options                # if --config-add|-A
+bdep-{config config-add config-create}\.options  # if --config-create|-C
+bdep-init\.options
+.fi
+.PP
+The following \fBinit\fR command options cannot be specified in the default
+options files:
+.PP
+.nf
+--directory|-d
+--config-add|-A
+--config-create|-C
+--wipe
+.fi
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.

@@ -1,0 +1,233 @@
+.\" Process this file with
+.\" groff -man -Tascii bpkg-pkg-status.1
+.\"
+.TH bpkg-pkg-status 1 "July 2020" "bpkg 0.13.0"
+.SH NAME
+\fBbpkg-pkg-status\fR \- print package status
+.SH "SYNOPSIS"
+.PP
+\fBbpkg pkg-status\fR|\fBstatus\fR [\fIoptions\fR]
+[\fIpkg\fR[\fB/\fR\fIver\fR]\.\.\.]\fR
+.SH "DESCRIPTION"
+.PP
+The \fBpkg-status\fR command prints the status of the specified packages or,
+if \fIver\fR is specified, package versions\. If no packages were specified,
+then \fBpkg-status\fR prints the status of all the held packages (which are
+the packages that were explicitly built; see \fBbpkg-pkg-build(1)\fP)\.
+Additionally, the status of immediate or all dependencies of the above
+packages can be printed by specifying the \fB--immediate\fR|\fB-i\fR\fR or
+\fB--recursive\fR|\fB-r\fR\fR options, respectively\. Note that the status is
+written to \fBstdout\fR, not \fBstderr\fR\.
+.PP
+The status output format is regular with components separated with spaces\.
+Each line starts with the package name (and version, if specified) followed by
+one of the status words listed below\.  Some of them can be optionally
+followed by '\fB,\fR' (no spaces) and a sub-status word\.
+.IP "\fBunknown\fR"
+.br
+Package is not part of the configuration nor available from any of the
+repositories\.
+.IP "\fBavailable\fR"
+.br
+Package is not part of the configuration but is available from one of the
+repositories\.
+.IP "\fBfetched\fR"
+.br
+Package is part of the configuration and is fetched\.
+.IP "\fBunpacked\fR"
+.br
+Package is part of the configuration and is unpacked\.
+.IP "\fBconfigured\fR"
+.br
+Package is part of the configuration and is configured\. May be followed by
+the \fBsystem\fR sub-status indicating a package coming from the system\. The
+version of such a system package (described below) may be the special
+\&'\fB*\fR' value indicating a wildcard version\.
+.IP "\fBbroken\fR"
+.br
+Package is part of the configuration and is broken (broken packages can only
+be purged; see \fBbpkg-pkg-purge(1)\fP)\.
+.PP
+If only the package name was specified without the package version, then the
+\fBavailable\fR status word is followed by the list of available versions\.
+Versions that are only available for up/down-grading are printed in '\fB[]\fR'
+(such version are only available as dependencies from prerequisite
+repositories of other repositories)\. If the \fB--system\fR option is
+specified, then the last version in this list may have the \fBsys:\fR prefix
+indicating an available system version\. Such a system version may be the
+special '\fB?\fR' value indicating that a package may or may not be available
+from the system and that its version is unknown\.
+.PP
+Similarly, if only the package name was specified, then the \fBfetched\fR,
+\fBunpacked\fR, \fBconfigured\fR, and \fBbroken\fR status words are followed
+by the version of the package\. If newer versions are available, then the
+package version is followed by the \fBavailable\fR status word and the list of
+newer versions\. To instead see a list of all versions, including the older
+ones, specify the \fB--old-available\fR|\fB-o\fR\fR option\. In this case the
+currently selected version is printed in '\fB()\fR'\.
+.PP
+If the package name was specified with the version, then only the status (such
+as, \fBconfigured\fR, \fBavailable\fR, etc\.) of this version is considered\.
+.PP
+If a package is being held, then its name is printed prefixed with '\fB!\fR'\.
+Similarly, if a package version is being held, then the version is printed
+prefixed with '\fB!\fR'\. Held packages and held versions were selected by the
+user and are not automatically dropped and upgraded, respectively\.
+.PP
+Below are some examples, assuming the configuration has \fBlibfoo\fR
+\fB1\.0\.0\fR configured and held (both package and version) as well as
+\fBlibfoo\fR \fB1\.1\.0\fR and \fB1\.1\.1\fR available from source and
+\fB1\.1\.0\fR from the system\.
+.PP
+.nf
+bpkg status libbar
+libbar unknown
+
+bpkg status libbar/1\.0\.0
+libbar/1\.0\.0 unknown
+
+bpkg status libfoo/1\.0\.0
+!libfoo/1\.0\.0 configured !1\.0\.0
+
+bpkg status libfoo/1\.1\.0
+libfoo/1\.1\.0 available 1\.1\.0
+
+bpkg status --system libfoo/1\.1\.0
+libfoo/1\.1\.0 available 1\.1\.0 sys:1\.1\.0
+
+bpkg status libfoo
+!libfoo configured !1\.0\.0 available 1\.1\.0 1\.1\.1
+
+bpkg status libfoo/1\.1\.1 libbar
+libfoo/1\.1\.1 available 1\.1\.1
+libbar unknown
+.fi
+.PP
+Assuming now that we dropped \fBlibfoo\fR from the configuration:
+.PP
+.nf
+bpkg status libfoo/1\.0\.0
+libfoo/1\.0\.0 unknown
+
+bpkg status libfoo
+libfoo available 1\.1\.0 1\.1\.1
+.fi
+.PP
+And assuming now that we built \fBlibfoo\fR as a system package with the
+wildcard version:
+.PP
+.nf
+bpkg status libfoo
+!libfoo configured,system * available 1\.1\.0 1\.1\.1
+.fi
+.SH "PKG-STATUS OPTIONS"
+.IP "\fB--immediate\fR|\fB-i\fR"
+Also print the status of immediate dependencies\.
+.IP "\fB--recursive\fR|\fB-r\fR"
+Also print the status of all dependencies, recursively\.
+.IP "\fB--old-available\fR|\fB-o\fR"
+Print old available versions\.
+.IP "\fB--constraint\fR"
+Print version constraints for dependencies\.
+.IP "\fB--system\fR"
+Check the availability of packages from the system\.
+.IP "\fB--no-hold\fR"
+Don't print the package or version hold status\.
+.IP "\fB--no-hold-package\fR"
+Don't print the package hold status\.
+.IP "\fB--no-hold-version\fR"
+Don't print the version hold status\.
+.IP "\fB--directory\fR|\fB-d\fR \fIdir\fR"
+Assume configuration is in \fIdir\fR rather than in the current working
+directory\.
+.SH "COMMON OPTIONS"
+.PP
+The common options are summarized below with a more detailed description
+available in \fBbpkg-common-options(1)\fP\.
+.IP "\fB-v\fR"
+Print essential underlying commands being executed\.
+.IP "\fB-V\fR"
+Print all underlying commands being executed\.
+.IP "\fB--quiet\fR|\fB-q\fR"
+Run quietly, only printing error messages\.
+.IP "\fB--verbose\fR \fIlevel\fR"
+Set the diagnostics verbosity to \fIlevel\fR between 0 and 6\.
+.IP "\fB--jobs\fR|\fB-j\fR \fInum\fR"
+Number of jobs to perform in parallel\.
+.IP "\fB--no-result\fR"
+Don't print informational messages about the outcome of performing a command\.
+.IP "\fB--no-progress\fR"
+Suppress progress indicators for long-lasting operations, such as network
+transfers, building, etc\.
+.IP "\fB--build\fR \fIpath\fR"
+The build program to be used to build packages\.
+.IP "\fB--build-option\fR \fIopt\fR"
+Additional option to be passed to the build program\.
+.IP "\fB--fetch\fR \fIpath\fR"
+The fetch program to be used to download resources\.
+.IP "\fB--fetch-option\fR \fIopt\fR"
+Additional option to be passed to the fetch program\.
+.IP "\fB--fetch-timeout\fR \fIsec\fR"
+The fetch and fetch-like (for example, \fBgit\fR) program timeout\.
+.IP "\fB--pkg-proxy\fR \fIurl\fR"
+HTTP proxy server to use when fetching package manifests and archives from
+remote \fBpkg\fR repositories\.
+.IP "\fB--git\fR \fIpath\fR"
+The git program to be used to fetch git repositories\.
+.IP "\fB--git-option\fR \fIopt\fR"
+Additional common option to be passed to the git program\.
+.IP "\fB--sha256\fR \fIpath\fR"
+The sha256 program to be used to calculate SHA256 sums\.
+.IP "\fB--sha256-option\fR \fIopt\fR"
+Additional option to be passed to the sha256 program\.
+.IP "\fB--tar\fR \fIpath\fR"
+The tar program to be used to extract package archives\.
+.IP "\fB--tar-option\fR \fIopt\fR"
+Additional option to be passed to the tar program\.
+.IP "\fB--openssl\fR \fIpath\fR"
+The openssl program to be used for crypto operations\.
+.IP "\fB--openssl-option\fR \fIopt\fR"
+Additional option to be passed to the openssl program\.
+.IP "\fB--auth\fR \fItype\fR"
+Types of repositories to authenticate\.
+.IP "\fB--trust\fR \fIfingerprint\fR"
+Trust repository certificate with a SHA256 \fIfingerprint\fR\.
+.IP "\fB--trust-yes\fR"
+Assume the answer to all authentication prompts is \fByes\fR\.
+.IP "\fB--trust-no\fR"
+Assume the answer to all authentication prompts is \fBno\fR\.
+.IP "\fB--pager\fR \fIpath\fR"
+The pager program to be used to show long text\.
+.IP "\fB--pager-option\fR \fIopt\fR"
+Additional option to be passed to the pager program\.
+.IP "\fB--options-file\fR \fIfile\fR"
+Read additional options from \fIfile\fR\.
+.IP "\fB--default-options\fR \fIdir\fR"
+The directory to load additional default options files from\.
+.IP "\fB--no-default-options\fR"
+Don't load default options files\.
+.SH "DEFAULT OPTIONS FILES"
+.PP
+See \fBbpkg-default-options-files(1)\fP for an overview of the default options
+files\. For the \fBpkg-status\fR command the search start directory is the
+configuration directory\. The following options files are searched for in each
+directory and, if found, loaded in the order listed:
+.PP
+.nf
+bpkg\.options
+bpkg-pkg-status\.options
+.fi
+.PP
+The following \fBpkg-status\fR command options cannot be specified in the
+default options files:
+.PP
+.nf
+--directory|-d
+.fi
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.

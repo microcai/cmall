@@ -1,0 +1,6 @@
+Name: build2
+Version: 0.13.0
+Description: build2 build system
+URL: https://build2.org
+Cflags: -IC:\\build2\\include
+Libs: -LC:\\build2\\lib -lbuild2-in

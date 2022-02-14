@@ -1,0 +1,146 @@
+.\" Process this file with
+.\" groff -man -Tascii bpkg-cfg-create.1
+.\"
+.TH bpkg-cfg-create 1 "July 2020" "bpkg 0.13.0"
+.SH NAME
+\fBbpkg-cfg-create\fR \- create configuration
+.SH "SYNOPSIS"
+.PP
+\fBbpkg cfg-create\fR|\fBcreate\fR [\fIoptions\fR] [\fIcfg-args\fR]
+.br
+\fBbpkg cfg-create\fR|\fBcreate\fR [\fIoptions\fR] \fB--existing|-e\fR\fR
+.PP
+\fIcfg-args\fR = (\fImodule\fR | \fIcfg-var\fR)\.\.\.\fR
+.SH "DESCRIPTION"
+.PP
+The \fBcfg-create\fR command creates a new \fBbpkg\fR configuration with the
+specified \fBbuild2\fR modules and configuration variables (the first form) or
+initializes one based on an existing build system configuration (the second
+form)\. The \fBbpkg\fR configuration itself is a build system configuration;
+see build system driver (\fBb(1)\fP) \fBcreate\fR meta-operation for details\.
+.PP
+Unless the \fB--existing|-e\fR or \fB--wipe\fR option is specified,
+\fBcfg-create\fR expects the configuration directory to be empty or to not
+exist (in which case it will be created)\.
+.PP
+By default, the configuration created with the first form loads the
+\fBconfig\fR, \fBtest\fR, \fBdist\fR, and \fBinstall\fR modules\. However,
+additional modules and, if required, their configuration variables can be
+specified as the \fBcfg-create\fR arguments\. For example:
+.PP
+.nf
+bpkg create cxx config\.cxx=clang++ config\.install\.root=/usr/local
+.fi
+.PP
+By default, \fBbpkg\fR appends \fB\.config\fR to the names of the modules that
+you specify so that only their configurations are loaded\. You can override
+this behavior by specifying the period (\fB\.\fR) after the module name\. You
+can also instruct \fBbpkg\fR to use the optional module load by prefixing the
+module name with the question mark (\fB?\fR)\. For example:
+.PP
+.nf
+bpkg create cxx\. "?cli"
+.fi
+.SH "CFG-CREATE OPTIONS"
+.IP "\fB--directory\fR|\fB-d\fR \fIdir\fR"
+Create the configuration in \fIdir\fR rather than in the current working
+directory\.
+.IP "\fB--existing\fR|\fB-e\fR"
+Initialize a \fBbpkg\fR configuration based on an existing build system
+configuration\.
+.IP "\fB--wipe\fR"
+Wipe the configuration directory clean before creating the new configuration\.
+For safety, this option requires that you specify the configuration directory
+explicitly with \fB--directory|-d\fR\.
+.SH "COMMON OPTIONS"
+.PP
+The common options are summarized below with a more detailed description
+available in \fBbpkg-common-options(1)\fP\.
+.IP "\fB-v\fR"
+Print essential underlying commands being executed\.
+.IP "\fB-V\fR"
+Print all underlying commands being executed\.
+.IP "\fB--quiet\fR|\fB-q\fR"
+Run quietly, only printing error messages\.
+.IP "\fB--verbose\fR \fIlevel\fR"
+Set the diagnostics verbosity to \fIlevel\fR between 0 and 6\.
+.IP "\fB--jobs\fR|\fB-j\fR \fInum\fR"
+Number of jobs to perform in parallel\.
+.IP "\fB--no-result\fR"
+Don't print informational messages about the outcome of performing a command\.
+.IP "\fB--no-progress\fR"
+Suppress progress indicators for long-lasting operations, such as network
+transfers, building, etc\.
+.IP "\fB--build\fR \fIpath\fR"
+The build program to be used to build packages\.
+.IP "\fB--build-option\fR \fIopt\fR"
+Additional option to be passed to the build program\.
+.IP "\fB--fetch\fR \fIpath\fR"
+The fetch program to be used to download resources\.
+.IP "\fB--fetch-option\fR \fIopt\fR"
+Additional option to be passed to the fetch program\.
+.IP "\fB--fetch-timeout\fR \fIsec\fR"
+The fetch and fetch-like (for example, \fBgit\fR) program timeout\.
+.IP "\fB--pkg-proxy\fR \fIurl\fR"
+HTTP proxy server to use when fetching package manifests and archives from
+remote \fBpkg\fR repositories\.
+.IP "\fB--git\fR \fIpath\fR"
+The git program to be used to fetch git repositories\.
+.IP "\fB--git-option\fR \fIopt\fR"
+Additional common option to be passed to the git program\.
+.IP "\fB--sha256\fR \fIpath\fR"
+The sha256 program to be used to calculate SHA256 sums\.
+.IP "\fB--sha256-option\fR \fIopt\fR"
+Additional option to be passed to the sha256 program\.
+.IP "\fB--tar\fR \fIpath\fR"
+The tar program to be used to extract package archives\.
+.IP "\fB--tar-option\fR \fIopt\fR"
+Additional option to be passed to the tar program\.
+.IP "\fB--openssl\fR \fIpath\fR"
+The openssl program to be used for crypto operations\.
+.IP "\fB--openssl-option\fR \fIopt\fR"
+Additional option to be passed to the openssl program\.
+.IP "\fB--auth\fR \fItype\fR"
+Types of repositories to authenticate\.
+.IP "\fB--trust\fR \fIfingerprint\fR"
+Trust repository certificate with a SHA256 \fIfingerprint\fR\.
+.IP "\fB--trust-yes\fR"
+Assume the answer to all authentication prompts is \fByes\fR\.
+.IP "\fB--trust-no\fR"
+Assume the answer to all authentication prompts is \fBno\fR\.
+.IP "\fB--pager\fR \fIpath\fR"
+The pager program to be used to show long text\.
+.IP "\fB--pager-option\fR \fIopt\fR"
+Additional option to be passed to the pager program\.
+.IP "\fB--options-file\fR \fIfile\fR"
+Read additional options from \fIfile\fR\.
+.IP "\fB--default-options\fR \fIdir\fR"
+The directory to load additional default options files from\.
+.IP "\fB--no-default-options\fR"
+Don't load default options files\.
+.SH "DEFAULT OPTIONS FILES"
+.PP
+See \fBbpkg-default-options-files(1)\fP for an overview of the default options
+files\. For the \fBcfg-create\fR command the search start directory is the
+parent directory of the new configuration\. The following options files are
+searched for in each directory and, if found, loaded in the order listed:
+.PP
+.nf
+bpkg\.options
+bpkg-cfg-create\.options
+.fi
+.PP
+The following \fBcfg-create\fR command options cannot be specified in the
+default options files:
+.PP
+.nf
+--directory|-d
+--wipe
+.fi
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.

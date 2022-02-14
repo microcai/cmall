@@ -1,0 +1,116 @@
+.\" Process this file with
+.\" groff -man -Tascii bpkg-pkg-disfigure.1
+.\"
+.TH bpkg-pkg-disfigure 1 "July 2020" "bpkg 0.13.0"
+.SH NAME
+\fBbpkg-pkg-disfigure\fR \- disfigure package
+.SH "SYNOPSIS"
+.PP
+\fBbpkg pkg-disfigure\fR [\fIoptions\fR] \fIpkg\fR\fR
+.SH "DESCRIPTION"
+.PP
+The \fBpkg-disfigure\fR command disfigures the previously configured (via
+\fBbpkg-pkg-build(1)\fP or \fBbpkg-pkg-configure(1)\fP) package\. A source
+code package is returned to the \fBunpacked\fR state\. A system package is
+removed from the configuration\.
+.PP
+By default \fBpkg-disfigure\fR will also clean the package's output
+directory\. This behavior can be suppressed with the \fB--keep-out\fR option,
+for example, if the package is to be reconfigured\.
+.SH "PKG-DISFIGURE OPTIONS"
+.IP "\fB--keep-out\fR"
+Don't clean the package's output directory\.
+.IP "\fB--directory\fR|\fB-d\fR \fIdir\fR"
+Assume configuration is in \fIdir\fR rather than in the current working
+directory\.
+.SH "COMMON OPTIONS"
+.PP
+The common options are summarized below with a more detailed description
+available in \fBbpkg-common-options(1)\fP\.
+.IP "\fB-v\fR"
+Print essential underlying commands being executed\.
+.IP "\fB-V\fR"
+Print all underlying commands being executed\.
+.IP "\fB--quiet\fR|\fB-q\fR"
+Run quietly, only printing error messages\.
+.IP "\fB--verbose\fR \fIlevel\fR"
+Set the diagnostics verbosity to \fIlevel\fR between 0 and 6\.
+.IP "\fB--jobs\fR|\fB-j\fR \fInum\fR"
+Number of jobs to perform in parallel\.
+.IP "\fB--no-result\fR"
+Don't print informational messages about the outcome of performing a command\.
+.IP "\fB--no-progress\fR"
+Suppress progress indicators for long-lasting operations, such as network
+transfers, building, etc\.
+.IP "\fB--build\fR \fIpath\fR"
+The build program to be used to build packages\.
+.IP "\fB--build-option\fR \fIopt\fR"
+Additional option to be passed to the build program\.
+.IP "\fB--fetch\fR \fIpath\fR"
+The fetch program to be used to download resources\.
+.IP "\fB--fetch-option\fR \fIopt\fR"
+Additional option to be passed to the fetch program\.
+.IP "\fB--fetch-timeout\fR \fIsec\fR"
+The fetch and fetch-like (for example, \fBgit\fR) program timeout\.
+.IP "\fB--pkg-proxy\fR \fIurl\fR"
+HTTP proxy server to use when fetching package manifests and archives from
+remote \fBpkg\fR repositories\.
+.IP "\fB--git\fR \fIpath\fR"
+The git program to be used to fetch git repositories\.
+.IP "\fB--git-option\fR \fIopt\fR"
+Additional common option to be passed to the git program\.
+.IP "\fB--sha256\fR \fIpath\fR"
+The sha256 program to be used to calculate SHA256 sums\.
+.IP "\fB--sha256-option\fR \fIopt\fR"
+Additional option to be passed to the sha256 program\.
+.IP "\fB--tar\fR \fIpath\fR"
+The tar program to be used to extract package archives\.
+.IP "\fB--tar-option\fR \fIopt\fR"
+Additional option to be passed to the tar program\.
+.IP "\fB--openssl\fR \fIpath\fR"
+The openssl program to be used for crypto operations\.
+.IP "\fB--openssl-option\fR \fIopt\fR"
+Additional option to be passed to the openssl program\.
+.IP "\fB--auth\fR \fItype\fR"
+Types of repositories to authenticate\.
+.IP "\fB--trust\fR \fIfingerprint\fR"
+Trust repository certificate with a SHA256 \fIfingerprint\fR\.
+.IP "\fB--trust-yes\fR"
+Assume the answer to all authentication prompts is \fByes\fR\.
+.IP "\fB--trust-no\fR"
+Assume the answer to all authentication prompts is \fBno\fR\.
+.IP "\fB--pager\fR \fIpath\fR"
+The pager program to be used to show long text\.
+.IP "\fB--pager-option\fR \fIopt\fR"
+Additional option to be passed to the pager program\.
+.IP "\fB--options-file\fR \fIfile\fR"
+Read additional options from \fIfile\fR\.
+.IP "\fB--default-options\fR \fIdir\fR"
+The directory to load additional default options files from\.
+.IP "\fB--no-default-options\fR"
+Don't load default options files\.
+.SH "DEFAULT OPTIONS FILES"
+.PP
+See \fBbpkg-default-options-files(1)\fP for an overview of the default options
+files\. For the \fBpkg-disfigure\fR command the search start directory is the
+configuration directory\. The following options files are searched for in each
+directory and, if found, loaded in the order listed:
+.PP
+.nf
+bpkg\.options
+bpkg-pkg-disfigure\.options
+.fi
+.PP
+The following \fBpkg-disfigure\fR command options cannot be specified in the
+default options files:
+.PP
+.nf
+--directory|-d
+.fi
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.

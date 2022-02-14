@@ -1,0 +1,108 @@
+.\" Process this file with
+.\" groff -man -Tascii bdep-clean.1
+.\"
+.TH bdep-clean 1 "July 2020" "bdep 0.13.0"
+.SH NAME
+\fBbdep-clean\fR \- clean project in build configurations
+.SH "SYNOPSIS"
+.PP
+\fBbdep clean\fR [\fIoptions\fR] [\fIpkg-spec\fR] [\fIcfg-spec\fR]
+[\fIcfg-var\fR\.\.\.]\fR
+.PP
+\fIcfg-spec\fR = (\fB@\fR\fIcfg-name\fR | \fB--config\fR|\fB-c\fR
+\fIcfg-dir\fR)\.\.\. | \fB--all\fR|\fB-a\fR
+.br
+\fIpkg-spec\fR = (\fB--directory\fR|\fB-d\fR \fIpkg-dir\fR)\.\.\. |
+\fIprj-spec\fR
+.br
+\fIprj-spec\fR = \fB--directory\fR|\fB-d\fR \fIprj-dir\fR\fR
+.SH "DESCRIPTION"
+.PP
+The \fBclean\fR command cleans the project packages in one or more build
+configurations\. Underneath it executes the \fBbpkg-pkg-clean(1)\fP command
+which itself is not much more than the build system \fBclean\fR operation (see
+\fBb(1)\fP for details)\. As a result, the main utility of this command is the
+ability to refer to build configurations by names and to project packages
+implicitly via the current working directory\.
+.PP
+If no project or package directory is specified, then the current working
+directory is assumed\. If no configuration is specified, then the default
+configuration is assumed\. See \fBbdep-projects-configs(1)\fP for details on
+specifying projects and configurations\. Optional \fIcfg-var\fR\.\.\.\fR are
+the additional configuration variables to pass to the build system\.
+.SH "CLEAN OPTIONS"
+.IP "\fB--all\fR|\fB-a\fR"
+Use all build configurations\.
+.IP "\fB--config\fR|\fB-c\fR \fIdir\fR"
+Specify the build configuration as a directory\.
+.IP "\fB--directory\fR|\fB-d\fR \fIdir\fR"
+Assume project/package is in the specified directory rather than in the
+current working directory\.
+.IP "\fB--config-name\fR|\fB-n\fR \fIname\fR"
+Specify the build configuration as a name\.
+.IP "\fB--config-id\fR \fInum\fR"
+Specify the build configuration as an id\.
+.SH "COMMON OPTIONS"
+.PP
+The common options are summarized below with a more detailed description
+available in \fBbdep-common-options(1)\fP\.
+.IP "\fB-v\fR"
+Print essential underlying commands being executed\.
+.IP "\fB-V\fR"
+Print all underlying commands being executed\.
+.IP "\fB--quiet\fR|\fB-q\fR"
+Run quietly, only printing error messages\.
+.IP "\fB--verbose\fR \fIlevel\fR"
+Set the diagnostics verbosity to \fIlevel\fR between 0 and 6\.
+.IP "\fB--jobs\fR|\fB-j\fR \fInum\fR"
+Number of jobs to perform in parallel\.
+.IP "\fB--no-progress\fR"
+Suppress progress indicators for long-lasting operations, such as network
+transfers, building, etc\.
+.IP "\fB--bpkg\fR \fIpath\fR"
+The package manager program to be used for build configuration management\.
+.IP "\fB--bpkg-option\fR \fIopt\fR"
+Additional option to be passed to the package manager program\.
+.IP "\fB--build\fR \fIpath\fR"
+The build program to be used to build packages\.
+.IP "\fB--build-option\fR \fIopt\fR"
+Additional option to be passed to the build program\.
+.IP "\fB--curl\fR \fIpath\fR"
+The curl program to be used for network operations\.
+.IP "\fB--curl-option\fR \fIopt\fR"
+Additional option to be passed to the curl program\.
+.IP "\fB--pager\fR \fIpath\fR"
+The pager program to be used to show long text\.
+.IP "\fB--pager-option\fR \fIopt\fR"
+Additional option to be passed to the pager program\.
+.IP "\fB--options-file\fR \fIfile\fR"
+Read additional options from \fIfile\fR\.
+.IP "\fB--default-options\fR \fIdir\fR"
+The directory to load additional default options files from\.
+.IP "\fB--no-default-options\fR"
+Don't load default options files\.
+.SH "DEFAULT OPTIONS FILES"
+.PP
+See \fBbdep-default-options-files(1)\fP for an overview of the default options
+files\. For the \fBclean\fR command the search start directory is the project
+directory\. The following options files are searched for in each directory
+and, if found, loaded in the order listed:
+.PP
+.nf
+bdep\.options
+bdep-clean\.options
+.fi
+.PP
+The following \fBclean\fR command options cannot be specified in the default
+options files:
+.PP
+.nf
+--directory|-d
+.fi
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.

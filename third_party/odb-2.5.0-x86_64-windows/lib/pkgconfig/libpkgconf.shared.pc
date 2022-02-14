@@ -1,0 +1,6 @@
+Name: libpkgconf
+Version: 1.6.3+4
+Description: C library for retriving pkg-config compiler and linker flags
+URL: https://git.sr.ht/~kaniini/pkgconf
+Cflags: -IC:\\build2\\include\\pkgconf
+Libs: -LC:\\build2\\lib -lpkgconf

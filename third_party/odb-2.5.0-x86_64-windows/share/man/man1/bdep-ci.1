@@ -1,0 +1,173 @@
+.\" Process this file with
+.\" groff -man -Tascii bdep-ci.1
+.\"
+.TH bdep-ci 1 "July 2020" "bdep 0.13.0"
+.SH NAME
+\fBbdep-ci\fR \- submit project test request to CI server
+.SH "SYNOPSIS"
+.PP
+\fBbdep ci\fR [\fIoptions\fR] [\fIcfg-spec\fR] [\fIpkg-spec\fR]\fR
+.PP
+\fIpkg-spec\fR = (\fB--directory\fR|\fB-d\fR \fIpkg-dir\fR)\.\.\. |
+\fIprj-spec\fR
+.br
+\fIprj-spec\fR = \fB--directory\fR|\fB-d\fR \fIprj-dir\fR
+.br
+\fIcfg-spec\fR = \fB@\fR\fIcfg-name\fR | \fB--config\fR|\fB-c\fR
+\fIcfg-dir\fR\fR
+.SH "DESCRIPTION"
+.PP
+The \fBci\fR command submits the project packages test request to a CI
+server\.
+.PP
+If no project or package directory is specified, then the current working
+directory is assumed\. If no configuration is specified, then the default
+configuration is used\. If the specified directory is a project directory,
+then all the packages initialized in the configuration are submitted\. See
+\fBbdep-projects-configs(1)\fP for details on specifying projects and
+configurations\.
+.PP
+A CI request consists of the specified packages and their versions as well as
+the project's remote version control repository URL corresponding to the
+current (local) state of the project\. The CI server should be able to fetch
+these package versions from this repository as well as any dependencies from
+this repository or its prerequisite/complement repositories, according to each
+package's \fBrepositories\.manifest\fR\.
+.PP
+If the CI server is not explicitly specified with the \fB--server\fR option,
+the request is submitted to \fBci\.cppget\.org\fR by default\.
+.PP
+Unless the remote repository URL is specified with the \fB--repository\fR
+option, it will be automatically derived from the version control's "remote"
+URL\. In case of \fBgit(1)\fR, it will be based on the
+\fBremote\.origin\.url\fR configuration value unless overridden with
+\fBremote\.origin\.build2Url\fR\. The repository URL is then adjusted to
+corresponding to the current (local) state of the project\. In case of
+\fBgit(1)\fR, the current branch and commit id are added as the repository URL
+fragment (see \fBbpkg-repository-types(1)\fP for details)\.
+.PP
+Some package manifest values can be overridden as part of the CI request
+submission using the \fB--override\fR and \fB--overrides-file\fR options as
+well as their \fB--builds\fR and \fB--build-email\fR shortcuts\. This is
+primarily useful for specifying alternative build configurations and/or build
+notification emails\. For example:
+.PP
+.nf
+$ bdep ci --builds gcc
+.fi
+.PP
+Note that manifest overrides override the entire value group that they belong
+to\. Currently, the following value groups can be overridden with the
+\fBbuild*-email\fR group overridden by default as if by specifying an empty
+build email\.
+.PP
+.nf
+build-email build-{warning,error}-email
+builds build-{include,exclude}
+.fi
+.PP
+Note also that the build constraints group values are overridden
+hierarchically so that the \fBbuild-{include,exclude}\fR overrides don't
+affect the \fBbuilds\fR values\.
+.PP
+While the exact interpretation of the CI request depends on the specific
+service, normally, the CI server will respond with a reference that can be
+used to query the results\. See Package CI (#ci) for details on the CI request
+handling\.
+.SH "CI OPTIONS"
+.IP "\fB--yes\fR|\fB-y\fR"
+Don't prompt for confirmation before submitting\.
+.IP "\fB--server\fR \fIurl\fR"
+CI server to submit the request to\.
+.IP "\fB--repository\fR \fIurl\fR"
+Remote repository URL for the project\.
+.IP "\fB--override\fR \fIname\fR:\fIvalue\fR"
+Package manifest value override\. Repeat this option to override multiple
+values\.
+.IP "\fB--overrides-file\fR \fIfile\fR"
+Read manifest value overrides from the specified manifest fragment file\.
+Repeat this option to specify multiple override files\.
+.IP "\fB--builds\fR \fIclass-expr\fR"
+Shortcut for \fB--override\ builds:\fR\fIclass-expr\fR\fR\.
+.IP "\fB--build-email\fR \fIemail\fR"
+Shortcut for \fB--override\ build-email:\fR\fIemail\fR\fR\.
+.IP "\fB--simulate\fR \fIoutcome\fR"
+Simulate the specified outcome of the CI process without actually performing
+any externally visible actions (such as testing the packages or publishing the
+result)\. The commonly used outcome value is \fBsuccess\fR\. For other
+recognized outcomes refer to the CI service documentation\.
+.IP "\fB--all\fR|\fB-a\fR"
+Use all build configurations\.
+.IP "\fB--config\fR|\fB-c\fR \fIdir\fR"
+Specify the build configuration as a directory\.
+.IP "\fB--directory\fR|\fB-d\fR \fIdir\fR"
+Assume project/package is in the specified directory rather than in the
+current working directory\.
+.IP "\fB--config-name\fR|\fB-n\fR \fIname\fR"
+Specify the build configuration as a name\.
+.IP "\fB--config-id\fR \fInum\fR"
+Specify the build configuration as an id\.
+.SH "COMMON OPTIONS"
+.PP
+The common options are summarized below with a more detailed description
+available in \fBbdep-common-options(1)\fP\.
+.IP "\fB-v\fR"
+Print essential underlying commands being executed\.
+.IP "\fB-V\fR"
+Print all underlying commands being executed\.
+.IP "\fB--quiet\fR|\fB-q\fR"
+Run quietly, only printing error messages\.
+.IP "\fB--verbose\fR \fIlevel\fR"
+Set the diagnostics verbosity to \fIlevel\fR between 0 and 6\.
+.IP "\fB--jobs\fR|\fB-j\fR \fInum\fR"
+Number of jobs to perform in parallel\.
+.IP "\fB--no-progress\fR"
+Suppress progress indicators for long-lasting operations, such as network
+transfers, building, etc\.
+.IP "\fB--bpkg\fR \fIpath\fR"
+The package manager program to be used for build configuration management\.
+.IP "\fB--bpkg-option\fR \fIopt\fR"
+Additional option to be passed to the package manager program\.
+.IP "\fB--build\fR \fIpath\fR"
+The build program to be used to build packages\.
+.IP "\fB--build-option\fR \fIopt\fR"
+Additional option to be passed to the build program\.
+.IP "\fB--curl\fR \fIpath\fR"
+The curl program to be used for network operations\.
+.IP "\fB--curl-option\fR \fIopt\fR"
+Additional option to be passed to the curl program\.
+.IP "\fB--pager\fR \fIpath\fR"
+The pager program to be used to show long text\.
+.IP "\fB--pager-option\fR \fIopt\fR"
+Additional option to be passed to the pager program\.
+.IP "\fB--options-file\fR \fIfile\fR"
+Read additional options from \fIfile\fR\.
+.IP "\fB--default-options\fR \fIdir\fR"
+The directory to load additional default options files from\.
+.IP "\fB--no-default-options\fR"
+Don't load default options files\.
+.SH "DEFAULT OPTIONS FILES"
+.PP
+See \fBbdep-default-options-files(1)\fP for an overview of the default options
+files\. For the \fBci\fR command the search start directory is the project
+directory\. The following options files are searched for in each directory
+and, if found, loaded in the order listed:
+.PP
+.nf
+bdep\.options
+bdep-ci\.options
+.fi
+.PP
+The following \fBci\fR command options cannot be specified in the default
+options files:
+.PP
+.nf
+--directory|-d
+.fi
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.

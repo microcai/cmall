@@ -1,0 +1,450 @@
+.\" Process this file with
+.\" groff -man -Tascii bdep.1
+.\"
+.TH bdep 1 "July 2020" "bdep 0.13.0"
+.SH NAME
+\fBbdep\fR \- project dependency manager
+.SH "SYNOPSIS"
+.PP
+\fBbdep --help\fR
+.br
+\fBbdep --version\fR
+.br
+\fBbdep help\fR [\fIcommand\fR | \fItopic\fR]
+.br
+\fBbdep\fR [\fIcommon-options\fR] \fIcommand\fR [\fIcommand-options\fR]
+\fIcommand-args\fR\fR
+.SH "DESCRIPTION"
+.PP
+The \fBbuild2\fR project dependency manager is used to manage the dependencies
+of a project during development\.
+.PP
+For a detailed description of any command or help topic, use the \fBhelp\fR
+command or see the corresponding man page (the man pages have the \fBbdep-\fR
+prefix, for example \fBbdep-help(1)\fP)\. Note also that \fIcommand-options\fR
+and \fIcommand-args\fR can be specified in any order and \fIcommon-options\fR
+can be specified as part of \fIcommand-options\fR\.
+.PP
+A \fBbdep\fR project is a directory, normally under a version control system
+such as \fBgit(1)\fR, called \fIproject repository\fR\. A project contains one
+or more \fIpackages\fR\. If it contain several, then they are normally
+related, for example, the \fBlibhello\fR library and the \fBhello\fR program\.
+.PP
+Packages in a project may depend on other packages outside of the project\. To
+distinguish between the two we call them \fIproject packages\fR and
+\fIdependency packages\fR, respectively\.  Naturally, our project packages may
+be someone else's dependency packages\.
+.PP
+A simple, single-package project contains the package in the root of the
+project repository\. For example (note the location of the package
+\fBmanifest\fR and \fBlockfile\fR):
+.PP
+.nf
+hello/
+├── \.git/
+├── \.\.\.
+├── lockfile
+└── manifest
+.fi
+.PP
+See Package Manifest (#manifest-package) for details on the \fBmanifest\fR
+file\.
+.PP
+If a project contains multiple packages or we wish to place the package into a
+subdirectory, then the root of the project repository must contain the
+\fBpackages\.manifest\fR file that specifies the package locations\. For
+example:
+.PP
+.nf
+hello/
+├── \.git/
+├── hello/
+│   ├── \.\.\.
+│   ├── lockfile
+│   └── manifest
+├── libhello/
+│   ├── \.\.\.
+│   ├── lockfile
+│   └── manifest
+└── packages\.manifest
+.fi
+.PP
+For this project, \fBpackages\.manifest\fR would have the following contents:
+.PP
+.nf
+: 1
+location: hello/
+:
+location: libhello/
+.fi
+.PP
+A project repository root would usually also contain the
+\fBrepositories\.manifest\fR file that lists the repositories that provide the
+dependency packages\. For example:
+.PP
+.nf
+hello/
+├── \.\.\.
+├── manifest
+└── repositories\.manifest
+.fi
+.PP
+If our \fBhello\fR project wanted to use \fBlibhello\fR as a dependency
+package, then its \fBrepositories\.manifest\fR could look like this:
+.PP
+.nf
+: 1
+summary: hello project repository
+:
+role: prerequisite
+location: https://example\.com/libhello\.git
+.fi
+.PP
+See Repository List Manifest (#manifest-repository-list) for details on the
+\fBrepositories\.manifest\fR file\.
+.PP
+For development a \fBbdep\fR project is associated with one or more
+\fBbpkg(1)\fP \fIbuild configurations\fR\. These configuration are used as a
+\fIbacking\fR for building project packages and their dependencies\.
+.PP
+The list of the associated build configuration as well as the list of project
+packages initialized in each configuration are stored in the \fBbdep\fR
+\fIproject database\fR under the \fB\.bdep/\fR subdirectory of the project
+root directory\. For example:
+.PP
+.nf
+hello-gcc/     # Build configuration for gcc\.
+hello-clang/   # Build configuration for clang\.
+hello/
+├── \.bdep/
+├── \.git/
+└── \.\.\.
+.fi
+.PP
+The core of \fBbdep\fR functionality is \fIstate synchronization\fR between
+the project and one or more associated build configurations\. For example, if
+we list a new dependency in the package's \fBmanifest\fR file, then \fBbdep\fR
+fetches and configures this dependency in a build configuration\. Similarly,
+if we upgrade or downgrade a dependency in a build configuration, then
+\fBbdep\fR updates the corresponding entry in the package's \fBlockfile\fR\.
+.PP
+A typical \fBbdep\fR workflow would consist of the following steps\.
+.IP "\fBObtain the Project\fR"
+.br
+Normally we would use the version control system to obtain the project we want
+to develop:
+
+.nf
+$ git clone ssh://example\.com/hello\.git
+.fi
+
+Alternatively, we can use the \fBbdep-new(1)\fP command to start a new project
+(see Package Name (#package-name) for details on project naming):
+
+.nf
+$ bdep new -l c++ -t exe hello
+.fi
+
+Similar to version control tools, we normally run \fBbdep\fR from the
+project's directory or one of its subdirectories:
+
+.nf
+$ cd hello
+.fi
+
+See \fBbdep-projects-configs(1)\fP for alternative ways to specify the project
+location\.
+.IP "\fBInitialize the Project\fR"
+.br
+Next we use the \fBbdep-init(1)\fP command to create new or add existing build
+configurations and initialize our project in these configurations:
+
+.nf
+$ bdep init -C \.\./hello-gcc @gcc cc config\.cxx=g++
+$ bdep init -A \.\./hello-clang @clang
+.fi
+
+If the configuration directory is next to the project and its name is in the
+\fIprj-name\fR\fB-\fR\fIcfg-name\fR\fR form, then the shortcut version of the
+init\fR can be used instead:
+
+.nf
+$ bdep init -C @gcc cc config\.cxx=g++
+$ bdep init -A @clang
+.fi
+
+After initialization we can use the \fBbdep-status(1)\fP command to examine
+the status of our project in its configurations:
+
+.nf
+$ bdep status -a
+in configuration @gcc:
+hello configured 0\.1\.0-a\.0\.19700101000000
+
+in configuration @clang:
+hello configured 0\.1\.0-a\.0\.19700101000000
+.fi
+
+Most \fBbdep\fR commands operate on one or more build configurations
+associated with the project\. If we don't specify one explicitly, then the
+\fIdefault configuration\fR (usually the first added; \fBgcc\fR in our case)
+is used\. Alternatively, we can specify the configurations by name (if
+assigned), as directories, or with \fB--all\fR|\fB-a\fR\fR (see
+\fBbdep-projects-configs(1)\fP for details)\. For example:
+
+.nf
+$ bdep status @clang @gcc      # by name
+$ bdep status -c \.\./hello-gcc  # as a directory
+.fi
+
+If a command is operating on multiple configurations (like \fBstatus -a\fR in
+the previous example), then it will print a line identifying each
+configuration before printing the command's result\.
+
+By default the project's source directory is configured to forward to the
+default build configuration\. That is, we can run the build system in the
+source directory and it will automatically build in the forwarded
+configuration as well as link the results back to the source directory using
+symlinks or another suitable mechanism (see \fBbdep-config(1)\fP for
+details)\. For example:
+
+.nf
+$ b        # build in gcc
+<\.\.\.>
+
+$ \./hello  # run the result
+.fi
+
+Using the build system directly on configurations other than the default
+requires explicitly specifying their paths\. To make this more convenient, the
+\fBbdep-update(1)\fP, \fBbdep-test(1)\fP, and \fBbdep-clean(1)\fP commands
+allow us to refer to them by names, perform the desired build system operation
+on several of them at once, and, in case of \fBtest\fR, perform it on
+immediate or all dependencies or a project\. For example:
+
+.nf
+$ bdep test @gcc @clang
+in configuration @gcc:
+<\.\.\.>
+
+in configuration @clang:
+<\.\.\.>
+.fi
+
+To deinitialize a project in one or more build configurations we can use the
+\fBbdep-deinit(1)\fP command\. For example:
+
+.nf
+$ bdep deinit -a
+.fi
+.IP "\fBAdd, Remove, or Change Dependencies\fR"
+.br
+Let's say we found \fBlibhello\fR that we would like to use in our project\.
+First we edit our project's \fBrepositories\.manifest\fR file and add the
+\fBlibhello\fR's repository as our prerequisite:
+
+.nf
+$ cat repositories\.manifest
+\&\.\.\.
+role: prerequisite
+location: https://example\.com/libhello\.git
+\&\.\.\.
+.fi
+
+Next we edit our \fBmanifest\fR file and specify a dependency on
+\fBlibhello\fR:
+
+.nf
+$ cat manifest
+\&\.\.\.
+depends: libhello ^1\.0\.0
+\&\.\.\.
+.fi
+
+If we now run \fBbdep-status(1)\fP, we will notice that a new \fIiteration\fR
+of our project is available for synchronization:
+
+.nf
+$ bdep status
+hello configured 0\.1\.0-a\.0\.19700101000000
+      available  0\.1\.0-a\.0\.19700101000000#1
+.fi
+
+See Package Version (#package-version) for details on package versions and
+iterations\.
+.IP "\fBSynchronize the Project with Configurations\fR"
+.br
+To synchronize changes in the project's dependency information with its build
+configurations we use the \fBbdep-sync(1)\fP command\. Continuing with our
+example, this will result in \fBlibhello\fR being downloaded and configured
+since our project now depends on it:
+
+.nf
+$ bdep sync
+synchronizing:
+  build libhello/1\.0\.0 (required by hello)
+  upgrade hello/0\.1\.0-a\.0\.19700101000000#1
+
+$ bdep status -i
+hello configured 0\.1\.0-a\.0\.19700101000000#1
+  libhello ^1\.0\.0 configured 1\.0\.0
+.fi
+
+Note that by default build configurations are automatically synchronized on
+every build system invocation (see \fBbdep-config(1)\fP for details)\. As a
+result, we rarely need to run the \fBsync\fR command explicitly and instead
+can just run the desired build system operation (for instance, \fBupdate\fR or
+\fBtest\fR) directly\. For example:
+
+.nf
+$ b test
+synchronizing:
+  build libhello/1\.0\.0 (required by hello)
+  upgrade hello/0\.1\.0-a\.0\.19700101000000#1
+<\.\.\.>
+.fi
+
+It is also possible for several projects to share a build configuration\. In
+this case all the projects are synchronized at once regardless of the
+originating project\. For example, if we were also the authors of
+\fBlibhello\fR and hosted it in a separate version control repository (as
+opposed to being a package in the \fBhello\fR repository), then it would have
+been natural to develop it together with \fBhello\fR in the same
+configurations:
+
+.nf
+$ cd \.\./libhello
+$ bdep init -A \.\./hello-gcc @gcc
+$ bdep sync  # synchronizes both hello and libhello
+.fi
+.IP "\fBUpgrade or Downgrade Dependencies\fR"
+.br
+The \fBbdep-sync(1)\fP command is also used to upgrade or downgrade
+dependencies (and it is also executed as the last step of \fBinit\fR)\. Let's
+say we learned a new version of \fBlibhello\fR was released and we would like
+to try it out\.
+
+To refresh the list of available dependency packages we use the
+\fBbdep-fetch(1)\fP command (or, as a shortcut, the \fB-f\fR flag to
+\fBstatus\fR):
+
+.nf
+$ bdep fetch
+
+$ bdep status libhello
+libhello configured 1\.0\.0 available [1\.1\.0]
+.fi
+
+Without an explicit version or the \fB--patch\fR|\fB-p\fR\fR option,
+\fBsync\fR will upgrade the specified dependency to the latest available
+version:
+
+.nf
+$ bdep sync libhello
+synchronizing:
+  upgrade libhello/1\.1\.0
+  reconfigure hello/0\.1\.0
+
+$ bdep status -i
+hello configured 0\.1\.0-a\.0\.19700101000000#1
+  libhello ^1\.0\.0 configured 1\.1\.0
+.fi
+
+Let's say we didn't like the new version and would like to go back to using
+the old one\. To downgrade a dependency we have to specify its version
+explicitly:
+
+.nf
+$ bdep status -o libhello
+libhello configured 1\.1\.0 available [1\.0\.0] (1\.1\.0)
+
+$ bdep sync libhello/1\.0\.0
+synchronizing:
+  downgrade libhello/1\.1\.0
+  reconfigure hello/0\.1\.0
+.fi
+.SH "COMMANDS"
+.IP "\fBhelp\fR [\fItopic\fR]"
+\fBbdep-help(1)\fP \(en show help for a command or help topic
+.IP "\fBnew\fR"
+\fBbdep-new(1)\fP \(en create and initialize new project
+.IP "\fBinit\fR"
+\fBbdep-init(1)\fP \(en initialize project in build configurations
+.IP "\fBsync\fR"
+\fBbdep-sync(1)\fP \(en synchronize project and build configurations
+.IP "\fBfetch\fR"
+\fBbdep-fetch(1)\fP \(en fetch list of available project dependencies
+.IP "\fBstatus\fR"
+\fBbdep-status(1)\fP \(en print status of project and/or its dependencies
+.IP "\fBci\fR"
+\fBbdep-ci(1)\fP \(en submit project test request to CI server
+.IP "\fBrelease\fR"
+\fBbdep-release(1)\fP \(en manage project's version during release
+.IP "\fBpublish\fR"
+\fBbdep-publish(1)\fP \(en publish project to archive repository
+.IP "\fBdeinit\fR"
+\fBbdep-deinit(1)\fP \(en deinitialize project in build configurations
+.IP "\fBconfig\fR"
+\fBbdep-config(1)\fP \(en manage project's build configurations
+.IP "\fBtest\fR"
+\fBbdep-test(1)\fP \(en test project in build configurations
+.IP "\fBupdate\fR"
+\fBbdep-update(1)\fP \(en update project in build configurations
+.IP "\fBclean\fR"
+\fBbdep-clean(1)\fP \(en clean project in build configurations
+.SH "HELP TOPICS"
+.IP "\fBcommon-options\fR"
+\fBbdep-common-options(1)\fP \(en details on common options
+.IP "\fBdefault-options-files\fR"
+\fBbdep-default-options-files(1)\fP \(en specifying default options
+.IP "\fBprojects-configs\fR"
+\fBbdep-projects-configs(1)\fP \(en specifying projects and configurations
+.SH "COMMON OPTIONS"
+.PP
+The common options are summarized below with a more detailed description
+available in \fBbdep-common-options(1)\fP\.
+.IP "\fB-v\fR"
+Print essential underlying commands being executed\.
+.IP "\fB-V\fR"
+Print all underlying commands being executed\.
+.IP "\fB--quiet\fR|\fB-q\fR"
+Run quietly, only printing error messages\.
+.IP "\fB--verbose\fR \fIlevel\fR"
+Set the diagnostics verbosity to \fIlevel\fR between 0 and 6\.
+.IP "\fB--jobs\fR|\fB-j\fR \fInum\fR"
+Number of jobs to perform in parallel\.
+.IP "\fB--no-progress\fR"
+Suppress progress indicators for long-lasting operations, such as network
+transfers, building, etc\.
+.IP "\fB--bpkg\fR \fIpath\fR"
+The package manager program to be used for build configuration management\.
+.IP "\fB--bpkg-option\fR \fIopt\fR"
+Additional option to be passed to the package manager program\.
+.IP "\fB--build\fR \fIpath\fR"
+The build program to be used to build packages\.
+.IP "\fB--build-option\fR \fIopt\fR"
+Additional option to be passed to the build program\.
+.IP "\fB--curl\fR \fIpath\fR"
+The curl program to be used for network operations\.
+.IP "\fB--curl-option\fR \fIopt\fR"
+Additional option to be passed to the curl program\.
+.IP "\fB--pager\fR \fIpath\fR"
+The pager program to be used to show long text\.
+.IP "\fB--pager-option\fR \fIopt\fR"
+Additional option to be passed to the pager program\.
+.IP "\fB--options-file\fR \fIfile\fR"
+Read additional options from \fIfile\fR\.
+.IP "\fB--default-options\fR \fIdir\fR"
+The directory to load additional default options files from\.
+.IP "\fB--no-default-options\fR"
+Don't load default options files\.
+.SH "EXIT STATUS"
+.PP
+Non-zero exit status is returned in case of an error\.
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.

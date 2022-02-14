@@ -1,0 +1,67 @@
+.\" Process this file with
+.\" groff -man -Tascii bdep-default-options-files.1
+.\"
+.TH bdep-default-options-files 1 "July 2020" "bdep 0.13.0"
+.SH NAME
+\fBbdep-default-options-files\fR \- specifying default options
+.SH "SYNOPSIS"
+.PP
+\fBbdep\fR \fIcommand\fR [\fImode-options\fR] \.\.\.\fR
+.SH "DESCRIPTION"
+.PP
+Instead of having a separate config file format for tool configuration, the
+\fBbuild2\fR toolchain uses \fIdefault options files\fR which contain the same
+options as what can be specified on the command line\. The default options
+files are like options files that one can specify with \fB--options-file\fR
+(\fBbdep-common-options(1)\fP) except that they are loaded by default\.
+.PP
+The default options files are searched for in the \fB\.build2/\fR and
+\fB\.build2/local/\fR subdirectories of each outer directory beginning from
+the \fIstart directory\fR and until reaching either the home directory or the
+filesystem root directory (both excluding)\. Then in the \fB\.build2/\fR
+subdirectory of the home directory and finally in the system directory (for
+example, \fB/etc/build2/\fR) if configured\.
+.PP
+Once the search is complete, the files are loaded in the reverse order, that
+is, beginning from the system directory (if any), followed by the home
+directory, ending with the start directory, and finishing off with the options
+specified on the command line\.  In other words, the files are loaded from the
+more generic to the more specific with the command line options having the
+ability to override any values specified in the default options files\.
+.PP
+The start directory, the names of the default options files, and in which
+order they are loaded within each directory are determined by the
+\fIcommand\fR and potentially its \fImode-options\fR\. See each command's
+DEFAULT OPTIONS FILES section for details\.
+.PP
+If a default options file contains \fB--no-default-options\fR, then the search
+is stopped at the directory containing this file and no outer files are
+loaded\. If this option is specified on the command line, then none of the
+default options files are searched for or loaded\.
+.PP
+An additional directory containing default options files can be specified with
+\fB--default-options\fR\. If such a directory is a subdirectory of the start
+directory or is between the start directory and the end of the outer search,
+then its configuration files are loaded at the corresponding point in the
+directory hierarchy\. Otherwise, they are loaded after the home directory\.
+.PP
+The presence of the \fB\.git\fR filesystem entry causes the default options
+files in this directory and any of its subdirectories to be considered
+remote\. Depending on the command, some security-sensitive options may be
+disallowed or trigger a prompt when specified in remote options files (in the
+current implementation this is the case even for files from the
+\fB\.build2/local/\fR subdirectory since the mere location is not a sufficient
+ground to definitively conclude that the file is not remote; to be sure we
+would need to query the version control system)\. Note that additional default
+options files specified with \fB--default-options\fR are never considered
+remote\.
+.PP
+The order in which default options files are loaded is traced at the verbosity
+level 3 (\fB-V\fR option) or higher\.
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.

@@ -1,0 +1,86 @@
+<changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
+  <model version="1">
+    <table name="dmall_config" kind="object">
+      <column name="id" type="BIGINT" null="false"/>
+      <primary-key auto="true">
+        <column name="id"/>
+      </primary-key>
+    </table>
+    <table name="dmall_merchant" kind="object">
+      <column name="id" type="BIGINT" null="false"/>
+      <column name="uid" type="BIGINT" null="false"/>
+      <column name="name" type="TEXT" null="false"/>
+      <column name="verified" type="BOOLEAN" null="false"/>
+      <column name="state" type="SMALLINT" null="false"/>
+      <column name="desc" type="TEXT" null="true"/>
+      <column name="created_at" type="TIMESTAMP" null="true"/>
+      <column name="updated_at" type="TIMESTAMP" null="true"/>
+      <column name="deleted_at" type="TIMESTAMP" null="true"/>
+      <primary-key auto="true">
+        <column name="id"/>
+      </primary-key>
+      <index name="dmall_merchant_uid_i">
+        <column name="uid"/>
+      </index>
+      <index name="dmall_merchant_name_i">
+        <column name="name"/>
+      </index>
+    </table>
+    <table name="dmall_product" kind="object">
+      <column name="id" type="BIGINT" null="false"/>
+      <column name="owner" type="BIGINT" null="false"/>
+      <column name="name" type="TEXT" null="false"/>
+      <column name="price" type="numeric" null="false"/>
+      <column name="currency" type="TEXT" null="false"/>
+      <column name="description" type="TEXT" null="false"/>
+      <column name="state" type="SMALLINT" null="false"/>
+      <column name="created_at" type="TIMESTAMP" null="true"/>
+      <column name="updated_at" type="TIMESTAMP" null="true"/>
+      <column name="deleted_at" type="TIMESTAMP" null="true"/>
+      <primary-key auto="true">
+        <column name="id"/>
+      </primary-key>
+      <index name="dmall_product_owner_i">
+        <column name="owner"/>
+      </index>
+      <index name="dmall_product_state_i">
+        <column name="state"/>
+      </index>
+    </table>
+    <table name="dmall_order" kind="object">
+      <column name="id" type="BIGINT" null="false"/>
+      <column name="oid" type="TEXT" null="false"/>
+      <column name="buyer" type="BIGINT" null="false"/>
+      <column name="seller" type="BIGINT" null="false"/>
+      <column name="pid" type="BIGINT" null="false"/>
+      <column name="price" type="numeric" null="false"/>
+      <column name="quantity" type="BIGINT" null="false"/>
+      <column name="currency" type="TEXT" null="false"/>
+      <column name="currency_rate" type="numeric" null="false" default="'1'"/>
+      <column name="pay_amount" type="numeric" null="false" default="'0'"/>
+      <column name="stage" type="SMALLINT" null="false"/>
+      <column name="payed_at" type="TIMESTAMP" null="true"/>
+      <column name="close_at" type="TIMESTAMP" null="true"/>
+      <column name="product_snapshot" type="TEXT" null="true"/>
+      <column name="ext" type="TEXT" null="true"/>
+      <column name="created_at" type="TIMESTAMP" null="true"/>
+      <column name="updated_at" type="TIMESTAMP" null="true"/>
+      <column name="deleted_at" type="TIMESTAMP" null="true"/>
+      <primary-key auto="true">
+        <column name="id"/>
+      </primary-key>
+      <index name="dmall_order_oid_i" type="UNIQUE">
+        <column name="oid"/>
+      </index>
+      <index name="dmall_order_buyer_i">
+        <column name="buyer"/>
+      </index>
+      <index name="dmall_order_seller_i">
+        <column name="seller"/>
+      </index>
+      <index name="dmall_order_pid_i">
+        <column name="pid"/>
+      </index>
+    </table>
+  </model>
+</changelog>

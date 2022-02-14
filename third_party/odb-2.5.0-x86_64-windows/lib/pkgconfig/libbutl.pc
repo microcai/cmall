@@ -1,0 +1,6 @@
+Name: libbutl
+Version: 0.13.0
+Description: build2 utility library
+URL: https://build2.org
+Cflags: -IC:\\build2\\include
+Libs: -LC:\\build2\\lib -lbutl

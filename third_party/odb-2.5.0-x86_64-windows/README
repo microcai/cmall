@@ -1,0 +1,22 @@
+This package contains build2 toolchain base utilities (diff, install, tar,
+etc) for Windows. Often the build2 toolchain itself is installed into this
+same directory in order to produce a combined build2+utilities installation.
+If you don't have a suitable C++ compiler already installed, then you can
+use the companion build2-mingw package.
+
+The utilities come from the MSYS2 distribution. For details, refer to the
+manifest and version files found in the usr\share\doc\ subdirectory of this
+package. For more information on build2 see:
+
+https://build2.org/
+
+To install, simply unpack the archive. The utilities reside in the bin\ sub-
+directory and are ready to use. You may also want to add bin\ to the PATH
+environment variable for easier access. For example, you can unpack the
+archive in C:\, rename the resulting directory to build2-baseutils\ (or
+build2\ if you plan to install the build2 toolchain into it) and add
+C:\build2-baseutils\bin\ to PATH.
+
+Send questions, bug reports, or any other feedback to the users@build2.org
+mailing list. You can post without subscribing. See https://lists.build2.org
+for searchable archives, posting guidelines, etc.

@@ -1,0 +1,23 @@
+This package contains a minimal MinGW-W64 distribution (gcc, g++, runtime) for
+the build2 toolchain. Its primary use is to build the build2 toolchain in case
+you don't have a suitable C++ compiler already installed. It is meant to be
+extracted into the same directory as the build2-baseutils package.
+
+The files come from the MSYS2 distribution. For details, refer to the manifest
+and version files found in the usr\share\doc\ subdirectory of this package.
+For more information on build2 see:
+
+https://build2.org/
+
+To install, first unpack the baseutils package. Then use the provided tar and
+xz utilities to extract this archive into the same directory. For example, if
+baseutils are in C:\build2\, then (from the command prompt):
+
+set PATH=C:\build2\bin;%PATH%
+tar xf build2-mingw-X.Y.Z-<ARCH>-windows.tar.xz ^
+--one-top-level=C:\build2 ^
+--strip-components=1
+
+Send questions, bug reports, or any other feedback to the users@build2.org
+mailing list. You can post without subscribing. See https://lists.build2.org
+for searchable archives, posting guidelines, etc.

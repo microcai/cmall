@@ -1,0 +1,306 @@
+.\" Process this file with
+.\" groff -man -Tascii bpkg-pkg-build.1
+.\"
+.TH bpkg-pkg-build 1 "July 2020" "bpkg 0.13.0"
+.SH NAME
+\fBbpkg-pkg-build\fR \- build package
+.SH "SYNOPSIS"
+.PP
+\fBbpkg pkg-build\fR|\fBbuild\fR [\fIoptions\fR] [\fB--upgrade\fR|\fB-u\fR |
+\fB--patch\fR|\fB-p\fR]
+.br
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ [\fIcfg-var\fR\.\.\. \fB--\fR]
+\fIpkg-spec\fR\.\.\.
+.br
+\fBbpkg pkg-build\fR|\fBbuild\fR [\fIoptions\fR] \ \fB--upgrade\fR|\fB-u\fR |
+\fB--patch\fR|\fB-p\fR
+.br
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ [\fIcfg-var\fR\.\.\. \fB--\fR]\fR
+.PP
+\fIpkg-spec\fR =
+[\fIflags\fR](([\fIscheme\fR\fB:\fR]\fIpkg\fR[\fIver-spec\fR])\fB,\fR\.\.\.[\fB@\fR\fIrep-loc\fR]
+| 
+.br
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ [\fB@\fR]\fIrep-loc\fR \ \ \ \ \ \ \ \ \
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ | 
+.br
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \fIfile\fR \ \ \ \ \ \ \ \ \ \ \ \ \ \ \
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ | 
+.br
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \fIdir\fR\fB/\fR)
+.br
+\fIflags\fR\ \ \ \ \ \ = \fB?\fR
+.br
+\fIscheme\fR \ \ \ \ = \fBsys\fR
+.br
+\fIver-spec\fR\ \ \ = \fB/\fR\fIversion\fR | \fIversion-constraint\fR\fR
+.SH "DESCRIPTION"
+.PP
+The \fBpkg-build\fR command builds one or more packages including all their
+dependencies\. Besides building new packages, this command is also used to
+upgrade or downgrade packages that are already present in the configuration\.
+And unless the \fB--keep-unused\fR|\fB-K\fR\fR option is specified,
+\fBpkg-build\fR will also drop dependency packages that would otherwise no
+longer be used\.
+.PP
+The first form (one or more packages are specified) builds new or upgrades (by
+default or if \fB--upgrade\fR is specified) or patches (if \fB--patch\fR is
+specified) the specified packages\. The second form (no arguments but either
+\fB--upgrade\fR or \fB--patch\fR is specified) upgrades or patches all the
+held packages in the configuration (see below for details on held package)\.
+.PP
+In both forms specifying the \fB--immediate\fR|\fB-i\fR\fR or
+\fB--recursive\fR|\fB-r\fR\fR option causes \fBpkg-build\fR to also upgrade or
+patch the immediate or all dependencies of the specified (first form) or held
+(second form) packages, respectively\. Note also that in the first form these
+options can only be specified with an explicit \fB--upgrade\fR or
+\fB--patch\fR\.
+.PP
+Each package can be specified as just the name (\fIpkg\fR) with optional
+version specification (\fIver-spec\fR), in which case the source code for the
+package will be automatically fetched from one of the configured
+repositories\. See the \fBbpkg-rep-add(1)\fP and \fBbpkg-rep-fetch(1)\fP
+commands for more information on package repositories\. The version
+specification (\fIver-spec\fR) can be either the exact version in the
+\fB/\fR\fIversion\fR\fR form or the version constraint as described in Package
+Version Constraint (#package-version-constraint)\. If \fIver-spec\fR is not
+specified, then the latest available version will be built\. To downgrade, the
+desired version must be specified explicitly\. For example:
+.PP
+.nf
+bpkg build foo libfoo/1\.2\.3 "bar < 2\.0\.0"
+.fi
+.PP
+Alternatively, the package repository location (\fIrep-loc\fR) can be
+specified as part of the build command\. In this case, if \fIver-spec\fR is
+not specified, then the latest available from this repository version will be
+built\. For example:
+.PP
+.nf
+bpkg build foo,libfoo/1\.2\.3@https://git\.example\.org/foo\.git#master
+.fi
+.PP
+If only the location is specified, then the latest versions of all the
+packages available directly from this repository will be built (note that this
+does not include packages available from complement repositories)\. The
+\fB@\fR delimiter can be omitted if the location is a URL\. For example:
+.PP
+.nf
+bpkg build https://git\.example\.org/foo\.git#master
+bpkg build @/path/to/repository/
+.fi
+.PP
+A package name (\fIpkg\fR) can be prefixed with a package scheme
+(\fIscheme\fR)\. Currently the only recognized scheme is \fBsys\fR which
+instructs \fBpkg-build\fR to configure the package as available from the
+system rather than building it from source\. If the system package version
+(\fIver-spec\fR) is not specified or is '\fB/*\fR', then it is considered to
+be unknown but satisfying any version constraint\. If specified,
+\fIver-spec\fR may not be a version constraint\. If the version is not
+explicitly specified, then at least a stub package must be available from one
+of the repositories\.
+.PP
+Finally, a package can be specified as either the path to the package archive
+(\fIfile\fR) or to the package directory (\fIdir\fR\fB/\fR; note that it must
+end with a directory separator)\. See the \fBbpkg-pkg-fetch(1)\fP and
+\fBbpkg-pkg-unpack(1)\fP commands for more information on the semantics of
+specifying the package as an archive or a directory\.
+.PP
+Additional configuration variables (\fIcfg-var\fR), if any, should be
+specified before packages (\fIpkg-spec\fR) and should be separated with
+\fB--\fR\. Such variables are effective only when configuring and only for
+packages that were explicitly specified on the command line (they can also be
+specified to only apply to specific packages using the argument grouping
+mechanism discussed below)\. See \fBbpkg-pkg-configure(1)\fP for more
+information on configuration variables\.
+.PP
+By default a package that is specified explicitly on the command line is built
+to \fIhold\fR: it will not be considered for automatic removal if it no longer
+has any dependents\. Only versions from repositories that were added to the
+configuration (\fBbpkg-rep-add(1)\fP) are considered as available for build to
+hold\.
+.PP
+Alternatively, a package can be built (or, more commonly, upgraded/downgraded)
+as a \fIdependency\fR by specifying the \fB?\fR flag (\fIflags\fR) or the
+\fB--dependency\fR option\. Such a package will only be added to the
+configuration if it actually has any dependents and once no longer used, it
+will be automatically dropped\. Only versions from prerequisite repositories
+of dependent packages are considered as available for build as a dependency\.
+.PP
+Packages (both built to hold and as dependencies) that are specified with an
+explicit package version (\fIver-spec\fR) or as an archive or directory, will
+have their versions held, that is, they will not be automatically upgraded\.
+.PP
+As an illustration, let's assume in the following example that the stable
+repository contains packages \fBfoo\fR \fB1\.0\.0\fR as well as \fBlibfoo\fR
+\fB1\.0\.0\fR and \fB1\.1\.0\fR while testing \(en \fBlibfoo\fR \fB2\.0\.0\fR,
+that testing is complemented by stable, and that \fBfoo\fR depends on
+\fBlibfoo >= 1\.0\.0\fR:
+.PP
+.nf
+bpkg fetch https://example\.org/1/testing
+
+bpkg build foo            # build foo    1\.0\.0 to hold
+                          # build libfoo 1\.1\.0 as dependency
+
+bpkg build ?libfoo/1\.0\.0  # downgrade libfoo 1\.0\.0 as dependency,
+                          #           also hold version 1\.0\.0
+
+bpkg build ?libfoo/2\.0\.0  # error: 2\.0\.0 unavailable in dependent's
+                          #        (foo) repository (stable)
+
+bpkg build libfoo/2\.0\.0   # upgrade libfoo 2\.0\.0 to hold,
+                          #         also hold version 2\.0\.0
+.fi
+.SH "PKG-BUILD PACKAGE OPTIONS"
+.PP
+The following options (as well as additional configuration variables) can be
+grouped to apply to a specific \fIpkg-spec\fR as well as specified globally,
+in which case they apply to all the specified packages (see
+\fBbpkg-argument-grouping(1)\fP for details)\.
+.IP "\fB--upgrade\fR|\fB-u\fR"
+Upgrade packages to the latest available version that satisfies all the
+constraints\.
+.IP "\fB--patch\fR|\fB-p\fR"
+Upgrade packages to the latest available patch version that satisfies all the
+constraints\.
+.IP "\fB--immediate\fR|\fB-i\fR"
+Also upgrade or patch immediate dependencies\.
+.IP "\fB--recursive\fR|\fB-r\fR"
+Also upgrade or patch all dependencies, recursively\.
+.IP "\fB--upgrade-immediate\fR"
+Upgrade immediate dependencies\.
+.IP "\fB--patch-immediate\fR"
+Patch immediate dependencies\.
+.IP "\fB--upgrade-recursive\fR"
+Upgrade all dependencies, recursively\.
+.IP "\fB--patch-recursive\fR"
+Patch all dependencies, recursively\.
+.IP "\fB--dependency\fR"
+Build, upgrade, or downgrade a package as a dependency rather than to hold\.
+.IP "\fB--keep-out\fR"
+Keep output directories of external packages between upgrades and downgrades\.
+Refer to \fBbpkg-pkg-disfigure(1)\fP for details\.
+.SH "PKG-BUILD GLOBAL OPTIONS"
+.IP "\fB--yes\fR|\fB-y\fR"
+Assume the answer to all prompts is \fByes\fR\.
+.IP "\fB--for\fR|\fB-f\fR \fIoperation\fR"
+Instead of the default \fBupdate\fR build system operation, perform the
+\fBupdate-for-\fR\fIoperation\fR variant where \fIoperation\fR is normally
+\fBinstall\fR or \fBtest\fR\.
+.IP "\fB--keep-unused\fR|\fB-K\fR"
+Don't drop dependency packages that were automatically built but will no
+longer be used\.
+.IP "\fB--update-dependent\fR|\fB-U\fR"
+Update without confirmation dependent packages that are reconfigured due to
+their dependencies being upgraded or downgraded\.
+.IP "\fB--leave-dependent\fR|\fB-L\fR"
+Don't offer to update dependent packages that are reconfigured due to their
+dependencies being upgraded or downgraded\.
+.IP "\fB--configure-only\fR|\fB-c\fR"
+Configure all the packages but don't update\.
+.IP "\fB--print-only\fR|\fB-p\fR"
+Print to \fBstdout\fR what would be done without actually doing anything\.
+.IP "\fB--plan\fR \fIheader\fR"
+Print the plan (even if \fB--yes\fR is specified) and start it with the
+\fIheader\fR line (unless it is empty)\.
+.IP "\fB--no-fetch\fR"
+Don't fetch repositories specified as part of the build command\.
+.IP "\fB--fetch-shallow\fR"
+Don't re-fetch complement and prerequisite repositories of repositories
+specified as part of the build command\. Refer to the \fB--shallow\fR option
+in \fBbpkg-rep-fetch(1)\fP for details\.
+.IP "\fB--directory\fR|\fB-d\fR \fIdir\fR"
+Assume configuration is in \fIdir\fR rather than in the current working
+directory\.
+.SH "COMMON OPTIONS"
+.PP
+The common options are summarized below with a more detailed description
+available in \fBbpkg-common-options(1)\fP\.
+.IP "\fB-v\fR"
+Print essential underlying commands being executed\.
+.IP "\fB-V\fR"
+Print all underlying commands being executed\.
+.IP "\fB--quiet\fR|\fB-q\fR"
+Run quietly, only printing error messages\.
+.IP "\fB--verbose\fR \fIlevel\fR"
+Set the diagnostics verbosity to \fIlevel\fR between 0 and 6\.
+.IP "\fB--jobs\fR|\fB-j\fR \fInum\fR"
+Number of jobs to perform in parallel\.
+.IP "\fB--no-result\fR"
+Don't print informational messages about the outcome of performing a command\.
+.IP "\fB--no-progress\fR"
+Suppress progress indicators for long-lasting operations, such as network
+transfers, building, etc\.
+.IP "\fB--build\fR \fIpath\fR"
+The build program to be used to build packages\.
+.IP "\fB--build-option\fR \fIopt\fR"
+Additional option to be passed to the build program\.
+.IP "\fB--fetch\fR \fIpath\fR"
+The fetch program to be used to download resources\.
+.IP "\fB--fetch-option\fR \fIopt\fR"
+Additional option to be passed to the fetch program\.
+.IP "\fB--fetch-timeout\fR \fIsec\fR"
+The fetch and fetch-like (for example, \fBgit\fR) program timeout\.
+.IP "\fB--pkg-proxy\fR \fIurl\fR"
+HTTP proxy server to use when fetching package manifests and archives from
+remote \fBpkg\fR repositories\.
+.IP "\fB--git\fR \fIpath\fR"
+The git program to be used to fetch git repositories\.
+.IP "\fB--git-option\fR \fIopt\fR"
+Additional common option to be passed to the git program\.
+.IP "\fB--sha256\fR \fIpath\fR"
+The sha256 program to be used to calculate SHA256 sums\.
+.IP "\fB--sha256-option\fR \fIopt\fR"
+Additional option to be passed to the sha256 program\.
+.IP "\fB--tar\fR \fIpath\fR"
+The tar program to be used to extract package archives\.
+.IP "\fB--tar-option\fR \fIopt\fR"
+Additional option to be passed to the tar program\.
+.IP "\fB--openssl\fR \fIpath\fR"
+The openssl program to be used for crypto operations\.
+.IP "\fB--openssl-option\fR \fIopt\fR"
+Additional option to be passed to the openssl program\.
+.IP "\fB--auth\fR \fItype\fR"
+Types of repositories to authenticate\.
+.IP "\fB--trust\fR \fIfingerprint\fR"
+Trust repository certificate with a SHA256 \fIfingerprint\fR\.
+.IP "\fB--trust-yes\fR"
+Assume the answer to all authentication prompts is \fByes\fR\.
+.IP "\fB--trust-no\fR"
+Assume the answer to all authentication prompts is \fBno\fR\.
+.IP "\fB--pager\fR \fIpath\fR"
+The pager program to be used to show long text\.
+.IP "\fB--pager-option\fR \fIopt\fR"
+Additional option to be passed to the pager program\.
+.IP "\fB--options-file\fR \fIfile\fR"
+Read additional options from \fIfile\fR\.
+.IP "\fB--default-options\fR \fIdir\fR"
+The directory to load additional default options files from\.
+.IP "\fB--no-default-options\fR"
+Don't load default options files\.
+.SH "DEFAULT OPTIONS FILES"
+.PP
+See \fBbpkg-default-options-files(1)\fP for an overview of the default options
+files\. For the \fBpkg-build\fR command the search start directory is the
+configuration directory\. The following options files are searched for in each
+directory and, if found, loaded in the order listed:
+.PP
+.nf
+bpkg\.options
+bpkg-pkg-build\.options
+.fi
+.PP
+The following \fBpkg-build\fR command options cannot be specified in the
+default options files:
+.PP
+.nf
+--directory|-d
+.fi
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.

@@ -1,0 +1,82 @@
+.\" Process this file with
+.\" groff -man -Tascii bdep-projects-configs.1
+.\"
+.TH bdep-projects-configs 1 "July 2020" "bdep 0.13.0"
+.SH NAME
+\fBbdep-projects-configs\fR \- specifying projects and configurations
+.SH "SYNOPSIS"
+.PP
+\fBbdep\fR \fIcommand\fR [\fIpkg-spec\fR] [\fIcfg-spec\fR] \.\.\.\fR
+.PP
+\fIcfg-spec\fR = (\fB@\fR\fIcfg-name\fR | \fB--config\fR|\fB-c\fR
+\fIcfg-dir\fR)\.\.\. | \fB--all\fR|\fB-a\fR
+.br
+\fIpkg-spec\fR = (\fB--directory\fR|\fB-d\fR \fIpkg-dir\fR)\.\.\. |
+\fIprj-spec\fR
+.br
+\fIprj-spec\fR = \fB--directory\fR|\fB-d\fR \fIprj-dir\fR\fR
+.SH "DESCRIPTION"
+.PP
+Most \fBbdep\fR commands operate on a project or some of its packages as well
+as its build configurations\. For example, \fBstatus\fR (\fBbdep-status(1)\fP)
+shows the status of one or more project packages in one or more build
+configurations\. While \fBfetch\fR (\fBbdep-fetch(1)\fP) fetches the list of
+available to the project dependency packages, again, in one or more build
+configurations\.
+.PP
+Without any \fB--directory\fR|\fB-d\fR\fR options specified, the current
+working directory is assumed to be either the project root directory, the
+package root directory, or one of the package subdirectories\. This is the
+common \fBbdep\fR usage mode where you run it from within your project's
+source code directories, similar to version control tools such as
+\fBgit(1)\fR\.
+.PP
+Alternatively, the project or (several) package directories can be specified
+with the \fB--directory\fR|\fB-d\fR\fR options\. Note that \fBbdep\fR operates
+on a single project but potentially multiple packages belonging to said
+project at a time\.
+.PP
+Some \fBbdep\fR commands, such as \fBfetch\fR, operate on the whole project\.
+If such a command is given a package directory (either as the working
+directory or with \fB--directory\fR|\fB-d\fR\fR), then it automatically
+determines its project directory and uses that\.
+.PP
+Other commands, such as \fBstatus\fR, operate on one or more packages\. If
+such a command is given a project directory, then it automatically determines
+the list of packages belonging to this project and uses that\. Note that what
+exactly \fIbelonging\fR means is command-specific\. For most commands it means
+all the packages initialized in a given build configuration\. For \fBinit\fR
+(\fBbdep-init(1)\fP), however, it means all the packages available in the
+project (for example, as listed in \fBpackages\.manifest\fR)\.
+.PP
+A project managed by \fBbdep\fR has one or more associated build
+configurations (see \fBbdep-config(1)\fP for details)\. One of these
+configurations can be designated as the default and used if no configuration
+is specified explicitly\. So, for example, running \fBstatus\fR without any
+arguments in the project directory will show the status of all the project
+packages initialized in the default configuration\.
+.PP
+An associated build configuration can be assigned a name in which case we can
+specify it using the \fB@\fR\fIcfg-name\fR\fR notation\. For example:
+.PP
+.nf
+$ bdep status @gcc @clang
+.fi
+.PP
+A configuration without a name can be specified as a directory using the
+\fB--config\fR|\fB-c\fR\fR option\. Name and directory specifications can be
+mixed\. For example:
+.PP
+.nf
+$ bdep status @gcc -c \.\./builds/clang
+.fi
+.PP
+Finally, we can use the \fB--all\fR|\fB-a\fR\fR option to specify all the
+build configurations associated with the project\.
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.

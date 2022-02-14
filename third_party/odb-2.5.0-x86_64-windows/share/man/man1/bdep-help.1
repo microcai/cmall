@@ -1,0 +1,70 @@
+.\" Process this file with
+.\" groff -man -Tascii bdep-help.1
+.\"
+.TH bdep-help 1 "July 2020" "bdep 0.13.0"
+.SH NAME
+\fBbdep-help\fR \- show help for a command or help topic
+.SH "SYNOPSIS"
+.PP
+\fBbdep help\fR [\fIcommand\fR | \fItopic\fR]\fR
+.SH "DESCRIPTION"
+.PP
+Show the detailed help for \fIcommand\fR or help \fItopic\fR or a summary of
+available commands and topics if none was specified\.
+.SH "COMMON OPTIONS"
+.PP
+The common options are summarized below with a more detailed description
+available in \fBbdep-common-options(1)\fP\.
+.IP "\fB-v\fR"
+Print essential underlying commands being executed\.
+.IP "\fB-V\fR"
+Print all underlying commands being executed\.
+.IP "\fB--quiet\fR|\fB-q\fR"
+Run quietly, only printing error messages\.
+.IP "\fB--verbose\fR \fIlevel\fR"
+Set the diagnostics verbosity to \fIlevel\fR between 0 and 6\.
+.IP "\fB--jobs\fR|\fB-j\fR \fInum\fR"
+Number of jobs to perform in parallel\.
+.IP "\fB--no-progress\fR"
+Suppress progress indicators for long-lasting operations, such as network
+transfers, building, etc\.
+.IP "\fB--bpkg\fR \fIpath\fR"
+The package manager program to be used for build configuration management\.
+.IP "\fB--bpkg-option\fR \fIopt\fR"
+Additional option to be passed to the package manager program\.
+.IP "\fB--build\fR \fIpath\fR"
+The build program to be used to build packages\.
+.IP "\fB--build-option\fR \fIopt\fR"
+Additional option to be passed to the build program\.
+.IP "\fB--curl\fR \fIpath\fR"
+The curl program to be used for network operations\.
+.IP "\fB--curl-option\fR \fIopt\fR"
+Additional option to be passed to the curl program\.
+.IP "\fB--pager\fR \fIpath\fR"
+The pager program to be used to show long text\.
+.IP "\fB--pager-option\fR \fIopt\fR"
+Additional option to be passed to the pager program\.
+.IP "\fB--options-file\fR \fIfile\fR"
+Read additional options from \fIfile\fR\.
+.IP "\fB--default-options\fR \fIdir\fR"
+The directory to load additional default options files from\.
+.IP "\fB--no-default-options\fR"
+Don't load default options files\.
+.SH "DEFAULT OPTIONS FILES"
+.PP
+See \fBbdep-default-options-files(1)\fP for an overview of the default options
+files\. For the \fBhelp\fR command the following options files are searched
+for only in the predefined directories (home, system, etc) and, if found,
+loaded in the order listed:
+.PP
+.nf
+bdep\.options
+bdep-help\.options
+.fi
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.

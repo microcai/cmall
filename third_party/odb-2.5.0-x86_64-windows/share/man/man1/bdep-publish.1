@@ -1,0 +1,181 @@
+.\" Process this file with
+.\" groff -man -Tascii bdep-publish.1
+.\"
+.TH bdep-publish 1 "July 2020" "bdep 0.13.0"
+.SH NAME
+\fBbdep-publish\fR \- publish project to archive repository
+.SH "SYNOPSIS"
+.PP
+\fBbdep publish\fR [\fIoptions\fR] [\fIcfg-spec\fR] [\fIpkg-spec\fR]\fR
+.PP
+\fIpkg-spec\fR = (\fB--directory\fR|\fB-d\fR \fIpkg-dir\fR)\.\.\. |
+\fIprj-spec\fR
+.br
+\fIprj-spec\fR = \fB--directory\fR|\fB-d\fR \fIprj-dir\fR
+.br
+\fIcfg-spec\fR = \fB@\fR\fIcfg-name\fR | \fB--config\fR|\fB-c\fR \fIcfg-dir\fR
+| \fB--forward\fR\fR
+.SH "DESCRIPTION"
+.PP
+The \fBpublish\fR command publishes the project packages to an archive-based
+repository\.
+.PP
+If no project or package directory is specified, then the current working
+directory is assumed\. If no configuration is specified, then the default
+configuration is used to prepare the package distributions\. If the specified
+directory is a project directory, then all the packages in the project are
+published\. See \fBbdep-projects-configs(1)\fP for details on specifying
+projects and configurations\.
+.PP
+For each specified package the \fBpublish\fR command prepares a package
+archive and sends it as part of the package submission request to an
+archive-based repository\. If the repository is not explicitly specified with
+the \fB--repository\fR option, packages are published to \fBcppget\.org\fR by
+default\.
+.PP
+Along with the package archive, the submission request specifies the
+repository section to publish the package under, the control repository URL to
+use for authorization, and the publisher's name and email address for the
+record\. While the exact usage and interpretation of this information depends
+on the specific repository, the following semantics apply when submitting to
+\fBcppget\.org\fR\.
+.PP
+The section specifies the desired repository section to publish the project
+under\. If not explicitly specified with the \fB--section\fR option, one of
+the \fBalpha\fR, \fBbeta\fR, or \fBstable\fR values are automatically derived
+from the package version\.
+.PP
+The control repository URL is a publicly accessible, read-only URL to a
+version control repository (normally the same as the project's) that is used
+to authenticate the publisher as someone authorized to publish under this
+package name (currently only \fBgit(1)\fR is supported)\.
+.PP
+Prior to sending the submission request, the \fBpublish\fR command adds the
+package archive checksum to the \fBbuild2-control\fR branch of the project's
+version control repository\. Upon receiving the submission request, the
+archive repository either (1) associates the control repository with the
+package name if this is the first time this package name is published or (2)
+compares the submitted control repository to the previously associated and, if
+matching, queries the \fBbuild2-control\fR branch to verify that the submitter
+is authorized to publish this archive under this package name\.
+.PP
+Unless the control repository URL is specified with the \fB--control\fR
+option, it will be automatically derived from the version control's "remote"
+URL\. In case of \fBgit(1)\fR, it will be based on the
+\fBremote\.origin\.url\fR configuration value unless overridden with
+\fBremote\.origin\.build2ControlUrl\fR or \fBremote\.origin\.build2Url\fR\.
+The special \fBnone\fR value to the \fB--control\fR option can be used to
+disable this functionality\.
+.PP
+See Package Submission (#submit) for details on the submission request
+handling by archive repositories\.
+.SH "PUBLISH OPTIONS"
+.IP "\fB--yes\fR|\fB-y\fR"
+Don't prompt for confirmation before publishing\.
+.IP "\fB--control\fR \fIurl\fR"
+Control repository URL for the packages being published\.
+.IP "\fB--repository\fR \fIurl\fR"
+Repository to publish the packages to\.
+.IP "\fB--section\fR \fIname\fR"
+Repository section to publish the packages under\.
+.IP "\fB--author-name\fR \fIname\fR"
+Publisher's name\. If unspecified, it will be obtained from the environment
+and/or version control system\. See the ENVIRONMENT section for details\.
+.IP "\fB--author-email\fR \fIemail\fR"
+Publisher's email address\. If unspecified, it will be obtained from the
+environment and/or version control system\. See the ENVIRONMENT section for
+details\.
+.IP "\fB--force\fR \fIcheck\fR"
+Force publishing, disabling the specified check\. Repeat this option to
+disable multiple checks\.
+.IP "\fB--simulate\fR \fIoutcome\fR"
+Simulate the specified outcome of the submission process without actually
+performing any externally visible actions (such as publishing the package)\.
+The commonly used outcome value is \fBsuccess\fR\. For other recognized
+outcomes refer to the submission service documentation\.
+.IP "\fB--forward\fR"
+Use the forwarded configuration for each package instead of the default
+configuration\.
+.IP "\fB--all\fR|\fB-a\fR"
+Use all build configurations\.
+.IP "\fB--config\fR|\fB-c\fR \fIdir\fR"
+Specify the build configuration as a directory\.
+.IP "\fB--directory\fR|\fB-d\fR \fIdir\fR"
+Assume project/package is in the specified directory rather than in the
+current working directory\.
+.IP "\fB--config-name\fR|\fB-n\fR \fIname\fR"
+Specify the build configuration as a name\.
+.IP "\fB--config-id\fR \fInum\fR"
+Specify the build configuration as an id\.
+.SH "COMMON OPTIONS"
+.PP
+The common options are summarized below with a more detailed description
+available in \fBbdep-common-options(1)\fP\.
+.IP "\fB-v\fR"
+Print essential underlying commands being executed\.
+.IP "\fB-V\fR"
+Print all underlying commands being executed\.
+.IP "\fB--quiet\fR|\fB-q\fR"
+Run quietly, only printing error messages\.
+.IP "\fB--verbose\fR \fIlevel\fR"
+Set the diagnostics verbosity to \fIlevel\fR between 0 and 6\.
+.IP "\fB--jobs\fR|\fB-j\fR \fInum\fR"
+Number of jobs to perform in parallel\.
+.IP "\fB--no-progress\fR"
+Suppress progress indicators for long-lasting operations, such as network
+transfers, building, etc\.
+.IP "\fB--bpkg\fR \fIpath\fR"
+The package manager program to be used for build configuration management\.
+.IP "\fB--bpkg-option\fR \fIopt\fR"
+Additional option to be passed to the package manager program\.
+.IP "\fB--build\fR \fIpath\fR"
+The build program to be used to build packages\.
+.IP "\fB--build-option\fR \fIopt\fR"
+Additional option to be passed to the build program\.
+.IP "\fB--curl\fR \fIpath\fR"
+The curl program to be used for network operations\.
+.IP "\fB--curl-option\fR \fIopt\fR"
+Additional option to be passed to the curl program\.
+.IP "\fB--pager\fR \fIpath\fR"
+The pager program to be used to show long text\.
+.IP "\fB--pager-option\fR \fIopt\fR"
+Additional option to be passed to the pager program\.
+.IP "\fB--options-file\fR \fIfile\fR"
+Read additional options from \fIfile\fR\.
+.IP "\fB--default-options\fR \fIdir\fR"
+The directory to load additional default options files from\.
+.IP "\fB--no-default-options\fR"
+Don't load default options files\.
+.SH "DEFAULT OPTIONS FILES"
+.PP
+See \fBbdep-default-options-files(1)\fP for an overview of the default options
+files\. For the \fBpublish\fR command the search start directory is the
+project directory\. The following options files are searched for in each
+directory and, if found, loaded in the order listed:
+.PP
+.nf
+bdep\.options
+bdep-publish\.options
+.fi
+.PP
+The following \fBpublish\fR command options cannot be specified in the default
+options files:
+.PP
+.nf
+--directory|-d
+.fi
+.SH "ENVIRONMENT"
+.PP
+The \fBBDEP_AUTHOR_NAME\fR and \fBBDEP_AUTHOR_EMAIL\fR environment variables
+can be used to specify the publisher's name and email address, respectively\.
+If not set, the \fBpublish\fR command will first try to obtain the name and
+email from the version control system (if used) and then from the \fBUSER\fR
+and \fBEMAIL\fR environment variables, respectively\. See also the
+\fB--author-name\fR and \fB--author-email\fR options\.
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.

@@ -1,0 +1,232 @@
+.\" Process this file with
+.\" groff -man -Tascii bpkg-common-options.1
+.\"
+.TH bpkg-common-options 1 "July 2020" "bpkg 0.13.0"
+.SH NAME
+\fBbpkg-common-options\fR \- details on common options
+.SH "SYNOPSIS"
+.PP
+\fBbpkg\fR [\fIcommon-options\fR] \.\.\.\fR
+.SH "DESCRIPTION"
+.PP
+The common options control behavior that is common to all or most of the
+\fBbpkg\fR commands\. They can be specified either before the command or
+after, together with the command-specific options\.
+.SH "COMMON OPTIONS"
+.IP "\fB-v\fR"
+Print essential underlying commands being executed\. This is equivalent to
+\fB--verbose 2\fR\.
+.IP "\fB-V\fR"
+Print all underlying commands being executed\. This is equivalent to
+\fB--verbose 3\fR\.
+.IP "\fB--quiet\fR|\fB-q\fR"
+Run quietly, only printing error messages\. This is equivalent to \fB--verbose
+0\fR\.
+.IP "\fB--verbose\fR \fIlevel\fR"
+Set the diagnostics verbosity to \fIlevel\fR between 0 and 6\. Level 0
+disables any non-error messages while level 6 produces lots of information,
+with level 1 being the default\. The following additional types of diagnostics
+are produced at each level:
+.RS
+.IP 1. 4em
+High-level information messages\.
+.IP 2. 4em
+Essential underlying commands being executed\.
+.IP 3. 4em
+All underlying commands being executed\.
+.IP 4. 4em
+Information that could be helpful to the user\.
+.IP 5. 4em
+Information that could be helpful to the developer\.
+.IP 6. 4em
+Even more detailed information\.
+.RE
+.IP "\fB--jobs\fR|\fB-j\fR \fInum\fR"
+Number of jobs to perform in parallel\. If this option is not specified or
+specified with the 0\fR value, then the number of available hardware threads
+is used\. This option is also propagated when performing build system
+operations such as \fBupdate\fR, \fBtest\fR, etc\.
+.IP "\fB--no-result\fR"
+Don't print informational messages about the outcome of performing a command\.
+.IP "\fB--no-progress\fR"
+Suppress progress indicators for long-lasting operations, such as network
+transfers, building, etc\.
+.IP "\fB--build\fR \fIpath\fR"
+The build program to be used to build packages\. This should be the path to
+the build2 \fBb\fR executable\. You can also specify additional options that
+should be passed to the build program with \fB--build-option\fR\.
+
+If the build program is not explicitly specified, then \fBbpkg\fR will by
+default use \fBb\fR plus an executable suffix if one was specified when
+building \fBbpkg\fR\. So, for example, if \fBbpkg\fR name was set to
+\fBbpkg-1\.0\fR, then it will look for \fBb-1\.0\fR\.
+.IP "\fB--build-option\fR \fIopt\fR"
+Additional option to be passed to the build program\. See \fB--build\fR for
+more information on the build program\. Repeat this option to specify multiple
+build options\.
+.IP "\fB--fetch\fR \fIpath\fR"
+The fetch program to be used to download resources\. Currently, \fBbpkg\fR
+recognizes \fBcurl\fR, \fBwget\fR, and \fBfetch\fR\. Note that the last
+component of \fIpath\fR must contain one of these names as a substring in
+order for \fBbpkg\fR to recognize which program is being used\. You can also
+specify additional options that should be passed to the fetch program with
+\fB--fetch-option\fR\.
+
+If the fetch program is not specified, then \fBbpkg\fR will try to discover if
+one of the above programs is available and use that\. Currently, \fBbpkg\fR
+has the following preference order: \fBwget\fR 1\.16 or higher (supports
+\fB--show-progress\fR), \fBcurl\fR, \fBwget\fR, and \fBfetch\fR\.
+.IP "\fB--fetch-option\fR \fIopt\fR"
+Additional option to be passed to the fetch program\. See \fB--fetch\fR for
+more information on the fetch program\. Repeat this option to specify multiple
+fetch options\.
+.IP "\fB--fetch-timeout\fR \fIsec\fR"
+The fetch and fetch-like (for example, \fBgit\fR) program timeout\. While the
+exact semantics of the value depends on the program used, at a minimum it
+specifies in seconds the maximum time that can be spent without any network
+activity\.
+
+Specifically, it is translated to the \fB--max-time\fR option for \fBcurl\fR
+and to the \fB--timeout\fR option for \fBwget\fR and \fBfetch\fR\. For
+\fBgit\fR over HTTP/HTTPS this semantics is achieved using the
+\fBhttp\.lowSpeedLimit\fR=\fI1\fR \fBhttp\.lowSpeedTime\fR=\fIsec\fR
+configuration values (the \fBgit://\fR and \fBssh://\fR protocols currently do
+not support timeouts)\.
+
+See \fB--fetch\fR and \fB--git\fR for more information on the fetch programs\.
+.IP "\fB--pkg-proxy\fR \fIurl\fR"
+HTTP proxy server to use when fetching package manifests and archives from
+remote \fBpkg\fR repositories\. If specified, the proxy \fIurl\fR must be in
+the \fBhttp://\fR\fIhost\fR[\fB:\fR\fIport\fR]\fR form\. If \fIport\fR is
+omitted, 80 is used by default\.
+
+Note that to allow caching, the proxied \fBhttps://\fR URLs are converted to
+\fBhttp://\fR in order to prevent the fetch program from tunneling (which is
+the standard approach for proxying HTTPS)\. If both HTTP and HTTPS
+repositories are used, it is assumed that the proxy server can figure out
+which URLs need to be converted back to \fBhttps://\fR based on the request
+information (for example, host name)\. For security, this mechanism should
+only be used with signed repositories or when the proxy is located inside a
+trusted network\.
+.IP "\fB--git\fR \fIpath\fR"
+The git program to be used to fetch git repositories\. You can also specify
+additional options that should be passed to the git program with
+\fB--git-option\fR\.
+
+If the git program is not explicitly specified, then \fBbpkg\fR will use
+\fBgit\fR by default\.
+.IP "\fB--git-option\fR \fIopt\fR"
+Additional common option to be passed to the git program\. Note that the
+common options are the ones that precede the \fBgit\fR command\. See
+\fB--git\fR for more information on the git program\. Repeat this option to
+specify multiple git options\.
+.IP "\fB--sha256\fR \fIpath\fR"
+The sha256 program to be used to calculate SHA256 sums\. Currently, \fBbpkg\fR
+recognizes \fBsha256\fR, \fBsha256sum\fR, and \fBshasum\fR\. Note that the
+last component of \fIpath\fR must contain one of these names as a substring in
+order for \fBbpkg\fR to recognize which program is being used\. You can also
+specify additional options that should be passed to the sha256 program with
+\fB--sha256-option\fR\.
+
+If the sha256 program is not specified, then \fBbpkg\fR will try to discover
+if one of the above programs is available and use that\. Currently, \fBbpkg\fR
+has the following preference order: \fBsha256\fR, \fBsha256sum\fR, and
+\fBshasum\fR\.
+.IP "\fB--sha256-option\fR \fIopt\fR"
+Additional option to be passed to the sha256 program\. See \fB--sha256\fR for
+more information on the sha256 program\. Repeat this option to specify
+multiple sha256 options\.
+.IP "\fB--tar\fR \fIpath\fR"
+The tar program to be used to extract package archives\. For example,
+\fBgtar\fR or \fBbsdtar\fR\. You can also specify additional options that
+should be passed to the tar program with \fB--tar-option\fR\. If the tar
+program is not explicitly specified, then \fBbpkg\fR will use \fBtar\fR by
+default\.
+.IP "\fB--tar-option\fR \fIopt\fR"
+Additional option to be passed to the tar program\. See \fB--tar\fR for more
+information on the tar program\. Repeat this option to specify multiple tar
+options\.
+.IP "\fB--openssl\fR \fIpath\fR"
+The openssl program to be used for crypto operations\. You can also specify
+additional options that should be passed to the openssl program with
+\fB--openssl-option\fR\. If the openssl program is not explicitly specified,
+then \fBbpkg\fR will use \fBopenssl\fR by default\.
+
+The \fB--openssl*\fR values can be optionally qualified with the openssl
+command in the \fIcommand\fR\fB:\fR\fIvalue\fR\fR form\. This makes the value
+only applicable to the specific command, for example:
+
+.nf
+bpkg rep-create                     \\
+  --openssl rsautl:/path/to/openssl \\
+  --openssl-option rsautl:-engine   \\
+  --openssl-option rsautl:pkcs11    \\
+  \.\.\.
+.fi
+
+An unqualified value that contains a colon can be specified as qualified with
+an empty command, for example, \fB--openssl :C:\ebin\eopenssl\fR\. To see
+openssl commands executed by \fBbpkg\fR, use the verbose mode (\fB-v\fR
+option)\.
+.IP "\fB--openssl-option\fR \fIopt\fR"
+Additional option to be passed to the openssl program\. See \fB--openssl\fR
+for more information on the openssl program\. The values can be optionally
+qualified with the openssl command, as discussed in \fB--openssl\fR\. Repeat
+this option to specify multiple openssl options\.
+.IP "\fB--auth\fR \fItype\fR"
+Types of repositories to authenticate\. Valid values for this option are
+\fBnone\fR, \fBremote\fR, \fBall\fR\. By default only remote repositories are
+authenticated\. You can request authentication of local repositories by
+passing \fBall\fR or disable authentication completely by passing \fBnone\fR\.
+.IP "\fB--trust\fR \fIfingerprint\fR"
+Trust repository certificate with a SHA256 \fIfingerprint\fR\. Such a
+certificate is trusted automatically, without prompting the user for a
+confirmation\. Repeat this option to trust multiple certificates\.
+
+Note that by default \fBopenssl\fR prints a SHA1 fingerprint and to obtain a
+SHA256 one you will need to pass the \fB-sha256\fR option, for example:
+
+.nf
+openssl x509 -sha256 -fingerprint -noout -in cert\.pem
+.fi
+.IP "\fB--trust-yes\fR"
+Assume the answer to all authentication prompts is \fByes\fR\.
+.IP "\fB--trust-no\fR"
+Assume the answer to all authentication prompts is \fBno\fR\.
+.IP "\fB--pager\fR \fIpath\fR"
+The pager program to be used to show long text\. Commonly used pager programs
+are \fBless\fR and \fBmore\fR\. You can also specify additional options that
+should be passed to the pager program with \fB--pager-option\fR\. If an empty
+string is specified as the pager program, then no pager will be used\. If the
+pager program is not explicitly specified, then \fBbpkg\fR will try to use
+\fBless\fR\. If it is not available, then no pager will be used\.
+.IP "\fB--pager-option\fR \fIopt\fR"
+Additional option to be passed to the pager program\. See \fB--pager\fR for
+more information on the pager program\. Repeat this option to specify multiple
+pager options\.
+.IP "\fB--options-file\fR \fIfile\fR"
+Read additional options from \fIfile\fR\. Each option should appear on a
+separate line optionally followed by space or equal sign (\fB=\fR) and an
+option value\. Empty lines and lines starting with \fB#\fR are ignored\.
+Option values can be enclosed in double (\fB"\fR) or single (\fB'\fR) quotes
+to preserve leading and trailing whitespaces as well as to specify empty
+values\. If the value itself contains trailing or leading quotes, enclose it
+with an extra pair of quotes, for example \fB'"x"'\fR\. Non-leading and
+non-trailing quotes are interpreted as being part of the option value\.
+
+The semantics of providing options in a file is equivalent to providing the
+same set of options in the same order on the command line at the point where
+the \fB--options-file\fR option is specified except that the shell escaping
+and quoting is not required\. Repeat this option to specify more than one
+options file\.
+.IP "\fB--default-options\fR \fIdir\fR"
+The directory to load additional default options files from\.
+.IP "\fB--no-default-options\fR"
+Don't load default options files\.
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.

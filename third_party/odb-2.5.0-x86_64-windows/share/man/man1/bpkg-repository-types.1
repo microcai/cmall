@@ -1,0 +1,197 @@
+.\" Process this file with
+.\" groff -man -Tascii bpkg-repository-types.1
+.\"
+.TH bpkg-repository-types 1 "July 2020" "bpkg 0.13.0"
+.SH NAME
+\fBbpkg-repository-types\fR \- repository types, structure, and URLs
+.SH "DESCRIPTION"
+.PP
+This help topic describes the repository types recognized by \fBbpkg\fR, their
+structure, and the format of their URLs\. Currently three types of
+repositories are supported: archive-based \fBpkg\fR, directory-based
+\fBdir\fR, and version control-based \fBgit\fR\.
+.PP
+The repository location may specify the repository type as part of the URL
+scheme component in the \fItype\fR\fB+\fR\fIprotocol\fR\fR form\. For example:
+.PP
+.nf
+git+https://example\.com/foo
+dir+file:///tmp/repo
+.fi
+.PP
+Note that the explicit specification is only needed when the correct type
+cannot be guessed from the URL\. See \fBbpkg-rep-add(1)\fP for details\.
+.SH "PKG REPOSITORIES"
+.PP
+A \fBpkg\fR repository is \fIarchive\fR-based\. That is, it contains a
+collection of various packages/versions as archive files\. For more
+information on the structure of \fBpkg\fR repositories refer to The
+\fBbuild2\fR Package Manager Manual\. The \fBdir\fR repository location can be
+a local directory path or an \fBhttp(s)://\fR URL\.
+.SH "DIR REPOSITORIES"
+.PP
+A \fBdir\fR repository is \fIdirectory\fR-based\. That is, it contains a
+collection of various packages as directories but only a single version per
+package can be present in such a repository\. The \fBdir\fR repository
+location can be a local directory path or a \fBfile://\fR URL\.
+.PP
+A \fBdir\fR repository is expected to contain either the \fBmanifest\fR or
+\fBpackages\.manifest\fR file in the root directory of the repository\. If it
+only contains \fBmanifest\fR, then it is assumed to be a simple,
+single-package repository with the \fBmanifest\fR file being its package
+manifest\. Otherwise, the \fBpackages\.manifest\fR file should list the
+locations of available packages as described in Package List Manifest for
+\fBdir\fR Repositories (#manifest-package-list-dir)\.
+.PP
+A \fBdir\fR repository may also contain the \fBrepositories\.manifest\fR file
+in the root directory of the repository\. This file can be used to describe
+the repository itself as well as specify its prerequisite and complement
+repositories\. See Repository List Manifest (#manifest-repository-list) for
+details on the format and semantics of this file\.
+.SH "GIT REPOSITORIES"
+.PP
+A \fBgit\fR repository is \fIversion control\fR-based\. That is, it normally
+contains multiple versions of the same package (but can also contain several,
+usually related, packages in the same repository)\.
+.PP
+A \fBgit\fR repository has the same structure and manifest files as the
+\fBdir\fR repository\. See Package List Manifest for \fBdir\fR Repositories
+(#manifest-package-list-dir) and Repository List Manifest
+(#manifest-repository-list) for details on their format and semantics\.
+.PP
+Theoretically, a \fBgit\fR repository may contain as many package versions as
+there are commits\. Practically, however, we are normally only interested in a
+small subset of them while fetching and processing the necessary information
+for all of them could be prohibitively expensive\.  As a result, by default,
+only advertised tags in the \fBrefs/tags/v*\fR form where the part after
+\fBv\fR is also a valid standard version (#module-version) are considered to
+be sources of useful package versions\. These commits normally correspond to
+released versions and are called the \fIdefault set\fR\. Note that only the
+latest revision of each such version is considered\.
+.PP
+Instead of the default set, it is possible to provide a custom set of
+available versions by specifying one or more commit ids and/or references
+and/or reference patterns in the repository URL fragment (see
+\fBgit-ls-remote(1)\fR for details on advertised references)\. For example:
+.PP
+.nf
+https://example\.com/foo\.git#v1\.2\.3
+https://example\.com/foo\.git#master
+https://example\.com/foo\.git#af234f56
+https://example\.com/foo\.git#tags/releases/*
+https://example\.com/foo\.git#HEAD,tags/v1\.*\.*,heads/feature-*
+.fi
+.PP
+Furthermore, it is possible to expand (or narrow down) the default set using
+the special \fB##\fR fragment notation\. For example:
+.PP
+.nf
+https://example\.com/foo\.git##HEAD     - default set plus HEAD
+https://example\.com/foo\.git##heads/*  - default set plus branches
+https://example\.com/foo\.git##-v1\.*    - default set minus v1\.*
+.fi
+.PP
+A \fBgit\fR repository URL fragment is a comma-separated list of reference
+filters in the following form:
+.PP
+[\fIrefname\fR][\fB@\fR\fIcommit\fR]\fR
+.PP
+Either \fIrefname\fR, \fIcommit\fR, or both must be specified\. If both are
+specified then \fIrefname\fR is only used to minimize the amount of data
+fetched and \fIcommit\fR is expected to belong to its history\. For example:
+.PP
+.nf
+\&\.\.\./foo\.git#master@48fba3625d65941bb85a39061bcf795d4949c778
+.fi
+.PP
+The \fIrefname\fR part can be an abbreviated commit id or an advertised
+reference or reference pattern under \fBrefs/\fR\. While \fIcommit\fR must be
+the complete, 40-characters SHA1 that need not be advertised\. For
+convenience, a 40-characters filter that consists of only hexadecimal digits
+is assumed to be \fIcommit\fR even if not prefixed with \fB@\fR\. In an
+unlikely event this produces an incorrect result, the \fB@\fR-form with
+omitted \fIcommit\fR can be used\. For example:
+.PP
+.nf
+\&\.\.\./foo\.git#48fba3625d65941bb85a39061bcf795d4949c778   (commit id)
+\&\.\.\./foo\.git#deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@  (reference)
+.fi
+.PP
+The \fIrefname\fR part can use the \fB*\fR and \fB?\fR wildcard pattern
+characters with the standard semantics as well as the \fB**\fR character
+sequence which matches in subdirectories, recursively\. For example:
+.PP
+.nf
+\&\.\.\./foo\.git#tags/v*    - tags/v1\.2\.3 but not tags/old/v0\.1\.0
+\&\.\.\./foo\.git#tags/v**   - tags/v1\.2\.3 and tags/old/v0\.1\.0
+.fi
+.PP
+A relative \fIrefname\fR is searched for in \fBrefs/\fR, \fBrefs/tags/\fR, and
+\fBrefs/heads/\fR as well as among symbolic references like \fBHEAD\fR\. To
+anchor it to \fBrefs/\fR make it absolute, for example:
+.PP
+.nf
+\&\.\.\./foo\.git#tags/v*   - refs/tags/v1\.2\.3 but also refs/heads/tags/voo
+\&\.\.\./foo\.git#/tags/v*  - refs/tags/v1\.2\.3 only
+.fi
+.PP
+While a \fIrefname\fR pattern is allowed not match any references, a
+non-pattern that doesn't resolve to a reference is invalid\.
+.PP
+If a \fIrefname\fR starts with minus (\fB-\fR) then it is treated as an
+exclusion filter \(en any references that it matches are excluded from the set
+included by the preceding filters (or the default set)\. For example:
+.PP
+.nf
+\&\.\.\./foo\.git#v*,-v1\.*  - exclude v1\.* from v*
+\&\.\.\./foo\.git##-v1\.*    - exclude v1\.* from default set
+.fi
+.PP
+To support specifying literal leading minus, a \fIrefname\fR that starts with
+plus (\fB+\fR) is treated as an inclusion filter\. For example:
+.PP
+.nf
+\&\.\.\./foo\.git#+x   - include  x
+\&\.\.\./foo\.git#+-x  - include -x
+\&\.\.\./foo\.git#++x  - include +x
+.fi
+.PP
+Currently supported \fBgit\fR protocols are \fBgit://\fR, \fBssh://\fR (but
+not scp\fR pseudo-URL syntax), \fBhttp://\fR, and \fBhttps://\fR for remote
+repositories and \fBfile://\fR for local repositories\. While \fBbpkg\fR tries
+to minimize the amount of information (history) fetched, it is not always
+possible for some protocols and/or server configurations, as discussed next\.
+.PP
+A \fBgit\fR repository accessible via \fBhttp(s)://\fR can use either
+\fIdumb\fR or \fIsmart\fR protocol (refer to the \fBgit\fR documentation for
+details)\. The dumb protocol provides only limited support for fetch
+minimization and if this protocol is used, then \fBbpkg\fR has no choice but
+to download a substantial amount of history\.
+.PP
+The smart protocol allows fetching of minimal history for tags and branches\.
+Whether this is also possible for (all) commit ids depends on whether the
+server is configured to allow fetching unadvertised commits\. For details,
+refer to the \fBuploadpack\.allowReachableSHA1InWant\fR and
+\fBuploadpack\.allowAnySHA1InWant\fR \fBgit\fR configuration values\.
+.PP
+The \fBgit://\fR and \fBssh://\fR protocols are similar to smart \fBhttp://\fR
+in that they support fetching minimal history for tags and branches and may or
+may not support this for commit ids depending on the server configuration\.
+Note, however, that unlike for \fBhttp(s)://\fR, for these protocols
+\fBbpkg\fR does not try to sense if fetching unadvertised commits is allowed
+and always assumes that it is not\.
+.PP
+Based on this information, to achieve optimal results the recommended protocol
+for remote repositories is smart \fBhttps://\fR\. Additionally, if you are
+planning to refer to unadvertised commit ids, then also consider configuring
+the server to allow fetching unadvertised commits\.
+.PP
+The \fBfile://\fR protocol has the same fetch minimization support as
+\fBgit://\fR and is therefore treated the same\.
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.

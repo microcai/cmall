@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes'?>
+<assembly xmlns='urn:schemas-microsoft-com:asm.v1'
+          manifestVersion='1.0'>
+  <assemblyIdentity name='driver.exe.dlls'
+                    type='win32'
+                    processorArchitecture='amd64'
+                    version='0.0.0.0'/>
+  <file name='odb-2.5.0-b.19.dll'/>
+  <file name='odb-boost-2.5.0-b.19.dll'/>
+</assembly>

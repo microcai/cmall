@@ -1,0 +1,230 @@
+.\" Process this file with
+.\" groff -man -Tascii bdep-config.1
+.\"
+.TH bdep-config 1 "July 2020" "bdep 0.13.0"
+.SH NAME
+\fBbdep-config\fR \- manage project build configurations
+.SH "SYNOPSIS"
+.PP
+\fBbdep config add\fR \ \ \ [\fIoptions\fR] [\fIprj-spec\fR]
+[\fB@\fR\fIcfg-name\fR] \fIcfg-dir\fR
+.br
+\fBbdep config create\fR [\fIoptions\fR] [\fIprj-spec\fR]
+[\fB@\fR\fIcfg-name\fR] \fIcfg-dir\fR [\fIcfg-args\fR]
+.br
+\fBbdep config list\fR \ \ [\fIoptions\fR] [\fIprj-spec\fR]
+[\fIcfg-spec\fR\.\.\.]
+.br
+\fBbdep config move\fR \ \ [\fIoptions\fR] [\fIprj-spec\fR] \fIcfg-spec\fR
+\fIcfg-dir\fR
+.br
+\fBbdep config rename\fR [\fIoptions\fR] [\fIprj-spec\fR] \fIcfg-spec\fR
+\fIcfg-name\fR
+.br
+\fBbdep config remove\fR [\fIoptions\fR] [\fIprj-spec\fR] \fIcfg-spec\fR\.\.\.
+| \fB--all\fR|\fB-a\fR
+.br
+\fBbdep config set\fR \ \ \ [\fIoptions\fR] [\fIprj-spec\fR]
+\fIcfg-spec\fR\.\.\. | \fB--all\fR|\fB-a\fR
+.br
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ [\fB--\fR[\fBno-\fR]\fBdefault\fR]
+.br
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ [\fB--\fR[\fBno-\fR]\fBforward\fR]
+.br
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ [\fB--\fR[\fBno-\fR]\fBauto-sync\fR]\fR
+.PP
+\fIcfg-spec\fR = \fB@\fR\fIcfg-name\fR | \fB--config\fR|\fB-c\fR \fIcfg-dir\fR
+.br
+\fIprj-spec\fR = \fB--directory\fR|\fB-d\fR \fIprj-dir\fR
+.br
+\fIcfg-args\fR = [\fB--\fR \fIbpkg-options\fR] [\fB--existing\fR|\fB-e\fR |
+(\fImodule\fR | \fIcfg-var\fR)\.\.\.]\fR
+.SH "DESCRIPTION"
+.PP
+The \fBconfig\fR command provides the following subcommands for managing
+project's build configurations\. If no project directory is specified, then
+the current working directory is assumed\.
+.SH "CONFIG SUBCOMMANDS"
+.IP "\fBadd\fR"
+.br
+
+.IP "\fBcreate\fR"
+.br
+The \fBadd\fR subcommand adds an existing \fBbpkg(1)\fP build configuration in
+directory \fIcfg-dir\fR to the project's build configuration set\. The
+\fBcreate\fR subcommand creates a new configuration in directory \fIcfg-dir\fR
+by executing the \fBbpkg-cfg-create(1)\fP command and passing to it
+\fIcfg-args\fR, if any\. It then proceeds as \fBadd\fR by adding the new
+configuration to the project's build configuration set\.
+
+In both subcommands, if \fIcfg-name\fR is specified, then the added
+configuration is given this name\. Several \fBbdep\fR commands can use such
+names as a more convenient way to specify build configurations (see
+\fBbdep-projects-configs(1)\fP for details)\.
+
+As a shortcut, if \fIcfg-name\fR is not specified and \fIcfg-dir\fR is a
+simple path that starts with \fB@\fR, then it is treated as the name and the
+configuration directory is assumed to be
+\fIprj-dir\fR\fB-\fR\fIcfg-name\fR\fR\. Note that in case of create\fR,
+\fIcfg-dir\fR must be preceded with \fB--\fR (double dash) option to
+disambiguate it from \fB@\fR\fIcfg-name\fR\fR\. For example, assuming the
+project directory is \fBhello\fR:
+
+.nf
+$ bdep config add @clang                        # \.\./hello-clang
+$ bdep config create -- @gcc cc config\.cxx=g++  # \.\./hello-gcc
+.fi
+
+Unless the \fB--no-default\fR option is specified, the first added or created
+build configuration is designated as the default\. Several \fBbdep\fR commands
+use such a configuration by default if no configuration was specified
+explicitly (see \fBbdep-projects-configs(1)\fP for details)\. To make a
+subsequently added configuration the default use the \fB--default\fR option\.
+
+The default build configuration is also designated as forwarded unless the
+\fB--no-forward\fR option is specified or another configuration is already
+designated as forwarded\. When a project is initialized in a forwarded build
+configuration, its source directory is configured to forward to this
+configuration (see \fBb(1)\fP for details on forwarded configurations)\. To
+designate a non-default configuration as forwarded use the \fB--forward\fR
+option\. Note also that it is possible to have multiple forwarded
+configurations, however, any given package within a project can only be
+initialized in one such configuration\.
+
+Unless the \fB--no-auto-sync\fR option is specified, an added or created build
+configuration will be automatically synchronized on every build system
+invocation\. Note that this flag affects the entire build configuration and if
+multiple projects share the same configuration, then they must have a
+consistent auto-synchronization setting\.
+.IP "\fBlist\fR"
+.br
+The \fBlist\fR subcommand prints the list of build configurations associated
+with the project\. Unless one or more configurations are specified explicitly,
+\fBlist\fR prints all the associate configurations\. Note that the output is
+written to \fBSTDOUT\fR, not \fBSTDERR\fR\.
+.IP "\fBmove\fR"
+.br
+The \fBmove\fR subcommand assigns the specified build configuration a new
+directory\. It is normally used after moving/renaming the configuration
+directory\. Note that an explicit \fBbdep-sync(1)\fP command is required for
+this change to take effect\. See \fBbdep-projects-configs(1)\fP for various
+ways to specify a build configuration\.
+.IP "\fBrename\fR"
+.br
+The \fBrename\fR subcommand gives the specified build configuration a new
+name\. See \fBbdep-projects-configs(1)\fP for various ways to specify a build
+configuration\.
+.IP "\fBremove\fR"
+.br
+The \fBremove\fR subcommand removes one or more build configurations from the
+project's build configuration set\. Note that only configurations that have no
+initialized packages can be removed\. See \fBbdep-projects-configs(1)\fP for
+various ways to specify build configurations\.
+.IP "\fBset\fR"
+.br
+The \fBset\fR subcommand modifies various properties of one or more build
+configurations associated with the project\. See
+\fBbdep-projects-configs(1)\fP for various ways to specify build
+configurations\.
+
+The properties that can be modified include the default
+(\fB--\fR[\fBno-\fR]\fBdefault\fR\fR), forward
+(\fB--\fR[\fBno-\fR]\fBforward\fR\fR), and auto-synchronization
+(\fB--\fR[\fBno-\fR]\fBauto-sync\fR\fR) flags\. Note that changing any of
+these flags requires an explicit \fBbdep-sync(1)\fP command to take effect\.
+.SH "CONFIG OPTIONS"
+.IP "\fB--default\fR"
+Make the added or created configuration the default\.
+.IP "\fB--no-default\fR"
+Don't make the first added or created configuration the default\.
+.IP "\fB--forward\fR"
+Make the added or created configuration forwarded\.
+.IP "\fB--no-forward\fR"
+Don't make the added or created configuration forwarded\.
+.IP "\fB--auto-sync\fR"
+Make the added or created configuration automatically synchronized\.
+.IP "\fB--no-auto-sync\fR"
+Don't make the added or created configuration automatically synchronized\.
+.IP "\fB--existing\fR|\fB-e\fR"
+Initialize a \fBbpkg\fR configuration based on an existing build system
+configuration\.
+.IP "\fB--wipe\fR"
+Wipe the configuration directory clean before creating the new configuration\.
+.IP "\fB--all\fR|\fB-a\fR"
+Use all build configurations\.
+.IP "\fB--config\fR|\fB-c\fR \fIdir\fR"
+Specify the build configuration as a directory\.
+.IP "\fB--directory\fR|\fB-d\fR \fIdir\fR"
+Assume project/package is in the specified directory rather than in the
+current working directory\.
+.IP "\fB--config-name\fR|\fB-n\fR \fIname\fR"
+Specify the build configuration as a name\.
+.IP "\fB--config-id\fR \fInum\fR"
+Specify the build configuration as an id\.
+.SH "COMMON OPTIONS"
+.PP
+The common options are summarized below with a more detailed description
+available in \fBbdep-common-options(1)\fP\.
+.IP "\fB-v\fR"
+Print essential underlying commands being executed\.
+.IP "\fB-V\fR"
+Print all underlying commands being executed\.
+.IP "\fB--quiet\fR|\fB-q\fR"
+Run quietly, only printing error messages\.
+.IP "\fB--verbose\fR \fIlevel\fR"
+Set the diagnostics verbosity to \fIlevel\fR between 0 and 6\.
+.IP "\fB--jobs\fR|\fB-j\fR \fInum\fR"
+Number of jobs to perform in parallel\.
+.IP "\fB--no-progress\fR"
+Suppress progress indicators for long-lasting operations, such as network
+transfers, building, etc\.
+.IP "\fB--bpkg\fR \fIpath\fR"
+The package manager program to be used for build configuration management\.
+.IP "\fB--bpkg-option\fR \fIopt\fR"
+Additional option to be passed to the package manager program\.
+.IP "\fB--build\fR \fIpath\fR"
+The build program to be used to build packages\.
+.IP "\fB--build-option\fR \fIopt\fR"
+Additional option to be passed to the build program\.
+.IP "\fB--curl\fR \fIpath\fR"
+The curl program to be used for network operations\.
+.IP "\fB--curl-option\fR \fIopt\fR"
+Additional option to be passed to the curl program\.
+.IP "\fB--pager\fR \fIpath\fR"
+The pager program to be used to show long text\.
+.IP "\fB--pager-option\fR \fIopt\fR"
+Additional option to be passed to the pager program\.
+.IP "\fB--options-file\fR \fIfile\fR"
+Read additional options from \fIfile\fR\.
+.IP "\fB--default-options\fR \fIdir\fR"
+The directory to load additional default options files from\.
+.IP "\fB--no-default-options\fR"
+Don't load default options files\.
+.SH "DEFAULT OPTIONS FILES"
+.PP
+See \fBbdep-default-options-files(1)\fP for an overview of the default options
+files\. For the \fBconfig\fR command the search start directory is the project
+directory\. The following options files are searched for in each directory
+and, if found, loaded in the order listed:
+.PP
+.nf
+bdep\.options
+bdep-config\.options
+bdep-config-add\.options          # if the create subcommand
+bdep-config-<subcommand>\.options # (subcommand-dependent)
+.fi
+.PP
+The following \fBconfig\fR command options cannot be specified in the default
+options files:
+.PP
+.nf
+--directory|-d
+--wipe
+.fi
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.

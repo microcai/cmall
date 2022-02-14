@@ -1,0 +1,949 @@
+.\" Process this file with
+.\" groff -man -Tascii bdep-new.1
+.\"
+.TH bdep-new 1 "July 2020" "bdep 0.13.0"
+.SH NAME
+\fBbdep-new\fR \- create and initialize new project
+.SH "SYNOPSIS"
+.PP
+\fBbdep new\fR [\fIoptions\fR] [\fB--no-init\fR] \fIspec\fR [\fIname\fR]
+.br
+\fBbdep new\fR [\fIoptions\fR] \fB--config-add|-A\fR \fIcfg-dir\fR
+[\fB@\fR\fIcfg-name\fR] \fIspec\fR [\fIname\fR]
+.br
+\fBbdep new\fR [\fIoptions\fR] \fB--config-create|-C\fR \fIcfg-dir\fR
+[\fB@\fR\fIcfg-name\fR] \fIspec\fR [\fIname\fR]
+.br
+\ \ \ \ \ \ \ \ \ [\fIcfg-args\fR]
+.br
+\fBbdep new\fR [\fIoptions\fR] \fB--package\fR [\fIprj-spec\fR] \fIspec\fR
+[\fIname\fR]
+.br
+\fBbdep new\fR [\fIoptions\fR] \fB--source\fR [\fIprj-spec\fR] \fIspec\fR
+[\fIname\fR]\fR
+.PP
+\fIspec\fR \ \ \ \ = [\fIlang\fR] [\fItype\fR] [\fIvcs\fR]
+.br
+\fIlang\fR \ \ \ \ = \fB--lang\fR|\fB-l\fR
+(\fBc\fR|\fBc++\fR)[\fB,\fR\fIlang-opt\fR\.\.\.]
+.br
+\fItype\fR \ \ \ \ = \fB--type\fR|\fB-t\fR
+(\fBexe\fR|\fBlib\fR|\fBbare\fR|\fBempty\fR)[\fB,\fR\fItype-opt\fR\.\.\.]
+.br
+\fIvcs\fR \ \ \ \ \ = \fB--vcs\fR|\fB-s\fR \
+(\fBgit\fR|\fBnone\fR)[\fB,\fR\fIvcs-opt\fR\.\.\.]
+.br
+\fIprj-spec\fR = \fB--directory\fR|\fB-d\fR \fIprj-dir\fR
+.br
+\fIcfg-args\fR = [\fB--\fR \fIbpkg-options\fR] [\fB--existing\fR|\fB-e\fR |
+(\fImodule\fR | \fIcfg-var\fR)\.\.\.]\fR
+.SH "DESCRIPTION"
+.PP
+The \fBnew\fR command creates and initializes a new project (the first three
+forms), a new package in an already existing project (the \fB--package\fR
+form), or a new source subdirectory in an already existing project/package
+(the \fB--source\fR form)\. All the forms except \fB--source\fR first create
+according to \fIspec\fR a new \fBbuild2\fR project/package called \fIname\fR
+in the \fIname\fR subdirectory of the current working directory (unless
+overridden with \fB--output-dir\fR|\fB-o\fR\fR)\.
+.PP
+The first form then, unless the \fB--no-init\fR option is specified,
+initializes an empty project database as if by executing the
+\fBbdep-init(1)\fP command with the \fB--empty\fR option\. For example:
+.PP
+.nf
+$ bdep new -l c++ -t exe hello
+
+$ tree hello/
+hello/
+├── hello/
+│   ├── hello\.cxx
+│   └── buildfile
+├── buildfile
+└── manifest
+.fi
+.PP
+Similarly, the second and third forms add an existing or create a new build
+configuration and then initialize the project in that configuration as if by
+executing the \fBbdep-init(1)\fP command with the \fB--config-add\fR or
+\fB--config-create\fR option, respectively\. For example:
+.PP
+.nf
+$ bdep new -l c++ -t exe -C @gcc hello cc config\.cxx=g++
+.fi
+.PP
+The \fB--package\fR form adds the new package to the \fBpackages\.manifest\fR
+file creating it if necessary\. If no project directory is explicitly
+specified with \fB--directory\fR|\fB-d\fR\fR, then the current working
+directory is assumed\. Note that nested packages are not allowed\. For
+example:
+.PP
+.nf
+$ bdep new -t empty hello
+$ cd hello
+
+$ bdep new --package -l c++ -t lib libhello
+$ bdep new --package -l c++ -t exe hello
+
+$ bdep init -C @gcc cc config\.cxx=g++
+
+$ cd \.\.
+$ tree hello/
+hello/
+├── hello/
+│   ├── hello/
+│   │   ├── hello\.cxx
+│   │   └── buildfile
+│   ├── buildfile
+│   └── manifest
+├── libhello/
+│   ├── libhello/
+│   │   ├── hello\.hxx
+│   │   ├── hello\.cxx
+│   │   └── buildfile
+│   ├── buildfile
+│   └── manifest
+└── packages\.manifest
+.fi
+.PP
+The \fB--source\fR form operates \fIas-if\fR by first creating according to
+\fIspec\fR a temporary project called \fIname\fR and then copying its source
+subdirectory (\fIname\fR\fB/\fR\fIname\fR\fB/\fR\fR by default) over to the
+current working directory (unless overridden with
+\fB--output-dir\fR|\fB-o\fR\fR)\. If no project/package directory is
+explicitly specified with \fB--directory\fR|\fB-d\fR\fR, then the current
+working directory is assumed\. For example:
+.PP
+.nf
+$ bdep new -l c++ -t bare hello
+$ cd hello
+
+$ bdep new --source -l c++ -t lib libhello
+$ bdep new --source -l c++ -t exe hello
+
+$ bdep init -C @gcc cc config\.cxx=g++
+
+$ cd \.\.
+$ tree hello/
+hello/
+├── hello/
+│   ├── hello\.cxx
+│   └── buildfile
+├── libhello/
+│   ├── hello\.hxx
+│   ├── hello\.cxx
+│   └── buildfile
+├── buildfile
+└── manifest
+.fi
+.PP
+In all the forms, if \fIname\fR is omitted, then the current working directory
+name (unless overridden with \fB--output-dir\fR|\fB-o\fR\fR) is used as the
+project/package/source subdirectory name\. See Package Name (#package-name)
+for details on project/package names\.
+.PP
+The source subdirectory can be customized with the \fBsubdir\fR project type
+sub-option (see below for details)\. For example:
+.PP
+.nf
+$ bdep new -l c++ -t lib,subdir=libhello/io libhello-io
+
+$ tree libhello-io/
+libhello-io/
+└── libhello/
+    └── io/
+        ├── hello-io\.hxx
+        └── hello-io\.cxx
+.fi
+.PP
+By default the source subdirectory is created in the project/package root
+directory and contains both headers (including public headers for libraries)
+as well as sources\. This can be customized in a number of ways using the
+\fBprefix*\fR and \fBsplit\fR project type sub-options (see below for
+details)\. For example, to move the source subdirectory inside src/\fR:
+.PP
+.nf
+$ bdep new -l c++ -t exe,prefix=src hello
+
+$ tree hello/
+hello/
+└── src/
+    └── hello/
+        └── hello\.cxx
+.fi
+.PP
+And to split the library source subdirectory into public headers and other
+source files:
+.PP
+.nf
+$ bdep new -l c++ -t lib,split libhello
+
+$ tree libhello/
+libhello/
+├── include/
+│   └── libhello/
+│       └── hello\.hxx
+└── src/
+    └── libhello/
+        └── hello\.cxx
+.fi
+.PP
+See the SOURCE LAYOUT section below for details and more examples\.
+.PP
+The output directory may already contain existing files provided they don't
+clash with the files to be created\. The \fBnew\fR command also recognizes
+certain well-known files and tries to use the extracted information in the
+package \fBmanifest\fR file\. Specifically, it tries to guess the license from
+the \fBLICENSE\fR file as well as extract the summary from \fBREADME\.md\fR\.
+This allows for the following workflow:
+.PP
+.nf
+# Create a project with LICENSE and README\.md on one of the Git
+# hosting services (GitHub, GitLab, etc)\.
+
+$ git clone \.\.\./libhello\.git
+$ cd libhello
+
+$ bdep new -l c++ -t lib
+.fi
+.PP
+The project parameters such as language, type (executable, library, etc), and
+version control system can be customized as described next\. Some of these
+parameters also support parameter-specific sub-options (such as the file
+extensions to use in a C++ project) that can be specified with a comma after
+the parameter value\.
+.PP
+The project language can be specified with the \fB--lang\fR|\fB-l\fR\fR
+option\. Valid values for this option and their semantics are described next\.
+If unspecified, a C++ project is created by default\.
+.IP "\fBc\fR"
+.br
+A C project\.
+.IP "\fBc++\fR"
+.br
+A C++ project\. Recognized language sub-options:
+.IP "\ \ \ \fBcpp\fR"
+.br
+Use the \fB\.cpp\fR, \fB\.hpp\fR, \fB\.ipp\fR, \fB\.tpp\fR, and \fB\.mpp\fR
+source file extensions (alias for \fBextension=?pp\fR)\.
+.IP "\ \ \ \fBextension=\fR\fIpattern\fR\fR"
+.br
+Derive source file extensions from \fIpattern\fR by replacing every \fB?\fR
+with one of the \fBc\fR (source), \fBh\fR (header), \fBi\fR (inline), \fBt\fR
+(template), or \fBm\fR (module interface) letters\. If unspecified and no
+individual extensions are specified with the below options, then \fB?xx\fR is
+used by default\.
+.IP "\ \ \ \fBhxx=\fR\fIextension\fR\fR"
+.br
+Use the specified \fIextension\fR for header files instead of the default
+\fB\.hxx\fR\.
+.IP "\ \ \ \fBcxx=\fR\fIextension\fR\fR"
+.br
+Use the specified \fIextension\fR for source files instead of the default
+\fB\.cxx\fR\.
+.IP "\ \ \ \fBixx=\fR\fIextension\fR\fR"
+.br
+Use the specified \fIextension\fR for inline files\. If unspecified, then
+assume no inline files are used by the project\.
+.IP "\ \ \ \fBtxx=\fR\fIextension\fR\fR"
+.br
+Use the specified \fIextension\fR for template files\. If unspecified, then
+assume no template files are used by the project\.
+.IP "\ \ \ \fBmxx=\fR\fIextension\fR\fR"
+.br
+Use the specified \fIextension\fR for module interface files\. If unspecified,
+then assume no modules are used by the project\.
+.PP
+As an example, the following command creates a header-only C++ library that
+uses the \fB\.h\fR extension for header files and \fB\.cpp\fR \(en for source
+files:
+.PP
+.nf
+$ bdep new -l c++,hxx=h,cxx=cpp -t lib,binless libhello
+.fi
+.PP
+The project type can be specified with the \fB--type\fR|\fB-t\fR\fR option\.
+The \fBempty\fR project type is language-agnostic with the semantics and valid
+sub-options for the rest being language-dependent, as described next\. If
+unspecified, an executable project is created by default\.
+.IP "\fBexe\fR"
+.br
+A project that builds a sample C or C++ executable\. Recognized executable
+project sub-options:
+.IP "\ \ \ \fBno-tests\fR"
+.br
+Don't add support for functional/integration testing\.
+.IP "\ \ \ \fBunit-tests\fR"
+.br
+Add support for unit testing\.
+.IP "\ \ \ \fBno-install\fR"
+.br
+Don't add support for installing\.
+.IP "\ \ \ \fBprefix=\fR\fIdir\fR\fR"
+.br
+Optional source prefix relative to project/package root\.
+.IP "\ \ \ \fBsubdir=\fR\fIdir\fR\fR"
+.br
+Alternative source subdirectory relative to source prefix\.
+.IP "\ \ \ \fBno-subdir\fR"
+.br
+Omit the source subdirectory\.
+.IP "\ \ \ \fBlicense=\fR\fIname\fR\fR"
+.br
+
+.IP "\ \ \ \fBno-readme\fR"
+.br
+
+.IP "\ \ \ \fBalt-naming\fR"
+.br
+See \fBcommon\fR sub-options below\.
+.IP "\fBlib\fR"
+.br
+A project that builds a sample C or C++ library\. Recognized library project
+sub-options:
+.IP "\ \ \ \fBbinless\fR"
+.br
+Create a header-only C++ library\.
+.IP "\ \ \ \fBno-tests\fR"
+.br
+Don't add support for functional/integration testing\.
+.IP "\ \ \ \fBunit-tests\fR"
+.br
+Add support for unit testing\.
+.IP "\ \ \ \fBno-install\fR"
+.br
+Don't add support for installing\.
+.IP "\ \ \ \fBno-version\fR"
+.br
+Don't add support for generating the version header\.
+.IP "\ \ \ \fBprefix-include=\fR\fIdir\fR\fR"
+.br
+Optional public header prefix relative to project/package root\.
+.IP "\ \ \ \fBprefix-source=\fR\fIdir\fR\fR"
+.br
+Optional source prefix relative to project/package root\.
+.IP "\ \ \ \fBprefix=\fR\fIdir\fR\fR"
+.br
+Shortcut for \fBprefix-include=\fR\fIdir\fR\fB,prefix-source=\fR\fIdir\fR\fR\.
+.IP "\ \ \ \fBsplit\fR"
+.br
+Shortcut for \fBprefix-include=include,prefix-source=src\fR\.
+.IP "\ \ \ \fBsubdir=\fR\fIdir\fR\fR"
+.br
+Alternative source subdirectory relative to header/source prefix\.
+.IP "\ \ \ \fBno-subdir\fR"
+.br
+Omit the source subdirectory\.
+.IP "\ \ \ \fBno-subdir-source\fR"
+.br
+Omit the source subdirectory relative to the source prefix but still create it
+relative to the header prefix\.
+.IP "\ \ \ \fBlicense=\fR\fIname\fR\fR"
+.br
+
+.IP "\ \ \ \fBno-readme\fR"
+.br
+
+.IP "\ \ \ \fBalt-naming\fR"
+.br
+See \fBcommon\fR sub-options below\.
+.IP "\fBbare\fR"
+.br
+A project without any source code that can be filled later (see
+\fB--source\fR)\. Recognized bare project sub-options:
+.IP "\ \ \ \fBno-tests\fR"
+.br
+Don't add support for testing\.
+.IP "\ \ \ \fBno-install\fR"
+.br
+Don't add support for installing\.
+.IP "\ \ \ \fBlicense=\fR\fIname\fR\fR"
+.br
+
+.IP "\ \ \ \fBno-readme\fR"
+.br
+
+.IP "\ \ \ \fBalt-naming\fR"
+.br
+See \fBcommon\fR sub-options below\.
+.IP "\fBempty\fR"
+.br
+An empty project that can be filled with packages (see \fB--package\fR)\.
+Recognized empty project sub-options:
+.IP "\ \ \ \fBno-readme\fR"
+.br
+See \fBcommon\fR sub-options below\.
+.IP "\fBcommon\fR"
+.br
+Common project type sub-options:
+.IP "\ \ \ \fBlicense=\fR\fIname\fR\fR"
+.br
+Specify the project's license\. The license name can be an SPDX License
+Expression (https://spdx.org/licenses/), which, in its simplest form, is just
+the license ID\. Or it can be a free form name in the \fBother:\fR license
+name scheme\. If unspecified, then \fBother: proprietary\fR is assumed\. The
+following tables lists the most commonly used free/open source software
+license IDs as well as a number of pre-defined \fBother:\fR names\. See the
+\fBlicense\fR (#manifest-package-license) package manifest value for more
+information\.
+
+.nf
+MIT                MIT License\.
+
+BSD-2-Clause       BSD 2-Clause "Simplified" License
+BSD-3-Clause       BSD 3-Clause "New" or "Revised" License
+
+GPL-3\.0-only       GNU General Public License v3\.0 only
+GPL-3\.0-or-later   GNU General Public License v3\.0 or later
+
+LGPL-3\.0-only      GNU Lesser General Public License v3\.0 only
+LGPL-3\.0-or-later  GNU Lesser General Public License v3\.0 or later
+
+AGPL-3\.0-only      GNU Affero General Public License v3\.0 only
+AGPL-3\.0-or-later  GNU Affero General Public License v3\.0 or later
+
+Apache-2\.0         Apache License 2\.0
+
+MPL-2\.0            Mozilla Public License 2\.0
+
+BSL-1\.0            Boost Software License 1\.0
+
+Unlicense          The Unlicense (public domain)
+.fi
+
+.nf
+other: public domain     Released into the public domain
+other: available source  Not free/open source with public source code
+other: proprietary       Not free/open source
+other: TODO              License is not yet decided
+.fi
+.IP "\ \ \ \fBno-readme\fR"
+.br
+Don't add \fBREADME\.md\fR\.
+.IP "\ \ \ \fBalt-naming\fR"
+.br
+Use the alternative build file/directory naming scheme\.
+.PP
+The project version control system can be specified with the
+\fB--vcs\fR|\fB-s\fR\fR option\. Valid values for this option and their
+semantics are described next\. If unspecified, \fBgit\fR is assumed by
+default\.
+.IP "\fBgit\fR"
+.br
+Initialize a \fBgit(1)\fR repository inside the project and generate
+\fB\.gitignore\fR files\.
+.IP "\fBnone\fR"
+.br
+Don't initialize a version control system inside the project\.
+.PP
+The created project, package, or source subdirectory can be further customized
+using the pre and post-creation hooks specified with the \fB--pre-hook\fR and
+\fB--post-hook\fR options, respectively\. The pre hooks are executed before
+any new files are created and the post hook \(en after all the files have been
+created\. The hook commands are executed in the project, package, or source
+directory as their current working directory\. For example:
+.PP
+.nf
+$ bdep new --post-hook "echo \.idea/ >>\.gitignore" hello
+.fi
+.PP
+The pre hooks are primarily useful for moving/renaming existing files that
+would otherwise clash with files created by the \fBnew\fR command\. For
+example:
+.PP
+.nf
+$ bdep new --pre-hook  "mv \.gitignore \.gitignore\.bak" \\
+           --post-hook "cat \.gitignore\.bak >>\.gitignore" \\
+           --post-hook "rm \.gitignore\.bak" \.\.\.
+.fi
+.PP
+See the \fB--pre-hook\fR and \fB--post-hook\fR options documentation below for
+details\.
+.SH "NEW OPTIONS"
+.IP "\fB--no-init\fR"
+Don't initialize an empty build configuration set\.
+.IP "\fB--package\fR"
+Create a new package inside an already existing project rather than a new
+project\.
+.IP "\fB--source\fR"
+Create a new source subdirectory inside an already existing project or package
+rather than a new project\.
+.IP "\fB--output-dir\fR|\fB-o\fR \fIdir\fR"
+Create the project, package, or source subdirectory in the specified
+directory\.
+.IP "\fB--directory\fR|\fB-d\fR \fIdir\fR"
+Assume the project/package is in the specified directory rather than in the
+current working directory\. Only used with \fB--package\fR or \fB--source\fR\.
+.IP "\fB--type\fR|\fB-t\fR \fItype\fR[,\fIopt\fR\.\.\.]"
+Specify project type and options\. Valid values for \fItype\fR are \fBexe\fR
+(executable project, default), \fBlib\fR (library project), \fBbare\fR (bare
+project without any source code), and \fBempty\fR (empty project ready to be
+filled with packages)\. Valid values for \fIopt\fR are type-specific\.
+.IP "\fB--lang\fR|\fB-l\fR \fIlang\fR[,\fIopt\fR\.\.\.]"
+Specify project language and options\. Valid values for \fIlang\fR are \fBc\fR
+and \fBc++\fR (default)\. Valid values for \fIopt\fR are language-specific\.
+.IP "\fB--vcs\fR|\fB-s\fR \fIvcs\fR[,\fIopt\fR\.\.\.]"
+Specify project version control system and options\. Valid values for
+\fIvcs\fR are \fBgit\fR (default) and \fBnone\fR\. Valid values for \fIopt\fR
+are system-specific\.
+.IP "\fB--pre-hook\fR \fIcommand\fR"
+
+.IP "\fB--post-hook\fR \fIcommand\fR"
+Run the specified command before/after creating the project, package, or
+source directory\.
+
+The \fIcommand\fR value is interpreted as a whitespace-separated, potentially
+quoted command line consisting of a program or a portable builtin
+(testscript#builtins) optionally followed by arguments and redirects\.
+Specifically, a single level of quotes (either single or double) is removed
+and whitespaces are not treated as separators inside such quoted fragments\.
+Currently only the \fBstdout\fR redirect to a file is supported\. For example:
+
+.nf
+$ bdep new --post-hook "echo '\.idea/ # IDE' >>\.gitignore" hello
+.fi
+
+The command line elements (program, arguments, etc) may optionally contain
+substitutions \(en variable names enclosed with the \fB@\fR substitution
+symbol \(en which are replaced with the corresponding variable values to
+produce the actual command\. The following variable names are recognized with
+the double substitution symbol (\fB@@\fR) serving as an escape sequence\.
+
+.nf
+@mode@ - one of 'project', 'package', or 'source'
+@name@ - project, package, or source subdirectory name
+@base@ - name base (name without extension)
+@stem@ - name stem (name base without 'lib' prefix)
+@root@ - project/package root directory
+@pfx@  - combined prefix relative to project/package root
+@inc@  - split header prefix relative to project/package root
+@src@  - split source prefix relative to project/package root
+@sub@  - source subdirectory relative to header/source prefix
+@type@ - type (--type|-t value: 'exe', 'lib', etc)
+@lang@ - language (--lang|-l value: 'c', 'c++', etc)
+@vcs@  - version control system (--vcs|-s value: 'git', etc)
+.fi
+
+Note that the \fB@inc@\fR and \fB@src@\fR variables are only set if the
+header/source prefix is split with the combined \fB@pfx@\fR variable set
+otherwise\.
+
+For example:
+
+.nf
+$ bdep new --post-hook "echo bin/ >>@name@/\.gitignore" hello
+.fi
+
+These substitution variables are also made available to the hook program as
+the \fBBDEP_NEW_*\fR environment variables (\fBBDEP_NEW_MODE\fR,
+\fBBDEP_NEW_NAME\fR, etc)\.
+.IP "\fB--no-amalgamation\fR"
+Create a project with disabled amalgamation support\. This option is normally
+only used for testing\.
+.IP "\fB--no-checks\fR"
+Suppress nested project/package checks\. This option is normally only used for
+testing\.
+.IP "\fB--config-add\fR|\fB-A\fR \fIdir\fR"
+Add an existing build configuration \fIdir\fR\.
+.IP "\fB--config-create\fR|\fB-C\fR \fIdir\fR"
+Create a new build configuration in \fIdir\fR\.
+.IP "\fB--default\fR"
+Make the added or created configuration the default\.
+.IP "\fB--no-default\fR"
+Don't make the first added or created configuration the default\.
+.IP "\fB--forward\fR"
+Make the added or created configuration forwarded\.
+.IP "\fB--no-forward\fR"
+Don't make the added or created configuration forwarded\.
+.IP "\fB--auto-sync\fR"
+Make the added or created configuration automatically synchronized\.
+.IP "\fB--no-auto-sync\fR"
+Don't make the added or created configuration automatically synchronized\.
+.IP "\fB--existing\fR|\fB-e\fR"
+Initialize a \fBbpkg\fR configuration based on an existing build system
+configuration\.
+.IP "\fB--wipe\fR"
+Wipe the configuration directory clean before creating the new configuration\.
+.IP "\fB--config-name\fR|\fB-n\fR \fIname\fR"
+Specify the build configuration as a name\.
+.IP "\fB--config-id\fR \fInum\fR"
+Specify the build configuration as an id\.
+.SH "COMMON OPTIONS"
+.PP
+The common options are summarized below with a more detailed description
+available in \fBbdep-common-options(1)\fP\.
+.IP "\fB-v\fR"
+Print essential underlying commands being executed\.
+.IP "\fB-V\fR"
+Print all underlying commands being executed\.
+.IP "\fB--quiet\fR|\fB-q\fR"
+Run quietly, only printing error messages\.
+.IP "\fB--verbose\fR \fIlevel\fR"
+Set the diagnostics verbosity to \fIlevel\fR between 0 and 6\.
+.IP "\fB--jobs\fR|\fB-j\fR \fInum\fR"
+Number of jobs to perform in parallel\.
+.IP "\fB--no-progress\fR"
+Suppress progress indicators for long-lasting operations, such as network
+transfers, building, etc\.
+.IP "\fB--bpkg\fR \fIpath\fR"
+The package manager program to be used for build configuration management\.
+.IP "\fB--bpkg-option\fR \fIopt\fR"
+Additional option to be passed to the package manager program\.
+.IP "\fB--build\fR \fIpath\fR"
+The build program to be used to build packages\.
+.IP "\fB--build-option\fR \fIopt\fR"
+Additional option to be passed to the build program\.
+.IP "\fB--curl\fR \fIpath\fR"
+The curl program to be used for network operations\.
+.IP "\fB--curl-option\fR \fIopt\fR"
+Additional option to be passed to the curl program\.
+.IP "\fB--pager\fR \fIpath\fR"
+The pager program to be used to show long text\.
+.IP "\fB--pager-option\fR \fIopt\fR"
+Additional option to be passed to the pager program\.
+.IP "\fB--options-file\fR \fIfile\fR"
+Read additional options from \fIfile\fR\.
+.IP "\fB--default-options\fR \fIdir\fR"
+The directory to load additional default options files from\.
+.IP "\fB--no-default-options\fR"
+Don't load default options files\.
+.SH "SOURCE LAYOUT"
+.PP
+C and C++ projects employ a bewildering variety of source code layouts most of
+which fit into two broad classes: \fIcombined\fR, where all the source code
+for a single executable or library resides in the same directory and
+\fIsplit\fR, where headers (typically public headers of a library) and other
+source files reside in separate directories (most commonly called
+\fBinclude/\fR and \fBsrc/\fR)\.
+.PP
+To support the creation of such varying layouts the \fBnew\fR command divides
+paths leading to source code inside a package/project into a number of
+customizable components:
+.PP
+.nf
+libhello/{include,src}/hello/
+    ^         ^          ^
+    |         |          |
+ project/   source    source
+ package    prefix  subdirectory
+  root
+.fi
+.PP
+Note that while the same physical layout can be achieved with various
+combinations of source prefix and subdirectory, there will be differences in
+semantics since the headers in the project are included with the source
+subdirectory (if any) as a prefix\. See Canonical Project Structure
+(intro#proj-struct) for rationale and details\.
+.PP
+As we have already seen, the source subdirectory can be customized with the
+\fBsubdir\fR project type sub-option\. For example:
+.PP
+.nf
+# libhello/hello/
+
+$ bdep new -l c++ -t lib,subdir=hello libhello
+
+$ tree libhello/
+libhello/
+└── hello/
+    ├── hello\.hxx
+    └── hello\.cxx
+.fi
+.PP
+Note: pass \fB-l\ c++,cpp\fR if you prefer the \fB\.hpp\fR/\fB\.cpp\fR source
+file naming scheme\.
+.PP
+The source prefix can be combined, in which case it can be customized with the
+single \fBprefix\fR project type sub-option\. For example:
+.PP
+.nf
+# hello/src/hello/
+
+$ bdep new -l c++ -t exe,prefix=src hello
+
+$ tree hello/
+hello/
+└── src/
+    └── hello/
+        └── hello\.cxx
+.fi
+.PP
+The prefix can also be split, in which case the \fBprefix-include\fR and
+\fBprefix-source\fR sub-options can be used to customize the respective
+directories independently\. If either is omitted, then the corresponding
+prefix is left empty\. For example:
+.PP
+.nf
+# libhello/{include,\.}/libhello/
+
+$ bdep new -l c++ -t lib,prefix-include=include libhello
+
+$ tree libhello/
+libhello/
+├── include/
+│   └── libhello/
+│       └── hello\.hxx
+└── libhello/
+    └── hello\.cxx
+.fi
+.PP
+The \fBsplit\fR sub-option is a convenient shortcut for the most common case
+where the header prefix is \fBinclude/\fR and source prefix is \fBsrc/\fR\.
+For example:
+.PP
+.nf
+# libhello/{include,src}/libhello/
+
+$ bdep new -l c++ -t lib,split libhello
+
+$ tree libhello/
+libhello/
+├── include/
+│   └── libhello/
+│       └── hello\.hxx
+└── src/
+    └── libhello/
+        └── hello\.cxx
+.fi
+.PP
+The source subdirectory can be omitted by specifying the \fBno-subdir\fR
+project type sub-option\. For example:
+.PP
+.nf
+# hello/src/
+
+$ bdep new -l c++ -t exe,prefix=src,no-subdir hello
+
+$ tree hello/
+hello/
+└── src/
+    └── hello\.cxx
+.fi
+.PP
+The same but for the split layout (we also have to disable the generated
+version header that is not supported in this layout):
+.PP
+.nf
+# libhello/{include,src}/
+
+$ bdep new -l c++ -t lib,split,no-subdir,no-version libhello
+
+$ tree libhello/
+libhello/
+├── include/
+│   └── hello\.hxx
+└── src/
+    └── hello\.cxx
+.fi
+.PP
+To achieve the layout where all the source code resides in the project root,
+we omit both the source prefix and subdirectory (we also have to disable a
+couple of other features that are not supported in this layout):
+.PP
+.nf
+# hello/
+
+$ bdep new -l c++ -t lib,no-subdir,no-version,no-tests libhello
+
+$ tree libhello/
+libhello/
+├── hello\.cxx
+└── hello\.hxx
+.fi
+.PP
+We can also omit the source subdirectory but only in the source prefix of the
+split layout by specifying the \fBno-subdir-source\fR sub-option\. For
+example:
+.PP
+.nf
+# libhello/{include/hello,src}/
+
+$ bdep new -l c++ -t lib,split,subdir=hello,no-subdir-source libhello
+
+$ tree libhello/
+libhello/
+├── include/
+│   └── hello/
+│       └── hello\.hxx
+└── src/
+    └── hello\.cxx
+.fi
+.PP
+To achieve the split layout where the \fBinclude/\fR directory is inside
+\fBsrc/\fR:
+.PP
+.nf
+# libhello/src/{include,\.}/hello/
+
+$ bdep new                                                         \\
+  -l c++                                                           \\
+  -t lib,prefix-include=src/include,prefix-source=src,subdir=hello \\
+  libhello
+
+$ tree libhello/
+libhello/
+└── src/
+    ├── include/
+    │   └── hello/
+    │       └── hello\.hxx
+    └── hello/
+        └── hello\.cxx
+.fi
+.PP
+A similar layout but without the source subdirectory in \fBsrc/\fR:
+.PP
+.nf
+# libhello/src/{include/hello,\.}/
+
+$ bdep new                                                         \\
+  -l c++                                                           \\
+  -t lib,prefix-include=src/include,prefix-source=src,\\
+subdir=hello,no-subdir-source                                      \\
+  libhello
+
+$ tree libhello/
+libhello/
+└── src/
+    ├── include/
+    │   └── hello/
+    │       └── hello\.hxx
+    └── hello\.cxx
+.fi
+.PP
+The layout used by the Boost libraries:
+.PP
+.nf
+# libhello/{include/hello,libs/hello/src}/
+
+$ bdep new                                                         \\
+  -l c++                                                           \\
+  -t lib,prefix-include=include,prefix-source=libs/hello/src,\\
+subdir=hello,no-subdir-source                                      \\
+  libhello
+
+$ tree libhello/
+libhello/
+├── include/
+│   └── hello/
+│       └── hello\.hxx
+└── libs/
+    └── hello/
+        └── src/
+            └── hello\.cxx
+.fi
+.PP
+A layout where multiple components each have their own \fBinclude/src\fR
+split:
+.PP
+.nf
+# hello/libhello1/{include/hello1,src}/
+# hello/libhello2/{include/hello2,src}/
+
+$ bdep new -l c++ -t bare hello
+
+$ bdep new -d hello --source                                       \\
+  -l c++                                                           \\
+  -t lib,\\
+prefix-include=libhello1/include,prefix-source=libhello1/src,\\
+subdir=hello1,no-subdir-source                                     \\
+  libhello1
+
+$ bdep new -d hello --source                                       \\
+  -l c++                                                           \\
+  -t lib,\\
+prefix-include=libhello2/include,prefix-source=libhello2/src,\\
+subdir=hello2,no-subdir-source                                     \\
+  libhello2
+
+$ tree hello/
+hello/
+├── libhello1/
+│   ├── include/
+│   │   └── hello1/
+│   │       └── hello1\.hxx
+│   └── src/
+│       └── hello1\.cxx
+└── libhello2/
+    ├── include/
+    │   └── hello2/
+    │       └── hello2\.hxx
+    └── src/
+        └── hello2\.cxx
+.fi
+.PP
+A layout where libraries and executables have different prefixes:
+.PP
+.nf
+# hello/libs/libhello/{include/hello,src}/
+# hello/src/hello/
+
+$ bdep new -l c++ -t bare hello
+
+$ bdep new -d hello --source                                       \\
+  -l c++                                                           \\
+  -t lib,\\
+prefix-include=libs/libhello/include,prefix-source=libs/libhello/src,\\
+subdir=hello,no-subdir-source                                      \\
+  libhello
+
+$ bdep new -d hello --source -l c++ -t exe,prefix=src hello
+
+$ tree hello/
+hello/
+├── libs/
+│   └── libhello/
+│       ├── include/
+│       │   └── hello/
+│       │       └── hello\.hxx
+│       └── src/
+│           └── hello\.cxx
+└── src/
+    └── hello/
+        └── hello\.cxx
+.fi
+.SH "DEFAULT OPTIONS FILES"
+.PP
+See \fBbdep-default-options-files(1)\fP for an overview of the default options
+files\. For the \fBnew\fR command the search start directory is the project
+directory in the package and source modes and the parent directory of the new
+project in all other modes\. The following options files are searched for in
+each directory and, if found, loaded in the order listed:
+.PP
+.nf
+bdep\.options
+bdep-{config config-add}\.options                # if --config-add|-A
+bdep-{config config-add config-create}\.options  # if --config-create|-C
+bdep-new\.options
+bdep-new-{project|package|source}\.options # (mode-dependent)
+.fi
+.PP
+The following \fBnew\fR command options cannot be specified in the default
+options files:
+.PP
+.nf
+--output-dir|-o
+--directory|-d
+--package
+--source
+--no-checks
+--config-add|-A
+--config-create|-C
+--wipe
+.fi
+.PP
+While the presence of the \fB--pre-hook\fR or \fB--post-hook\fR options in
+remote default options files will trigger a prompt\.
+.SH "ENVIRONMENT"
+.PP
+The \fBBDEP_AUTHOR_EMAIL\fR environment variable can be used to specify the
+package email address\. If not set, the \fBnew\fR command will first try to
+obtain the email from the version control system (if used) and then from the
+\fBEMAIL\fR environment variable\. If all these methods fail, a dummy
+\fByou@example\.org\fR email is used\.
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.

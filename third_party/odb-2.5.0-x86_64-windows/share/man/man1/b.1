@@ -1,0 +1,534 @@
+.\" Process this file with
+.\" groff -man -Tascii b.1
+.\"
+.TH b 1 "July 2020" "build2 0.13.0"
+.SH NAME
+\fBb\fR \- build system driver
+.SH "SYNOPSIS"
+.PP
+\fBb --help\fR
+.br
+\fBb --version\fR
+.br
+\fBb\fR [\fIoptions\fR] [\fIvariables\fR] [\fIbuildspec\fR]\fR
+.PP
+\fIbuildspec\fR =
+\fImeta-operation\fR\fB(\fR\fIoperation\fR\fB(\fR\fItarget\fR\.\.\.[\fB,\fR\fIparameters\fR]\fB)\fR\.\.\.\fB)\fR\.\.\.\fR
+.SH "DESCRIPTION"
+.PP
+The \fBbuild2\fR build system driver executes a set of meta-operations on
+operations on targets according to the build specification, or \fIbuildspec\fR
+for short\.  This process can be controlled by specifying driver \fIoptions\fR
+and build system \fIvariables\fR\.
+.PP
+Note that \fIoptions\fR, \fIvariables\fR, and \fIbuildspec\fR fragments can be
+specified in any order\. To avoid treating an argument that starts with
+\fB'-'\fR as an option, add the \fB'--'\fR separator\. To avoid treating an
+argument that contains \fB'='\fR as a variable, add the second \fB'--'\fR
+separator\.
+.PP
+All components in the buildspec can be omitted\. If \fImeta-operation\fR is
+omitted, then it defaults to \fBperform\fR\. If \fIoperation\fR is omitted,
+then it defaults to the default operation for this meta-operation\. For
+\fBperform\fR it is \fBupdate\fR\. Finally, if \fItarget\fR is omitted, then
+it defaults to the current working directory\. A meta-operation on operation
+is called an \fIaction\fR\. Some operations and meta-operations may take
+additional \fIparameters\fR\. For example:
+.PP
+.nf
+$ b                       # perform(update(\./))
+$ b foo/                  # perform(update(foo/))
+$ b foo/ bar/             # perform(update(foo/ bar/))
+$ b update                # perform(update(\./))
+$ b 'clean(\.\./)'          # perform(clean(\.\./))
+$ b perform               # perform(update(\./))
+$ b configure             # configure(?(\./))
+$ b 'configure(\.\./)'      # configure(?(\.\./))
+$ b clean update          # perform(clean(\./) update(\./))
+$ b configure update      # configure(?(\./)) perform(update(\./))
+$ b 'create(conf/, cxx)'  # create(?(conf/), cxx)
+.fi
+.PP
+Notice the question mark used to show the (imaginary) default operation for
+the \fBconfigure\fR meta-operation\. For \fBconfigure\fR the default operation
+is "all operations"\. That is, it will configure all the operations for the
+specified target\.
+.PP
+You can also "generate" multiple operations for the same set of targets\.
+Compare:
+.PP
+.nf
+$ b 'clean(foo/ bar/)' 'update(foo/ bar/)'
+$ b '{clean update}(foo/ bar/)'
+.fi
+.PP
+Some more useful buildspec examples:
+.PP
+.nf
+$ b '{clean update}(\.\.\.)'        # rebuild
+$ b '{clean update clean}(\.\.\.)'  # make sure builds
+$ b '{clean test clean}(\.\.\.)'    # make sure passes tests
+$ b '{clean disfigure}(\.\.\.)'     # similar to distclean
+.fi
+.PP
+In POSIX shells parenthesis are special characters and must be quoted when
+used in a buildspec\. Besides being an inconvenience in itself, quoting also
+inhibits path auto-completion\. To help with this situation a shortcut syntax
+is available for executing a single operation or meta-operation, for example:
+.PP
+.nf
+$ b clean: foo/ bar/                # clean(foo/ bar/)
+$ b configure: src/@out/            # configure(src/@out/)
+$ b create: conf/, cxx              # create(conf/, cxx)
+$ b configure: config\.cxx=g++ src/  # configure(src/) config\.cxx=g++
+.fi
+.PP
+To activate the shortcut syntax the first buildspec argument must start with
+an operation or meta-operation name and end with a colon (\fB:\fR)\. To
+transform the shortcut syntax to the normal buildspec syntax the colon is
+replaced with the opening parenthesis ('\fB(\fR'), the rest of the buildspec
+arguments are treated as is, and the final closing parenthesis ('\fB)\fR') is
+added\.
+.PP
+For each \fItarget\fR the driver expects to find \fBbuildfile\fR either in the
+target's directory or, if the directory is part of the \fBout\fR tree
+(\fBout_base\fR), in the corresponding \fBsrc\fR directory (\fBsrc_base\fR)\.
+.PP
+For example, assuming \fBfoo/\fR is the source directory of a project:
+.PP
+.nf
+$ b foo/              # out_base=src_base=foo/
+$ b foo-out/          # out_base=foo-out/ src_base=foo/
+$ b foo-out/exe{foo}  # out_base=foo-out/ src_base=foo/
+.fi
+.PP
+An exception to this requirement is a directory target in which case, provided
+the directory has subdirectories, an \fIimplied\fR \fBbuildfile\fR with the
+following content is assumed:
+.PP
+.nf
+# Implied directory buildfile: build all subdirectories\.
+#
+\&\./: */
+.fi
+.PP
+In the above example, we assumed that the build system driver was able to
+determine the association between \fBout_base\fR and \fBsrc_base\fR\. In case
+\fBsrc_base\fR and \fBout_base\fR are not the same directory, this is achieved
+in one of two ways: the \fBconfig\fR module (which implements the
+\fBconfigure\fR, \fBdisfigure\fR, and \fBcreate\fR meta-operations) saves this
+association as part of the configuration process\. If, however, the
+association hasn't been saved, then we have to specify \fBsrc_base\fR
+explicitly using the following extended \fItarget\fR syntax:
+.PP
+\fIsrc-base\fR/@\fItarget\fR\fR
+.PP
+Continuing with the previous example:
+.PP
+.nf
+$ b foo/@foo-out/exe{foo}  # out_base=foo-out/ src_base=foo/
+.fi
+.PP
+Normally, you would need to specify \fBsrc_base\fR explicitly only once,
+during configuration\. For example, a typical usage would be:
+.PP
+.nf
+$ b configure: foo/@foo-out/  # src_base is saved
+$ b foo-out/                  # no need to specify src_base
+$ b clean: foo-out/exe{foo}   # no need to specify src_base
+.fi
+.PP
+Besides in and out of source builds, \fBbuild2\fR also supports configuring a
+project's source directory as \fIforwarded\fR to an out of source build\. With
+such a forwarded configuration in place, if we run the build system driver
+from the source directory, it will automatically build in the output directory
+and \fIbacklink\fR (using symlinks or another suitable mechanism) certain
+\&"interesting" targets (executables, documentation, etc) to the source
+directory for easy access\. Continuing with the previous example:
+.PP
+.nf
+$ b configure: foo/@foo-out/,forward  # foo/ forwarded to foo-out/
+$ cd foo/
+$ b                                   # build in foo-out/
+$ \./foo                               # symlink to foo-out/foo
+.fi
+.PP
+The ability to specify \fBbuild2\fR variables as part of the command line is
+normally used to pass configuration values, for example:
+.PP
+.nf
+$ b config\.cxx=clang++ config\.cxx\.coptions=-O3
+.fi
+.PP
+Similar to buildspec, POSIX shells often inhibit path auto-completion on the
+right hand side of a variable assignment\. To help with this situation the
+assignment can be broken down into three separate command line arguments, for
+example:
+.PP
+.nf
+$ b config\.import\.libhello = \.\./libhello/
+.fi
+.PP
+The build system has the following built-in and pre-defined meta-operations:
+.IP "\fBperform\fR"
+.br
+Perform an operation\.
+.IP "\fBconfigure\fR"
+.br
+Configure all operations supported by a project and save the result in the
+project's \fBbuild/config\.build\fR file\. Implemented by the \fBconfig\fR
+module\. For example:
+
+.nf
+$ b configure                      \\
+    config\.cxx=clang++             \\
+    config\.cxx\.coptions=-O3        \\
+    config\.install\.root=/usr/local \\
+    config\.install\.root\.sudo=sudo
+.fi
+
+Use the \fBforward\fR parameter to instead configure a source directory as
+forwarded to an out of source build\. For example:
+
+.nf
+$ b configure: src/@out/,forward
+.fi
+.IP "\fBdisfigure\fR"
+.br
+Disfigure all operations supported by a project and remove the project's
+\fBbuild/config\.build\fR file\. Implemented by the \fBconfig\fR module\.
+
+Use the \fBforward\fR parameter to instead disfigure forwarding of a source
+directory to an out of source build\. For example:
+
+.nf
+$ b disfigure: src/,forward
+.fi
+.IP "\fBcreate\fR"
+.br
+Create and configure a \fIconfiguration\fR project\. Implemented by the
+\fBconfig\fR module\.
+
+Normally a \fBbuild2\fR project is created manually by writing the
+\fBbootstrap\.build\fR and \fBconfig\.build\fR files, adding source files, and
+so on\. However, a special kind of project, which we call \fIconfiguration\fR,
+is often useful\. Such a project doesn't have any source files of its own\.
+Instead, it serves as an amalgamation for building other projects as part of
+it\. Doing it this way has two major benefits: sub-projects automatically
+resolve their imports to other projects in the amalgamation and sub-projects
+inherits their configuration from the amalgamation (which means if we want to
+change something, we only need to do it in one place)\.
+
+As an example, let's assume we have two C++ projects: the \fBlibhello\fR
+library in \fBlibhello/\fR and the \fBhello\fR executable that imports it in
+\fBhello/\fR\. And we want to build \fBhello\fR with \fBclang++\fR\.
+
+One way to do it would be to configure and build each project in its own
+directory, for example:
+
+.nf
+$ b configure: libhello/@libhello-clang/ config\.cxx=clang++
+$ b configure: hello/@hello-clang/ config\.cxx=clang++ \\
+    config\.import\.libhello=libhello-clang/
+.fi
+
+The two drawbacks, as mentioned above, are the need to explicitly resolve the
+import and having to make changes in multiple places should, for example, we
+want to switch from \fBclang++\fR to \fBg++\fR\.
+
+We can, however, achieve the same end result but without any of the drawbacks
+using the configuration project:
+
+.nf
+$ b create: clang/,cxx config\.cxx=clang++  # Creates clang/\.
+$ b configure: libhello/@clang/libhello/
+$ b configure: hello/@clang/hello/
+.fi
+
+The targets passed to the \fBcreate\fR meta-operation must be directories
+which should either not exist or be empty\. For each such directory
+\fBcreate\fR first initializes a project as described below and then
+configures it by executing the \fBconfigure\fR meta-operation\.
+
+The first optional parameter to \fBcreate\fR is the list of modules to load in
+\fBroot\.build\fR\. By default, \fBcreate\fR appends \fB\.config\fR to the
+names of these modules so that only their configurations are loaded\. You can
+override this behavior by specifying the period (\fB\.\fR)  after the module
+name\. You can also instruct \fBcreate\fR to use the optional module load by
+prefixing the module name with the question mark (\fB?\fR)\.
+
+The second optional parameter is the list of modules to load in
+\fBbootstrap\.build\fR\. If not specified, then the \fBtest\fR, \fBdist\fR,
+and \fBinstall\fR modules are loaded by default\. The \fBconfig\fR module is
+always loaded first\.
+
+Besides creating project's \fBbootstrap\.build\fR and \fBroot\.build\fR,
+\fBcreate\fR also writes the root \fBbuildfile\fR with the following contents:
+
+.nf
+\&\./: {*/ -build/}
+.fi
+
+If used, this \fBbuildfile\fR will build all the sub-projects currently
+present in the configuration\.
+.IP "\fBdist\fR"
+.br
+Prepare a distribution containing all files necessary to perform all
+operations in a project\. Implemented by the \fBdist\fR module\.
+.IP "\fBinfo\fR"
+.br
+Print basic information (name, version, source and output directories, etc)
+about one or more projects to \fBSTDOUT\fR, separating multiple projects with
+a blank line\. Each project is identified by its root directory target\. For
+example:
+
+.nf
+$ b info: libfoo/ libbar/
+.fi
+.PP
+The build system has the following built-in and pre-defined operations:
+.IP "\fBupdate\fR"
+.br
+Update a target\.
+.IP "\fBclean\fR"
+.br
+Clean a target\.
+.IP "\fBtest\fR"
+.br
+Test a target\. Performs \fBupdate\fR as a pre-operation\. Implemented by the
+\fBtest\fR module\.
+.IP "\fBupdate-for-test\fR"
+.br
+Update a target for testing\. This operation is equivalent to the \fBupdate\fR
+pre-operation as executed by the \fBtest\fR operation and can be used to only
+update what is necessary for testing\. Implemented by the \fBtest\fR module\.
+.IP "\fBinstall\fR"
+.br
+Install a target\. Performs \fBupdate\fR as a pre-operation\. Implemented by
+the \fBinstall\fR module\.
+.IP "\fBuninstall\fR"
+.br
+Uninstall a target\. Performs \fBupdate\fR as a pre-operation\. Implemented by
+the \fBinstall\fR module\.
+.IP "\fBupdate-for-install\fR"
+.br
+Update a target for installation\. This operation is equivalent to the
+\fBupdate\fR pre-operation as executed by the \fBinstall\fR operation and can
+be used to only update what is necessary for installation\. Implemented by the
+\fBinstall\fR module\.
+.PP
+Note that buildspec and command line variable values are treated as
+\fBbuildfile\fR fragments and so can use quoting and escaping as well as
+contain variable expansions and evaluation contexts\. However, to be more
+usable on various platforms, escaping in these two situations is limited to
+the \fIeffective sequences\fR of \fB\e'\fR, \fB\e"\fR, \fB\e\e\fR, \fB\e$\fR,
+and \fB\e(\fR with all other sequences interpreted as is\. Together with
+double-quoting this is sufficient to represent any value\. For example:
+.PP
+.nf
+$ b config\.install\.root=c:\\projects\\install
+$ b "config\.install\.root='c:\\Program Files (x86)\\test\\'"
+$ b 'config\.cxx\.poptions=-DFOO_STR="foo"'
+.fi
+.SH "OPTIONS"
+.IP "\fB-v\fR"
+Print actual commands being executed\. This options is equivalent to
+\fB--verbose 2\fR\.
+.IP "\fB-V\fR"
+Print all underlying commands being executed\. This options is equivalent to
+\fB--verbose 3\fR\.
+.IP "\fB--quiet\fR|\fB-q\fR"
+Run quietly, only printing error messages in most contexts\. In certain
+contexts (for example, while updating build system modules) this verbosity
+level may be ignored\. Use --silent\fR to run quietly in all contexts\. This
+option is equivalent to \fB--verbose 0\fR\.
+.IP "\fB--silent\fR"
+Run quietly, only printing error messages in all contexts\.
+.IP "\fB--verbose\fR \fIlevel\fR"
+Set the diagnostics verbosity to \fIlevel\fR between 0 and 6\. Level 0
+disables any non-error messages (but see the difference between --quiet\fR and
+\&--silent\fR) while level 6 produces lots of information, with level 1 being
+the default\. The following additional types of diagnostics are produced at
+each level:
+.RS
+.IP 1. 4em
+High-level information messages\.
+.IP 2. 4em
+Essential underlying commands being executed\.
+.IP 3. 4em
+All underlying commands being executed\.
+.IP 4. 4em
+Information that could be helpful to the user\.
+.IP 5. 4em
+Information that could be helpful to the developer\.
+.IP 6. 4em
+Even more detailed information\.
+.RE
+.IP "\fB--stat\fR"
+Display build statistics\.
+.IP "\fB--dump\fR \fIphase\fR"
+Dump the build system state after the specified phase\. Valid \fIphase\fR
+values are \fBload\fR (after loading \fBbuildfiles\fR) and \fBmatch\fR (after
+matching rules to targets)\. Repeat this option to dump the state after
+multiple phases\.
+.IP "\fB--progress\fR"
+Display build progress\. If printing to a terminal the progress is displayed
+by default for low verbosity levels\. Use \fB--no-progress\fR to suppress\.
+.IP "\fB--no-progress\fR"
+Don't display build progress\.
+.IP "\fB--jobs\fR|\fB-j\fR \fInum\fR"
+Number of active jobs to perform in parallel\. This includes both the number
+of active threads inside the build system as well as the number of external
+commands (compilers, linkers, etc) started but not yet finished\. If this
+option is not specified or specified with the \fB0\fR value, then the number
+of available hardware threads is used\.
+.IP "\fB--max-jobs\fR|\fB-J\fR \fInum\fR"
+Maximum number of jobs (threads) to create\. The default is 8x the number of
+active jobs (\fB--jobs|j\fR) on 32-bit architectures and 32x on 64-bit\. See
+the build system scheduler implementation for details\.
+.IP "\fB--queue-depth\fR|\fB-Q\fR \fInum\fR"
+The queue depth as a multiplier over the number of active jobs\. Normally we
+want a deeper queue if the jobs take long (for example, compilation) and
+shorter if they are quick (for example, simple tests)\. The default is 4\. See
+the build system scheduler implementation for details\.
+.IP "\fB--max-stack\fR \fInum\fR"
+The maximum stack size in KBytes to allow for newly created threads\. For
+\fIpthreads\fR-based systems the driver queries the stack size of the main
+thread and uses the same size for creating additional threads\. This allows
+adjusting the stack size using familiar mechanisms, such as \fBulimit\fR\.
+Sometimes, however, the stack size of the main thread is excessively large\.
+As a result, the driver checks if it is greater than a predefined limit (64MB
+on 64-bit systems and 32MB on 32-bit ones) and caps it to a more sensible
+value (8MB) if that's the case\. This option allows you to override this check
+with the special zero value indicating that the main thread stack size should
+be used as is\.
+.IP "\fB--serial-stop\fR|\fB-s\fR"
+Run serially and stop at the first error\. This mode is useful to investigate
+build failures that are caused by build system errors rather than compilation
+errors\. Note that if you don't want to keep going but still want parallel
+execution, add \fB--jobs|-j\fR (for example \fB-j\ 0\fR for default
+concurrency)\.
+.IP "\fB--dry-run\fR|\fB-n\fR"
+Print commands without actually executing them\. Note that commands that are
+required to create an accurate build state will still be executed and the
+extracted auxiliary dependency information saved\. In other words, this is not
+the \fI"don't touch the filesystem"\fR mode but rather \fI"do minimum amount
+of work to show what needs to be done"\fR\. Note also that only the
+\fBperform\fR meta-operation supports this mode\.
+.IP "\fB--match-only\fR"
+Match the rules but do not execute the operation\. This mode is primarily
+useful for profiling\.
+.IP "\fB--structured-result\fR"
+Write the result of execution in a structured form\. In this mode, instead of
+printing to \fBSTDERR\fR diagnostics messages about the outcome of executing
+actions on targets, the driver writes to \fBSTDOUT\fR a structured result
+description one line per the buildspec action/target pair\. Each line has the
+following format:
+
+\fIstate\fR \fImeta-operation\fR \fIoperation\fR \fItarget\fR\fR
+
+Where \fIstate\fR can be one of \fBunchanged\fR, \fBchanged\fR, or
+\fBfailed\fR\. If the action is a pre or post operation, then the outer
+operation is specified in parenthesis\. For example:
+
+.nf
+unchanged perform update(test) /tmp/dir{hello/}
+changed perform test /tmp/dir{hello/}
+.fi
+
+Note that only the \fBperform\fR meta-operation supports the structured result
+output\.
+.IP "\fB--mtime-check\fR"
+Perform file modification time sanity checks\. These checks can be helpful in
+diagnosing spurious rebuilds and are enabled by default for the staged version
+of the build system\. Use \fB--no-mtime-check\fR to disable\.
+.IP "\fB--no-mtime-check\fR"
+Don't perform file modification time sanity checks\.
+.IP "\fB--no-column\fR"
+Don't print column numbers in diagnostics\.
+.IP "\fB--no-line\fR"
+Don't print line and column numbers in diagnostics\.
+.IP "\fB--buildfile\fR \fIpath\fR"
+The alternative file to read build information from\. The default is
+\fBbuildfile\fR or \fBbuild2file\fR, depending on the project's build
+file/directory naming scheme\. If \fIpath\fR is '\fB-\fR', then read from
+\fBSTDIN\fR\. Note that this option only affects the files read as part of the
+buildspec processing\. Specifically, it has no effect on the \fBsource\fR and
+\fBinclude\fR directives\. As a result, this option is primarily intended for
+testing rather than changing the build file names in real projects\.
+.IP "\fB--config-guess\fR \fIpath\fR"
+The path to the \fBconfig\.guess(1)\fR script that should be used to guess the
+host machine triplet\. If this option is not specified, then \fBb\fR will fall
+back on to using the target it was built for as host\.
+.IP "\fB--config-sub\fR \fIpath\fR"
+The path to the \fBconfig\.sub(1)\fR script that should be used to
+canonicalize machine triplets\. If this option is not specified, then \fBb\fR
+will use its built-in canonicalization support which should be sufficient for
+commonly-used platforms\.
+.IP "\fB--pager\fR \fIpath\fR"
+The pager program to be used to show long text\. Commonly used pager programs
+are \fBless\fR and \fBmore\fR\. You can also specify additional options that
+should be passed to the pager program with \fB--pager-option\fR\. If an empty
+string is specified as the pager program, then no pager will be used\. If the
+pager program is not explicitly specified, then \fBb\fR will try to use
+\fBless\fR\. If it is not available, then no pager will be used\.
+.IP "\fB--pager-option\fR \fIopt\fR"
+Additional option to be passed to the pager program\. See \fB--pager\fR for
+more information on the pager program\. Repeat this option to specify multiple
+pager options\.
+.IP "\fB--default-options\fR \fIdir\fR"
+The directory to load additional default options files from\.
+.IP "\fB--no-default-options\fR"
+Don't load default options files\.
+.IP "\fB--help\fR"
+Print usage information and exit\.
+.IP "\fB--version\fR"
+Print version and exit\.
+.SH "DEFAULT OPTIONS FILES"
+.PP
+Instead of having a separate config file format for tool configuration, the
+\fBbuild2\fR toolchain uses \fIdefault options files\fR which contain the same
+options as what can be specified on the command line\. The default options
+files are like options files that one can specify with \fB--options-file\fR
+except that they are loaded by default\.
+.PP
+The default options files for the build system driver are called
+\fBb\.options\fR and are searched for in the \fB\.build2/\fR subdirectory of
+the home directory and in the system directory (for example,
+\fB/etc/build2/\fR) if configured\.
+.PP
+Once the search is complete, the files are loaded in the reverse order, that
+is, beginning from the system directory (if any), followed by the home
+directory, and finishing off with the options specified on the command line\.
+In other words, the files are loaded from the more generic to the more
+specific with the command line options having the ability to override any
+values specified in the default options files\.
+.PP
+If a default options file contains \fB--no-default-options\fR, then the search
+is stopped at the directory containing this file and no outer files are
+loaded\. If this option is specified on the command line, then none of the
+default options files are searched for or loaded\.
+.PP
+An additional directory containing default options files can be specified with
+\fB--default-options\fR\. Its configuration files are loaded after the home
+directory\.
+.PP
+The order in which default options files are loaded is traced at the verbosity
+level 3 (\fB-V\fR option) or higher\.
+.SH "EXIT STATUS"
+.PP
+Non-zero exit status is returned in case of an error\.
+.SH "ENVIRONMENT"
+.PP
+The \fBHOME\fR environment variable is used to determine the user's home
+directory\. If it is not set, then \fBgetpwuid(3)\fR is used instead\. This
+value is used to shorten paths printed in diagnostics by replacing the home
+directory with \fB~/\fR\. It is also made available to \fBbuildfile\fR's as
+the \fBbuild\.home\fR variable\.
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.

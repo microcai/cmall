@@ -1,0 +1,248 @@
+.\" Process this file with
+.\" groff -man -Tascii bpkg.1
+.\"
+.TH bpkg 1 "July 2020" "bpkg 0.13.0"
+.SH NAME
+\fBbpkg\fR \- package dependency manager
+.SH "SYNOPSIS"
+.PP
+\fBbpkg --help\fR
+.br
+\fBbpkg --version\fR
+.br
+\fBbpkg help\fR [\fIcommand\fR | \fItopic\fR]
+.br
+\fBbpkg\fR [\fIcommon-options\fR] \fIcommand\fR [\fIcommand-options\fR]
+\fIcommand-args\fR\fR
+.SH "DESCRIPTION"
+.PP
+The \fBbuild2\fR package dependency manager is used to manipulate build
+configurations, packages, and repositories using a set of commands that are
+summarized below\.
+.PP
+For a detailed description of any command or help topic, use the \fBhelp\fR
+command or see the corresponding man page (the man pages have the \fBbpkg-\fR
+prefix, for example \fBbpkg-help(1)\fP)\. Note also that \fIcommand-options\fR
+and \fIcommand-args\fR can be specified in any order and \fIcommon-options\fR
+can be specified as part of \fIcommand-options\fR\.
+.PP
+A \fBbpkg\fR \fIbuild configuration\fR is a directory that contains packages
+built with similar settings\. For example, a configuration can be for a
+specific target (\fBi686\fR, \fBx86_64\fR), compiler (\fBclang\fR, \fBgcc\fR)
+compile options (\fB-O3\fR, \fB-g\fR), and so on\. Configurations are
+relatively cheap and can be created and thrown away as needed\. Configurations
+can be moved and copied by simply moving and copying the directories\. Note,
+however, that a move or copy may render some packages out-of-date\. In the
+\fBbuild2\fR build system terms a \fBbpkg\fR build configuration is an
+amalgamation that contains packages as subprojects (see
+\fBbpkg-cfg-create(1)\fP for details)\.
+.PP
+A \fIbpkg package\fR is an archive or directory (potentially in a version
+control system) that contains a \fBbuild2\fR project plus the package
+\fBmanifest\fR file\. \fBbpkg\fR can either use package archives/directories
+directly from the filesystem or it can fetch them from repositories\.
+.PP
+A \fIbpkg repository\fR is a collection of packages as well as information
+about prerequisite and complement repositories\. \fIArchive\fR,
+\fIdirectory\fR and \fIversion control\fR-based repositories are supported\. A
+repository is identified by its location which can be a local filesystem path
+or a URL\. See \fBbpkg-repository-types(1)\fP for details on the repository
+structures and URL formats\.
+.PP
+If the same version of a package is available from multiple repositories, then
+they are assumed to contain identical package content\. In such cases
+\fBbpkg\fR prefers local repositories over remote and among local repositories
+it prefers the ones with external packages (see \fBbpkg-pkg-unpack(1)\fP for
+details on external packages)\.
+.PP
+A typical \fBbpkg\fR workflow would consist of the following steps\.
+.IP "\fBCreate Configuration\fR"
+.br
+.nf
+bpkg create cc                   \\
+  config\.cxx=clang++             \\
+  config\.cc\.coptions=-O3         \\
+  config\.install\.root=/usr/local \\
+  config\.install\.sudo=sudo
+.fi
+.IP "\fBAdd Source Repositories\fR"
+.br
+.nf
+bpkg add https://pkg\.cppget\.org/1/stable
+bpkg add https://example\.org/foo\.git
+.fi
+
+Repeat this command to add more repositories\.
+.IP "\fBFetch Available Packages List\fR"
+.br
+.nf
+bpkg fetch
+.fi
+.IP "\fBFetch and Build Packages\fR"
+.br
+.nf
+bpkg build foo bar
+.fi
+.IP "\fBDrop Package\fR"
+.br
+If some packages are no longer needed, we can remove them from the
+configuration\.
+
+.nf
+bpkg drop foo
+.fi
+.IP "\fBRefresh Available Packages List\fR"
+.br
+.nf
+bpkg fetch
+.fi
+.IP "\fBUpgrade Packages\fR"
+.br
+.nf
+bpkg build bar
+.fi
+.IP "\fBInstall Packages\fR"
+.br
+.nf
+bpkg install bar
+.fi
+.SH "COMMANDS"
+.IP "\fBhelp\fR [\fItopic\fR]"
+\fBbpkg-help(1)\fP \(en show help for a command or help topic
+.IP "\fBcfg-create\fR|\fBcreate\fR"
+\fBbpkg-cfg-create(1)\fP \(en create configuration
+.IP "\fBrep-info\fR"
+\fBbpkg-rep-info(1)\fP \(en print repository information
+.IP "\fBrep-add\fR|\fBadd\fR"
+\fBbpkg-rep-add(1)\fP \(en add repository to configuration
+.IP "\fBrep-remove\fR|\fBremove\fR"
+\fBbpkg-rep-remove(1)\fP \(en remove repository from configuration
+.IP "\fBrep-list\fR|\fBlist\fR"
+\fBbpkg-rep-list(1)\fP \(en list repositories in configuration
+.IP "\fBrep-fetch\fR|\fBfetch\fR"
+\fBbpkg-rep-fetch(1)\fP \(en fetch list of available packages
+.IP "\fBrep-create\fR"
+\fBbpkg-rep-create(1)\fP \(en create repository
+.IP "\fBpkg-status\fR|\fBstatus\fR"
+\fBbpkg-pkg-status(1)\fP \(en print package status
+.IP "\fBpkg-build\fR|\fBbuild\fR"
+\fBbpkg-pkg-build(1)\fP \(en build package
+.IP "\fBpkg-drop\fR|\fBdrop\fR"
+\fBbpkg-pkg-drop(1)\fP \(en drop package
+.IP "\fBpkg-install\fR|\fBinstall\fR"
+\fBbpkg-pkg-install(1)\fP \(en install package
+.IP "\fBpkg-uninstall\fR|\fBuninstall\fR"
+\fBbpkg-pkg-uninstall(1)\fP \(en uninstall package
+.IP "\fBpkg-update\fR|\fBupdate\fR"
+\fBbpkg-pkg-update(1)\fP \(en update package
+.IP "\fBpkg-test\fR|\fBtest\fR"
+\fBbpkg-pkg-test(1)\fP \(en test package
+.IP "\fBpkg-clean\fR|\fBclean\fR"
+\fBbpkg-pkg-clean(1)\fP \(en clean package
+.IP "\fBpkg-verify\fR"
+\fBbpkg-pkg-verify(1)\fP \(en verify package archive
+.IP "\fBpkg-fetch\fR"
+\fBbpkg-pkg-fetch(1)\fP \(en fetch package archive
+.IP "\fBpkg-unpack\fR"
+\fBbpkg-pkg-unpack(1)\fP \(en unpack package archive
+.IP "\fBpkg-checkout\fR"
+\fBbpkg-pkg-checkout(1)\fP \(en check out package version
+.IP "\fBpkg-configure\fR"
+\fBbpkg-pkg-configure(1)\fP \(en configure package
+.IP "\fBpkg-disfigure\fR"
+\fBbpkg-pkg-disfigure(1)\fP \(en disfigure package
+.IP "\fBpkg-purge\fR"
+\fBbpkg-pkg-purge(1)\fP \(en purge package
+.SH "HELP TOPICS"
+.IP "\fBcommon-options\fR"
+\fBbpkg-common-options(1)\fP \(en details on common options
+.IP "\fBdefault-options-files\fR"
+\fBbpkg-default-options-files(1)\fP \(en specifying default options
+.IP "\fBrepository-types\fR"
+\fBbpkg-repository-types(1)\fP \(en repository types, structure, and URLs
+.IP "\fBrepository-signing\fR"
+\fBbpkg-repository-signing(1)\fP \(en how to sign repository
+.IP "\fBargument-grouping\fR"
+\fBbpkg-argument-grouping(1)\fP \(en argument grouping facility
+.SH "COMMON OPTIONS"
+.PP
+The common options are summarized below with a more detailed description
+available in \fBbpkg-common-options(1)\fP\.
+.IP "\fB-v\fR"
+Print essential underlying commands being executed\.
+.IP "\fB-V\fR"
+Print all underlying commands being executed\.
+.IP "\fB--quiet\fR|\fB-q\fR"
+Run quietly, only printing error messages\.
+.IP "\fB--verbose\fR \fIlevel\fR"
+Set the diagnostics verbosity to \fIlevel\fR between 0 and 6\.
+.IP "\fB--jobs\fR|\fB-j\fR \fInum\fR"
+Number of jobs to perform in parallel\.
+.IP "\fB--no-result\fR"
+Don't print informational messages about the outcome of performing a command\.
+.IP "\fB--no-progress\fR"
+Suppress progress indicators for long-lasting operations, such as network
+transfers, building, etc\.
+.IP "\fB--build\fR \fIpath\fR"
+The build program to be used to build packages\.
+.IP "\fB--build-option\fR \fIopt\fR"
+Additional option to be passed to the build program\.
+.IP "\fB--fetch\fR \fIpath\fR"
+The fetch program to be used to download resources\.
+.IP "\fB--fetch-option\fR \fIopt\fR"
+Additional option to be passed to the fetch program\.
+.IP "\fB--fetch-timeout\fR \fIsec\fR"
+The fetch and fetch-like (for example, \fBgit\fR) program timeout\.
+.IP "\fB--pkg-proxy\fR \fIurl\fR"
+HTTP proxy server to use when fetching package manifests and archives from
+remote \fBpkg\fR repositories\.
+.IP "\fB--git\fR \fIpath\fR"
+The git program to be used to fetch git repositories\.
+.IP "\fB--git-option\fR \fIopt\fR"
+Additional common option to be passed to the git program\.
+.IP "\fB--sha256\fR \fIpath\fR"
+The sha256 program to be used to calculate SHA256 sums\.
+.IP "\fB--sha256-option\fR \fIopt\fR"
+Additional option to be passed to the sha256 program\.
+.IP "\fB--tar\fR \fIpath\fR"
+The tar program to be used to extract package archives\.
+.IP "\fB--tar-option\fR \fIopt\fR"
+Additional option to be passed to the tar program\.
+.IP "\fB--openssl\fR \fIpath\fR"
+The openssl program to be used for crypto operations\.
+.IP "\fB--openssl-option\fR \fIopt\fR"
+Additional option to be passed to the openssl program\.
+.IP "\fB--auth\fR \fItype\fR"
+Types of repositories to authenticate\.
+.IP "\fB--trust\fR \fIfingerprint\fR"
+Trust repository certificate with a SHA256 \fIfingerprint\fR\.
+.IP "\fB--trust-yes\fR"
+Assume the answer to all authentication prompts is \fByes\fR\.
+.IP "\fB--trust-no\fR"
+Assume the answer to all authentication prompts is \fBno\fR\.
+.IP "\fB--pager\fR \fIpath\fR"
+The pager program to be used to show long text\.
+.IP "\fB--pager-option\fR \fIopt\fR"
+Additional option to be passed to the pager program\.
+.IP "\fB--options-file\fR \fIfile\fR"
+Read additional options from \fIfile\fR\.
+.IP "\fB--default-options\fR \fIdir\fR"
+The directory to load additional default options files from\.
+.IP "\fB--no-default-options\fR"
+Don't load default options files\.
+.SH "ENVIRONMENT"
+.PP
+Commands executed by \fBbpkg\fR while the build configuration database is open
+will have the \fBBPKG_OPEN_CONFIG\fR environment variable set to the absolute
+and normalized configuration directory path\. This can be used by build system
+hooks and/or programs that they execute\.
+.SH "EXIT STATUS"
+.PP
+Non-zero exit status is returned in case of an error\.
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.

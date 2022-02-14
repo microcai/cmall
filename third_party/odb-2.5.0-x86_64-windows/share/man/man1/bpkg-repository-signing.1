@@ -1,0 +1,189 @@
+.\" Process this file with
+.\" groff -man -Tascii bpkg-repository-signing.1
+.\"
+.TH bpkg-repository-signing 1 "July 2020" "bpkg 0.13.0"
+.SH NAME
+\fBbpkg-repository-signing\fR \- how to sign repository
+.SH "SYNOPSIS"
+.PP
+\fBbpkg rep-create --key\fR \.\.\.\fR
+.SH "DESCRIPTION"
+.PP
+The purpose of signing a repository is to prevent tampering with packages
+either during transmission or on the repository \fIhost machine\fR\. Ideally,
+you would generate and sign the repository manifests on a separate \fIbuild
+machine\fR that is behind a firewall\. This way, if (or, really, when) your
+host machine is compromised, it will be difficult for an attacker to
+compromise the repository packages without being noticed\. Since the
+repository key is kept on the build machine (or, better yet, on a
+\fIone-way\fR PIV/PKCS#11 device; see below) they will not be able to re-sign
+the modified repository\.
+.PP
+\fBbpkg\fR uses X\.509 public key cryptography for repository signing\.
+Currently, only the explicit \fIfirst use\fR certificate authentication is
+implemented\.  That is, for an unknown (to this \fBbpkg\fR configuration)
+repository certificate its subject information and fingerprint are presented
+to the user\. If the user confirms the authenticity of the certificate, then
+it is added to the configuration and any repository that in the future
+presents this certificate is trusted without further confirmations, provided
+its name matches the certificate's subject (see below)\. In the future a
+certificate authority (CA)-based model may be added\.
+.PP
+The rest of this guide shows how to create a key/certificate pair for
+\fBpkg\fR repository signing and use it to sign a repository\. At the end it
+also briefly explains how to store the private key on a PIV/PKCS#11 device
+using Yubikey 4 as an example\.
+.IP "1\. Generate Private Key"
+.br
+The first step is to generate the private key:
+
+.nf
+$ openssl genrsa -aes256 2048 >key\.pem
+.fi
+
+If you would like to generate a key without password protection (not a good
+idea except for testing), leave the \fB-aes256\fR option out\. You may also
+need to add \fB-nodes\fR depending on your \fBopenssl(1)\fR configuration\.
+.IP "2\. Generate Certificate"
+.br
+Next create the certificate configuration file by saving the following into
+\fBcert\.conf\fR\. You may want to keep it around in case you need to renew an
+expired certificate, etc\.
+
+.nf
+name  = example\.com
+org   = Example, Inc
+email = admin@example\.com
+
+[req]
+distinguished_name = req_distinguished_name
+x509_extensions    = v3_req
+prompt             = no
+utf8               = yes
+
+[req_distinguished_name]
+O  = $org
+CN = name:$name
+
+[v3_req]
+keyUsage         = critical,digitalSignature
+extendedKeyUsage = critical,codeSigning
+subjectAltName   = email:$email
+.fi
+
+Adjust the first three lines to match your details\. If the repository is
+hosted by an organization, use the organization's name for \fBorg\fR\. If you
+host it as an individual, put your full, real name there\. Using any kind of
+aliases or nicknames is a bad idea (except, again, for testing)\. Remember,
+users of your repository will be presented with this information and if they
+see it was signed by someone named SmellySnook, they will unlikely trust it\.
+Also use a working email address in case users need to contact you about
+issues with your certificate\. Note that the \fBname:\fR prefix in the
+\fBCN\fR value is not a typo\.
+
+The \fBname\fR field is a canonical repository name prefix with the \fBpkg:\fR
+type part stripped\. Any repository with a canonical name that starts with
+this prefix can be authenticated by this certificate (see the repository
+manifest documentation for more information on canonical names)\. For example,
+name \fBexample\.com\fR will match any repository hosted on
+\fB{,www\.,pkg\.,bpkg\.}example\.com\fR\. While name \fBexample\.com/math\fR
+will match \fB{\.\.\.}example\.com/pkg/1/math\fR but not
+\fB{\.\.\.}example\.com/pkg/1/misc\fR\.
+
+A certificate name can also contain a subdomain wildcard\. A wildcard name in
+the \fB*\.example\.com\fR form matches any single-level subdomain, for example
+\fBfoo\.example\.com\fR but not \fBfoo\.bar\.example\.com\fR while a wildcard
+name in the \fB**\.example\.com\fR form matches any subdomain, including
+multi-level\. The above two forms do not match the domain itself
+(\fBexample\.com\fR in the above example)\. If this is desired, the
+\fB*example\.com\fR and \fB**example\.com\fR forms should be used instead\.
+Note that these forms still only match subdomains\. In other words, they won't
+match \fBfooexample\.com\fR\. Wildcard names are less secure and therefore are
+normally only used for testing and/or internal repositories\.
+
+Once the configuration file is ready, generate the certificate:
+
+.nf
+openssl req -x509 -new -sha256 -key key\.pem \\
+  -config cert\.conf -days 730 >cert\.pem
+.fi
+
+To verify the certificate information, run:
+
+.nf
+openssl x509 -noout -nameopt RFC2253,sep_multiline \\
+  -subject -dates -email <cert\.pem
+.fi
+.IP "3\. Add Certificate to Repository"
+.br
+Add the \fBcertificate:\fR field for the base repository (\fBrole: base\fR) in
+the \fBrepositories\fR manifest file(s):
+
+.nf
+certificate: \\
+<cert>
+\\
+.fi
+
+Replace \fIcert\fR with the entire contents of \fBcert\.pem\fR (including the
+BEGIN CERTIFICATE\fR and END CERTIFICATE\fR lines)\. So you will have an entry
+like this:
+
+.nf
+certificate: \\
+-----BEGIN CERTIFICATE-----
+MIIDQjCCAiqgAwIBAgIJAIUgsIqSnesGMA0GCSqGSIb3DQEBCwUAMDkxFzAVBgNV
+\&\.
+\&\.
+\&\.
++NOVBamEvjn58ZcLfWh2oKee7ulIZg==
+-----END CERTIFICATE-----
+\\
+.fi
+.IP "4\. Sign Repository"
+.br
+When generating the repository manifests with the \fBbpkg-rep-create(1)\fP
+command, specify the path to \fBkey\.pem\fR with the \fB--key\fR option:
+
+.nf
+bpkg rep-create --key /path/to/key\.pem /path/to/repository
+.fi
+
+You will be prompted for a password to unlock the private key\.
+.IP "5\. Using PIV/PKCS#11 Device"
+.br
+This optional step shows how to load the private key into Yubikey 4 and then
+use it instead of the private key itself for signing the repository\. Note
+that you will need OpenSSL 1\.0\.2 or later for the signing part to work\.
+
+First change the Yubikey MKEY, PUK, and PIN if necessary\. You should
+definitely do this if it still has the factory defaults\. Then import the
+private key and the certificate into Yubikey (replace \fImkey\fR with the
+management key):
+
+.nf
+yubico-piv-tool --key=<mkey> -a import-key -s 9c <key\.pem
+yubico-piv-tool --key=<mkey> -a import-certificate -s 9c <cert\.pem
+.fi
+
+After this you will normally save the certificate/private key onto backup
+media, store it in a secure, offline location, and remove the key from the
+build machine\.
+
+To sign the repository with Yubikey specify the following options instead of
+just \fB--key\fR as at step 4 ("SIGN key"\fR is the label for the slot 9c\fR
+private key):
+
+.nf
+bpkg rep-create                                                   \\
+  --openssl-option rsautl:-engine --openssl-option rsautl:pkcs11  \\
+  --openssl-option rsautl:-keyform --openssl-option rsautl:engine \\
+  --key "pkcs11:object=SIGN%20key" /path/to/repository
+.fi
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.

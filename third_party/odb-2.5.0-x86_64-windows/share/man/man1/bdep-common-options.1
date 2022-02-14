@@ -1,0 +1,127 @@
+.\" Process this file with
+.\" groff -man -Tascii bdep-common-options.1
+.\"
+.TH bdep-common-options 1 "July 2020" "bdep 0.13.0"
+.SH NAME
+\fBbdep-common-options\fR \- details on common options
+.SH "SYNOPSIS"
+.PP
+\fBbdep\fR [\fIcommon-options\fR] \.\.\.\fR
+.SH "DESCRIPTION"
+.PP
+The common options control behavior that is common to all or most of the
+\fBbdep\fR commands\. They can be specified either before the command or
+after, together with the command-specific options\.
+.SH "COMMON OPTIONS"
+.IP "\fB-v\fR"
+Print essential underlying commands being executed\. This is equivalent to
+\fB--verbose 2\fR\.
+.IP "\fB-V\fR"
+Print all underlying commands being executed\. This is equivalent to
+\fB--verbose 3\fR\.
+.IP "\fB--quiet\fR|\fB-q\fR"
+Run quietly, only printing error messages\. This is equivalent to \fB--verbose
+0\fR\.
+.IP "\fB--verbose\fR \fIlevel\fR"
+Set the diagnostics verbosity to \fIlevel\fR between 0 and 6\. Level 0
+disables any non-error messages while level 6 produces lots of information,
+with level 1 being the default\. The following additional types of diagnostics
+are produced at each level:
+.RS
+.IP 1. 4em
+High-level information messages\.
+.IP 2. 4em
+Essential underlying commands being executed\.
+.IP 3. 4em
+All underlying commands being executed\.
+.IP 4. 4em
+Information that could be helpful to the user\.
+.IP 5. 4em
+Information that could be helpful to the developer\.
+.IP 6. 4em
+Even more detailed information\.
+.RE
+.IP "\fB--jobs\fR|\fB-j\fR \fInum\fR"
+Number of jobs to perform in parallel\. If this option is not specified or
+specified with the 0\fR value, then the number of available hardware threads
+is used\. This option is also propagated when executing package manager
+commands such as \fBbpkg-pkg-update(1)\fP, \fBbpkg-pkg-test(1)\fP, etc\.,
+which in turn propagate it to the build system\.
+.IP "\fB--no-progress\fR"
+Suppress progress indicators for long-lasting operations, such as network
+transfers, building, etc\.
+.IP "\fB--bpkg\fR \fIpath\fR"
+The package manager program to be used for build configuration management\.
+This should be the path to the \fBbpkg\fR executable\. You can also specify
+additional options that should be passed to the package manager program with
+\fB--bpkg-option\fR\.
+
+If the package manager program is not explicitly specified, then \fBbdep\fR
+will by default use \fBbpkg\fR plus an executable suffix if one was specified
+when building \fBbdep\fR\. So, for example, if \fBbdep\fR name was set to
+\fBbdep-1\.0\fR, then it will look for \fBbpkg-1\.0\fR\.
+.IP "\fB--bpkg-option\fR \fIopt\fR"
+Additional option to be passed to the package manager program\. See
+\fB--bpkg\fR for more information on the package manager program\. Repeat this
+option to specify multiple package manager options\.
+.IP "\fB--build\fR \fIpath\fR"
+The build program to be used to build packages\. This should be the path to
+the build2 \fBb\fR executable\. You can also specify additional options that
+should be passed to the build program with \fB--build-option\fR\.
+
+If the build program is not explicitly specified, then \fBbdep\fR will by
+default use \fBb\fR plus an executable suffix if one was specified when
+building \fBbdep\fR\. So, for example, if \fBbdep\fR name was set to
+\fBbdep-1\.0\fR, then it will look for \fBb-1\.0\fR\.
+.IP "\fB--build-option\fR \fIopt\fR"
+Additional option to be passed to the build program\. See \fB--build\fR for
+more information on the build program\. Repeat this option to specify multiple
+build options\.
+.IP "\fB--curl\fR \fIpath\fR"
+The curl program to be used for network operations\. You can also specify
+additional options that should be passed to the curl program with
+\fB--curl-option\fR\.
+
+If the curl program is not explicitly specified, then \fBbdep\fR will use
+\fBcurl\fR by default\.
+.IP "\fB--curl-option\fR \fIopt\fR"
+Additional option to be passed to the curl program\. See \fB--curl\fR for more
+information on the curl program\. Repeat this option to specify multiple curl
+options\.
+.IP "\fB--pager\fR \fIpath\fR"
+The pager program to be used to show long text\. Commonly used pager programs
+are \fBless\fR and \fBmore\fR\. You can also specify additional options that
+should be passed to the pager program with \fB--pager-option\fR\. If an empty
+string is specified as the pager program, then no pager will be used\. If the
+pager program is not explicitly specified, then \fBbdep\fR will try to use
+\fBless\fR\. If it is not available, then no pager will be used\.
+.IP "\fB--pager-option\fR \fIopt\fR"
+Additional option to be passed to the pager program\. See \fB--pager\fR for
+more information on the pager program\. Repeat this option to specify multiple
+pager options\.
+.IP "\fB--options-file\fR \fIfile\fR"
+Read additional options from \fIfile\fR\. Each option should appear on a
+separate line optionally followed by space or equal sign (\fB=\fR) and an
+option value\. Empty lines and lines starting with \fB#\fR are ignored\.
+Option values can be enclosed in double (\fB"\fR) or single (\fB'\fR) quotes
+to preserve leading and trailing whitespaces as well as to specify empty
+values\. If the value itself contains trailing or leading quotes, enclose it
+with an extra pair of quotes, for example \fB'"x"'\fR\. Non-leading and
+non-trailing quotes are interpreted as being part of the option value\.
+
+The semantics of providing options in a file is equivalent to providing the
+same set of options in the same order on the command line at the point where
+the \fB--options-file\fR option is specified except that the shell escaping
+and quoting is not required\. Repeat this option to specify more than one
+options file\.
+.IP "\fB--default-options\fR \fIdir\fR"
+The directory to load additional default options files from\.
+.IP "\fB--no-default-options\fR"
+Don't load default options files\.
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.

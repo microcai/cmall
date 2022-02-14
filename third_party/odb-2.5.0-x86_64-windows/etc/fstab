@@ -1,0 +1,15 @@
+# By default MSYS2 mounts /bin as /usr/bin but in our setup we moved /usr/bin
+# to /bin. If we don't correct this then none of the MSYS2 programs will be
+# able to execute anything from /bin since they "see" it as empty. So this
+# entry essentially cancel the MSYS2 default mount. It works because bind
+# immediately resolves the "device" path to its Win32 equivalent. So what we
+# end up with is a mount of something like C:/utils/bin to /bin.
+#
+/bin	/bin	none		bind,override		0	0
+
+# Mount cygdrives (/c /d, etc) with acl. This makes sure install can set
+# executable permissions. NOTE: this is no longer the case: acl causes
+# installed files to be inaccessible by other users and noacl no longer
+# seem to cause any issues.
+#
+none	/	cygdrive	binary,posix=0,noacl	0	0

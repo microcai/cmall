@@ -1,0 +1,198 @@
+.\" Process this file with
+.\" groff -man -Tascii bdep-release.1
+.\"
+.TH bdep-release 1 "July 2020" "bdep 0.13.0"
+.SH NAME
+\fBbdep-release\fR \- manage project's version during release
+.SH "SYNOPSIS"
+.PP
+\fBbdep release\fR [\fIoptions\fR] [\fIprj-spec\fR]\fR
+.PP
+\fIprj-spec\fR = \fB--directory\fR|\fB-d\fR \fIprj-dir\fR | \fIpkg-spec\fR
+.br
+\fIpkg-spec\fR = (\fB--directory\fR|\fB-d\fR \fIpkg-dir\fR)\.\.\.\fR
+.SH "DESCRIPTION"
+.PP
+The \fBrelease\fR command manages the project's version during the release\.
+Specifically, it first changes the snapshot version to the corresponding
+release version in each project package's \fBmanifest\fR file, commits these
+changes (unless \fB--no-commit\fR is specified), tags this commit (unless
+\fB--no-tag\fR is specified), and, if \fB--push\fR is specified, pushes the
+changes to the remote\. Unless \fB--no-open\fR is specified, the \fBrelease\fR
+command then opens the next development cycle by changing the version to a
+snapshot, committing these changes (unless \fB--no-commit\fR is specified),
+and, if \fB--push\fR is specified, pushing them to the remote\. Note that
+committing, tagging, and pushing is currently only supported for \fBgit(1)\fR
+project repositories\.
+.PP
+The \fBrelease\fR command can also be used to release a new package revision
+by passing the \fB--revision\fR option\. In this mode \fBrelease\fR increments
+the current version's revision component in each project package's
+\fBmanifest\fR file, commits these changes (unless \fB--no-commit\fR is
+specified), tags this commit (unless \fB--no-tag\fR is specified), and, if
+\fB--push\fR is specified, pushes the changes to the remote\. In this mode
+\fBrelease\fR can be optionally instructed to update an existing tag for the
+current version to point to the latest revision (\fB--current-tag=update\fR)
+or to remove it (\fB--current-tag=remove\fR)\.
+.PP
+When releasing a revision, the project's repository index is expected to
+already contain other changes since for a revision all the associated changes,
+including to version, must belong to a single commit\. Alternatively, a
+revision can be released by amending one or more existing commits using the
+\fB--amend\fR and \fB--squash\fR options\. In this case the index may still
+contain additional changes but is not required to\.
+.PP
+The \fBrelease\fR command also has a number of \fIcontinue modes\fR that allow
+the completion of steps that were previously suppressed with the \fB--no-*\fR
+options in the above main modes\. These are \fB--tag\fR which tags the release
+commit and, if \fB--push\fR is specified, pushes it to the remote as well as
+\fB--open\fR which performs the opening of the next development cycle as
+described above\.
+.PP
+In all the modes that perform a commit, if the project's repository index
+already contains other changes, then the commit message is automatically
+opened for editing unless \fB--no-edit\fR is specified\. The editing of the
+commit message in the absence of other changes can be requested with the
+\fB--edit\fR option\.
+.PP
+Normally, \fBrelease\fR operates on all the packages in a project\. If no
+project directory is specified, then the current working directory is assumed
+and all the packages are released, even if the current directory is a package
+directory\. If, however, one or more package directories are specified
+explicitly with \fB--directory\fR|\fB-d\fR\fR, then \fBrelease\fR assumes you
+know what you are doing and only releases these packages\. All the packages
+being released must have the same version but may have different revisions\.
+.SH "RELEASE OPTIONS"
+.IP "\fB--revision\fR"
+Release a new package revision instead of a new version\.
+.IP "\fB--no-commit\fR"
+Don't commit the changes\. Implies \fB--no-tag\fR and, in the version release
+mode, \fB--no-open\fR\.
+.IP "\fB--no-tag\fR"
+Don't tag the release commit\. Tagging can be performed later using the
+\fB--tag\fR mode option\.
+.IP "\fB--tag\fR"
+Tag the already released version instead of releasing a new one\.
+.IP "\fB--current-tag\fR \fIaction\fR"
+Specify what to do with an existing tag for the current version when tagging a
+new revision\. Valid values for this option are \fBkeep\fR (default),
+\fBupdate\fR, and \fBremove\fR\.
+.IP "\fB--push\fR"
+Push the committed changes and tags to the remote\.
+.IP "\fB--show-push\fR"
+Print the push command instead of executing it\. This allows examining the
+committed changes and tags before pushing them to the remote\. Note that the
+command is printed to \fBstdout\fR\.
+.IP "\fB--no-open\fR"
+Don't open the next development cycle\. Opening can be performed later using
+the \fB--open\fR mode option\.
+.IP "\fB--open\fR"
+Open the next development cycle instead of releasing a new version\.
+.IP "\fB--amend\fR"
+Release a revision by amending the latest commit instead of making a new one\.
+.IP "\fB--squash\fR \fInum\fR"
+Release a revision by squashing the specified number of previous commits and
+then amending the result\. Requires the \fB--amend\fR option to be specified\.
+.IP "\fB--alpha\fR"
+Release an alpha instead of the final version\.
+.IP "\fB--beta\fR"
+Release a beta version instead of the final version\.
+.IP "\fB--minor\fR"
+Release the next minor version instead of the current patch\.
+.IP "\fB--major\fR"
+Release the next major version instead of the current minor or patch\.
+.IP "\fB--open-beta\fR"
+Open the development cycle with the next beta version\.
+.IP "\fB--open-patch\fR"
+Open the development cycle with the next patch version\. This is the default
+if the current patch version is not 0\fR (bugfix release series)\.
+.IP "\fB--open-minor\fR"
+Open the development cycle with the next minor version\. This is the default
+if the current patch version is 0\fR (feature release series)\.
+.IP "\fB--open-major\fR"
+Open the development cycle with the next major version\.
+.IP "\fB--open-base\fR \fIversion\fR"
+Open the development cycle with the specified version\. The base version
+should be in the \fImajor\fR\fB\.\fR\fIminor\fR\.\fR\fIpatch\fR\fR form with
+the opened version becoming
+\fImajor\fR\fB\.\fR\fIminor\fR\fB\.\fR\fIpatch\fR\fB-a\.0\.z\fR\fR\.
+.IP "\fB--edit\fR"
+Open the commit message for editing\.
+.IP "\fB--no-edit\fR"
+Don't open the commit message for editing\.
+.IP "\fB--force\fR \fIcheck\fR"
+Force releasing, disabling the specified check\. Repeat this option to disable
+multiple checks\.
+.IP "\fB--yes\fR|\fB-y\fR"
+Don't prompt for confirmation before releasing\.
+.IP "\fB--directory\fR|\fB-d\fR \fIdir\fR"
+Assume project/package is in the specified directory rather than in the
+current working directory\.
+.SH "COMMON OPTIONS"
+.PP
+The common options are summarized below with a more detailed description
+available in \fBbdep-common-options(1)\fP\.
+.IP "\fB-v\fR"
+Print essential underlying commands being executed\.
+.IP "\fB-V\fR"
+Print all underlying commands being executed\.
+.IP "\fB--quiet\fR|\fB-q\fR"
+Run quietly, only printing error messages\.
+.IP "\fB--verbose\fR \fIlevel\fR"
+Set the diagnostics verbosity to \fIlevel\fR between 0 and 6\.
+.IP "\fB--jobs\fR|\fB-j\fR \fInum\fR"
+Number of jobs to perform in parallel\.
+.IP "\fB--no-progress\fR"
+Suppress progress indicators for long-lasting operations, such as network
+transfers, building, etc\.
+.IP "\fB--bpkg\fR \fIpath\fR"
+The package manager program to be used for build configuration management\.
+.IP "\fB--bpkg-option\fR \fIopt\fR"
+Additional option to be passed to the package manager program\.
+.IP "\fB--build\fR \fIpath\fR"
+The build program to be used to build packages\.
+.IP "\fB--build-option\fR \fIopt\fR"
+Additional option to be passed to the build program\.
+.IP "\fB--curl\fR \fIpath\fR"
+The curl program to be used for network operations\.
+.IP "\fB--curl-option\fR \fIopt\fR"
+Additional option to be passed to the curl program\.
+.IP "\fB--pager\fR \fIpath\fR"
+The pager program to be used to show long text\.
+.IP "\fB--pager-option\fR \fIopt\fR"
+Additional option to be passed to the pager program\.
+.IP "\fB--options-file\fR \fIfile\fR"
+Read additional options from \fIfile\fR\.
+.IP "\fB--default-options\fR \fIdir\fR"
+The directory to load additional default options files from\.
+.IP "\fB--no-default-options\fR"
+Don't load default options files\.
+.SH "DEFAULT OPTIONS FILES"
+.PP
+See \fBbdep-default-options-files(1)\fP for an overview of the default options
+files\. For the \fBrelease\fR command the search start directory is the
+project directory\. The following options files are searched for in each
+directory and, if found, loaded in the order listed:
+.PP
+.nf
+bdep\.options
+bdep-release\.options
+bdep-release-{version|revision|open|tag}\.options # (mode-dependent)
+.fi
+.PP
+The following \fBrelease\fR command options cannot be specified in the default
+options files:
+.PP
+.nf
+--directory|-d
+--revision
+--open
+--tag
+.fi
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.

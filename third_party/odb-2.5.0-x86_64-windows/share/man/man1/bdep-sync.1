@@ -1,0 +1,268 @@
+.\" Process this file with
+.\" groff -man -Tascii bdep-sync.1
+.\"
+.TH bdep-sync 1 "July 2020" "bdep 0.13.0"
+.SH NAME
+\fBbdep-sync\fR \- synchronize project and build configurations
+.SH "SYNOPSIS"
+.PP
+\fBbdep sync\fR [\fIoptions\fR] [\fIpkg-spec\fR] [\fIcfg-spec\fR]
+[\fIpkg-args\fR]
+.br
+\fBbdep sync\fR [\fIoptions\fR] [\fIpkg-spec\fR] [\fIcfg-spec\fR] \
+\fB--upgrade\fR|\fB-u\fR | \fB--patch\fR|\fB-p\fR
+.br
+\fBbdep sync\fR [\fIoptions\fR] [\fIpkg-spec\fR] [\fIcfg-spec\fR]
+[\fB--upgrade\fR|\fB-u\fR | \fB--patch\fR|\fB-p\fR]
+.br
+\ \ \ \ \ \ \ \ \ \ \fIdep-spec\fR\.\.\. \fR
+.PP
+\fIdep-spec\fR = \fIpkg\fR[\fB/\fR\fIver\fR]
+.br
+\fIcfg-spec\fR = (\fB@\fR\fIcfg-name\fR | \fB--config\fR|\fB-c\fR
+\fIcfg-dir\fR)\.\.\. | \fB--all\fR|\fB-a\fR
+.br
+\fIpkg-spec\fR = (\fB--directory\fR|\fB-d\fR \fIpkg-dir\fR)\.\.\. |
+\fIprj-spec\fR
+.br
+\fIprj-spec\fR = \fB--directory\fR|\fB-d\fR \fIprj-dir\fR
+.br
+\fIpkg-args\fR = (\fIpkg\fR | \fIcfg-var\fR)\.\.\.\fR
+.SH "DESCRIPTION"
+.PP
+The \fBsync\fR command synchronizes a project with its build configurations\.
+The first form (no \fB--upgrade\fR or \fB--patch\fR and only \fIpkg-args\fR
+arguments, if any, are specified) upgrades the project packages to the latest
+version/iteration, adjusts their dependencies according to the latest manifest
+information, and updates the lockfile\.
+.PP
+If no project or package directory is specified, then the current working
+directory is assumed\. If no configuration is specified, then the default
+configuration is assumed\. See \fBbdep-projects-configs(1)\fP for details on
+specifying projects and configurations\. Optional \fIpkg-args\fR are the
+additional dependency packages and/or configuration variables to pass to the
+underlying \fBbpkg-pkg-build(1)\fP command\.
+.PP
+The second form (no arguments but either \fB--upgrade\fR or \fB--patch\fR is
+specified), in addition to the first form's functionality, also upgrades or
+patches immediate (by default or if \fB--immediate\fR|\fB-i\fR\fR is
+specified) or all (if \fB--recursive\fR|\fB-r\fR\fR is specified) dependencies
+of the specified project packages\.
+.PP
+The third form (one or more \fIdep-spec\fR arguments are specified), in
+addition to the first form's functionality, also upgrades (by default or if
+\fB--upgrade\fR is specified) or patches (if \fB--patch\fR is specified) the
+specified dependencies\. If \fB--immediate\fR|\fB-i\fR\fR or
+\fB--recursive\fR|\fB-r\fR\fR is specified, then it also upgrades or patches
+the immediate or all dependencies of the specified dependencies,
+respectively\. Alternative to \fB--upgrade\fR and \fB--patch\fR, the desired
+upgrade (or downgrade) version can be specified explicitly\.
+.PP
+Note also that \fB--immediate\fR|\fB-i\fR\fR or \fB--recursive\fR|\fB-r\fR\fR
+can only be specified with an explicit \fB--upgrade\fR or \fB--patch\fR\.
+.SH "EXAMPLES"
+.PP
+As an example, consider project \fBprj\fR with two packages, \fBfoo\fR and
+\fBlibfoo\fR:
+.PP
+.nf
+prj/
+├── foo/
+└── libfoo/
+.fi
+.PP
+Assuming \fBfoo\fR and \fBlibfoo\fR have been initialized in the default build
+configuration, the following invocations illustrate the common \fBsync\fR use
+cases (the current working directory is shown before the shell prompt)\.
+.PP
+Synchronize \fBfoo\fR and \fBlibfoo\fR with the default configuration:
+.PP
+.nf
+prj/$ bdep sync
+.fi
+.PP
+The same (all initialized packages in a project are always synchronized at
+once):
+.PP
+.nf
+prj/$ cd foo
+foo/$ bdep sync
+.fi
+.PP
+Add a dependency on \fBlibx\fR with \fBsync\fR fetching and configuring a
+suitable version:
+.PP
+.nf
+foo/$ edit manifest  # Add 'depends: libx ^1\.0\.0'
+foo/$ bdep sync
+.fi
+.PP
+Upgrade all the immediate dependencies of \fBfoo\fR:
+.PP
+.nf
+foo/$ bdep sync -u
+.fi
+.PP
+Upgrade all the dependencies of all the initialized packages in a project
+recursively:
+.PP
+.nf
+foo/$ cd \.\./
+prj/$ bdep sync -u -r
+.fi
+.PP
+Upgrade \fBlibx\fR to the latest version:
+.PP
+.nf
+prj/$ bdep sync libx
+.fi
+.PP
+Upgrade \fBlibx\fR and its immediate dependencies to the latest version:
+.PP
+.nf
+prj/$ bdep sync -i libx
+.fi
+.PP
+Upgrade \fBlibx\fR to the latest patch version:
+.PP
+.nf
+prj/$ bdep sync -p libx
+.fi
+.PP
+Upgrade \fBlibx\fR and all its dependencies recursively to the latest patch
+version\.
+.PP
+.nf
+prj/$ bdep sync -p -r libx
+.fi
+.PP
+Upgrade \fBlibx\fR to version \fB1\.2\.3\fR\.
+.PP
+.nf
+prj/$ bdep sync libx/1\.2\.3
+.fi
+.PP
+Upgrade \fBlibx\fR to version \fB1\.2\.3\fR and patch all its dependencies,
+recursively:
+.PP
+.nf
+prj/$ bdep sync -p -r libx/1\.2\.3
+.fi
+.SH "SYNC OPTIONS"
+.IP "\fB--upgrade\fR|\fB-u\fR"
+Upgrade dependencies to the latest available version that satisfies all the
+constraints\.
+.IP "\fB--patch\fR|\fB-p\fR"
+Upgrade dependencies to the latest available patch version that satisfies all
+the constraints\.
+.IP "\fB--immediate\fR|\fB-i\fR"
+Also upgrade or patch immediate dependencies\.
+.IP "\fB--recursive\fR|\fB-r\fR"
+Also upgrade or patch all dependencies, recursively\.
+.IP "\fB--fetch\fR|\fB-f\fR"
+Perform the \fBfetch\fR command prior to synchronization\.
+.IP "\fB--fetch-full\fR|\fB-F\fR"
+Perform the \fBfetch --full\fR command prior to synchronization\.
+.IP "\fB--yes\fR|\fB-y\fR"
+Don't prompt for confirmation when up/down-grading dependencies\.
+.IP "\fB--implicit\fR"
+Perform implicit synchronization\. This mode is normally used by other tools
+(for example, a build system hook) to ensure projects and configurations are
+synchronized\. To improve performance, especially for the "everything is
+already synchronized" case, \fBsync\fR executed in this mode assumes that no
+configuration flags (see \fBbdep-config(1)\fP) have changed since the last
+explicit synchronization\. It also does not search for a project in the
+current working directory \(en if any, its directory should be specified
+explicitly with \fB--config\fR|\fB-c\fR\fR\.
+.IP "\fB--all\fR|\fB-a\fR"
+Use all build configurations\.
+.IP "\fB--config\fR|\fB-c\fR \fIdir\fR"
+Specify the build configuration as a directory\.
+.IP "\fB--directory\fR|\fB-d\fR \fIdir\fR"
+Assume project/package is in the specified directory rather than in the
+current working directory\.
+.IP "\fB--config-name\fR|\fB-n\fR \fIname\fR"
+Specify the build configuration as a name\.
+.IP "\fB--config-id\fR \fInum\fR"
+Specify the build configuration as an id\.
+.SH "COMMON OPTIONS"
+.PP
+The common options are summarized below with a more detailed description
+available in \fBbdep-common-options(1)\fP\.
+.IP "\fB-v\fR"
+Print essential underlying commands being executed\.
+.IP "\fB-V\fR"
+Print all underlying commands being executed\.
+.IP "\fB--quiet\fR|\fB-q\fR"
+Run quietly, only printing error messages\.
+.IP "\fB--verbose\fR \fIlevel\fR"
+Set the diagnostics verbosity to \fIlevel\fR between 0 and 6\.
+.IP "\fB--jobs\fR|\fB-j\fR \fInum\fR"
+Number of jobs to perform in parallel\.
+.IP "\fB--no-progress\fR"
+Suppress progress indicators for long-lasting operations, such as network
+transfers, building, etc\.
+.IP "\fB--bpkg\fR \fIpath\fR"
+The package manager program to be used for build configuration management\.
+.IP "\fB--bpkg-option\fR \fIopt\fR"
+Additional option to be passed to the package manager program\.
+.IP "\fB--build\fR \fIpath\fR"
+The build program to be used to build packages\.
+.IP "\fB--build-option\fR \fIopt\fR"
+Additional option to be passed to the build program\.
+.IP "\fB--curl\fR \fIpath\fR"
+The curl program to be used for network operations\.
+.IP "\fB--curl-option\fR \fIopt\fR"
+Additional option to be passed to the curl program\.
+.IP "\fB--pager\fR \fIpath\fR"
+The pager program to be used to show long text\.
+.IP "\fB--pager-option\fR \fIopt\fR"
+Additional option to be passed to the pager program\.
+.IP "\fB--options-file\fR \fIfile\fR"
+Read additional options from \fIfile\fR\.
+.IP "\fB--default-options\fR \fIdir\fR"
+The directory to load additional default options files from\.
+.IP "\fB--no-default-options\fR"
+Don't load default options files\.
+.SH "DEFAULT OPTIONS FILES"
+.PP
+See \fBbdep-default-options-files(1)\fP for an overview of the default options
+files\. For the \fBsync\fR command the search start directory is the project
+directory, except for the implicit mode for which only the predefined
+directories (system, etc) are searched in\. The following options files are
+searched for in each directory and, if found, loaded in the order listed:
+.PP
+.nf
+bdep\.options
+bdep-{sync|sync-implicit}\.options # (mode-dependent)
+.fi
+.PP
+The following \fBsync\fR command options cannot be specified in the default
+options files:
+.PP
+.nf
+--directory|-d
+--implicit
+--config|-c
+.fi
+.SH "ENVIRONMENT"
+.PP
+The \fBBDEP_SYNC\fR environment variable can be used to suppress automatic
+synchronization on build system invocation\. If set, auto-synchronization will
+only be performed if the variable's value is \fBtrue\fR or \fB1\fR\. The
+ability to suppress auto-synchronization can be useful when you don't have
+usable \fBbdep\fR and/or \fBbpkg\fR\.
+.PP
+To avoid recursive re-synchronization, the \fBsync\fR command also maintains
+the \fBBDEP_SYNCED_CONFIGS\fR environment variable\. It contains a
+space-separated, \fB"\fR-quoted list of configuration paths that have been or
+are being synchronized by the current \fBbdep\fR invocation chain\. The
+\fBsync\fR command examines this variable and silently ignores synchronization
+requests that have been or are already being performed\.
+.SH BUGS
+Send bug reports to the users@build2.org mailing list.
+.SH COPYRIGHT
+Copyright (c) 2014-2020 the build2 authors.
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the MIT License.
