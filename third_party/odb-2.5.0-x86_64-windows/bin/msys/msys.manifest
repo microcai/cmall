@@ -1,0 +1,20 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes'?>
+<assembly xmlns='urn:schemas-microsoft-com:asm.v1'
+          manifestVersion='1.0'>
+  <assemblyIdentity name='msys'
+                    type='win32'
+                    version='0.0.0.0'
+                    processorArchitecture='amd64'/>
+  <file name='msys-2.0.dll'/>
+  <file name='msys-bz2-1.dll'/>
+  <file name='msys-charset-1.dll'/>
+  <file name='msys-formw6.dll'/>
+  <file name='msys-iconv-2.dll'/>
+  <file name='msys-intl-8.dll'/>
+  <file name='msys-menuw6.dll'/>
+  <file name='msys-ncurses++w6.dll'/>
+  <file name='msys-ncursesw6.dll'/>
+  <file name='msys-panelw6.dll'/>
+  <file name='msys-pcre-1.dll'/>
+  <file name='msys-ticw6.dll'/>
+</assembly>

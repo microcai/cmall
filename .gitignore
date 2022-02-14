@@ -11,16 +11,16 @@ dmall/include/dmall/version.hpp
 libstream/include/version.hpp
 
 # Build results
-[Dd]ebug/
-[Dd]ebugPublic/
-[Rr]elease/
-[Rr]eleases/
-[Xx]64/
-[Xx]86/
-[Bb]uild/
-bld/
-[Bb]in/
-[Oo]bj/
+# [Dd]ebug/
+# [Dd]ebugPublic/
+# [Rr]elease/
+# [Rr]eleases/
+# [Xx]64/
+# [Xx]86/
+# [Bb]uild/
+# bld/
+# [Bb]in/
+# [Oo]bj/
 
 # Visual Studio 2015 cache/options directory
 .vs/
@@ -44,9 +44,9 @@ dlldata.c
 project.lock.json
 artifacts/
 
-*_i.c
-*_p.c
-*_i.h
+# *_i.c
+# *_p.c
+# *_i.h
 *.ilk
 *.meta
 *.obj
@@ -112,12 +112,6 @@ _NCrunch_*
 .*crunch*.local.xml
 nCrunchTemp_*
 
-# MightyMoose
-*.mm.*
-AutoTest.Net/
-
-# Web workbench (sass)
-.sass-cache/
 
 # Installshield output folder
 [Ee]xpress/
@@ -252,13 +246,15 @@ gcc-build/
 ninja-build/
 linux-build/
 withopenssl-build/
+build-Debug/
+build-Release/
 
 # kdev
 .kdev4/
 *.kdev4
 btest/
 
-build*
+#build*
 .vscode
 .vscode/.cmaketools.json
 .vscode/launch.json
