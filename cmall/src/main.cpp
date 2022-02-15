@@ -185,9 +185,9 @@ int main(int argc, char** argv) {
 	boost::asio::signal_set terminator_signal(ios.get_io_context());
 	terminator_signal.add(SIGINT);
 	terminator_signal.add(SIGTERM);
-#ifdef __linux__
-	signal(SIGPIPE, SIG_IGN);
-#endif
+//#ifdef __linux__
+//	signal(SIGPIPE, SIG_IGN);
+//#endif
 #if defined(SIGQUIT)
 	terminator_signal.add(SIGQUIT);
 #endif // defined(SIGQUIT)

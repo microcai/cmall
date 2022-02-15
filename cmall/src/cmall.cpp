@@ -142,14 +142,6 @@ namespace cmall {
 		m_abort = true;
 
 		boost::system::error_code ec;
-		if (m_sock4->is_open()) {
-			m_sock4->cancel(ec);
-			m_sock4->close(ec);
-		}
-		if (m_sock6->is_open()) {
-			m_sock6->cancel(ec);
-			m_sock6->close(ec);
-		}
 
 		for (auto& acceptor : m_http_acceptors) {
 			acceptor.cancel(ec);

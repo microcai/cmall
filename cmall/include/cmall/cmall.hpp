@@ -71,9 +71,6 @@ namespace cmall {
 		cmall_config m_cmall_config;
 		cmall_database m_database;
 
-		std::shared_ptr<net::ip::udp::socket> m_sock4;
-		std::shared_ptr<net::ip::udp::socket> m_sock6;
-
 		std::vector<tcp::acceptor> m_http_acceptors;
 
 		std::atomic_bool m_abort{ false };
