@@ -16,7 +16,7 @@
 #include <odb/pgsql/traits.hxx>
 #include <odb/pgsql/details/endian-traits.hxx>
 
-#include "dmall/db.hpp"
+#include "cmall/db.hpp"
 
 inline std::string numeric_to_string(const cpp_numeric& number)
 {

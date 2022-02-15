@@ -11,10 +11,10 @@
 #include <boost/asio/streambuf.hpp>
 #include <boost/asio/spawn.hpp>
 
-#include "dmall/url_parser.hpp"
-#include "dmall/io.hpp"
-#include "dmall/logging.hpp"
-#include "dmall/handler_type_check.hpp"
+#include "cmall/url_parser.hpp"
+#include "cmall/io.hpp"
+#include "cmall/logging.hpp"
+#include "cmall/handler_type_check.hpp"
 
 namespace socks
 {

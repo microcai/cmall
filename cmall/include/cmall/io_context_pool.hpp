@@ -7,7 +7,7 @@
 
 #pragma once
 
-namespace dmall {
+namespace cmall {
 
 	/// A pool of io_context objects.
 	class io_context_pool

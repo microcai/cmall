@@ -53,14 +53,14 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 
 // 配置表.
 #pragma db object
-struct dmall_config {
+struct cmall_config {
 #pragma db id auto
 	long long id_{ -1 };
 };
 
 // 商户表.
 #pragma db object
-struct dmall_merchant {
+struct cmall_merchant {
 #pragma db id auto
 	long long id_{ -1 };
 
@@ -83,7 +83,7 @@ struct dmall_merchant {
 
 // 商品表.
 #pragma db object
-struct dmall_product {
+struct cmall_product {
 #pragma db id auto
 	long long id_{ -1 };
 
@@ -108,7 +108,7 @@ struct dmall_product {
 
 // 订单表
 #pragma db object
-struct dmall_order {
+struct cmall_order {
 #pragma db id auto
 	long long id_{ -1 };
 

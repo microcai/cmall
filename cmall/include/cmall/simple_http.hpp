@@ -25,16 +25,16 @@
 
 #include <boost/filesystem.hpp>
 
-#include "dmall/http_last_modified.hpp"
-#include "dmall/url_parser.hpp"
-#include "dmall/socks_proxy.hpp"
-#include "dmall/default_cert.hpp"
-#include "dmall/logging.hpp"
-#include "dmall/async_connect.hpp"
-#include "dmall/internal.hpp"
+#include "cmall/http_last_modified.hpp"
+#include "cmall/url_parser.hpp"
+#include "cmall/socks_proxy.hpp"
+#include "cmall/default_cert.hpp"
+#include "cmall/logging.hpp"
+#include "cmall/async_connect.hpp"
+#include "cmall/internal.hpp"
 
 #ifndef HTTPD_VERSION_STRING
-#  define HTTPD_VERSION_STRING         "dmall/1.0"
+#  define HTTPD_VERSION_STRING         "cmall/1.0"
 #endif
 
 #ifdef SIMPLE_HTTP_USE_FLAT_BUFFER
@@ -42,7 +42,7 @@
 #  define HTTPD_RECEIVE_BUFFER_SIZE    (5 * 1024 * 1024)
 #endif
 
-namespace dmall
+namespace cmall
 {
 	namespace beast = boost::beast;         // from <boost/beast.hpp>
 	namespace http = beast::http;           // from <boost/beast/http.hpp>

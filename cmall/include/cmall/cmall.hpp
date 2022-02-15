@@ -8,21 +8,21 @@
 #pragma once
 
 #include "boost/asio/spawn.hpp"
-#include "dmall/database.hpp"
-#include "dmall/internal.hpp"
+#include "cmall/database.hpp"
+#include "cmall/internal.hpp"
 #include <cstdint>
 #include <vector>
 
 #include <boost/asio.hpp>
 
-namespace dmall {
+namespace cmall {
 
 	struct server_config {
 		std::vector<std::string> http_listens_;
 
 		std::uint16_t dns_port_;
 
-		dmall::db_config dbcfg_;
+		cmall::db_config dbcfg_;
 	};
 
 	namespace net = boost::asio;
@@ -30,7 +30,7 @@ namespace dmall {
 	using fields	  = boost::beast::http::fields;
 	using request	  = boost::beast::http::request<string_body>;
 	using response	  = boost::beast::http::response<string_body>;
-	class dmall_service {
+	class cmall_service {
 		struct http_params {
 			std::vector<std::string> command_;
 			size_t connection_id_;
@@ -40,12 +40,12 @@ namespace dmall {
 		};
 
 		// c++11 noncopyable.
-		dmall_service(const dmall_service&) = delete;
-		dmall_service& operator=(const dmall_service&) = delete;
+		cmall_service(const cmall_service&) = delete;
+		cmall_service& operator=(const cmall_service&) = delete;
 
 	public:
-		dmall_service(io_context_pool& ios, const server_config& config);
-		~dmall_service();
+		cmall_service(io_context_pool& ios, const server_config& config);
+		~cmall_service();
 
 	public:
 		void start();
@@ -70,8 +70,8 @@ namespace dmall {
 		io_context_pool& m_io_context_pool;
 
 		server_config m_config;
-		dmall_config m_dmall_config;
-		dmall_database m_database;
+		cmall_config m_cmall_config;
+		cmall_database m_database;
 
 		std::shared_ptr<net::ip::udp::socket> m_sock4;
 		std::shared_ptr<net::ip::udp::socket> m_sock6;

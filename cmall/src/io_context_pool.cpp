@@ -5,10 +5,10 @@
 // Email:  jack.wgm at gmail dot com
 //
 
-#include "dmall/internal.hpp"
-#include "dmall/io_context_pool.hpp"
+#include "cmall/internal.hpp"
+#include "cmall/io_context_pool.hpp"
 
-namespace dmall {
+namespace cmall {
 
 	io_context_pool::io_context_pool(std::size_t pool_size)
 		: next_io_context_(0)

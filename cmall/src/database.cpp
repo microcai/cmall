@@ -1,10 +1,10 @@
-﻿#include "dmall/database.hpp"
+﻿#include "cmall/database.hpp"
 #include "db.hpp"
 #include "odb/transaction.hxx"
-#include "dmall/logging.hpp"
+#include "cmall/logging.hpp"
 
-namespace dmall {
-	dmall_database::dmall_database(const db_config& cfg, boost::asio::io_context& ioc)
+namespace cmall {
+	cmall_database::cmall_database(const db_config& cfg, boost::asio::io_context& ioc)
 		: m_config(cfg)
 		, m_io_context(ioc)
 	{
@@ -21,7 +21,7 @@ namespace dmall {
 
 		m_db = boost::make_shared<odb::pgsql::database>(m_config.user_,
 			m_config.password_, m_config.dbname_, m_config.host_, m_config.port_,
-			"application_name=dmall", std::move(pool));
+			"application_name=cmall", std::move(pool));
 
 		odb::transaction t(m_db->begin());
 		if (m_db->schema_version() == 0)
@@ -40,17 +40,17 @@ namespace dmall {
 		}
 	}
 
-	void dmall_database::shutdown()
+	void cmall_database::shutdown()
 	{
 		m_db.reset();
 	}
 
-	db_result dmall_database::load_config(dmall_config& config)
+	db_result cmall_database::load_config(cmall_config& config)
 	{
 		return retry_database_op([&, this]() mutable
 		{
 			odb::transaction t(m_db->begin());
-			auto r(m_db->query<dmall_config>());
+			auto r(m_db->query<cmall_config>());
 			if (r.empty())
 			{
 				t.commit();
@@ -64,7 +64,7 @@ namespace dmall {
 		});
 	}
 
-	db_result dmall_database::add_config(dmall_config& config)
+	db_result cmall_database::add_config(cmall_config& config)
 	{
 		if (!m_db)
 			return false;
@@ -78,7 +78,7 @@ namespace dmall {
 		});
 	}
 
-	db_result dmall_database::update_config(const dmall_config& config)
+	db_result cmall_database::update_config(const cmall_config& config)
 	{
 		return retry_database_op([&, this]() mutable
 		{
@@ -89,7 +89,7 @@ namespace dmall {
 		});
 	}
 
-	// db_result dmall_database::load_dns_records(std::vector<dmall_record> &records, uint16_t type, const std::string& name)
+	// db_result cmall_database::load_dns_records(std::vector<cmall_record> &records, uint16_t type, const std::string& name)
 	// {
 	// 	if (!m_db)
 	// 		return false;
@@ -98,9 +98,9 @@ namespace dmall {
 	// 	{
 	// 		odb::transaction t(m_db->begin());
 
-	// 		using query = odb::query<dmall_record>;
+	// 		using query = odb::query<cmall_record>;
 
-	// 		auto result(m_db->query<dmall_record>((query::type == type && query::name == name) + " order by created_at desc"));
+	// 		auto result(m_db->query<cmall_record>((query::type == type && query::name == name) + " order by created_at desc"));
 	// 		if (result.empty()) {
 	// 			t.commit();
 	// 			return false;
@@ -114,7 +114,7 @@ namespace dmall {
 	// 	});
 	// }
 
-	// db_result dmall_database::load_dns_records_recursively(std::vector<dmall_record> &records, uint16_t type, const std::string& name)
+	// db_result cmall_database::load_dns_records_recursively(std::vector<cmall_record> &records, uint16_t type, const std::string& name)
 	// {
 	// 	if (!m_db)
 	// 		return false;
@@ -123,10 +123,10 @@ namespace dmall {
 	// 	{
 	// 		odb::transaction t(m_db->begin());
 
-	// 		using query = odb::query<dmall_record>;
+	// 		using query = odb::query<cmall_record>;
 
 	// 		if (type == to_underlying(dns_type::CNAME)) { // directly querying CNAME
-	// 			auto result(m_db->query<dmall_record>((query::type == type && query::name == name) + " order by created_at desc"));
+	// 			auto result(m_db->query<cmall_record>((query::type == type && query::name == name) + " order by created_at desc"));
 	// 			if (result.empty()) {
 	// 				t.commit();
 	// 				return false;
@@ -141,7 +141,7 @@ namespace dmall {
 	// 			std::deque<std::string> qn;
 	// 			bool found = false;
 
-	// 			auto result(m_db->query<dmall_record>(query::name == name));
+	// 			auto result(m_db->query<cmall_record>(query::name == name));
 	// 			if (result.empty()) {
 	// 				t.commit();
 	// 				return false;
@@ -161,7 +161,7 @@ namespace dmall {
 
 	// 			while (qn.size() > 0) {
 	// 				auto const &it = qn[0];
-	// 				auto result(m_db->query<dmall_record>(query::name == it));
+	// 				auto result(m_db->query<cmall_record>(query::name == it));
 	// 				if (!result.empty()) {
 	// 					for (auto& r : result) {
 	// 						records.push_back(r);
@@ -182,7 +182,7 @@ namespace dmall {
 	// 	});
 	// }
 
-	// db_result dmall_database::get_dns_record(std::uint64_t rid, dmall_record &record)
+	// db_result cmall_database::get_dns_record(std::uint64_t rid, cmall_record &record)
 	// {
 	// 	if (!m_db)
 	// 		return false;
@@ -191,13 +191,13 @@ namespace dmall {
 	// 	{
 	// 		auto ret = false;
 	// 		odb::transaction t(m_db->begin());
-	// 		ret = m_db->find<dmall_record>(rid, record);
+	// 		ret = m_db->find<cmall_record>(rid, record);
 	// 		t.commit();
 	// 		return ret;
 	// 	});
 	// }
 
-	// db_result dmall_database::add_dns_record(dmall_record &record)
+	// db_result cmall_database::add_dns_record(cmall_record &record)
 	// {
 	// 	if (!m_db)
 	// 		return false;
@@ -211,7 +211,7 @@ namespace dmall {
 	// 	});
 	// }
 
-	// db_result dmall_database::update_dns_record(const dmall_record &record)
+	// db_result cmall_database::update_dns_record(const cmall_record &record)
 	// {
 	// 	if (!m_db)
 	// 		return false;
@@ -225,7 +225,7 @@ namespace dmall {
 	// 	});
 	// }
 
-	// db_result dmall_database::remove_dns_record(std::uint64_t rid)
+	// db_result cmall_database::remove_dns_record(std::uint64_t rid)
 	// {
 	// 	if (!m_db)
 	// 		return false;
@@ -233,7 +233,7 @@ namespace dmall {
 	// 	return retry_database_op([&, this]()
 	// 	{
 	// 		odb::transaction t(m_db->begin());
-	// 		m_db->erase<dmall_record>(rid);
+	// 		m_db->erase<cmall_record>(rid);
 	// 		t.commit();
 	// 		return true;
 	// 	});

@@ -1,8 +1,8 @@
 ﻿#include <boost/filesystem.hpp>
 
-#include "dmall/http_last_modified.hpp"
+#include "cmall/http_last_modified.hpp"
 
-namespace dmall {
+namespace cmall {
 
 	static const char * const my_curl_wkday[] =
 	{ "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };

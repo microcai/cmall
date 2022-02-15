@@ -20,13 +20,13 @@
 #include "boost/system/detail/error_code.hpp"
 #include "db.hpp"
 #include "logging.hpp"
-#include "dmall/async_connect.hpp"
-#include "dmall/scoped_exit.hpp"
-#include "dmall/simple_http.hpp"
-#include "dmall/url_parser.hpp"
-#include "dmall/dmall.hpp"
+#include "cmall/async_connect.hpp"
+#include "cmall/scoped_exit.hpp"
+#include "cmall/simple_http.hpp"
+#include "cmall/url_parser.hpp"
+#include "cmall/cmall.hpp"
 
-#include "dmall/io.hpp"
+#include "cmall/io.hpp"
 
 #include <algorithm>
 #include <boost/date_time.hpp>
@@ -58,7 +58,7 @@
 #pragma warning(pop)
 #endif
 
-namespace dmall {
+namespace cmall {
 	using namespace std::chrono_literals;
 
 	const auto build_response = overloaded{
@@ -84,14 +84,14 @@ namespace dmall {
 		},
 	};
 
-	dmall_service::dmall_service(io_context_pool& ios, const server_config& config)
+	cmall_service::cmall_service(io_context_pool& ios, const server_config& config)
 		: m_io_context_pool(ios)
 		, m_config(config)
 		, m_database(m_config.dbcfg_, m_io_context_pool.database_io_context()) { }
 
-	dmall_service::~dmall_service() { LOG_DBG << "~dmall_service()"; }
+	cmall_service::~cmall_service() { LOG_DBG << "~cmall_service()"; }
 
-	void dmall_service::start() {
+	void cmall_service::start() {
 		m_abort = false;
 
 		init_http_acceptors();
@@ -105,7 +105,7 @@ namespace dmall {
 		}
 	}
 
-	void dmall_service::stop() {
+	void cmall_service::stop() {
 		m_abort = true;
 
 		boost::system::error_code ec;
@@ -126,10 +126,10 @@ namespace dmall {
 		LOG_DBG << "database shutdown...";
 		m_database.shutdown();
 
-		LOG_DBG << "dmall_service.stop()";
+		LOG_DBG << "cmall_service.stop()";
 	}
 
-	bool dmall_service::init_http_acceptors() {
+	bool cmall_service::init_http_acceptors() {
 		boost::system::error_code ec;
 
 		for (const auto& wsd : m_config.http_listens_) {
@@ -185,7 +185,7 @@ namespace dmall {
 		return true;
 	}
 
-	void dmall_service::start_http_listen(tcp::acceptor& a, boost::asio::yield_context& yield) {
+	void cmall_service::start_http_listen(tcp::acceptor& a, boost::asio::yield_context& yield) {
 		boost::system::error_code error;
 		while (!m_abort) {
 			tcp::socket socket(m_io_context_pool.get_io_context());
@@ -222,7 +222,7 @@ namespace dmall {
 		LOG_DBG << "start_http_listen exit...";
 	}
 
-	void dmall_service::start_http_connect(
+	void cmall_service::start_http_connect(
 		size_t connection_id, boost::beast::tcp_stream stream, boost::asio::yield_context& yield) {
 		boost::system::error_code ec;
 
@@ -308,7 +308,7 @@ namespace dmall {
 			stream.socket().shutdown(tcp::socket::shutdown_send, ec); // ?? async_accept
 	}
 
-	void dmall_service::on_record_op(const http_params& params) {
+	void cmall_service::on_record_op(const http_params& params) {
 
 		boost::system::error_code ec;
 
@@ -338,13 +338,13 @@ namespace dmall {
 		}
 	}
 
-	void dmall_service::on_version(const http_params& params) {
+	void cmall_service::on_version(const http_params& params) {
 		boost::system::error_code ec;
 		response res{ boost::beast::http::status::ok, params.request_.version() };
 		res.set(boost::beast::http::field::server, HTTPD_VERSION_STRING);
 		res.set(boost::beast::http::field::content_type, "text/html");
 		res.keep_alive(params.request_.keep_alive());
-		res.body() = dmall_VERSION_MIME;
+		res.body() = cmall_VERSION_MIME;
 		res.prepare_payload();
 
 		boost::beast::http::serializer<false, string_body, fields> sr{ res };
@@ -355,16 +355,16 @@ namespace dmall {
 		}
 	}
 
-	void dmall_service::on_get_record(const http_params& params) {
+	void cmall_service::on_get_record(const http_params& params) {
 		boost::system::error_code ec;
 	}
-	void dmall_service::on_add_record(const http_params& params) {
+	void cmall_service::on_add_record(const http_params& params) {
 		boost::system::error_code ec;
 	}
-	void dmall_service::on_mod_record(const http_params& params) {
+	void cmall_service::on_mod_record(const http_params& params) {
 		boost::system::error_code ec;
 	}
-	void dmall_service::on_del_record(const http_params& params) {
+	void cmall_service::on_del_record(const http_params& params) {
 		boost::system::error_code ec;
 		// response res;
 		// do {

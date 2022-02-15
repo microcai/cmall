@@ -1,4 +1,4 @@
-dmall/include/dmall/version.hpp
+cmall/include/cmall/version.hpp
 
 # User-specific files
 *.suo

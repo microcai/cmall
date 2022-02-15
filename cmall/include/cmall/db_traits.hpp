@@ -7,4 +7,4 @@
 
 #pragma once
 
-#include "dmall/traits-pgsql.hpp"
+#include "cmall/traits-pgsql.hpp"

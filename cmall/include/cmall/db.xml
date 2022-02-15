@@ -1,12 +1,12 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
   <model version="1">
-    <table name="dmall_config" kind="object">
+    <table name="cmall_config" kind="object">
       <column name="id" type="BIGINT" null="false"/>
       <primary-key auto="true">
         <column name="id"/>
       </primary-key>
     </table>
-    <table name="dmall_merchant" kind="object">
+    <table name="cmall_merchant" kind="object">
       <column name="id" type="BIGINT" null="false"/>
       <column name="uid" type="BIGINT" null="false"/>
       <column name="name" type="TEXT" null="false"/>
@@ -19,14 +19,14 @@
       <primary-key auto="true">
         <column name="id"/>
       </primary-key>
-      <index name="dmall_merchant_uid_i">
+      <index name="cmall_merchant_uid_i">
         <column name="uid"/>
       </index>
-      <index name="dmall_merchant_name_i">
+      <index name="cmall_merchant_name_i">
         <column name="name"/>
       </index>
     </table>
-    <table name="dmall_product" kind="object">
+    <table name="cmall_product" kind="object">
       <column name="id" type="BIGINT" null="false"/>
       <column name="owner" type="BIGINT" null="false"/>
       <column name="name" type="TEXT" null="false"/>
@@ -40,14 +40,14 @@
       <primary-key auto="true">
         <column name="id"/>
       </primary-key>
-      <index name="dmall_product_owner_i">
+      <index name="cmall_product_owner_i">
         <column name="owner"/>
       </index>
-      <index name="dmall_product_state_i">
+      <index name="cmall_product_state_i">
         <column name="state"/>
       </index>
     </table>
-    <table name="dmall_order" kind="object">
+    <table name="cmall_order" kind="object">
       <column name="id" type="BIGINT" null="false"/>
       <column name="oid" type="TEXT" null="false"/>
       <column name="buyer" type="BIGINT" null="false"/>
@@ -69,16 +69,16 @@
       <primary-key auto="true">
         <column name="id"/>
       </primary-key>
-      <index name="dmall_order_oid_i" type="UNIQUE">
+      <index name="cmall_order_oid_i" type="UNIQUE">
         <column name="oid"/>
       </index>
-      <index name="dmall_order_buyer_i">
+      <index name="cmall_order_buyer_i">
         <column name="buyer"/>
       </index>
-      <index name="dmall_order_seller_i">
+      <index name="cmall_order_seller_i">
         <column name="seller"/>
       </index>
-      <index name="dmall_order_pid_i">
+      <index name="cmall_order_pid_i">
         <column name="pid"/>
       </index>
     </table>

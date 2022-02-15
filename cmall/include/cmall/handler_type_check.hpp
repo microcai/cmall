@@ -11,7 +11,7 @@
 #include <boost/asio/async_result.hpp>
 #include <utility>
 
-namespace dmall {
+namespace cmall {
 	namespace detail {
 
 		template<class R, class C, class ...A>
@@ -39,7 +39,7 @@ namespace dmall {
 			detail::is_invocable<T, Signature>::value>;
 
 #define XPAY_HANDLER_TYPE_CHECK(type, sig) \
-		static_assert(dmall::detail::is_completion_handler< \
+		static_assert(cmall::detail::is_completion_handler< \
 			BOOST_ASIO_HANDLER_TYPE(type, sig), sig>::value, \
 				"CompletionHandler signature requirements not met")
 	}

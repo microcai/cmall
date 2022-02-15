@@ -36,10 +36,10 @@
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;
 
-#include "dmall/internal.hpp"
-#include "dmall/simple_http.hpp"
-#include "dmall/version.hpp"
-#include "dmall/dmall.hpp"
+#include "cmall/internal.hpp"
+#include "cmall/simple_http.hpp"
+#include "cmall/version.hpp"
+#include "cmall/cmall.hpp"
 
 int platform_init() {
 #if defined(WIN32) || defined(_WIN32)
@@ -132,7 +132,7 @@ std::string version_info() {
 #endif // _WIN32
 
 	std::ostringstream oss;
-	oss << "dmall version: v" << dmall_VERSION << ", " << dmall_GIT_REVISION << " built on " << __DATE__ << " "
+	oss << "cmall version: v" << cmall_VERSION << ", " << cmall_GIT_REVISION << " built on " << __DATE__ << " "
 		<< __TIME__ << " runs on " << os_name << ", " << BOOST_COMPILER;
 
 	return oss.str();
@@ -156,7 +156,7 @@ int main(int argc, char** argv) {
 		("http", po::value<std::vector<std::string>>(&http_listens)->multitoken(), "http_listens.")
 		("dns_port", po::value<std::uint16_t>(&dns_port)->default_value(53), "dns port.")
 
-		("db_name", po::value<std::string>(&db_name)->default_value("dmall"), "Database name.")
+		("db_name", po::value<std::string>(&db_name)->default_value("cmall"), "Database name.")
 		("db_host", po::value<std::string>(&db_host)->default_value(""), "Database host.")
 		("db_port", po::value<unsigned short>(&db_port)->default_value(5432), "Database port.")
 		("db_user", po::value<std::string>(&db_user)->default_value("postgres"), "Database user.")
@@ -194,8 +194,8 @@ int main(int argc, char** argv) {
 	terminator_signal.add(SIGQUIT);
 #endif // defined(SIGQUIT)
 
-	dmall::server_config cfg;
-	dmall::db_config dbcfg;
+	cmall::server_config cfg;
+	cmall::db_config dbcfg;
 
 	dbcfg.host_		= db_host;
 	dbcfg.password_ = db_passwd;
@@ -207,7 +207,7 @@ int main(int argc, char** argv) {
 	cfg.http_listens_ = http_listens;
 	cfg.dns_port_	  = dns_port;
 
-	dmall::dmall_service dsrv{ ios, cfg };
+	cmall::cmall_service dsrv{ ios, cfg };
 
 	dsrv.start();
 
@@ -222,6 +222,6 @@ int main(int argc, char** argv) {
 
 	ios.run(5);
 
-	LOG_DBG << "dmall system exiting...";
+	LOG_DBG << "cmall system exiting...";
 	return EXIT_SUCCESS;
 }

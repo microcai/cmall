@@ -109,12 +109,12 @@ namespace multiprecision = boost::multiprecision;
 #pragma warning(push)
 #pragma warning(disable: 4244 4127 4702)
 
-#include "dmall/logging.hpp"
+#include "cmall/logging.hpp"
 
 #pragma warning(pop)
 
-#include "dmall/url_parser.hpp"
-#include "dmall/time_clock.hpp"
+#include "cmall/url_parser.hpp"
+#include "cmall/time_clock.hpp"
 
 // #include "ethash/ethash.hpp"
 // #include "ethash/keccak.hpp"
@@ -154,9 +154,9 @@ namespace multiprecision = boost::multiprecision;
 
 #pragma warning(pop)
 
-#include "dmall/io_context_pool.hpp"
+#include "cmall/io_context_pool.hpp"
 
-#define APP_NAME "dmall"
+#define APP_NAME "cmall"
 // #define HTTPD_VERSION_STRING	     APP_NAME "/1.0"
 
 using tcp = boost::asio::ip::tcp;               // from <boost/asio/ip/tcp.hpp>
@@ -166,7 +166,7 @@ using ws = websocket::stream<tcp::socket>;
 using boost::multiprecision::cpp_int;
 using boost::multiprecision::cpp_dec_float_50;
 using boost::multiprecision::cpp_dec_float_100;
-using dmall::io_context_pool;
+using cmall::io_context_pool;
 using timer = boost::asio::basic_waitable_timer<time_clock::steady_clock>;
 
 template<class ... T> inline constexpr bool always_false = false;
@@ -174,4 +174,4 @@ template<class ... T> inline constexpr bool always_false = false;
 template <typename... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template <typename... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
-#include "dmall/misc.hpp"
+#include "cmall/misc.hpp"

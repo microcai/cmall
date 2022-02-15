@@ -121,7 +121,7 @@ inline std::string output(const Printable& s)
 	return ss.str();
 }
 
-namespace dmall {
+namespace cmall {
 	using namespace boost;
 
 	namespace detail {
