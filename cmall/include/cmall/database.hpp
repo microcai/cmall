@@ -50,20 +50,24 @@ namespace cmall {
 	using db_result		= std::variant<bool, std::exception_ptr>;
 	// using dns_records_t = std::vector<cmall_record>;
 
+	using extract_result_t = std::tuple<boost::system::error_code, bool, std::string>;
 	const auto extract_result = overloaded{
-		[](bool ok) -> std::tuple<boost::system::error_code, bool> {
+		[](bool ok) -> extract_result_t {
 			boost::system::error_code ec;
-			return std::tie(ec, ok);
+			std::string msg;
+			if (!ok) msg = "db operation return false";
+			return std::tie(ec, ok, msg);
 		},
-		[](std::exception_ptr& ex) {
+		[](std::exception_ptr& ex) -> extract_result_t {
+			std::string msg;
 			try {
 				std::rethrow_exception(ex);
 			} catch (const std::exception& e) {
-				LOG_WARN << "extract_result exception: " << e.what();
+				msg = e.what();
 			}
 			auto ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
 			auto ret = false;
-			return std::tie(ec, ret);
+			return std::tie(ec, ret, msg);
 		}
 	};
 
@@ -92,7 +96,10 @@ namespace cmall {
 					auto ret = db->add<T>(*value);
 					std::visit(
 						[&handler](auto&& arg) mutable {
-							const auto [ec, result] = extract_result(arg);
+							const auto [ec, result, msg] = extract_result(arg);
+							if (ec || !result) {
+								LOG_WARN << "initial_do_add failed: " << msg;
+							}
 							auto executor = boost::asio::get_associated_executor(handler);
 							boost::asio::post(executor, [ec = ec, handler, result = result]() mutable { handler(ec, result); });
 						},
@@ -104,7 +111,7 @@ namespace cmall {
 		template<typename T>
 		struct initiate_do_update {
 			template<typename Handler>
-			void operator() (Handler&& handler, cmall_database* db, const T* value) {
+			void operator() (Handler&& handler, cmall_database* db, T* value) {
 				auto mdb = db->m_db;
 				if (!mdb) {
 					auto ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
@@ -119,7 +126,10 @@ namespace cmall {
 					auto ret = db->update<T>(*value);
 					std::visit(
 						[&handler](auto&& arg) mutable {
-							const auto [ec, result] = extract_result(arg);
+							const auto [ec, result, msg] = extract_result(arg);
+							if (ec || !result) {
+								LOG_WARN << "initial_do_update failed: " << msg;
+							}
 							auto executor = boost::asio::get_associated_executor(handler);
 							boost::asio::post(executor, [ec = ec, handler, result = result]() mutable { handler(ec, result); });
 						},
@@ -145,7 +155,10 @@ namespace cmall {
 					auto ret = db->soft_remove<T>(*value);
 					std::visit(
 						[&handler](auto&& arg) mutable {
-							const auto [ec, result] = extract_result(arg);
+							const auto [ec, result, msg] = extract_result(arg);
+							if (ec || !result) {
+								LOG_WARN << "initial_do_soft_remove failed: " << msg;
+							}
 							auto executor = boost::asio::get_associated_executor(handler);
 							boost::asio::post(executor, [ec = ec, handler, result = result]() mutable { handler(ec, result); });
 						},
@@ -171,7 +184,10 @@ namespace cmall {
 					auto ret = db->hard_remove<T>(id);
 					std::visit(
 						[&handler](auto&& arg) mutable {
-							const auto [ec, result] = extract_result(arg);
+							const auto [ec, result, msg] = extract_result(arg);
+							if (ec || !result) {
+								LOG_WARN << "initial_do_hard_remove failed: " << msg;
+							}
 							auto executor = boost::asio::get_associated_executor(handler);
 							boost::asio::post(executor, [ec = ec, handler, result = result]() mutable { handler(ec, result); });
 						},

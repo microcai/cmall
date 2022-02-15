@@ -118,7 +118,8 @@ namespace cmall {
 				LOG_DBG << "add merchant: " << ok << ", id: " << m.id_;
 
 
-				m_database.async_hard_remove<cmall_merchant>(2, yield[ec]);
+				ok = m_database.async_hard_remove<cmall_merchant>(2, yield[ec]);
+				LOG_DBG << "hard remove 2: " << ok;
 
 				cmall_product p;
 				p.owner_ = 1000;
@@ -129,7 +130,10 @@ namespace cmall {
 				p.state_ = 1;
 				ok = m_database.async_add(p, yield[ec]);
 				LOG_DBG << "add product: " << ok << ", id: " << p.id_;
-				m_database.async_soft_remove(p, yield[ec]);
+				// m_database.async_soft_remove(p, yield[ec]);
+
+				p.state_ = 2;
+				m_database.async_update(p, yield[ec]);
 			}
 		);
 	}
