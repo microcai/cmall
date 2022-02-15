@@ -55,7 +55,7 @@ namespace cmall {
 			boost::system::error_code ec;
 			return std::tie(ec, ok);
 		},
-		[](std::exception_ptr&& ex) {
+		[](std::exception_ptr& ex) {
 			try {
 				std::rethrow_exception(ex);
 			} catch (const std::exception& e) {
@@ -78,7 +78,7 @@ namespace cmall {
 		cmall_database& operator=(const cmall_database&) = delete;
 
 		template<typename T>
-		struct initiate_do_add_1 {
+		struct initiate_do_add {
 			template<typename Handler>
 			void operator() (Handler&& handler, cmall_database* db, T* value) {
 				auto mdb = db->m_db;
@@ -102,47 +102,6 @@ namespace cmall {
 		};
 
 		template<typename T>
-		struct initiate_do_add {
-			template<typename Handler>
-			void operator() (Handler&& handler, cmall_database* db, T* value) {
-				auto mdb = db->m_db;
-				if (!mdb) {
-					auto ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-					handler(ec, false);
-					return;
-				}
-
-				db->m_io_context.post([this, db, handler = std::move(handler), value]() mutable {
-					boost::system::error_code ec;
-					bool result = false;
-
-					auto ret = db->add<T>(*value);
-					std::visit(
-						[&handler, &ec, &result](auto&& arg) mutable {
-							using Ty = std::decay_t<decltype(arg)>;
-							if constexpr (std::is_same_v<Ty, bool>) {
-								result = arg;
-							} else if constexpr (std::is_same_v<Ty, std::exception_ptr>) {
-								try {
-									std::rethrow_exception(arg);
-								} catch (const std::exception& e) {
-									LOG_WARN << "initiate_do_add: exception: " << e.what();
-								}
-								ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-							} else {
-								static_assert(
-									always_false<Ty>, "initiate_do_add, non-exhaustive visitor!");
-							}
-
-							auto executor = boost::asio::get_associated_executor(handler);
-							boost::asio::post(executor, [ec, handler, result]() mutable { handler(ec, result); });
-						},
-						ret);
-				});
-			}
-		};
-
-		template<typename T>
 		struct initiate_do_update {
 			template<typename Handler>
 			void operator() (Handler&& handler, cmall_database* db, const T* value) {
@@ -159,24 +118,10 @@ namespace cmall {
 
 					auto ret = db->update<T>(*value);
 					std::visit(
-						[&handler, &ec, &result](auto&& arg) mutable {
-							using Ty = std::decay_t<decltype(arg)>;
-							if constexpr (std::is_same_v<Ty, bool>) {
-								result = arg;
-							} else if constexpr (std::is_same_v<Ty, std::exception_ptr>) {
-								try {
-									std::rethrow_exception(arg);
-								} catch (const std::exception& e) {
-									LOG_WARN << "initiate_do_remove: exception: " << e.what();
-								}
-								ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-							} else {
-								static_assert(
-									always_false<Ty>, "initiate_do_remove, non-exhaustive visitor!");
-							}
-
+						[&handler](auto&& arg) mutable {
+							const auto [ec, result] = extract_result(arg);
 							auto executor = boost::asio::get_associated_executor(handler);
-							boost::asio::post(executor, [ec, handler, result]() mutable { handler(ec, result); });
+							boost::asio::post(executor, [ec = ec, handler, result = result]() mutable { handler(ec, result); });
 						},
 						ret);
 				});
@@ -199,31 +144,17 @@ namespace cmall {
 
 					auto ret = db->soft_remove<T>(*value);
 					std::visit(
-						[&handler, &ec, &result](auto&& arg) mutable {
-							using Ty = std::decay_t<decltype(arg)>;
-							if constexpr (std::is_same_v<Ty, bool>) {
-								result = arg;
-							} else if constexpr (std::is_same_v<Ty, std::exception_ptr>) {
-								try {
-									std::rethrow_exception(arg);
-								} catch (const std::exception& e) {
-									LOG_WARN << "initiate_do_soft_remove: exception: " << e.what();
-								}
-								ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-							} else {
-								static_assert(
-									always_false<Ty>, "initiate_do_soft_remove, non-exhaustive visitor!");
-							}
-
+						[&handler](auto&& arg) mutable {
+							const auto [ec, result] = extract_result(arg);
 							auto executor = boost::asio::get_associated_executor(handler);
-							boost::asio::post(executor, [ec, handler, result]() mutable { handler(ec, result); });
+							boost::asio::post(executor, [ec = ec, handler, result = result]() mutable { handler(ec, result); });
 						},
 						ret);
 				});
 			}
 		};
 		template<typename T>
-		struct initiate_do_remove {
+		struct initiate_do_hard_remove {
 			template<typename Handler>
 			void operator() (Handler&& handler, cmall_database* db, std::uint64_t id) {
 				auto mdb = db->m_db;
@@ -237,26 +168,12 @@ namespace cmall {
 					boost::system::error_code ec;
 					bool result = false;
 
-					auto ret = db->remove<T>(id);
+					auto ret = db->hard_remove<T>(id);
 					std::visit(
-						[&handler, &ec, &result](auto&& arg) mutable {
-							using Ty = std::decay_t<decltype(arg)>;
-							if constexpr (std::is_same_v<Ty, bool>) {
-								result = arg;
-							} else if constexpr (std::is_same_v<Ty, std::exception_ptr>) {
-								try {
-									std::rethrow_exception(arg);
-								} catch (const std::exception& e) {
-									LOG_WARN << "initiate_do_remove: exception: " << e.what();
-								}
-								ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-							} else {
-								static_assert(
-									always_false<Ty>, "initiate_do_remove, non-exhaustive visitor!");
-							}
-
+						[&handler](auto&& arg) mutable {
+							const auto [ec, result] = extract_result(arg);
 							auto executor = boost::asio::get_associated_executor(handler);
-							boost::asio::post(executor, [ec, handler, result]() mutable { handler(ec, result); });
+							boost::asio::post(executor, [ec = ec, handler, result = result]() mutable { handler(ec, result); });
 						},
 						ret);
 				});
@@ -663,7 +580,7 @@ namespace cmall {
 		}
 
 		template<typename T>
-		db_result remove(std::uint64_t id) {
+		db_result hard_remove(std::uint64_t id) {
 			if (!m_db)
 				return false;
 
@@ -676,16 +593,15 @@ namespace cmall {
 		}
 
 		template<SupportSoftDeletion T>
-		db_result soft_remove(T& t) {
+		db_result soft_remove(T& value) {
 			if (!m_db)
 				return false;
 
 			return retry_database_op([&, this]() mutable {
 				auto now = boost::posix_time::second_clock::local_time();
-				t.deleted_at_ = now;
+				value.deleted_at_ = now;
 				odb::transaction t(m_db->begin());
-				using query = odb::query<T>;
-				m_db->update<T>(t);
+				m_db->update<T>(value);
 				t.commit();
 				return true;
 			});
@@ -700,6 +616,31 @@ namespace cmall {
 		// db_result remove_dns_record(std::uint64_t rid);
 
 	public:
+		template <typename Handler, typename T>
+		BOOST_ASIO_INITFN_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
+		async_add(T& value, BOOST_ASIO_MOVE_ARG(Handler) handler) {
+			return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
+				initiate_do_add<T>{}, handler, this, &value);
+		}
+		template <typename Handler, typename T>
+		BOOST_ASIO_INITFN_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
+		async_update(T& value, BOOST_ASIO_MOVE_ARG(Handler) handler) {
+			return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
+				initiate_do_update<T>{}, handler, this, &value);
+		}
+		template <typename T, typename Handler> 
+		BOOST_ASIO_INITFN_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
+		async_hard_remove(std::uint64_t id, BOOST_ASIO_MOVE_ARG(Handler) handler) {
+			return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
+				initiate_do_hard_remove<T>{}, handler, this, id);
+		}
+		template <typename T, typename Handler>
+		BOOST_ASIO_INITFN_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
+		async_soft_remove(T& value, BOOST_ASIO_MOVE_ARG(Handler) handler) {
+			return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
+				initiate_do_soft_remove<T>{}, handler, this, &value);
+		}
+
 		// template <typename Handler>
 		// BOOST_ASIO_INITFN_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
 		// async_load_config(cmall_config& config, BOOST_ASIO_MOVE_ARG(Handler) handler) {

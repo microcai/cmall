@@ -103,6 +103,35 @@ namespace cmall {
 					[this, &a](boost::asio::yield_context yield) mutable { start_http_listen(a, yield); });
 			}
 		}
+
+		// for test
+		boost::asio::spawn(m_io_context_pool.get_io_context().get_executor(),
+			[this](boost::asio::yield_context yield) mutable {
+				boost::system::error_code ec;
+
+				cmall_merchant m;
+				m.uid_ = 10668;
+				m.name_ = "test merchant";
+				m.verified_ = true;
+				m.desc_ = "this is a test merchant";
+				bool ok = m_database.async_add(m, yield[ec]);
+				LOG_DBG << "add merchant: " << ok << ", id: " << m.id_;
+
+
+				m_database.async_hard_remove<cmall_merchant>(2, yield[ec]);
+
+				cmall_product p;
+				p.owner_ = 1000;
+				p.name_ = "keyboard";
+				p.price_ = cpp_numeric("880");
+				p.currency_ = "cny";
+				p.description_ = "hhhhhh";
+				p.state_ = 1;
+				ok = m_database.async_add(p, yield[ec]);
+				LOG_DBG << "add product: " << ok << ", id: " << p.id_;
+				m_database.async_soft_remove(p, yield[ec]);
+			}
+		);
 	}
 
 	void cmall_service::stop() {
@@ -187,6 +216,7 @@ namespace cmall {
 
 	void cmall_service::start_http_listen(tcp::acceptor& a, boost::asio::yield_context& yield) {
 		boost::system::error_code error;
+
 		while (!m_abort) {
 			tcp::socket socket(m_io_context_pool.get_io_context());
 			a.async_accept(socket, yield[error]);

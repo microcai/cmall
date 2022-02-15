@@ -140,7 +140,6 @@ std::string version_info() {
 
 int main(int argc, char** argv) {
 	std::vector<std::string> http_listens;
-	std::uint16_t dns_port;
 
 	std::string db_name;
 	std::string db_host;
@@ -154,10 +153,9 @@ int main(int argc, char** argv) {
 		("version", "Current version.")
 
 		("http", po::value<std::vector<std::string>>(&http_listens)->multitoken(), "http_listens.")
-		("dns_port", po::value<std::uint16_t>(&dns_port)->default_value(53), "dns port.")
 
 		("db_name", po::value<std::string>(&db_name)->default_value("cmall"), "Database name.")
-		("db_host", po::value<std::string>(&db_host)->default_value(""), "Database host.")
+		("db_host", po::value<std::string>(&db_host)->default_value("127.0.0.1"), "Database host.")
 		("db_port", po::value<unsigned short>(&db_port)->default_value(5432), "Database port.")
 		("db_user", po::value<std::string>(&db_user)->default_value("postgres"), "Database user.")
 		("db_passwd", po::value<std::string>(&db_passwd)->default_value("postgres"), "Database password.");
@@ -205,7 +203,6 @@ int main(int argc, char** argv) {
 
 	cfg.dbcfg_		  = dbcfg;
 	cfg.http_listens_ = http_listens;
-	cfg.dns_port_	  = dns_port;
 
 	cmall::cmall_service dsrv{ ios, cfg };
 

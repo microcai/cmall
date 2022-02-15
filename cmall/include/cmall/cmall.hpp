@@ -20,8 +20,6 @@ namespace cmall {
 	struct server_config {
 		std::vector<std::string> http_listens_;
 
-		std::uint16_t dns_port_;
-
 		cmall::db_config dbcfg_;
 	};
 
