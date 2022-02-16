@@ -55,14 +55,16 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #pragma db object
 struct cmall_config {
 #pragma db id auto
-	long long id_{ -1 };
+	std::uint64_t id_;
+	// long long id_{ -1 };
 };
 
 // 商户表.
 #pragma db object
 struct cmall_merchant {
 #pragma db id auto
-	long long id_{ -1 };
+	std::uint64_t id_;
+	// long long id_{ -1 };
 
 #pragma db index
 	std::uint64_t uid_;
@@ -85,7 +87,8 @@ struct cmall_merchant {
 #pragma db object
 struct cmall_product {
 #pragma db id auto
-	long long id_{ -1 };
+	std::uint64_t id_;
+	// long long id_{ -1 };
 
 #pragma db index
 	uint64_t owner_; // 商品发布者.
@@ -110,7 +113,8 @@ struct cmall_product {
 #pragma db object
 struct cmall_order {
 #pragma db id auto
-	long long id_{ -1 };
+	std::uint64_t id_;
+	// long long id_{ -1 };
 
 #pragma db index unique
 	std::string oid_; // 订单号
