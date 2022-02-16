@@ -1,16 +1,23 @@
 ﻿#include "boost/algorithm/string/join.hpp"
+#include "boost/asio/associated_executor.hpp"
 #include "boost/asio/buffer.hpp"
 #include "boost/asio/ip/address_v4.hpp"
 #include "boost/asio/ip/basic_endpoint.hpp"
 #include "boost/asio/ip/udp.hpp"
 #include "boost/asio/socket_base.hpp"
 #include "boost/asio/spawn.hpp"
+#include "boost/asio/steady_timer.hpp"
+#include "boost/beast/core/role.hpp"
+#include "boost/beast/core/tcp_stream.hpp"
 #include "boost/beast/http/field.hpp"
 #include "boost/beast/http/serializer.hpp"
 #include "boost/beast/http/status.hpp"
 #include "boost/beast/http/string_body.hpp"
 #include "boost/beast/http/verb.hpp"
 #include "boost/beast/http/write.hpp"
+#include "boost/beast/websocket/rfc6455.hpp"
+#include "boost/beast/websocket/stream.hpp"
+#include "boost/beast/websocket/stream_base.hpp"
 #include "boost/concept_check.hpp"
 #include "boost/date_time/posix_time/time_formatters.hpp"
 #include "boost/json/detail/array.hpp"
@@ -27,6 +34,9 @@
 #include "cmall/cmall.hpp"
 
 #include "cmall/io.hpp"
+#include "misc.hpp"
+#include "cmall/magic_enum.hpp"
+#include "session.hpp"
 
 #include <algorithm>
 #include <boost/date_time.hpp>
@@ -39,6 +49,9 @@
 #include <exception>
 #include <limits>
 #include <memory>
+#include <mutex>
+#include <tuple>
+#include <variant>
 #include <version.hpp>
 
 #ifdef __clang__
@@ -84,6 +97,8 @@ namespace cmall {
 		},
 	};
 
+	const auto rpc_result_to_string = []() -> std::string {};
+
 	cmall_service::cmall_service(io_context_pool& ios, const server_config& config)
 		: m_io_context_pool(ios)
 		, m_config(config)
@@ -109,17 +124,19 @@ namespace cmall {
 			[this](boost::asio::yield_context yield) mutable {
 				boost::system::error_code ec;
 
-				cmall_merchant m;
-				m.uid_ = 10668;
-				m.name_ = "test merchant";
-				m.verified_ = true;
-				m.desc_ = "this is a test merchant";
-				bool ok = m_database.async_add(m, yield[ec]);
-				LOG_DBG << "add merchant: " << ok << ", id: " << m.id_;
+				auto executor = boost::asio::get_associated_executor(yield);
+				boost::asio::steady_timer timer(executor);
 
+				// cmall_merchant m;
+				// m.uid_ = 10668;
+				// m.name_ = "test merchant";
+				// m.verified_ = true;
+				// m.desc_ = "this is a test merchant";
+				// bool ok = m_database.async_add(m, yield[ec]);
+				// LOG_DBG << "add merchant: " << ok << ", id: " << m.id_;
 
-				ok = m_database.async_hard_remove<cmall_merchant>(2, yield[ec]);
-				LOG_DBG << "hard remove 2: " << ok;
+				// ok = m_database.async_hard_remove<cmall_merchant>(2, yield[ec]);
+				// LOG_DBG << "hard remove 2: " << ok;
 
 				cmall_product p;
 				p.owner_ = 1000;
@@ -128,12 +145,16 @@ namespace cmall {
 				p.currency_ = "cny";
 				p.description_ = "hhhhhh";
 				p.state_ = 1;
-				ok = m_database.async_add(p, yield[ec]);
+				bool ok = m_database.async_add(p, yield[ec]);
 				LOG_DBG << "add product: " << ok << ", id: " << p.id_;
 				// m_database.async_soft_remove(p, yield[ec]);
 
-				p.state_ = 2;
-				m_database.async_update(p, yield[ec]);
+				timer.expires_after(5s);
+				timer.async_wait(yield[ec]);
+
+				p.state_ = 7;
+				ok = m_database.async_update(p, yield[ec]);
+				LOG_DBG << "update product: " << ok << ", id: " << p.id_;
 			}
 		);
 	}
@@ -235,12 +256,12 @@ namespace cmall {
 			boost::beast::tcp_stream stream(std::move(socket));
 
 			static std::atomic_size_t id{ 0 };
-			size_t connection_id = id++;
+			size_t cid = id++;
 
 			boost::asio::spawn(
 				m_io_context_pool.get_io_context().get_executor(),
-				[this, connection_id, stream = std::move(stream)](boost::asio::yield_context yield) mutable {
-					start_http_connect(connection_id, std::move(stream), yield);
+				[this, cid, stream = std::move(stream)](boost::asio::yield_context yield) mutable {
+					start_http_connect(cid, std::move(stream), yield);
 				},
 				boost::coroutines::attributes(5 * 1024 * 1024));
 		}
@@ -249,8 +270,18 @@ namespace cmall {
 	}
 
 	void cmall_service::start_http_connect(
-		size_t connection_id, boost::beast::tcp_stream stream, boost::asio::yield_context& yield) {
+		size_t cid, boost::beast::tcp_stream stream, boost::asio::yield_context& yield) {
 		boost::system::error_code ec;
+
+		auto do_respond = [&](http::status status, const std::string& msg) {
+			auto res = build_response(status, msg);
+			boost::beast::http::serializer<false, string_body, fields> sr{ res };
+			boost::beast::http::async_write(stream, sr, yield[ec]);
+			if (ec) {
+				LOG_WARN << "start_http_connect, " << cid << ", err: " << ec.message();
+				return;
+			}
+		};
 
 		for (; !m_abort;) {
 			boost::beast::flat_buffer buffer;
@@ -259,61 +290,28 @@ namespace cmall {
 
 			boost::beast::http::async_read(stream, buffer, req, yield[ec]);
 			if (ec) {
-				LOG_DBG << "start_http_connect, " << connection_id << ", async_read: " << ec.message();
+				LOG_DBG << "start_http_connect, " << cid << ", async_read: " << ec.message();
 				break;
 			}
 
 			std::string target = req.target().to_string();
 			if (target.empty() || target[0] != '/' || target.find("..") != beast::string_view::npos) {
-				auto res = build_response(http::status::bad_request, "Illegal request-target");
-
-				boost::beast::http::serializer<false, string_body, fields> sr{ res };
-				boost::beast::http::async_write(stream, sr, yield[ec]);
-				if (ec) {
-					LOG_WARN << "start_http_connect, " << connection_id << ", err: " << ec.message();
-					return;
-				}
-
+				do_respond(http::status::bad_request, "bad request");
 				break;
 			}
 
 			keep_alive = req.keep_alive();
-			if (!beast::websocket::is_upgrade(req)) {
-				boost::beast::get_lowest_layer(stream).expires_after(std::chrono::seconds(60));
 
-				http_params params{ {}, connection_id, stream, req, yield };
-				boost::smatch what;
-
-#define BEGIN_HTTP_EVENT()                                                                                             \
-	if (false) { }
-#define ON_HTTP_EVENT(exp, func)                                                                                       \
-	else if (boost::regex_match(target, what, boost::regex{ exp })) {                                                  \
-		for (auto i = 1; i < static_cast<int>(what.size()); i++)                                                       \
-			params.command_.emplace_back(what[i]);                                                                     \
-		func(params);                                                                                                  \
-	}
-#define END_HTTP_EVENT()                                                                                               \
-	else {                                                                                                             \
-		auto res = build_response(http::status::not_found);                                                            \
-		http::serializer<false, string_body, fields> sr{ res };                                                        \
-		http::async_write(params.stream_, sr, params.yield_[ec]);                                                      \
-	}
-
-				BEGIN_HTTP_EVENT()
-				ON_HTTP_EVENT("^/record(([/\?]{1}).*)?$", on_record_op)
-				ON_HTTP_EVENT("^/version$", on_version)
-				END_HTTP_EVENT()
-
-				if (!keep_alive)
-					break;
-				continue;
+			if (target != "/wsapi") {
+				// websocket path error
+				do_respond(http::status::bad_request, "bad request target");
+				break;
 			}
 
-			// if (target != "/wsrpc") {
-			// 	if (!keep_alive)
-			// 		break;
-			// 	continue;
-			// }
+			if (!beast::websocket::is_upgrade(req)) {
+				do_respond(http::status::upgrade_required, "upgrade required");
+				break;
+			}
 
 			std::string remote_host;
 			auto endp = stream.socket().remote_endpoint(ec);
@@ -327,6 +325,25 @@ namespace cmall {
 
 			stream.expires_never();
 
+			websocket::stream<beast::tcp_stream> ws{std::move(stream)};
+			ws.set_option(websocket::stream_base::timeout::suggested(beast::role_type::server));
+			ws.async_accept(req, yield[ec]);
+			if (ec) {
+				LOG_WARN << "start_http_connect, " << cid << ", ws async_accept: " << ec.what();
+				break;
+			}
+
+			auto s = std::make_shared<session>(cid, std::move(ws));
+			s->register_hander([this](request_context ctx) {
+				this->handle_request(ctx);
+			});
+			s->start();
+
+			{
+				std::lock_guard<std::mutex> lck(m_mtx_session);
+				m_sessions.emplace(cid, s);
+			}
+
 			return;
 		}
 
@@ -334,34 +351,64 @@ namespace cmall {
 			stream.socket().shutdown(tcp::socket::shutdown_send, ec); // ?? async_accept
 	}
 
-	void cmall_service::on_record_op(const http_params& params) {
-
-		boost::system::error_code ec;
-
-		auto& req = params.request_;
-
-		// TODO: auth
-
-		switch (req.method()) {
-			case http::verb::get: // get
-				on_get_record(params);
-				break;
-			case http::verb::post: // add
-				on_add_record(params);
-				break;
-			case http::verb::patch: // modify
-				on_mod_record(params);
-				break;
-			case http::verb::delete_: // remove
-				on_del_record(params);
-				break;
-			default: {
-				auto res = build_response(http::status::method_not_allowed);
-				http::serializer<false, string_body, fields> sr{ res };
-				http::async_write(params.stream_, sr, params.yield_[ec]);
-				return;
+	void cmall_service::handle_request(const request_context& ctx) {
+		auto methodstr = json_as_string(json_accessor(ctx.payload_.as_object()).get("method", ""));
+		auto method = magic_enum::enum_cast<req_methods>(methodstr);
+		if (!method.has_value()) {
+			// unknown method
+			return;
+		}
+		std::variant<std::int64_t, std::string, std::nullptr_t> id;
+		const auto& reqo = ctx.payload_.as_object();
+		if (!reqo.contains("id")) {
+			id = nullptr;
+		} else {
+			auto f_id = reqo.at("id");
+			if (f_id.is_int64()) {
+				id = f_id.as_int64();
+			} else if (f_id.is_string()) {
+				id = json_as_string(f_id);
 			}
 		}
+
+
+		rpc_result ret;
+		auto method_enum = method.value();
+		switch (method_enum) {
+			case req_methods::user_login: {
+				ret = on_user_login(ctx);
+			}
+				break;
+			case req_methods::user_list_product: break;
+			case req_methods::user_list_order: break;
+			case req_methods::user_place_order: break;
+			case req_methods::user_get_order: break;
+			case req_methods::user_pay_order: break;
+			case req_methods::user_close_order: break;
+			case req_methods::merchant_info: break;
+			case req_methods::merchant_list_product: break;
+			case req_methods::merchant_add_product: break;
+			case req_methods::merchant_mod_product: break;
+			case req_methods::merchant_del_product: break;
+			default: {
+				// not possible
+			}
+		}
+		auto result = rpc_result_to_string();
+		{
+			std::lock_guard<std::mutex> lck(m_mtx_session);
+			auto it = m_sessions.find(ctx.sid_);
+			if (it != m_sessions.end()) {
+				auto s = it->second;
+				s->reply(result);
+			}
+		}
+	}
+
+	rpc_result cmall_service::on_user_login(const request_context& ctx) {
+		bool success = true;
+		boost::json::value ret;
+		return std::tie(success, ret);
 	}
 
 	void cmall_service::on_version(const http_params& params) {

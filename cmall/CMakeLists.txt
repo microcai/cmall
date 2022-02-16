@@ -28,6 +28,8 @@ file(GLOB cmall_SRCS
 	include/cmall/default_cert.hpp
 	include/cmall/io.hpp
 	include/cmall/handler_type_check.hpp
+	include/cmall/magic_enum.hpp
+	include/cmall/session.hpp
 
 	src/main.cpp
 	src/cmall.cpp

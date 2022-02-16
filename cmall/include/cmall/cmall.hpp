@@ -7,11 +7,16 @@
 
 #pragma once
 
+#include <cstdint>
+#include <tuple>
+#include <unordered_map>
+#include <vector>
+
 #include "boost/asio/spawn.hpp"
+#include "boost/json/value.hpp"
 #include "cmall/database.hpp"
 #include "cmall/internal.hpp"
-#include <cstdint>
-#include <vector>
+#include "cmall/session.hpp"
 
 #include <boost/asio.hpp>
 
@@ -28,6 +33,26 @@ namespace cmall {
 	using fields	  = boost::beast::http::fields;
 	using request	  = boost::beast::http::request<string_body>;
 	using response	  = boost::beast::http::response<string_body>;
+
+	using rpc_result = std::tuple<bool, boost::json::value>; // (true, result) or (false, error)
+
+	enum class req_methods {
+		user_login,
+
+		user_list_product,
+		user_list_order,
+		user_place_order,
+		user_get_order,
+		user_pay_order,
+		user_close_order,
+
+		merchant_info,
+		merchant_list_product,
+		merchant_add_product,
+		merchant_mod_product,
+		merchant_del_product,
+	};
+
 	class cmall_service {
 		struct http_params {
 			std::vector<std::string> command_;
@@ -53,10 +78,14 @@ namespace cmall {
 		bool init_http_acceptors();
 		void start_http_listen(tcp::acceptor& a, boost::asio::yield_context& yield);
 		void start_http_connect(
-			size_t connection_id, boost::beast::tcp_stream stream, boost::asio::yield_context& yield);
+			size_t cid, boost::beast::tcp_stream stream, boost::asio::yield_context& yield);
 
-		void on_record_op(const http_params& params);
+		void handle_request(const request_context& ctx);
+
 		void on_version(const http_params& params);
+	
+	private:
+		rpc_result on_user_login(const request_context& ctx);
 
 	private:
 		void on_get_record(const http_params& params);
@@ -74,5 +103,8 @@ namespace cmall {
 		std::vector<tcp::acceptor> m_http_acceptors;
 
 		std::atomic_bool m_abort{ false };
+
+		std::unordered_map<std::uint64_t, session_ptr> m_sessions;
+		std::mutex m_mtx_session;
 	};
 }
