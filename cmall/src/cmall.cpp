@@ -1,4 +1,4 @@
-﻿#include "boost/algorithm/string/join.hpp"
+#include "boost/algorithm/string/join.hpp"
 #include "boost/asio/associated_executor.hpp"
 #include "boost/asio/buffer.hpp"
 #include "boost/asio/ip/address_v4.hpp"
@@ -97,7 +97,19 @@ namespace cmall {
 		},
 	};
 
-	const auto rpc_result_to_string = []() -> std::string {};
+	const auto rpc_result_to_string = [](const request_context& ctx, const rpc_result& ret) -> std::string { 
+		const auto &[success, res] = ret;
+
+		boost::json::object obj = {
+			{ "jsonrpc", "2.0" },
+		};
+		if (ctx.payload_.as_object().contains("id")) {
+			obj.emplace("id", ctx.payload_.as_object().at("id"));
+		}
+		boost::json::string_view key = success ? "result" : "error"; // error value MUST be a object
+		obj.emplace(key, ret);
+		return json_to_string(obj, false);
+	};
 
 	cmall_service::cmall_service(io_context_pool& ios, const server_config& config)
 		: m_io_context_pool(ios)
@@ -360,16 +372,18 @@ namespace cmall {
 		}
 		std::variant<std::int64_t, std::string, std::nullptr_t> id;
 		const auto& reqo = ctx.payload_.as_object();
-		if (!reqo.contains("id")) {
-			id = nullptr;
-		} else {
-			auto f_id = reqo.at("id");
-			if (f_id.is_int64()) {
-				id = f_id.as_int64();
-			} else if (f_id.is_string()) {
-				id = json_as_string(f_id);
-			}
-		}
+
+		auto is_request = reqo.contains("id");
+// 		if (!reqo.contains("id")) {
+// 			id = nullptr;
+// 		} else {
+// 			auto f_id = reqo.at("id");
+// 			if (f_id.is_int64()) {
+// 				id = f_id.as_int64();
+// 			} else if (f_id.is_string()) {
+// 				id = json_as_string(f_id);
+// 			}
+// 		}
 
 
 		rpc_result ret;
@@ -394,20 +408,58 @@ namespace cmall {
 				// not possible
 			}
 		}
-		auto result = rpc_result_to_string();
-		{
-			std::lock_guard<std::mutex> lck(m_mtx_session);
-			auto it = m_sessions.find(ctx.sid_);
-			if (it != m_sessions.end()) {
-				auto s = it->second;
-				s->reply(result);
+
+		if (is_request) {
+			auto result = rpc_result_to_string(ctx, ret);
+			{
+				std::lock_guard<std::mutex> lck(m_mtx_session);
+				auto it = m_sessions.find(ctx.sid_);
+				if (it != m_sessions.end()) {
+					auto s = it->second;
+					s->reply(result);
+				}
 			}
 		}
 	}
 
 	rpc_result cmall_service::on_user_login(const request_context& ctx) {
-		bool success = true;
+		bool success = false;
+
 		boost::json::value ret;
+		const auto& reqo = ctx.payload_.as_object();
+		do {
+			if (!reqo.contains("params")) {
+				success = false;
+				ret		= { { "code", 4 }, { "message", "params required" } };
+				break;
+			}
+
+			const auto& params = reqo.at("params").as_object();
+			if (!params.contains("username") || !params.contains("password")) {
+				success = false;
+				ret		= { { "code", 4 }, { "message", "username/password required" } };
+				break;
+			}
+			auto username = json_as_string(json_accessor(params).get("username", ""));
+			auto password = json_as_string(json_accessor(params).get("password", ""));
+			if (username.empty() || password.size() < 6) {
+				success = false;
+				ret		= { { "code", 4 }, { "message", "username/password invalid input" } };
+				break;
+			}
+			
+			bool check_ok = true;
+			// check username/password combination
+			if (!check_ok) {
+				success = false;
+				ret		= { { "code", 1001 }, { "message", "username/password not match" } };
+				break;
+			}
+
+			success = true;
+			ret		= { { "uid", 9527 }, { "username", "9527" } };
+		} while (false);
+
 		return std::tie(success, ret);
 	}
 
