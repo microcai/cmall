@@ -13,7 +13,6 @@
 
 #include <string>
 #include <algorithm>
-#include <cstring>
 
 namespace endian {
 
@@ -90,18 +89,6 @@ namespace endian {
 	uint8_t read_uint8(InIt& start)
 	{ return read_impl(start, type<uint8_t>()); }
 
-	template <class InIt>
-	std::string read_string(InIt& start, std::size_t c)
-	{
-		std::string ret;
-		ret.resize(c);
-
-		std::memcpy(ret.data(), start, c);
-		start += c;
-
-		return ret;
-	}
-
 
 	template <class OutIt>
 	void write_uint64(uint64_t val, OutIt& start)
@@ -144,6 +131,6 @@ namespace endian {
 	template <class OutIt>
 	void write_string(std::string const& str, OutIt& start)
 	{
-		start = std::copy(str.begin(), str.end(), start);
+		std::copy(str.begin(), str.end(), start);
 	}
 }

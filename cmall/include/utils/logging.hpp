@@ -7,7 +7,6 @@
 
 #pragma once
 
-// #include "boost/asio/ip/udp.hpp"
 #include <clocale>
 #include <fstream>
 #include <iostream>
@@ -16,9 +15,8 @@
 #include <string>
 #include <tuple>
 
-#include <boost/asio.hpp>
 #include <boost/asio/io_context.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
@@ -103,7 +101,7 @@ namespace util {
 
 #ifdef LOGGING_COMPRESS_LOGS
 
-namespace compress {
+namespace log_compress {
 
 	const std::string GZ_SUFFIX = ".gz";
 	// const size_t SUFFIX_LEN = sizeof(GZ_SUFFIX) - 1;
@@ -232,12 +230,10 @@ namespace aux {
 	{
 		uint32_t codepoint;
 		uint32_t state = 0;
-		size_t count = 0;
 		uint8_t* s = (uint8_t*)str.c_str();
 
-		for (count = 0; *s; ++s)
-			if (!decode(&state, &codepoint, *s))
-				count += 1;
+		for (;*s; ++s)
+			decode(&state, &codepoint, *s);
 
 		return state == 0;
 	}
@@ -398,15 +394,14 @@ public:
 		return m_log_path.string();
 	}
 
-	void write(int64_t time, const char* str, std::streamsize size)
+	void write([[maybe_unused]] int64_t time, const char* str, std::streamsize size)
 	{
-		boost::ignore_unused(time);
 #ifdef LOGGING_COMPRESS_LOGS
 		bool condition = false;
 		auto hours = time / 1000 / 3600;
 		auto last_hours = m_last_time / 1000 / 3600;
 
-		if (m_log_size > LOG_MAXFILE_SIZE && LOG_MAXFILE_SIZE > 0)
+		if (static_cast<int>(m_log_size) > LOG_MAXFILE_SIZE && LOG_MAXFILE_SIZE > 0)
 			condition = true;
 		if (last_hours != hours && LOG_MAXFILE_SIZE < 0)
 			condition = true;
@@ -417,8 +412,7 @@ public:
 				break;
 			}
 
-			auto [ts, ptm] = aux::time_to_string(m_last_time);
-			boost::ignore_unused(ts);
+			[[maybe_unused]] auto [ts, ptm] = aux::time_to_string(m_last_time);
 
 			m_ofstream->close();
 			m_ofstream.reset();
@@ -426,7 +420,7 @@ public:
 			auto logpath = boost::filesystem::path(m_log_path).branch_path();
 			boost::filesystem::path filename;
 
-			if (LOG_MAXFILE_SIZE <= 0) {
+			if constexpr (LOG_MAXFILE_SIZE <= 0) {
 				auto logfile = fmt::format("{:04d}{:02d}{:02d}-{:02d}.log",
 					ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday, ptm->tm_hour);
 				filename = logpath / logfile;
@@ -446,13 +440,13 @@ public:
 			boost::filesystem::resize_file(m_log_path, 0, ec);
 			m_log_size = 0;
 			auto fn = filename.string();
-			boost::async(boost::launch::async, [this, fn]() {
+			boost::async(boost::launch::async, [fn]() {
 				std::string file = fn;
 				boost::system::error_code ignore_ec;
-				boost::mutex& m = compress::compress_lock();
+				boost::mutex& m = log_compress::compress_lock();
 				boost::lock_guard<boost::mutex> lock(m);
-				if (!compress::do_compress_gz(fn)) {
-					file = fn + compress::GZ_SUFFIX;
+				if (!log_compress::do_compress_gz(fn)) {
+					file = fn + log_compress::GZ_SUFFIX;
 					boost::filesystem::remove(file, ignore_ec);
 					if (ignore_ec)
 						std::cout << "delete log failed: " << file
@@ -495,24 +489,34 @@ private:
 
 #ifndef LOGGER_DBG_VIEW_
 #if defined(WIN32) && (defined(LOGGER_DBG_VIEW) || defined(DEBUG) || defined(_DEBUG))
-#define LOGGER_DBG_VIEW_(x)              \
-	do {                                 \
-		::OutputDebugStringA(x.c_str()); \
+#define LOGGER_DBG_VIEW_(x)                \
+	do {                                   \
+		::OutputDebugStringW((x).c_str()); \
 	} while (0)
 #else
 #define LOGGER_DBG_VIEW_(x) ((void)0)
 #endif // WIN32 && LOGGER_DBG_VIEW
 #endif // LOGGER_DBG_VIEW_
 
-static std::string LOGGER_DEBUG_STR = "DEBUG";
-static std::string LOGGER_INFO_STR = "INFO";
-static std::string LOGGER_WARN_STR = "WARNING";
-static std::string LOGGER_ERR_STR = "ERROR";
-static std::string LOGGER_FILE_STR = "FILE";
+const static std::string LOGGER_DEBUG_STR = "DEBUG";
+const static std::string LOGGER_INFO_STR = "INFO";
+const static std::string LOGGER_WARN_STR = "WARNING";
+const static std::string LOGGER_ERR_STR = "ERROR";
+const static std::string LOGGER_FILE_STR = "FILE";
 
-inline void output_console(std::string& level, const std::string& prefix, const std::string& message)
+inline void output_console([[maybe_unused]] bool disable_cout,
+	[[maybe_unused]] const std::string& level,
+	[[maybe_unused]] const std::string& prefix,
+	[[maybe_unused]] const std::string& message)
 {
-#ifdef WIN32
+#if defined(WIN32)
+
+#if !defined(DISABLE_LOGGER_TO_CONSOLE) || !defined(DISABLE_LOGGER_TO_DBGVIEW)
+	std::wstring title = boost::nowide::widen(prefix);
+	std::wstring msg = boost::nowide::widen(message);
+#endif
+
+#if !defined(DISABLE_LOGGER_TO_CONSOLE)
 	HANDLE handle_stdout = GetStdHandle(STD_OUTPUT_HANDLE);
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
 	GetConsoleScreenBufferInfo(handle_stdout, &csbi);
@@ -524,13 +528,19 @@ inline void output_console(std::string& level, const std::string& prefix, const 
 		SetConsoleTextAttribute(handle_stdout, FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY);
 	else if (level == LOGGER_ERR_STR)
 		SetConsoleTextAttribute(handle_stdout, FOREGROUND_RED | FOREGROUND_INTENSITY);
-	std::wstring wstr = boost::nowide::widen(prefix);
-	WriteConsoleW(handle_stdout, wstr.data(), (DWORD)wstr.size(), nullptr, nullptr);
+
+	WriteConsoleW(handle_stdout, title.data(), (DWORD)title.size(), nullptr, nullptr);
 	SetConsoleTextAttribute(handle_stdout, FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_BLUE);
-	wstr = boost::nowide::widen(message);
-	WriteConsoleW(handle_stdout, wstr.data(), (DWORD)wstr.size(), nullptr, nullptr);
+
+	WriteConsoleW(handle_stdout, msg.data(), (DWORD)msg.size(), nullptr, nullptr);
 	SetConsoleTextAttribute(handle_stdout, csbi.wAttributes);
-#else
+#endif
+
+#if !defined(DISABLE_LOGGER_TO_DBGVIEW)
+	LOGGER_DBG_VIEW_(title + msg);
+#endif
+
+#elif !defined(DISABLE_LOGGER_TO_CONSOLE)
 	fmt::memory_buffer out;
 	if (level == LOGGER_INFO_STR)
 		fmt::format_to(out, "\033[32m{}\033[0m{}", prefix, message);
@@ -559,24 +569,18 @@ inline void output_systemd(const std::string& level, const std::string& message)
 }
 #endif // USE_SYSTEMD_LOGGING
 
-inline void logger_writer(int64_t time, std::string level,
-	std::string message, bool disable_cout = false)
+inline void logger_writer(int64_t time, const std::string& level,
+	const std::string& message, [[maybe_unused]] bool disable_cout = false)
 {
-	(void)disable_cout;
 	LOGGER_LOCKS_();
-	auto [ts, ptm] = aux::time_to_string(time);
-	boost::ignore_unused(ptm);
+	[[maybe_unused]] auto [ts, ptm] = aux::time_to_string(time);
 	std::string prefix = ts + std::string(" [") + level + std::string("]: ");
 	std::string tmp = message + "\n";
 	std::string whole = prefix + tmp;
 #ifndef DISABLE_WRITE_LOGGING
 	util::aux::writer_single<util::auto_logger_file>().write(time, whole.c_str(), whole.size());
 #endif // !DISABLE_WRITE_LOGGING
-	LOGGER_DBG_VIEW_(whole);
-#ifndef DISABLE_LOGGER_TO_CONSOLE
-	if (!disable_cout)
-		output_console(level, prefix, tmp);
-#endif
+	output_console(disable_cout, level, prefix, tmp);
 #ifdef USE_SYSTEMD_LOGGING
 	output_systemd(level, message);
 #endif // USE_SYSTEMD_LOGGING
@@ -610,11 +614,14 @@ namespace aux {
 				m_io_context.stop();
 		}
 
-		void post_log(std::string level,
-			std::string message, bool disable_cout = false)
+		void post_log(const std::string& level,
+			std::string&& message, bool disable_cout = false)
 		{
-			m_io_context.post(boost::bind(&logger_writer, aux::gettime(),
-				level, message, disable_cout));
+			m_io_context.post(
+				[time = aux::gettime(), level, message = std::move(message), disable_cout]()
+				{
+					logger_writer(time, level, message, disable_cout);
+				});
 		}
 
 	private:
@@ -677,9 +684,19 @@ inline void toggle_logging()
 	logging_flag() = !logging_flag();
 }
 
+struct auto_init_async_logger
+{
+	auto_init_async_logger() {
+		init_logging();
+	}
+	~auto_init_async_logger() {
+		shutdown_logging();
+	}
+};
+
 class logger : boost::noncopyable {
 public:
-	logger(std::string& level, bool disable_cout = false)
+	logger(const std::string& level, bool disable_cout = false)
 		: level_(level)
 		, m_disable_cout(disable_cout)
 	{
@@ -692,7 +709,7 @@ public:
 			return;
 		std::string message = aux::string_utf8(fmt::to_string(out_));
 		if (fetch_log_obj())
-			fetch_log_obj()->post_log(level_, message, m_disable_cout);
+			fetch_log_obj()->post_log(level_, std::move(message), m_disable_cout);
 		else
 			logger_writer(aux::gettime(), level_, message, m_disable_cout);
 	}
@@ -800,7 +817,7 @@ public:
 	}
 
 	fmt::memory_buffer out_;
-	std::string& level_;
+	const std::string& level_;
 	bool m_disable_cout;
 };
 
@@ -813,9 +830,6 @@ public:
 	}
 };
 } // namespace util
-
-using util::init_logging;
-using util::shutdown_logging;
 
 #if (defined(DEBUG) || defined(_DEBUG) || defined(ENABLE_LOGGER)) && !defined(DISABLE_LOGGER)
 
@@ -837,6 +851,8 @@ using util::shutdown_logging;
 #define VLOG_ERR LOG_ERR << "(" << __FILE__ << ":" << __LINE__ << "): "
 #define VLOG_FILE LOG_FILE << "(" << __FILE__ << ":" << __LINE__ << "): "
 
+#define INIT_ASYNC_LOGGING() [[maybe_unused]] util::auto_init_async_logger ____init_logger____
+
 #else
 
 #define LOG_DBG util::empty_logger()
@@ -850,5 +866,7 @@ using util::shutdown_logging;
 #define VLOG_WARN LOG_WARN
 #define VLOG_ERR LOG_ERR
 #define VLOG_FILE LOG_FILE
+
+#define INIT_ASYNC_LOGGING() void
 
 #endif

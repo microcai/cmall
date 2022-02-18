@@ -9,9 +9,8 @@
 
 #include <type_traits>
 #include <boost/asio/async_result.hpp>
-#include <utility>
 
-namespace cmall {
+namespace util {
 	namespace detail {
 
 		template<class R, class C, class ...A>
@@ -38,8 +37,8 @@ namespace cmall {
 			std::is_move_constructible<typename std::decay<T>::type>::value &&
 			detail::is_invocable<T, Signature>::value>;
 
-#define XPAY_HANDLER_TYPE_CHECK(type, sig) \
-		static_assert(cmall::detail::is_completion_handler< \
+#define ASYNC_HANDLER_TYPE_CHECK(type, sig) \
+		static_assert(util::detail::is_completion_handler< \
 			BOOST_ASIO_HANDLER_TYPE(type, sig), sig>::value, \
 				"CompletionHandler signature requirements not met")
 	}

@@ -1,53 +1,46 @@
-﻿#define _WINSOCK_DEPRECATED_NO_WARNINGS
-
+﻿#include <iostream>
+#include <iterator>
 #include <algorithm>
 #include <functional>
-#include <iostream>
-#include <iterator>
 
-#include <array>
-#include <fstream>
-#include <streambuf>
-#include <tuple>
-#include <utility>
+#include <boost/asio/experimental/awaitable_operators.hpp>
 
 #ifdef __linux__
-#include <sys/resource.h>
-#include <systemd/sd-daemon.h>
+#  include <sys/resource.h>
+#  include <systemd/sd-daemon.h>
 
-#ifndef HAVE_UNAME
-#define HAVE_UNAME
-#endif
+# ifndef HAVE_UNAME
+#  define HAVE_UNAME
+# endif
 
 #elif _WIN32
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <fcntl.h>
-#include <io.h>
-#include <windows.h>
+#  ifndef WIN32_LEAN_AND_MEAN
+#    define WIN32_LEAN_AND_MEAN
+#  endif
+#  include <fcntl.h>
+#  include <io.h>
+#  include <windows.h>
 #endif
 
 #ifdef HAVE_UNAME
-#include <sys/utsname.h>
+#  include <sys/utsname.h>
 #endif
 
-#include <boost/algorithm/string/join.hpp>
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;
 
-#include "cmall/cmall.hpp"
-#include "cmall/internal.hpp"
-#include "cmall/simple_http.hpp"
 #include "cmall/version.hpp"
+#include "cmall/internal.hpp"
+#include "cmall/cmall.hpp"
 
 int platform_init()
 {
 #if defined(WIN32) || defined(_WIN32)
 	/* Disable the "application crashed" popup. */
-	SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
+	SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX |
+		SEM_NOOPENFILEERRORBOX);
 
-#if defined(DEBUG) || defined(_DEBUG)
+#if defined(DEBUG) ||defined(_DEBUG)
 	//	_CrtDumpMemoryLeaks();
 	// 	int flags = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
 	// 	flags |= _CRTDBG_LEAK_CHECK_DF;
@@ -93,7 +86,7 @@ int platform_init()
 		if (rl.rlim_cur < stack_size)
 		{
 			rl.rlim_cur = stack_size;
-			result		= setrlimit(RLIMIT_STACK, &rl);
+			result = setrlimit(RLIMIT_STACK, &rl);
 			if (result != 0)
 				perror("setrlimit for stack size");
 		}
@@ -102,6 +95,11 @@ int platform_init()
 
 	std::ios::sync_with_stdio(false);
 
+#ifdef __linux__
+	signal(SIGPIPE, SIG_IGN);
+#else
+	set_thread_name("mainthread");
+#endif
 	return 0;
 }
 
@@ -139,15 +137,19 @@ std::string version_info()
 #endif // _WIN32
 
 	std::ostringstream oss;
-	oss << "cmall version: v" << cmall_VERSION << ", " << cmall_GIT_REVISION << " built on " << __DATE__ << " "
-		<< __TIME__ << " runs on " << os_name << ", " << BOOST_COMPILER;
+	oss << "cmall version: v" << CMALL_VERSION << ", " << CMALL_GIT_REVISION
+		<< " built on " << __DATE__ << " " << __TIME__ << " runs on " << os_name << ", " << BOOST_COMPILER;
 
 	return oss.str();
 }
 
-int main(int argc, char** argv)
+boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 {
-	std::vector<std::string> http_listens;
+	platform_init();
+	std::vector<std::string> upstreams;
+	std::vector<std::string> ws_listens;
+	std::string wsorigin;
+	int chain_id;
 
 	std::string db_name;
 	std::string db_host;
@@ -156,15 +158,22 @@ int main(int argc, char** argv)
 	unsigned short db_port;
 
 	po::options_description desc("Options");
-	desc.add_options()("help,h", "Help message.")("version", "Current version.")
+	desc.add_options()
+		("help,h", "Help message.")
+		("version", "Current version.")
 
-		("http", po::value<std::vector<std::string>>(&http_listens)->multitoken(), "http_listens.")
+		("chain_id", po::value<int>(&chain_id)->default_value(1001011), "Chain type, default 1001011 (chs), eth chain_id is 1")
 
-			("db_name", po::value<std::string>(&db_name)->default_value("cmall"), "Database name.")(
-				"db_host", po::value<std::string>(&db_host)->default_value("127.0.0.1"), "Database host.")(
-				"db_port", po::value<unsigned short>(&db_port)->default_value(5432), "Database port.")(
-				"db_user", po::value<std::string>(&db_user)->default_value("postgres"), "Database user.")(
-				"db_passwd", po::value<std::string>(&db_passwd)->default_value("postgres"), "Database password.");
+		("upstream", po::value<std::vector<std::string>>(&upstreams)->multitoken(), "Upstreams.")
+		("wsorigin", po::value<std::string>(&wsorigin)->default_value(""), "Websocket allowed origin.")
+		("ws", po::value<std::vector<std::string>>(&ws_listens)->multitoken(), "For websocket server listen.")
+
+		("db_name", po::value<std::string>(&db_name)->default_value("cmall"), "Database name.")
+		("db_host", po::value<std::string>(&db_host)->default_value(""), "Database host.")
+		("db_port", po::value<unsigned short>(&db_port)->default_value(5432), "Database port.")
+		("db_user", po::value<std::string>(&db_user)->default_value("postgres"), "Database user.")
+		("db_passwd", po::value<std::string>(&db_passwd)->default_value("postgres"), "Database password.")
+		;
 
 	try
 	{
@@ -180,24 +189,19 @@ int main(int argc, char** argv)
 		if (vm.count("help") || argc == 1)
 		{
 			std::cout << desc;
-			return EXIT_SUCCESS;
+			co_return EXIT_SUCCESS;
 		}
 	}
 	catch (const std::exception& e)
 	{
 		std::cerr << "exception: " << e.what() << std::endl;
-		return EXIT_FAILURE;
+		co_return EXIT_FAILURE;
 	}
-
-	auto concurrency = boost::thread::hardware_concurrency() + 2;
-	io_context_pool ios{ concurrency };
 
 	boost::asio::signal_set terminator_signal(ios.get_io_context());
 	terminator_signal.add(SIGINT);
 	terminator_signal.add(SIGTERM);
-//#ifdef __linux__
-//	signal(SIGPIPE, SIG_IGN);
-//#endif
+
 #if defined(SIGQUIT)
 	terminator_signal.add(SIGQUIT);
 #endif // defined(SIGQUIT)
@@ -205,30 +209,52 @@ int main(int argc, char** argv)
 	cmall::server_config cfg;
 	cmall::db_config dbcfg;
 
-	dbcfg.host_		= db_host;
+	dbcfg.host_ = db_host;
 	dbcfg.password_ = db_passwd;
-	dbcfg.user_		= db_user;
-	dbcfg.dbname_	= db_name;
-	dbcfg.port_		= db_port;
+	dbcfg.user_ = db_user;
+	dbcfg.dbname_ = db_name;
+	dbcfg.port_ = db_port;
 
-	cfg.dbcfg_		  = dbcfg;
-	cfg.http_listens_ = http_listens;
+	cfg.chain_id_ = (ChainType)chain_id;
+	cfg.dbcfg_ = dbcfg;
+	cfg.upstreams_ = upstreams;
+	cfg.ws_listens_ = ws_listens;
+	cfg.wsorigin_ = wsorigin;
 
-	cmall::cmall_service dsrv{ ios, cfg };
+	cmall::cmall_service xsrv{ios, cfg};
 
-	dsrv.start();
+	using namespace boost::asio::experimental::awaitable_operators;
 
 	// 处理中止信号.
-	terminator_signal.async_wait([&ios, &dsrv](const boost::system::error_code&, int) {
-		LOG_DBG << "terminator is called!";
-		dsrv.stop();
-		LOG_DBG << "server stopped!";
+	co_await(
+		xsrv.run_httpd() || terminator_signal.async_wait(boost::asio::use_awaitable)
+	);
+
+	terminator_signal.clear();
+
+	LOG_DBG << "terminator is called!";
+
+	co_await xsrv.stop();
+	LOG_DBG << "xsrv.stop() is called!";
+
+	co_return EXIT_SUCCESS;
+}
+
+
+int main(int argc, char** argv)
+{
+	auto concurrency = boost::thread::hardware_concurrency() + 2;
+	io_context_pool ios{ concurrency };
+
+	int main_return;
+
+	boost::asio::co_spawn(ios.server_io_context(), co_main(argc, argv, ios), [&](std::exception_ptr e, int ret){
+		if (e)
+			std::rethrow_exception(e);
+		main_return = ret;
 		ios.stop();
-		LOG_DBG << "ios stopped!";
 	});
 
-	ios.run(5);
-
-	LOG_DBG << "cmall system exiting...";
-	return EXIT_SUCCESS;
+	ios.run();
+	return main_return;
 }

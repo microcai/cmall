@@ -9,6 +9,7 @@
 #include <iterator>
 #include <algorithm>
 #include <random>
+#include <keccak/keccak.h>
 
 #ifdef __linux__
 
@@ -42,53 +43,29 @@
 
 #include <boost/date_time/c_local_time_adjustor.hpp>
 
-#include "cmall/internal.hpp"
-#include "cmall/scoped_exit.hpp"
+#include "utils/scoped_exit.hpp"
 
+#include "cmall/internal.hpp"
 
 #ifdef _MSC_VER
-const DWORD MS_VC_EXCEPTION = 0x406D1388;
-
-#pragma pack(push,8)
-typedef struct tagTHREADNAME_INFO
-{
-	DWORD dwType; // Must be 0x1000.
-	LPCSTR szName; // Pointer to name (in user addr space).
-	DWORD dwThreadID; // Thread ID (-1=caller thread).
-	DWORD dwFlags; // Reserved for future use, must be zero.
-} THREADNAME_INFO;
-#pragma pack(pop)
-
-void SetThreadName(uint32_t dwThreadID, const char* threadName)
-{
-	THREADNAME_INFO info;
-	info.dwType = 0x1000;
-	info.szName = threadName;
-	info.dwThreadID = dwThreadID;
-	info.dwFlags = 0;
-
-	__try
-	{
-		RaiseException(MS_VC_EXCEPTION, 0, sizeof(info) / sizeof(ULONG_PTR), (ULONG_PTR*)&info);
-	}
-	__except (EXCEPTION_EXECUTE_HANDLER)
-	{}
-}
 
 void set_thread_name(const char* name)
 {
-	SetThreadName(GetCurrentThreadId(), name);
+	wchar_t namew[199] = { 0 };
+	MultiByteToWideChar(CP_UTF8, 0, name, -1, namew, 199);
+	SetThreadDescription(GetCurrentThread(), namew);
 }
 
-void set_thread_name(boost::thread* thread, const char* name)
+void set_thread_name(std::thread* thread, const char* name)
 {
-	DWORD threadId = ::GetThreadId(static_cast<HANDLE>(thread->native_handle()));
-	SetThreadName(threadId, name);
+	wchar_t namew[199] = { 0 };
+	MultiByteToWideChar(CP_UTF8, 0, name, -1, namew, 199);
+	SetThreadDescription(static_cast<HANDLE>(thread->native_handle()), namew);
 }
 
 #elif __linux__
 
-void set_thread_name(boost::thread* thread, const char* name)
+void set_thread_name(std::thread* thread, const char* name)
 {
 	auto handle = thread->native_handle();
 	pthread_setname_np(handle, name);
@@ -101,7 +78,7 @@ void set_thread_name(const char* name)
 
 #else
 
-void set_thread_name(boost::thread*, const char*)
+void set_thread_name(std::thread*, const char*)
 {
 }
 
@@ -128,12 +105,6 @@ inline std::string uuid_to_string(boost::uuids::uuid const& u)
 		result += boost::uuids::detail::to_char(lo);
 	}
 	return result;
-}
-
-std::string gen_uuid()
-{
-	boost::uuids::uuid guid = boost::uuids::random_generator()();
-	return uuid_to_string(guid);
 }
 
 bool parse_endpoint_string(const std::string& str, std::string& host, std::string& port, bool& ipv6only)
@@ -344,6 +315,7 @@ std::string app_config(const std::string& cfg)
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////
 
 boost::posix_time::ptime make_localtime(std::string_view time) noexcept
 {
@@ -358,4 +330,116 @@ boost::posix_time::ptime make_localtime(std::string_view time) noexcept
 	}
 	catch (...) {}
 	return {};
+}
+
+std::optional<std::string> from_contract_hexstring(const std::string& hexstring_length, std::string hexstring)
+{
+	cpp_int len;
+	try
+	{
+		len = cpp_int{ "0x" + hexstring_length };
+	}
+	catch (...)
+	{
+		return {};
+	}
+
+	std::vector<unsigned char> vec;
+	if (!from_hexstring(hexstring.substr(0, 2 * len.convert_to<std::size_t>()), vec))
+		return {};
+
+	return std::string{ (const char*)vec.data(), vec.size() };
+}
+
+
+std::string checksum_encode(const std::string& addr)
+{
+	if (addr.size() != 42 || addr[0] != '0' || (addr[1] != 'x' && addr[1] != 'X'))
+		return {};
+
+	std::string result = boost::to_lower_copy(addr).substr(2);
+	std::string hash = to_hexstring(ethash_keccak256((const uint8_t*)result.data(), result.size()));
+
+	for (int i = 0; i < (int)result.size(); i++)
+	{
+		char ch = hash[i];
+		if (ch >= '0' && ch <= '9')
+			ch = (char)((int)ch - (int)'0');
+		else if (ch >= 'A' && ch <= 'F')
+			ch = (char)((int)(ch - 'A') + 10);
+		else if (ch >= 'a' && ch <= 'f')
+			ch = (char)((int)(ch - 'a') + 10);
+		else
+			return {};
+
+		char& c = result[i];
+		if (!std::isdigit(c) && (c < 'a' || c > 'f'))
+			return {};
+
+		if (ch >= 8)
+			c = (char)std::toupper(result[i]);
+	}
+
+	return "0x" + result;
+}
+
+
+bool check_address_and_tolower(std::string& address)
+{
+	if (address.size() != 42
+		|| address[0] != '0'
+		|| (address[1] != 'x' && address[1] != 'X'))
+		return false;
+
+	bool isupper = false;
+	for (size_t i = 2; i < 40; i++)
+	{
+		auto& c = address[i];
+		if ((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'))
+			continue;
+
+		isupper = true;
+		break;
+	}
+
+	if (isupper)
+	{
+		boost::to_lower(address);
+		return true;
+	}
+
+	std::string address_copy{ address };
+	boost::to_lower(address_copy);
+	if (address_copy == address)
+		return true;
+
+	address_copy = checksum_encode(address_copy);
+	if (address_copy != address)
+		return false;
+
+	boost::to_lower(address);
+	return true;
+}
+
+bool check_block_number(std::string blocknumber)
+{
+	for (auto c : blocknumber)
+	{
+		if (c >= '0' && c <= '9')
+			continue;
+
+		return false;
+	}
+
+	// try convert to int
+
+	try
+	{
+		cpp_int converted(blocknumber);
+		return true;
+	}
+	catch (...)
+	{}
+
+	return false;
 }

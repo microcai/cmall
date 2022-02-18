@@ -7,16 +7,81 @@
 
 #pragma once
 
+#include <optional>
+#include <thread>
+#include <boost/date_time/posix_time/ptime.hpp>
+#include <keccak/keccak.h>
 #include <boost/json.hpp>
-#include <sstream>
+#include <boost/algorithm/string.hpp>
+#include <boost/asio.hpp>
+
+#include <boost/multiprecision/cpp_int.hpp>
+#include <boost/multiprecision/cpp_dec_float.hpp>
+
+#include "fmt_extra.hpp"
 
 void set_thread_name(const char* name);
-void set_thread_name(boost::thread* thread, const char* name);
+void set_thread_name(std::thread* thread, const char* name);
 
-std::string gen_uuid();
+using tcp = boost::asio::ip::tcp;               // from <boost/asio/ip/tcp.hpp>
+namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.hpp>
+
+using ws = websocket::stream<tcp::socket>;
+using boost::multiprecision::cpp_int;
+using boost::multiprecision::cpp_dec_float_50;
+using boost::multiprecision::cpp_dec_float_100;
+
+template<class ... T> inline constexpr bool always_false = false;
+
 bool make_listen_endpoint(const std::string& address, tcp::endpoint& endp, boost::system::error_code& ec);
+bool check_address_and_tolower(std::string& address);
+bool check_block_number(std::string blocknumber);
+
+std::optional<std::string> from_contract_hexstring(const std::string& hexstring_length, std::string hexstring);
 
 boost::posix_time::ptime make_localtime(std::string_view time) noexcept;
+
+// 将wei单位转换为eth单位.
+template<class T>
+cpp_dec_float_50 wei_to_ether(const T& wei)
+{
+	cpp_dec_float_50 result;
+
+	if constexpr (!std::is_same_v<std::decay_t<T>, uint64_t> && !std::is_same_v<std::decay_t<T>, int64_t>
+		&& !std::is_same_v<std::decay_t<T>, cpp_dec_float_50>
+		&& !std::is_same_v<std::decay_t<T>, cpp_dec_float_100>
+		&& !std::is_same_v<std::decay_t<T>, cpp_int>)
+	{
+		static_assert(always_false<T>, "only uint64_t, int64_t, cpp_dec_float_50, cpp_dec_float_100, cpp_int");
+	}
+	else
+	{
+		result = static_cast<cpp_dec_float_50>(wei) / 1000000000000000000;
+	}
+
+	return result;
+}
+
+// 将ether单位转换为eth单位.
+template<class T>
+cpp_int ether_to_wei(const T& ether)
+{
+	cpp_int result;
+
+	if constexpr (!std::is_same_v<std::decay_t<T>, uint64_t> && !std::is_same_v<std::decay_t<T>, int64_t>
+		&& !std::is_same_v<std::decay_t<T>, cpp_dec_float_50>
+		&& !std::is_same_v<std::decay_t<T>, cpp_dec_float_100>
+		&& !std::is_same_v<std::decay_t<T>, cpp_int>)
+	{
+		static_assert(always_false<T>, "only uint64_t, int64_t, cpp_dec_float_50, cpp_dec_float_100, cpp_int");
+	}
+	else
+	{
+		result = static_cast<cpp_int>(static_cast<cpp_dec_float_50>(ether) * 1000000000000000000);
+	}
+
+	return result;
+}
 
 template<class Iterator>
 std::string to_hexstring(Iterator start, Iterator end, std::string const& prefix)
@@ -66,7 +131,76 @@ inline std::string to_hexstring_impl(cpp_int const& data, std::streamsize digits
 	return ret;
 }
 
+template<class T>
+std::string to_hexstring(T const& data, std::streamsize digits = 64, std::string prefixed = "")
+{
+	if constexpr (std::is_same_v<std::decay_t<T>, std::string> ||
+		std::is_same_v<std::decay_t<T>, std::vector<uint8_t>>)
+	{
+		auto tmp = to_hexstring(data.begin(), data.end(), "");
+		int64_t num = static_cast<int64_t>(digits) - static_cast<int64_t>(tmp.size());
+		if (num > 0)
+			tmp = std::string(num, '0') + tmp;
+		return prefixed + tmp;
+	}
+	else if constexpr (std::is_same_v<std::decay_t<T>, cpp_int> ||
+		std::is_same_v<std::decay_t<T>, int64_t> ||
+		std::is_same_v<std::decay_t<T>, uint64_t>)
+	{
+		// 将cpp_int或int64_t, uint64_t转为16进制字符串, 可指定前辍和长度.
+		if (data < 0)
+			return "-" + prefixed + to_hexstring_impl(0 - data, digits);
+		return prefixed + to_hexstring_impl(data, digits);
+	}
+	else if constexpr(std::is_same_v<std::decay_t<T>, ethash_hash256>)
+	{
+		const char* p = reinterpret_cast<const char*>(&data);
+		auto tmp = to_hexstring(p, p + sizeof(ethash_hash256), "");
+		int64_t num = static_cast<int64_t>(digits) - static_cast<int64_t>(tmp.size());
+		if (num > 0)
+			tmp = std::string(num, '0') + tmp;
+		return prefixed + tmp;
+	}
+	else
+	{
+		static_assert(always_false<T>, "only string or std::vector<uint8_t>");
+	}
+}
+
 std::string to_string(const boost::posix_time::ptime& t);
+inline std::string to_string(cpp_dec_float_50 bvalue){
+	std::stringstream oss;
+
+	oss << std::fixed << std::setprecision(std::numeric_limits<cpp_dec_float_50>::digits) << bvalue;
+
+	std::string result = oss.str();
+
+	if (result.find('.') !=  std::string::npos)
+	{
+		boost::trim_right_if(result, boost::algorithm::is_any_of("0"));
+		if ( * result.rbegin() ==  '.')
+			result.resize(result.length() -1 );
+	}
+
+	return result;
+}
+
+inline std::string to_string(cpp_dec_float_100 bvalue){
+	std::stringstream oss;
+
+	oss << std::fixed << std::setprecision(std::numeric_limits<cpp_dec_float_100>::digits) << bvalue;
+
+	std::string result = oss.str();
+
+	if (result.find('.') !=  std::string::npos)
+	{
+		boost::trim_right_if(result, boost::algorithm::is_any_of("0"));
+		if ( * result.rbegin() ==  '.')
+			result.resize(result.length() -1 );
+	}
+
+	return result;
+}
 
 inline std::string fill_hexstring(const std::string& str)
 {
@@ -78,145 +212,4 @@ inline std::string fill_hexstring(const std::string& str)
 	}
 
 	return str;
-}
-
-inline int gen_random_int(int start, int end)
-{
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_int_distribution<> dis(start, end);
-
-	return dis(gen);
-}
-
-inline std::string gen_unique_string(const unsigned int max_str_len)
-{
-	static const char szAcsiiTable[] = {
-		'a', 'b', 'c', 'd', 'e',
-		'f', 'g', 'h', 'i', 'j',
-		'k', 'l', 'm', 'n', 'o',
-		'p', 'q', 'r', 's', 't',
-		'u', 'v', 'w', 'x', 'y',
-		'z', '1', '2', '3', '4',
-		'5', '6', '7', '8', '9',
-		'0'
-	};
-	static const int table_len = sizeof(szAcsiiTable) / sizeof(char);
-
-	std::string str;
-	for (unsigned int i = 0; i < max_str_len; i++) {
-
-		int index = gen_random_int(0, table_len - 1);
-		str.append(1, szAcsiiTable[index]);
-	}
-
-	return str;
-}
-
-template<typename Printable>
-inline std::string output(const Printable& s)
-{
-	std::stringstream ss;
-	ss << s;
-	return ss.str();
-}
-
-namespace cmall {
-	using namespace boost;
-
-	namespace detail {
-		template<typename T>
-		void json_append(json::array& v, T t)
-		{
-			v.emplace_back(t);
-		}
-
-		template<typename T, class ... Args>
-		void json_append(json::array& v, T first, Args ... params)
-		{
-			v.emplace_back(first);
-			json_append(v, params...);
-		}
-	}
-
-	template <class ... Args>
-	json::value make_rpc_json(const std::string& method, Args ... params)
-	{
-		json::array params_array;
-		detail::json_append(params_array, params...);
-
-		return json::value{
-			{"jsonrpc", "2.0" },
-			{"method", method },
-			{"params", params_array },
-			{"id", rand()}
-		};
-	}
-
-	inline json::value make_rpc_json(const std::string& method, const json::value& params)
-	{
-		return json::value{
-			{"jsonrpc", "2.0" },
-			{"method", method },
-			{"params", params },
-			{"id", rand()}
-		};
-	}
-
-	inline std::string json_to_string(const json::value& jv, bool lf = true)
-	{
-		if (lf) return json::serialize(jv) + "\n";
-		return json::serialize(jv);
-	}
-
-	template <class ... Args>
-	std::string make_rpc_json_string(const std::string& method, Args ... params)
-	{
-		json::array params_array;
-		detail::json_append(params_array, params...);
-
-		json::value tmp{
-			{"jsonrpc", "2.0" },
-			{"method", method },
-			{"params", params_array },
-			{"id", rand()}
-		};
-
-		return json_to_string(tmp, false);
-	}
-
-	class json_accessor
-	{
-	public:
-		json_accessor(const json::object& obj)
-			: obj_(obj)
-		{}
-
-		inline json::value get(char const* key, json::value default_value) const
-		{
-			try {
-				if (obj_.contains(key))
-					return obj_.at(key);
-			}
-			catch (const std::invalid_argument&)
-			{}
-
-			return default_value;
-		}
-
-	private:
-		const json::object& obj_;
-	};
-
-	inline std::string json_as_string(const json::value& value, std::string default_value = "")
-	{
-		try {
-			auto ref = value.as_string();
-			return std::string(ref.begin(), ref.end());
-		}
-		catch (const std::invalid_argument&)
-		{}
-
-		return default_value;
-	}
 }

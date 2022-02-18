@@ -1,54 +1,49 @@
-﻿ADD_ODB_INTERFACE(ODB_GENERATED ${CMAKE_CURRENT_SOURCE_DIR}/include/cmall/db.hpp ${CMAKE_CURRENT_BINARY_DIR})
+﻿ADD_ODB_INTERFACE(ODB_GENERATED ${CMAKE_CURRENT_SOURCE_DIR}/include/cmall/db.hpp ${CMAKE_CURRENT_BINARY_DIR} --include-prefix cmall)
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/cmall/version.hpp.in
-		${CMAKE_CURRENT_SOURCE_DIR}/include/cmall/version.hpp @ONLY NEWLINE_STYLE LF)
-
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 add_definitions(-DLOGGING_COMPRESS_LOGS)
 
 file(GLOB cmall_SRCS
+	include/cmall/async_connect.hpp
+	include/cmall/default_cert.hpp
+	include/cmall/io.hpp
+	include/cmall/logging.hpp
 	include/cmall/scoped_exit.hpp
 	include/cmall/time_clock.hpp
-	include/cmall/traits-pgsql.hpp
 	include/cmall/url_parser.hpp
 	include/cmall/version.hpp
 	include/cmall/db.hpp
-	include/cmall/db_traits.hpp
-	include/cmall/internal.hpp
-	include/cmall/io_context_pool.hpp
-	include/cmall/logging.hpp
-	include/cmall/misc.hpp
-	include/cmall/cmall.hpp
+	include/cmall/db.xml
 	include/cmall/database.hpp
-	include/cmall/async_connect.hpp
-	include/cmall/simple_http.hpp
-	include/cmall/socks_proxy.hpp
-	include/cmall/url_parser.hpp
-	include/cmall/http_last_modified.hpp
-	include/cmall/default_cert.hpp
-	include/cmall/io.hpp
-	include/cmall/handler_type_check.hpp
-	include/cmall/magic_enum.hpp
-	include/cmall/session.hpp
+	include/cmall/cmall.hpp
+	include/cmall/internal.hpp
+	include/cmall/js_util.hpp
+	include/cmall/misc.hpp
+	include/db_traits.hpp
+	include/io_context_pool.hpp
+	include/traits-pgsql.hpp
+	include/bundle_file.hpp
+	include/fmt_extra.hpp
+	include/jsonrpc.hpp
 
+	src/default_cert.cpp
+	src/io_context_pool.cpp
 	src/main.cpp
 	src/cmall.cpp
-	src/io_context_pool.cpp
-	src/internal.cpp
 	src/database.cpp
-	src/default_cert.cpp
-	src/http_last_modified.cpp
+	src/internal.cpp
 )
+
+find_package(Embed REQUIRED)
+EMBED_TARGET(SITE site.zip)
 
 add_executable(cmall ${cmall_SRCS}
 	${ODB_GENERATED}
+	${EMBED_SITE_OUTPUTS}
 )
-
-target_include_directories(cmall	PUBLIC
-	${CMAKE_CURRENT_BINARY_DIR}
+target_include_directories(cmall PRIVATE
+	${CMAKE_BINARY_DIR}
 	${CMAKE_CURRENT_SOURCE_DIR}
-	${CMAKE_CURRENT_SOURCE_DIR}/include/
-	${CMAKE_CURRENT_SOURCE_DIR}/include/cmall
+	${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 if(ENABLE_BUILD_WERROR)

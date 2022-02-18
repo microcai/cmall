@@ -109,33 +109,16 @@ namespace multiprecision = boost::multiprecision;
 #pragma warning(push)
 #pragma warning(disable: 4244 4127 4702)
 
-#include "cmall/logging.hpp"
+#include "utils/logging.hpp"
 
 #pragma warning(pop)
 
-#include "cmall/url_parser.hpp"
-#include "cmall/time_clock.hpp"
-
-// #include "ethash/ethash.hpp"
-// #include "ethash/keccak.hpp"
-// #include "ethash/progpow.hpp"
-
-// using ethash::hash256;
-// using ethash::hash512;
-// using ethash::hash1024;
-// using ethash::hash2048;
+#include "utils/url_parser.hpp"
+#include "utils/time_clock.hpp"
+using timer = boost::asio::basic_waitable_timer<time_clock::steady_clock>;
 
 #pragma warning(push)
 #pragma warning(disable: 4267)
-
-// #include "libethcore/Common.h"
-// #include "libdevcore/CommonJS.h"
-// #include "libethcore/TransactionBase.h"
-
-// #include "libdevcore/CommonJS.h"
-// #include "libdevcrypto/SecretStore.h"
-// #include "libdevcrypto/CryptoPP.h"
-// #include "libdevcrypto/Common.h"
 
 #ifndef _MSC_VER
 #pragma GCC diagnostic push
@@ -145,8 +128,6 @@ namespace multiprecision = boost::multiprecision;
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif // _MSC_VER
 
-// #include "cryptopp/base32.h"
-
 #ifndef _MSC_VER
 #pragma GCC diagnostic pop
 #pragma clang diagnostic pop
@@ -154,24 +135,15 @@ namespace multiprecision = boost::multiprecision;
 
 #pragma warning(pop)
 
-#include "cmall/io_context_pool.hpp"
+#include "io_context_pool.hpp"
 
 #define APP_NAME "cmall"
-// #define HTTPD_VERSION_STRING	     APP_NAME "/1.0"
+#define HTTPD_VERSION_STRING	     APP_NAME "/1.0"
 
-using tcp = boost::asio::ip::tcp;               // from <boost/asio/ip/tcp.hpp>
-namespace websocket = boost::beast::websocket;  // from <boost/beast/websocket.hpp>
-
-using ws = websocket::stream<tcp::socket>;
-using boost::multiprecision::cpp_int;
-using boost::multiprecision::cpp_dec_float_50;
-using boost::multiprecision::cpp_dec_float_100;
-using cmall::io_context_pool;
-using timer = boost::asio::basic_waitable_timer<time_clock::steady_clock>;
-
-template<class ... T> inline constexpr bool always_false = false;
-
-template <typename... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template <typename... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+enum class ChainType
+{
+	ETHEREUM = 1,
+	CHAOS = 1001011,
+};
 
 #include "cmall/misc.hpp"

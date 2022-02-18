@@ -7,4 +7,6 @@
 
 #pragma once
 
-#include "cmall/traits-pgsql.hpp"
+#include <string_view>
+
+std::string_view default_root_certificates();

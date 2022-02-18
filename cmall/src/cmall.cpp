@@ -1,160 +1,58 @@
 ﻿
+#include <boost/scope_exit.hpp>
+#include <boost/asio/experimental/promise.hpp>
+#include <boost/asio/experimental/awaitable_operators.hpp>
+#include <boost/asio/experimental/as_tuple.hpp>
+
 #include "cmall/cmall.hpp"
-#include "db.hpp"
-#include "logging.hpp"
-#include "cmall/magic_enum.hpp"
-#include "misc.hpp"
-#include "cmall/internal.hpp"
-#include "cmall/simple_http.hpp"
-#include "session.hpp"
+#include "utils/async_connect.hpp"
+#include "utils/url_parser.hpp"
+#include "utils/scoped_exit.hpp"
 
+#include <boost/json.hpp>
 #include <boost/date_time.hpp>
-#include <boost/json/src.hpp>
-
-#include <boost/regex.hpp>
-
-#include <tuple>
-#include <variant>
-#include <version.hpp>
 
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wexpansion-to-defined"
 #endif
 
-#include <fmt/format.h>
 #include <fmt/ostream.h>
 #include <fmt/printf.h>
+#include <fmt/format.h>
 
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
 
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
+#include "cmall/js_util.hpp"
+#include "jsonrpc.hpp"
+#include "bundle_file.hpp"
 
-namespace cmall
-{
+namespace cmall {
 	using namespace std::chrono_literals;
 
-	const auto build_response = overloaded{
-		[](http::status code, const std::string reason = {})
-		{
-			response res{ code, 11 };
-			res.set(http::field::server, HTTPD_VERSION_STRING);
-			res.set(http::field::content_type, "text/html");
-			res.keep_alive(false);
-			res.body() = reason.empty() ? std::string(http::obsolete_reason(code)) : reason;
-			res.prepare_payload();
-			return res;
-		},
-		[](boost::json::value data)
-		{
-			std::string payload = boost::json::serialize(data);
-			response res{ http::status::ok, 11 };
-			res.set(http::field::server, HTTPD_VERSION_STRING);
-			res.set(http::field::content_type, "text/html");
-			res.set(http::field::content_type, "application/json");
-			res.keep_alive(false);
-			res.body() = payload;
-			res.prepare_payload();
-			return res;
-		},
-	};
-
-	const auto rpc_result_to_string = [](const request_context& ctx, const rpc_result& ret) -> std::string
-	{
-		const auto& [success, res] = ret;
-
-		boost::json::object obj = {
-			{ "jsonrpc", "2.0" },
-		};
-		if (ctx.payload_.as_object().contains("id"))
-		{
-			obj.emplace("id", ctx.payload_.as_object().at("id"));
-		}
-		boost::json::string_view key = success ? "result" : "error"; // error value MUST be a object
-		obj.emplace(key, res);
-		return json_to_string(obj, false);
-	};
+	//////////////////////////////////////////////////////////////////////////
 
 	cmall_service::cmall_service(io_context_pool& ios, const server_config& config)
 		: m_io_context_pool(ios)
+		, m_io_context(m_io_context_pool.server_io_context())
 		, m_config(config)
 		, m_database(m_config.dbcfg_, m_io_context_pool.database_io_context())
 	{
 	}
 
-	cmall_service::~cmall_service() { LOG_DBG << "~cmall_service()"; }
-
-	void cmall_service::start()
+	cmall_service::~cmall_service()
 	{
-		m_abort = false;
-
-		init_http_acceptors();
-
-		int pool_size = static_cast<int>(m_io_context_pool.pool_size());
-		for (int i = 0; i < pool_size; i++)
-		{
-			for (auto& a : m_http_acceptors)
-			{
-				boost::asio::spawn(m_io_context_pool.get_io_context().get_executor(),
-					[this, &a](boost::asio::yield_context yield) mutable { start_http_listen(a, yield); });
-			}
-		}
-
-		// for test
-		boost::asio::spawn(m_io_context_pool.get_io_context().get_executor(),
-			[this](boost::asio::yield_context yield) mutable
-			{
-				boost::system::error_code ec;
-
-				auto executor = boost::asio::get_associated_executor(yield);
-				boost::asio::steady_timer timer(executor);
-
-				// cmall_merchant m;
-				// m.uid_ = 10668;
-				// m.name_ = "test merchant";
-				// m.verified_ = true;
-				// m.desc_ = "this is a test merchant";
-				// bool ok = m_database.async_add(m, yield[ec]);
-				// LOG_DBG << "add merchant: " << ok << ", id: " << m.id_;
-
-				// ok = m_database.async_hard_remove<cmall_merchant>(2, yield[ec]);
-				// LOG_DBG << "hard remove 2: " << ok;
-
-				cmall_product p;
-				p.owner_	   = 1000;
-				p.name_		   = "keyboard";
-				p.price_	   = cpp_numeric("880");
-				p.currency_	   = "cny";
-				p.description_ = "hhhhhh";
-				p.state_	   = 1;
-				bool ok		   = m_database.async_add(p, yield[ec]);
-				LOG_DBG << "add product: " << ok << ", id: " << p.id_;
-				// m_database.async_soft_remove(p, yield[ec]);
-
-				timer.expires_after(5s);
-				timer.async_wait(yield[ec]);
-
-				p.state_ = 7;
-				ok		 = m_database.async_update(p, yield[ec]);
-				LOG_DBG << "update product: " << ok << ", id: " << p.id_;
-			});
+		LOG_DBG << "~cmall_service()";
 	}
 
-	void cmall_service::stop()
+	boost::asio::awaitable<void> cmall_service::stop()
 	{
 		m_abort = true;
 
-		boost::system::error_code ec;
-
-		for (auto& acceptor : m_http_acceptors)
-		{
-			acceptor.cancel(ec);
-			acceptor.close(ec);
-		}
+		LOG_DBG << "close all ws...";
+		co_await close_all_ws();
 
 		LOG_DBG << "database shutdown...";
 		m_database.shutdown();
@@ -162,35 +60,66 @@ namespace cmall
 		LOG_DBG << "cmall_service.stop()";
 	}
 
-	bool cmall_service::init_http_acceptors()
+	boost::asio::awaitable<int> cmall_service::run_httpd()
+	{
+		// 初始化ws acceptors.
+		co_await init_ws_acceptors();
+
+		int pool_size = static_cast<int>(m_io_context_pool.pool_size());
+
+		try
+		{
+			std::vector<boost::asio::experimental::promise<void(std::exception_ptr)>> ws_runners;
+			for (int i = 0; i < pool_size; i++)
+			{
+				for (auto& a : m_ws_acceptors)
+				{
+					ws_runners.emplace_back(
+						boost::asio::co_spawn(m_io_context_pool.get_io_context().get_executor(), listen_loop(a), boost::asio::experimental::use_promise)
+					);
+				}
+			}
+
+			for (auto && ws_runner: ws_runners)
+				co_await ws_runner.async_wait(boost::asio::use_awaitable);
+		}
+		catch(boost::system::system_error& e)
+		{
+			LOG_ERR << "run_httpd errored: " << e.code().message();
+			throw;
+		}
+		co_return 0;
+	}
+
+	boost::asio::awaitable<bool> cmall_service::init_ws_acceptors()
 	{
 		boost::system::error_code ec;
 
-		for (const auto& wsd : m_config.http_listens_)
+		for (const auto& wsd : m_config.ws_listens_)
 		{
 			tcp::endpoint endp;
 
 			bool ipv6only = make_listen_endpoint(wsd, endp, ec);
 			if (ec)
 			{
-				LOG_ERR << "http server listen error: " << wsd << ", ec: " << ec.message();
-				return false;
+				LOG_ERR << "WS server listen error: " << wsd << ", ec: " << ec.message();
+				co_return false;
 			}
 
-			tcp::acceptor a{ m_io_context_pool.get_io_context() };
+			tcp::acceptor a{m_io_context};
 
 			a.open(endp.protocol(), ec);
 			if (ec)
 			{
-				LOG_ERR << "http server open accept error: " << ec.message();
-				return false;
+				LOG_ERR << "WS server open accept error: " << ec.message();
+				co_return false;
 			}
 
 			a.set_option(boost::asio::socket_base::reuse_address(true), ec);
 			if (ec)
 			{
-				LOG_ERR << "http server accept set option failed: " << ec.message();
-				return false;
+				LOG_ERR << "WS server accept set option failed: " << ec.message();
+				co_return false;
 			}
 
 #if __linux__
@@ -199,8 +128,8 @@ namespace cmall
 				int on = 1;
 				if (::setsockopt(a.native_handle(), IPPROTO_IPV6, IPV6_V6ONLY, (char*)&on, sizeof(on)) == -1)
 				{
-					LOG_ERR << "http server setsockopt IPV6_V6ONLY";
-					return false;
+					LOG_ERR << "WS server setsockopt IPV6_V6ONLY";
+					co_return false;
 				}
 			}
 #else
@@ -209,44 +138,45 @@ namespace cmall
 			a.bind(endp, ec);
 			if (ec)
 			{
-				LOG_ERR << "http server bind failed: " << ec.message() << ", address: " << endp.address().to_string()
-						<< ", port: " << endp.port();
-				return false;
+				LOG_ERR << "WS server bind failed: "
+					<< ec.message() << ", address: " << endp.address().to_string() << ", port: " << endp.port();
+				co_return false;
 			}
 
 			a.listen(boost::asio::socket_base::max_listen_connections, ec);
 			if (ec)
 			{
-				LOG_ERR << "http server listen failed: " << ec.message();
-				return false;
+				LOG_ERR << "WS server listen failed: " << ec.message();
+				co_return false;
 			}
 
-			m_http_acceptors.emplace_back(std::move(a));
+			m_ws_acceptors.emplace_back(std::move(a));
 		}
 
-		return true;
+		co_return true;
 	}
 
-	void cmall_service::start_http_listen(tcp::acceptor& a, boost::asio::yield_context& yield)
+	boost::asio::awaitable<void> cmall_service::listen_loop(tcp::acceptor& a)
 	{
-		boost::system::error_code error;
-
 		while (!m_abort)
 		{
+
+			boost::system::error_code error;
 			tcp::socket socket(m_io_context_pool.get_io_context());
-			a.async_accept(socket, yield[error]);
+			co_await a.async_accept(socket, boost::asio::redirect_error(boost::asio::use_awaitable, error) );
+
 			if (error)
 			{
-				LOG_ERR << "http server, async_accept: " << error.message();
+				LOG_ERR << "WS server, async_accept: " << error.message();
 
-				if (error == boost::asio::error::operation_aborted || error == boost::asio::error::bad_descriptor)
+				if (error == boost::asio::error::operation_aborted ||
+					error == boost::asio::error::bad_descriptor)
 				{
-					return;
+					co_return;
 				}
 
 				if (!a.is_open())
-					return;
-
+					co_return;
 				continue;
 			}
 
@@ -255,302 +185,444 @@ namespace cmall
 
 			boost::beast::tcp_stream stream(std::move(socket));
 
-			static std::atomic_size_t id{ 0 };
-			size_t cid = id++;
-
-			boost::asio::spawn(
-				m_io_context_pool.get_io_context().get_executor(),
-				[this, cid, stream = std::move(stream)](boost::asio::yield_context yield) mutable
-				{ start_http_connect(cid, std::move(stream), yield); },
-				boost::coroutines::attributes(5 * 1024 * 1024));
-		}
-
-		LOG_DBG << "start_http_listen exit...";
-	}
-
-	void cmall_service::start_http_connect(
-		size_t cid, boost::beast::tcp_stream stream, boost::asio::yield_context& yield)
-	{
-		boost::system::error_code ec;
-
-		auto do_respond = [&](http::status status, const std::string& msg)
-		{
-			auto res = build_response(status, msg);
-			boost::beast::http::serializer<false, string_body, fields> sr{ res };
-			boost::beast::http::async_write(stream, sr, yield[ec]);
-			if (ec)
-			{
-				LOG_WARN << "start_http_connect, " << cid << ", err: " << ec.message();
-				return;
-			}
-		};
-
-		for (; !m_abort;)
-		{
-			boost::beast::flat_buffer buffer;
-			request req;
-			bool keep_alive = false;
-
-			boost::beast::http::async_read(stream, buffer, req, yield[ec]);
-			if (ec)
-			{
-				LOG_DBG << "start_http_connect, " << cid << ", async_read: " << ec.message();
-				break;
-			}
-
-			std::string target = req.target().to_string();
-			if (target.empty() || target[0] != '/' || target.find("..") != beast::string_view::npos)
-			{
-				do_respond(http::status::bad_request, "bad request");
-				break;
-			}
-
-			keep_alive = req.keep_alive();
-
-			if (target != "/wsapi")
-			{
-				// websocket path error
-				do_respond(http::status::bad_request, "bad request target");
-				break;
-			}
-
-			if (!beast::websocket::is_upgrade(req))
-			{
-				do_respond(http::status::upgrade_required, "upgrade required");
-				break;
-			}
-
+			static std::atomic_size_t id{0};
+			size_t connection_id = id++;
 			std::string remote_host;
-			auto endp = stream.socket().remote_endpoint(ec);
-			if (!ec)
+			auto endp = stream.socket().remote_endpoint(error);
+			if (!error)
 			{
 				if (endp.address().is_v6())
 				{
-					remote_host = "[" + endp.address().to_string() + "]:" + std::to_string(endp.port());
+					remote_host = "[" + endp.address().to_string()
+						+ "]:" + std::to_string(endp.port());
 				}
 				else
 				{
-					remote_host = endp.address().to_string() + ":" + std::to_string(endp.port());
+					remote_host = endp.address().to_string()
+						+ ":" + std::to_string(endp.port());
 				}
 			}
 
-			stream.expires_never();
+			auto client_ptr = add_ws(connection_id, remote_host, std::move(stream));
 
-			websocket::stream<beast::tcp_stream> ws{ std::move(stream) };
-			ws.set_option(websocket::stream_base::timeout::suggested(beast::role_type::server));
-			ws.async_accept(req, yield[ec]);
-			if (ec)
-			{
-				LOG_WARN << "start_http_connect, " << cid << ", ws async_accept: " << ec.what();
-				break;
-			}
-
-			auto s = std::make_shared<session>(cid, std::move(ws));
-			s->register_hander([this](request_context ctx) { this->handle_request(ctx); });
-			s->start();
-
-			{
-				std::lock_guard<std::mutex> lck(m_mtx_session);
-				m_sessions.emplace(cid, s);
-			}
-
-			return;
-		}
-
-		if (stream.socket().is_open())
-			stream.socket().shutdown(tcp::socket::shutdown_send, ec); // ?? async_accept
-	}
-
-	void cmall_service::handle_request(const request_context& ctx)
-	{
-		auto methodstr = json_as_string(json_accessor(ctx.payload_.as_object()).get("method", ""));
-		auto method	   = magic_enum::enum_cast<req_methods>(methodstr);
-		if (!method.has_value())
-		{
-			// unknown method
-			return;
-		}
-		std::variant<std::int64_t, std::string, std::nullptr_t> id;
-		const auto& reqo = ctx.payload_.as_object();
-
-		auto is_request = reqo.contains("id");
-		// 		if (!reqo.contains("id")) {
-		// 			id = nullptr;
-		// 		} else {
-		// 			auto f_id = reqo.at("id");
-		// 			if (f_id.is_int64()) {
-		// 				id = f_id.as_int64();
-		// 			} else if (f_id.is_string()) {
-		// 				id = json_as_string(f_id);
-		// 			}
-		// 		}
-
-		rpc_result ret;
-		auto method_enum = method.value();
-		switch (method_enum)
-		{
-			case req_methods::user_login:
-			{
-				ret = on_user_login(ctx);
-			}
-			break;
-			case req_methods::user_list_product:
-				break;
-			case req_methods::user_list_order:
-				break;
-			case req_methods::user_place_order:
-				break;
-			case req_methods::user_get_order:
-				break;
-			case req_methods::user_pay_order:
-				break;
-			case req_methods::user_close_order:
-				break;
-			case req_methods::merchant_info:
-				break;
-			case req_methods::merchant_list_product:
-				break;
-			case req_methods::merchant_add_product:
-				break;
-			case req_methods::merchant_mod_product:
-				break;
-			case req_methods::merchant_del_product:
-				break;
-			default:
-			{
-				// not possible
-			}
-		}
-
-		if (is_request)
-		{
-			auto result = rpc_result_to_string(ctx, ret);
-			{
-				std::lock_guard<std::mutex> lck(m_mtx_session);
-				auto it = m_sessions.find(ctx.sid_);
-				if (it != m_sessions.end())
+			boost::asio::co_spawn(socket.get_executor(),
+				handle_accepted_client(connection_id, client_ptr),
+				[this, connection_id, client_ptr](std::exception_ptr)
 				{
-					auto s = it->second;
-					s->reply(result);
-				}
-			}
+					remove_ws(connection_id);
+					LOG_DBG << "coro exit: handle_accepted_client( " << connection_id << ")";
+				});
 		}
+
+		LOG_DBG << "httpd accept loop exit...";
 	}
 
-	rpc_result cmall_service::on_user_login(const request_context& ctx)
+	boost::asio::awaitable<void> cmall_service::handle_accepted_client(size_t connection_id, client_connection_ptr client_ptr)
 	{
-		bool success = false;
+		using string_body = boost::beast::http::string_body;
+		using fields = boost::beast::http::fields;
+		using request = boost::beast::http::request<string_body>;
+		using response = boost::beast::http::response<string_body>;
 
-		boost::json::value ret;
-		const auto& reqo = ctx.payload_.as_object();
+		boost::system::error_code ec;
+
+		bool keep_alive = false;
+
+		auto http_simple_error_page = [&client_ptr](auto body, auto status_code,  unsigned version) mutable -> boost::asio::awaitable<void>
+		{
+			response res{ static_cast<boost::beast::http::status>(status_code), version };
+			res.set(boost::beast::http::field::server, HTTPD_VERSION_STRING);
+			res.set(boost::beast::http::field::content_type, "text/html");
+			res.keep_alive(false);
+			res.body() = body;
+			res.prepare_payload();
+
+			boost::beast::http::serializer<false, string_body, fields> sr{ res };
+			co_await boost::beast::http::async_write(client_ptr->tcp_stream, sr, boost::asio::use_awaitable);
+			client_ptr->tcp_stream.close();
+		};
+
+		LOG_DBG << "coro created: handle_accepted_client( " << connection_id << ")";
+
 		do
 		{
-			if (!reqo.contains("params"))
-			{
-				success = false;
-				ret		= { { "code", 4 }, { "message", "params required" } };
-				break;
-			}
+			boost::beast::flat_buffer buffer;
+			request req;
 
-			const auto& params = reqo.at("params").as_object();
-			if (!params.contains("username") || !params.contains("password"))
-			{
-				success = false;
-				ret		= { { "code", 4 }, { "message", "username/password required" } };
-				break;
-			}
-			auto username = json_as_string(json_accessor(params).get("username", ""));
-			auto password = json_as_string(json_accessor(params).get("password", ""));
-			if (username.empty() || password.size() < 6)
-			{
-				success = false;
-				ret		= { { "code", 4 }, { "message", "username/password invalid input" } };
-				break;
-			}
+			co_await boost::beast::http::async_read(client_ptr->tcp_stream, buffer, req, boost::asio::use_awaitable);
+			boost::string_view target = req.target();
 
-			bool check_ok = true;
-			// check username/password combination
-			if (!check_ok)
+			LOG_DBG << "coro: handle_accepted_client: [" << connection_id << "], got request on " << target.to_string();
+
+			if (target.empty() ||
+				target[0] != '/' ||
+				target.find("..") != boost::beast::string_view::npos)
 			{
-				success = false;
-				ret		= { { "code", 1001 }, { "message", "username/password not match" } };
-				break;
+				co_await http_simple_error_page("Illegal request-target", boost::beast::http::status::bad_request, req.version());
 			}
+			// 处理 HTTP 请求.
+			else if (boost::beast::websocket::is_upgrade(req))
+			{
+				LOG_DBG << "ws client incoming: " << connection_id << ", remote: " << client_ptr->remote_host_;
 
-			success = true;
-			ret		= { { "uid", 9527 }, { "username", "9527" } };
-		} while (false);
+				if (!target.starts_with("/api"))
+				{
+					co_await http_simple_error_page("not allowed", boost::beast::http::status::forbidden, req.version());
+					break;
+				}
 
-		return std::tie(success, ret);
+				client_ptr->ws_client.emplace(client_ptr->tcp_stream);
+
+				client_ptr->ws_client->ws_stream_.set_option(boost::beast::websocket::stream_base::decorator([](auto & res)
+				{
+					res.set(boost::beast::http::field::server, HTTPD_VERSION_STRING);
+				}));
+
+				co_await client_ptr->ws_client->ws_stream_.async_accept(req, boost::asio::use_awaitable);
+
+				// 获取executor.
+				auto executor = client_ptr->tcp_stream.get_executor();
+
+				// 接收到pong, 重置超时定时器.
+				client_ptr->ws_client->ws_stream_.control_callback([&tcp_stream = client_ptr->tcp_stream](boost::beast::websocket::frame_type ft, boost::beast::string_view)
+				{
+					if (ft == boost::beast::websocket::frame_type::pong)
+						tcp_stream.expires_after(std::chrono::seconds(60));
+				});
+
+				using namespace boost::asio::experimental::awaitable_operators;
+
+				co_await (
+					// 启动读写协程.
+					do_ws_read(connection_id, client_ptr) && do_ws_write(connection_id, client_ptr)
+				);
+				LOG_DBG << "handle_accepted_client, " << connection_id << ", connection exit.";
+			}
+			else
+			{
+				if (target.starts_with("/api"))
+				{
+					co_await http_simple_error_page("not allowed", boost::beast::http::status::forbidden, req.version());
+					continue;
+				}
+
+				int status_code = co_await do_http_handle(connection_id, req, client_ptr->tcp_stream);
+
+				if (status_code != 200)
+				{
+					co_await http_simple_error_page("internal server error", status_code, req.version());
+				}
+
+				keep_alive = ! req.need_eof();
+
+			}
+		}while (keep_alive && (!m_abort));
 	}
 
-	void cmall_service::on_version(const http_params& params)
+	boost::asio::awaitable<int> cmall_service::do_http_handle(size_t connection_id, boost::beast::http::request<boost::beast::http::string_body >& req, boost::beast::tcp_stream& client)
 	{
-		boost::system::error_code ec;
-		response res{ boost::beast::http::status::ok, params.request_.version() };
-		res.set(boost::beast::http::field::server, HTTPD_VERSION_STRING);
-		res.set(boost::beast::http::field::content_type, "text/html");
-		res.keep_alive(params.request_.keep_alive());
-		res.body() = cmall_VERSION_MIME;
-		res.prepare_payload();
+		unzFile zip_file = ::unzOpen2_64("internel_bundled_exe", &exe_bundled_file_ops);
+		std::shared_ptr<void> auto_cleanup((void*)zip_file, unzClose);
+		unz_global_info64 unzip_global_info64;
+		std::time_t if_modified_since;
+		bool have_if_modified_since = parse_gmt_time_fmt(req[boost::beast::http::field::if_modified_since].to_string().c_str(), &if_modified_since);
 
-		boost::beast::http::serializer<false, string_body, fields> sr{ res };
-		boost::beast::http::async_write(params.stream_, sr, params.yield_[ec]);
-		if (ec)
+		boost::string_view accept_encoding = req[boost::beast::http::field::accept_encoding];
+		bool accept_deflate = false;
+
+		if (accept_encoding.find("deflate") != boost::string_view::npos)
+			accept_deflate = true;
+
+		if (unzGetGlobalInfo64(zip_file, &unzip_global_info64) != UNZ_OK)
+			co_return 502;
+
+		boost::string_view path_ = req.target();
+
+		if (path_ == "/")
+			path_ = "index.html";
+		else
 		{
-			LOG_WARN << "on_version, " << params.connection_id_ << ", err: " << ec.message();
-			return;
+			path_ = path_.substr(1);
+		}
+
+		std::string path{path_.data(), path_.length()};
+
+		if (unzLocateFile(zip_file, path.data(), false) != UNZ_OK)
+		{
+			path = "index.html";
+			unzLocateFile(zip_file, "index.html", false);
+		}
+
+		unz_file_info64 target_file_info;
+
+		unzGetCurrentFileInfo64(zip_file, &target_file_info, NULL, 0, NULL, 0, NULL, 0);
+
+		std::time_t target_file_modifined_time = dos2unixtime(target_file_info.dosDate);
+
+		using fields = boost::beast::http::fields;
+
+		using response = boost::beast::http::response<boost::beast::http::buffer_body>;
+
+		response res{ boost::beast::http::status::ok, req.version() };
+		res.set(boost::beast::http::field::server, HTTPD_VERSION_STRING);
+		res.set(boost::beast::http::field::expires, make_http_last_modified(std::time(0) + 60));
+		res.set(boost::beast::http::field::last_modified, make_http_last_modified(target_file_modifined_time));
+		res.set(boost::beast::http::field::content_type, mime_map[boost::filesystem::path(path).extension().string()]);
+		res.keep_alive(req.keep_alive());
+
+		if (have_if_modified_since  && (target_file_modifined_time <= if_modified_since))
+		{
+			// 返回 304
+			res.result(boost::beast::http::status::not_modified);
+
+			res.set(boost::beast::http::field::expires, make_http_last_modified(std::time(0) + 60));
+			boost::beast::http::response_serializer<boost::beast::http::buffer_body, fields> sr{ res };
+			res.body().data = nullptr;
+			res.body().more = false;
+			co_await boost::beast::http::async_write(client, sr, boost::asio::use_awaitable);
+			co_return 200;
+		}
+
+		int method=0, level=0;
+
+		if (unzOpenCurrentFile2(zip_file, &method, &level, accept_deflate ? 1 : 0)!= UNZ_OK)
+			co_return 500;
+
+		if (method == Z_DEFLATED && accept_deflate)
+		{
+			res.set(boost::beast::http::field::content_encoding, "deflate");
+			res.content_length(target_file_info.compressed_size);
+		}
+		else
+		{
+			res.content_length(target_file_info.uncompressed_size);
+		}
+
+		res.body().data = nullptr;
+		res.body().more = true;
+
+		boost::system::error_code ec;
+		boost::beast::http::response_serializer<boost::beast::http::buffer_body, fields> sr{ res };
+
+		co_await boost::beast::http::async_write_header(client, sr, boost::asio::use_awaitable);
+
+		char buffer[2048];
+
+		do
+		{
+			auto bytes_transferred = unzReadCurrentFile(zip_file, buffer, 2048);
+			if (bytes_transferred == 0)
+			{
+				res.body().data = nullptr;
+				res.body().more = false;
+			}
+			else
+			{
+				res.body().data = buffer;
+				res.body().size = bytes_transferred;
+				res.body().more = true;
+			}
+			co_await boost::beast::http::async_write(client, sr, boost::asio::redirect_error(boost::asio::use_awaitable, ec));
+
+			if (ec == boost::beast::http::error::need_buffer)
+				continue;
+			if (ec)
+			{
+				throw boost::system::system_error(ec);
+			}
+
+		} while (!sr.is_done());
+
+		unzCloseCurrentFile(zip_file);
+
+		co_return 200;
+	}
+
+	boost::asio::awaitable<void> cmall_service::do_ws_read(size_t connection_id, client_connection_ptr connection_ptr)
+	{
+		auto& ws = connection_ptr->ws_client->ws_stream_;
+
+		boost::beast::error_code ec;
+
+		while (!m_abort)
+		{
+			boost::beast::multi_buffer buffer{ 4 * 1024 * 1024 }; // max multi_buffer size 4M.
+			co_await ws.async_read(buffer, boost::asio::use_awaitable);
+
+			auto body = boost::beast::buffers_to_string(buffer.data());
+			auto jv = boost::json::parse(body, ec, {}, { 64, false, false, true });
+			if (ec)
+			{
+				LOG_ERR << "do_ws_read, parse json error: " << ec.message() << ", body: " << body;
+				co_return;
+			}
+
+			if (!jv.is_object())
+			{
+				co_return;
+			}
+
+			auto method = jsutil::json_as_string(jsutil::json_accessor(jv).get("method", ""));
+
+			boost::asio::co_spawn(connection_ptr->m_io, [this, connection_ptr, connection_id, method, jv]() -> boost::asio::awaitable<void> {
+				boost::json::object replay_message;
+				try
+				{
+					replay_message = co_await on_client_invoke(connection_id, method, jv);
+				}
+				catch (boost::system::system_error&)
+				{
+				}
+				replay_message.insert_or_assign("id", jv.at("id"));
+				co_await websocket_write(connection_ptr, json_to_string(replay_message));
+			}, boost::asio::detached);
+		}
+
+	}
+
+	boost::asio::awaitable<boost::json::object> cmall_service::on_client_invoke(size_t connection_id, const std::string& method, boost::json::value jv)
+	{
+		boost::json::object replay_message;
+
+		co_return replay_message;
+	}
+
+	boost::asio::awaitable<void> cmall_service::do_ws_write(size_t connection_id, client_connection_ptr connection_ptr)
+	{
+		auto& message_deque = connection_ptr->ws_client->message_channel;
+		auto& ws = connection_ptr->ws_client->ws_stream_;
+
+		using namespace boost::asio::experimental::awaitable_operators;
+
+		while (!m_abort)
+		try
+		{
+			timer t(co_await boost::asio::this_coro::executor);
+			t.expires_from_now(std::chrono::seconds(15));
+			std::variant<std::monostate, std::string> awaited_result = co_await (
+				t.async_wait(boost::asio::use_awaitable) ||
+				message_deque.async_receive(boost::asio::use_awaitable)
+			);
+			if (awaited_result.index() == 0)
+			{
+				LOG_DBG << "coro: do_ws_write: [" << connection_id << "], send ping to client";
+				co_await ws.async_ping("", boost::asio::use_awaitable); // timed out
+			}
+			else
+			{
+				auto message = std::get<1>(awaited_result);
+				if (message.empty())
+					co_return;
+				co_await ws.async_write(boost::asio::buffer(message), boost::asio::use_awaitable);
+			}
+		}
+		catch(boost::system::system_error& e)
+		{
+			boost::system::error_code ec;
+			connection_ptr->tcp_stream.close();
+			LOG_ERR << "coro: do_ws_write: [" << connection_id << "], exception:" << e.code().message();
+			co_return;
 		}
 	}
 
-	void cmall_service::on_get_record(const http_params& params) { boost::system::error_code ec; }
-	void cmall_service::on_add_record(const http_params& params) { boost::system::error_code ec; }
-	void cmall_service::on_mod_record(const http_params& params) { boost::system::error_code ec; }
-	void cmall_service::on_del_record(const http_params& params)
+	client_connection_ptr cmall_service::add_ws(size_t connection_id, const std::string& remote_host, boost::beast::tcp_stream&& tcp_stream)
 	{
-		boost::system::error_code ec;
-		// response res;
-		// do {
-		// 	auto& req		 = params.request_;
-		// 	std::string body = req.body();
-		// 	LOG_INFO << "del record: " << body;
-
-		// 	boost::json::object payload;
-		// 	boost::json::value req_json = boost::json::parse(body, ec);
-		// 	if (ec) {
-		// 		LOG_WARN << "del record bad request: " << body;
-		// 		res = build_response(http::status::bad_request);
-		// 		break;
-		// 	}
-		// 	if (!req_json.is_object()) {
-		// 		LOG_WARN << "del record bad request: " << body;
-		// 		res = build_response(http::status::bad_request);
-		// 		break;
-		// 	}
-		// 	payload = req_json.as_object();
-
-		// 	if (!payload.if_contains("id") || !payload["id"].is_int64()) {
-		// 		res = build_response(http::status::bad_request);
-		// 		break;
-		// 	}
-		// 	auto id = payload["id"].as_int64();
-		// 	if (id < 0) {
-		// 		res = build_response(http::status::bad_request);
-		// 		break;
-		// 	}
-
-		// 	m_database.async_remove_record(id, params.yield_[ec]);
-
-		// 	boost::json::value data = {
-		// 		{ "code", 0 },
-		// 	};
-		// 	res = build_response(data);
-		// } while (false);
-
-		// http::serializer<false, string_body, fields> sr{ res };
-		// http::async_write(params.stream_, sr, params.yield_[ec]);
-		// if (ec) {
-		// 	LOG_WARN << "on_del_record error: " << ec.message();
-		// }
+		std::lock_guard<std::mutex> lock(m_ws_mux);
+		client_connection_ptr connection_ptr = std::make_shared<client_connection>(std::move(tcp_stream), connection_id, remote_host);
+		m_ws_streams.insert(std::make_pair(connection_id, connection_ptr));
+		return connection_ptr;
 	}
+
+	void cmall_service::remove_ws(size_t connection_id)
+	{
+		std::lock_guard<std::mutex> lock(m_ws_mux);
+		m_ws_streams.erase(connection_id);
+	}
+
+	boost::asio::awaitable<void> cmall_service::close_all_ws()
+	{
+		{
+			boost::system::error_code ignore_ec;
+			std::lock_guard<std::mutex> lock(m_ws_mux);
+			for (auto& ws : m_ws_streams)
+			{
+				auto& conn_ptr = ws.second;
+				conn_ptr->close();
+			}
+		}
+
+		while (m_ws_streams.size())
+		{
+			timer t(m_io_context.get_executor());
+			t.expires_from_now(std::chrono::milliseconds(20));
+			co_await t.async_wait(boost::asio::use_awaitable);
+		}
+	}
+
+	boost::asio::awaitable<void> cmall_service::websocket_write(client_connection_ptr connection_ptr, std::string message)
+	{
+		if (connection_ptr->ws_client)
+			boost::asio::post(connection_ptr->tcp_stream.get_executor(), [this, connection_ptr, message = std::move(message)]() mutable
+			{
+				connection_ptr->ws_client->message_channel.try_send(boost::system::error_code(), message);
+			});
+		co_return;
+	}
+
+	boost::asio::awaitable<void> cmall_service::notify_message_to_all_client(std::string message)
+	{
+		boost::system::error_code ignore_ec;
+		std::lock_guard<std::mutex> lock(m_ws_mux);
+		for (auto& ws : m_ws_streams)
+		{
+			auto& conn_ptr = ws.second;
+			if (!conn_ptr) continue;
+			co_await websocket_write(conn_ptr, message);
+		}
+	}
+
+	boost::asio::awaitable<void> cmall_service::mitigate_chaindb()
+	{
+		co_return;
+	}
+
+	boost::asio::awaitable<std::shared_ptr<ws_stream>> cmall_service::connect(size_t index)
+	{
+		std::shared_ptr<ws_stream> wsp = std::make_shared<ws_stream>(co_await boost::asio::this_coro::executor);
+		tcp::socket& sock = boost::beast::get_lowest_layer(*wsp).socket();
+
+		boost::system::error_code ec;
+		tcp::resolver resolver{ m_io_context };
+
+		if (m_config.upstreams_.empty())
+			co_return std::shared_ptr<ws_stream>{};
+
+		if (index >= m_config.upstreams_.size())
+			co_return std::shared_ptr<ws_stream>{};
+
+		// 连接上游服务器.
+		for (; index < m_config.upstreams_.size(); index++)
+		{
+			auto& upstream = m_config.upstreams_[index];
+			util::uri parser;
+
+			if (!parser.parse(upstream))
+				co_return std::shared_ptr<ws_stream>{};
+
+			auto const results = co_await resolver.async_resolve(std::string(parser.host()), std::string(parser.port()), boost::asio::use_awaitable);
+			co_await asio_util::async_connect(sock, results, boost::asio::use_awaitable);
+
+			std::string origin = "all";
+			auto decorator = [origin](boost::beast::websocket::request_type& m) {
+				m.insert(boost::beast::http::field::origin, origin);
+			};
+
+			wsp->set_option(boost::beast::websocket::stream_base::decorator(decorator));
+			co_await wsp->async_handshake(std::string(parser.host()), parser.path().empty() ? "/" : parser.path(), boost::asio::use_awaitable);
+			if (true) break;
+		}
+
+		co_return wsp;
+	}
+
 }

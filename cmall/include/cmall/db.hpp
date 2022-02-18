@@ -7,13 +7,12 @@
 
 #pragma once
 
-#include <boost/date_time/posix_time/posix_time_types.hpp>
-#include <cstdint>
-#include <cstring> // std::memcpy
-#include <iostream>
-#include <sstream>
-#include <unordered_map>
 #include <vector>
+#include <sstream>
+#include <iostream>
+#include <cstring> // std::memcpy
+#include <unordered_map>
+
 
 #ifdef __clang__
 #pragma clang diagnostic push
@@ -31,30 +30,43 @@
 using boost::multiprecision::cpp_int;
 using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 
-#include <odb/nullable.hxx>
 #include <odb/section.hxx>
+#include <odb/nullable.hxx>
 
 #ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4068)
+#	pragma warning (push)
+#	pragma warning (disable:4068)
 #endif // _MSC_VER
 
 #pragma db model version(1, 1, open)
 
-#pragma db map type("numeric") as("TEXT") to("(?)::numeric") from("(?)::TEXT")
+#pragma db map type("numeric")			\
+			as("TEXT")				\
+			to("(?)::numeric")		\
+			from("(?)::TEXT")
 
-#pragma db map type("cidr") as("TEXT") to("(?)::cidr") from("(?)::TEXT")
+#pragma db map type("cidr")			\
+			as("TEXT")			\
+			to("(?)::cidr")		\
+			from("(?)::TEXT")
 
-#pragma db map type("INTEGER *\\[(\\d*)\\]") as("TEXT") to("(?)::INTEGER[$1]") from("(?)::TEXT")
+#pragma db map type("INTEGER *\\[(\\d*)\\]") \
+			as("TEXT")                    \
+			to("(?)::INTEGER[$1]")        \
+			from("(?)::TEXT")
 
-#pragma db map type("NUMERIC *\\[(\\d*)\\]") as("TEXT") to("(?)::NUMERIC[$1]") from("(?)::TEXT")
+#pragma db map type("NUMERIC *\\[(\\d*)\\]") \
+			as("TEXT")                    \
+			to("(?)::NUMERIC[$1]")        \
+			from("(?)::TEXT")
 
-#pragma db map type("TEXT *\\[(\\d*)\\]") as("TEXT") to("(?)::TEXT[$1]") from("(?)::TEXT")
+#pragma db value(cpp_numeric) type("NUMERIC")
+#pragma db value(cpp_int) type("BIGINT")
+
 
 // 配置表.
 #pragma db object
-struct cmall_config
-{
+struct cmall_config {
 #pragma db id auto
 	std::uint64_t id_;
 	// long long id_{ -1 };
@@ -62,8 +74,7 @@ struct cmall_config
 
 // 商户表.
 #pragma db object
-struct cmall_merchant
-{
+struct cmall_merchant {
 #pragma db id auto
 	std::uint64_t id_;
 	// long long id_{ -1 };
@@ -87,8 +98,7 @@ struct cmall_merchant
 
 // 商品表.
 #pragma db object
-struct cmall_product
-{
+struct cmall_product {
 #pragma db id auto
 	std::uint64_t id_;
 	// long long id_{ -1 };
@@ -98,9 +108,9 @@ struct cmall_product
 
 	std::string name_; // 商品名称.
 
-#pragma db type("numeric")
+ #pragma db type("numeric")
 	cpp_numeric price_;
-	std::string currency_{ "cny" }; // 币种
+	std::string currency_{"cny"}; // 币种
 
 	std::string description_; // 商品描述
 
@@ -114,8 +124,7 @@ struct cmall_product
 
 // 订单表
 #pragma db object
-struct cmall_order
-{
+struct cmall_order {
 #pragma db id auto
 	std::uint64_t id_;
 	// long long id_{ -1 };
@@ -130,13 +139,13 @@ struct cmall_order
 #pragma db index
 	uint64_t pid_; // 商品id
 
-#pragma db type("numeric")
-	cpp_numeric price_;	   // 下单时价格
-	uint64_t quantity_;	   // 下单数量
+ #pragma db type("numeric")
+	cpp_numeric price_; // 下单时价格
+	uint64_t quantity_; // 下单数量
 	std::string currency_; // 支付使用币种
-#pragma db type("numeric") default("1")
+ #pragma db type("numeric") default("1")
 	cpp_numeric currency_rate_; // 币种汇率
-#pragma db type("numeric") default("0")
+ #pragma db type("numeric") default("0")
 	cpp_numeric pay_amount_; // 支付数额
 
 	uint8_t stage_; // 订单状态;

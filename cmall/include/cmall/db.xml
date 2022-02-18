@@ -1,4 +1,4 @@
-﻿<changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
+<changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
   <model version="1">
     <table name="cmall_config" kind="object">
       <column name="id" type="BIGINT" null="false"/>

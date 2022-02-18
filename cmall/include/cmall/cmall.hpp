@@ -1,5 +1,4 @@
-﻿
-//
+﻿//
 // Copyright (C) 2019 Jack.
 //
 // Author: jack
@@ -8,108 +7,141 @@
 
 #pragma once
 
-#include <cstdint>
-#include <tuple>
-#include <unordered_map>
-#include <vector>
-
-#include "boost/asio/spawn.hpp"
-#include "boost/json/value.hpp"
-#include "cmall/database.hpp"
 #include "cmall/internal.hpp"
-#include "cmall/session.hpp"
+#include "cmall/database.hpp"
 
-#include <boost/asio.hpp>
+#include <boost/asio/experimental/concurrent_channel.hpp>
+#include <boost/asio/experimental/channel.hpp>
+#include <boost/asio/spawn.hpp>
+#include <boost/asio/awaitable.hpp>
+#include <boost/asio/co_spawn.hpp>
 
-namespace cmall
-{
+#include "jsonrpc.hpp"
+
+namespace cmall {
 
 	struct server_config
 	{
-		std::vector<std::string> http_listens_;
+		ChainType chain_id_{ ChainType::CHAOS };
+
+		std::vector<std::string> upstreams_;
+		std::vector<std::string> ws_listens_;
+		std::string wsorigin_;
+		std::string socks5proxy_;
 
 		cmall::db_config dbcfg_;
 	};
 
-	namespace net	  = boost::asio;
-	using string_body = boost::beast::http::string_body;
-	using fields	  = boost::beast::http::fields;
-	using request	  = boost::beast::http::request<string_body>;
-	using response	  = boost::beast::http::response<string_body>;
+	using ws_stream = websocket::stream<boost::beast::tcp_stream>;
 
-	using rpc_result = std::tuple<bool, boost::json::value>; // (true, result) or (false, error)
 
-	enum class req_methods
+	struct websocket_connection
 	{
-		user_login,
+		websocket_connection(websocket_connection&& c) = delete;
 
-		user_list_product,
-		user_list_order,
-		user_place_order,
-		user_get_order,
-		user_pay_order,
-		user_close_order,
+		websocket_connection(boost::beast::tcp_stream& tcp_stream_)
+			: ws_stream_(tcp_stream_)
+			, message_channel(tcp_stream_.get_executor(), 1)
+		{}
 
-		merchant_info,
-		merchant_list_product,
-		merchant_add_product,
-		merchant_mod_product,
-		merchant_del_product,
+		void close(auto connection_id)
+		{
+			LOG_DBG << "ws client close() called: [" << connection_id << "]";
+			message_channel.cancel();
+		}
+
+		websocket::stream<boost::beast::tcp_stream&> ws_stream_;
+		boost::asio::experimental::concurrent_channel<void(boost::system::error_code, std::string)> message_channel;
 	};
+
+	struct client_connection
+	{
+		boost::beast::tcp_stream tcp_stream;
+		boost::asio::any_io_executor m_io;
+		int64_t connection_id_;
+		std::string remote_host_;
+
+		std::optional<websocket_connection> ws_client;
+
+		~client_connection()
+		{
+			LOG_DBG << (ws_client? "ws" : "http" ) <<  " client leave: " << connection_id_ << ", remote: " << remote_host_;
+		}
+
+		void close()
+		{
+			if (ws_client)
+				ws_client->close(connection_id_);
+			boost::beast::close_socket(tcp_stream);
+		}
+
+		client_connection(boost::beast::tcp_stream&& ws, int64_t connection_id, const std::string& remote_host)
+			: tcp_stream(std::move(ws))
+			, connection_id_(connection_id)
+			, remote_host_(remote_host)
+			, m_io(tcp_stream.get_executor())
+		{
+		}
+	};
+
+	using client_connection_ptr = std::shared_ptr<client_connection>;
+	using client_connection_weakptr = std::weak_ptr<client_connection>;
 
 	class cmall_service
 	{
-		struct http_params
-		{
-			std::vector<std::string> command_;
-			size_t connection_id_;
-			boost::beast::tcp_stream& stream_;
-			request& request_;
-			boost::asio::yield_context& yield_;
-		};
-
 		// c++11 noncopyable.
 		cmall_service(const cmall_service&) = delete;
 		cmall_service& operator=(const cmall_service&) = delete;
+
+		using executor_type = boost::asio::any_io_executor;
 
 	public:
 		cmall_service(io_context_pool& ios, const server_config& config);
 		~cmall_service();
 
 	public:
-		void start();
-		void stop();
+		boost::asio::awaitable<int> run_httpd();
+
+		boost::asio::awaitable<void> stop();
 
 	private:
-		bool init_http_acceptors();
-		void start_http_listen(tcp::acceptor& a, boost::asio::yield_context& yield);
-		void start_http_connect(size_t cid, boost::beast::tcp_stream stream, boost::asio::yield_context& yield);
+		boost::asio::awaitable<bool> init_ws_acceptors();
 
-		void handle_request(const request_context& ctx);
+		boost::asio::awaitable<void> listen_loop(tcp::acceptor& a);
+		boost::asio::awaitable<void> handle_accepted_client(size_t connection_id, client_connection_ptr);
 
-		void on_version(const http_params& params);
+		boost::asio::awaitable<int> do_http_handle(size_t connection_id, boost::beast::http::request<boost::beast::http::string_body>&, boost::beast::tcp_stream& client);
+		boost::asio::awaitable<void> do_ws_read(size_t connection_id, client_connection_ptr);
+		boost::asio::awaitable<void> do_ws_write(size_t connection_id, client_connection_ptr);
+
+		client_connection_ptr add_ws(size_t connection_id, const std::string& remote_host, boost::beast::tcp_stream&& tcp_stream);
+		void remove_ws(size_t connection_id);
+		boost::asio::awaitable<void> close_all_ws();
+
+		boost::asio::awaitable<void> websocket_write(client_connection_ptr connection_ptr, std::string message);
+
+		boost::asio::awaitable<void> notify_message_to_all_client(std::string message);
+
+		boost::asio::awaitable<void> mitigate_chaindb();
+
+		// 换算成人类读取单位.
+		boost::asio::awaitable<boost::json::object> on_client_invoke(size_t connection_id, const std::string& method, boost::json::value jv);
 
 	private:
-		rpc_result on_user_login(const request_context& ctx);
-
-	private:
-		void on_get_record(const http_params& params);
-		void on_add_record(const http_params& params);
-		void on_mod_record(const http_params& params);
-		void on_del_record(const http_params& params);
+		boost::asio::awaitable<std::shared_ptr<ws_stream>> connect(size_t index = 0);
 
 	private:
 		io_context_pool& m_io_context_pool;
+		boost::asio::io_context& m_io_context;
 
 		server_config m_config;
-		cmall_config m_cmall_config;
 		cmall_database m_database;
 
-		std::vector<tcp::acceptor> m_http_acceptors;
+		// ws 服务端相关.
+		std::vector<tcp::acceptor> m_ws_acceptors;
+		std::mutex m_ws_mux;
+		std::unordered_map<size_t, client_connection_ptr> m_ws_streams;
 
-		std::atomic_bool m_abort{ false };
-
-		std::unordered_map<std::uint64_t, session_ptr> m_sessions;
-		std::mutex m_mtx_session;
+		std::atomic_bool m_abort{false};
 	};
 }
