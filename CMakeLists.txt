@@ -256,6 +256,8 @@ else()
 endif()
 include_directories(${OPENSSL_INCLUDE_DIR})
 
+add_subdirectory(third_party/libmdbx)
+
 link_libraries(
 		Boost::coroutine
 		Boost::context

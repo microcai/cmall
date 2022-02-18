@@ -59,38 +59,13 @@ else()
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_AVAILABLE FALSE)
 endif()
 
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git" AND
-    EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/test/CMakeLists.txt" AND
-    EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/core.c" AND
-    EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/alloy.c" AND
-    EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/config.h.in" AND
-    EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/version.c.in" AND
-    EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/man1" AND
-    EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/mdbx_chk.c" AND
-    EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/mdbx.c++")
-  set(MDBX_AMALGAMATED_SOURCE FALSE)
-  find_program(GIT git)
-  if(NOT GIT)
-    message(SEND_ERROR "Git command-line tool not found")
-  endif()
-  set(MDBX_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
-elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION.txt" AND
-    EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/mdbx.c" AND
-    EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/mdbx.c++" AND
-    EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/config.h.in" AND
-    EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/man1" AND
-    EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/mdbx_chk.c")
-  set(MDBX_AMALGAMATED_SOURCE TRUE)
-  set(MDBX_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-else()
-  message(FATAL_ERROR "\n"
-    "Please don't use tarballs nor zips which are automatically provided by Github!  "
-    "These archives do not contain version information and thus are unfit to build libmdbx.  "
-    "You can vote for ability of disabling auto-creation such unsuitable archives at https://github.community/t/disable-tarball\n"
-    "Instead of above, just clone the git repository, either download a tarball or zip with the properly amalgamated source core.  "
-    "For embedding libmdbx use a git-submodule or the amalgamated source code.\n"
-    "Please, avoid using any other techniques.")
+set(MDBX_AMALGAMATED_SOURCE FALSE)
+
+find_program(GIT git)
+if(NOT GIT)
+message(SEND_ERROR "Git command-line tool not found")
 endif()
+set(MDBX_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 if(DEFINED PROJECT_NAME)
   option(MDBX_FORCE_BUILD_AS_MAIN_PROJECT "Force libmdbx to full control build options even it added as a subdirectory to your project." OFF)
