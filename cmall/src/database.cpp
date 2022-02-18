@@ -1,27 +1,26 @@
-﻿#include "cmall/database.hpp"
+﻿
+#include "cmall/database.hpp"
+#include "cmall/logging.hpp"
 #include "db.hpp"
 #include "odb/transaction.hxx"
-#include "cmall/logging.hpp"
 
-namespace cmall {
+namespace cmall
+{
 	cmall_database::cmall_database(const db_config& cfg, boost::asio::io_context& ioc)
 		: m_config(cfg)
 		, m_io_context(ioc)
 	{
-		if (m_config.host_.empty() ||
-			m_config.dbname_.empty() ||
-			m_config.user_.empty())
+		if (m_config.host_.empty() || m_config.dbname_.empty() || m_config.user_.empty())
 		{
 			LOG_WARN << "Warning, Database not config!";
 			return;
 		}
 
-		std::unique_ptr<odb::pgsql::connection_factory>
-			pool(new odb::pgsql::connection_pool_factory(cfg.pool_, cfg.pool_ / 2));
+		std::unique_ptr<odb::pgsql::connection_factory> pool(
+			new odb::pgsql::connection_pool_factory(cfg.pool_, cfg.pool_ / 2));
 
-		m_db = boost::make_shared<odb::pgsql::database>(m_config.user_,
-			m_config.password_, m_config.dbname_, m_config.host_, m_config.port_,
-			"application_name=cmall", std::move(pool));
+		m_db = boost::make_shared<odb::pgsql::database>(m_config.user_, m_config.password_, m_config.dbname_,
+			m_config.host_, m_config.port_, "application_name=cmall", std::move(pool));
 
 		odb::transaction t(m_db->begin());
 		if (m_db->schema_version() == 0)
@@ -40,28 +39,26 @@ namespace cmall {
 		}
 	}
 
-	void cmall_database::shutdown()
-	{
-		m_db.reset();
-	}
+	void cmall_database::shutdown() { m_db.reset(); }
 
 	db_result cmall_database::load_config(cmall_config& config)
 	{
-		return retry_database_op([&, this]() mutable
-		{
-			odb::transaction t(m_db->begin());
-			auto r(m_db->query<cmall_config>());
-			if (r.empty())
+		return retry_database_op(
+			[&, this]() mutable
 			{
+				odb::transaction t(m_db->begin());
+				auto r(m_db->query<cmall_config>());
+				if (r.empty())
+				{
+					t.commit();
+					return false;
+				}
+
+				config = *r.begin();
 				t.commit();
-				return false;
-			}
 
-			config = *r.begin();
-			t.commit();
-
-			return true;
-		});
+				return true;
+			});
 	}
 
 	db_result cmall_database::add_config(cmall_config& config)
@@ -69,27 +66,30 @@ namespace cmall {
 		if (!m_db)
 			return false;
 
-		return retry_database_op([&, this]() mutable
-		{
-			odb::transaction t(m_db->begin());
-			m_db->persist(config);
-			t.commit();
-			return true;
-		});
+		return retry_database_op(
+			[&, this]() mutable
+			{
+				odb::transaction t(m_db->begin());
+				m_db->persist(config);
+				t.commit();
+				return true;
+			});
 	}
 
 	db_result cmall_database::update_config(const cmall_config& config)
 	{
-		return retry_database_op([&, this]() mutable
-		{
-			odb::transaction t(m_db->begin());
-			m_db->update(config);
-			t.commit();
-			return true;
-		});
+		return retry_database_op(
+			[&, this]() mutable
+			{
+				odb::transaction t(m_db->begin());
+				m_db->update(config);
+				t.commit();
+				return true;
+			});
 	}
 
-	// db_result cmall_database::load_dns_records(std::vector<cmall_record> &records, uint16_t type, const std::string& name)
+	// db_result cmall_database::load_dns_records(std::vector<cmall_record> &records, uint16_t type, const std::string&
+	// name)
 	// {
 	// 	if (!m_db)
 	// 		return false;
@@ -100,10 +100,8 @@ namespace cmall {
 
 	// 		using query = odb::query<cmall_record>;
 
-	// 		auto result(m_db->query<cmall_record>((query::type == type && query::name == name) + " order by created_at desc"));
-	// 		if (result.empty()) {
-	// 			t.commit();
-	// 			return false;
+	// 		auto result(m_db->query<cmall_record>((query::type == type && query::name == name) + " order by created_at
+	// desc")); 		if (result.empty()) { 			t.commit(); 			return false;
 	// 		}
 
 	// 		for (auto& r : result)
@@ -114,7 +112,8 @@ namespace cmall {
 	// 	});
 	// }
 
-	// db_result cmall_database::load_dns_records_recursively(std::vector<cmall_record> &records, uint16_t type, const std::string& name)
+	// db_result cmall_database::load_dns_records_recursively(std::vector<cmall_record> &records, uint16_t type, const
+	// std::string& name)
 	// {
 	// 	if (!m_db)
 	// 		return false;
@@ -126,10 +125,8 @@ namespace cmall {
 	// 		using query = odb::query<cmall_record>;
 
 	// 		if (type == to_underlying(dns_type::CNAME)) { // directly querying CNAME
-	// 			auto result(m_db->query<cmall_record>((query::type == type && query::name == name) + " order by created_at desc"));
-	// 			if (result.empty()) {
-	// 				t.commit();
-	// 				return false;
+	// 			auto result(m_db->query<cmall_record>((query::type == type && query::name == name) + " order by
+	// created_at desc")); 			if (result.empty()) { 				t.commit(); 				return false;
 	// 			}
 
 	// 			for (auto& r : result)
@@ -216,7 +213,7 @@ namespace cmall {
 	// 	if (!m_db)
 	// 		return false;
 
-	// 	return retry_database_op([&, this]() 
+	// 	return retry_database_op([&, this]()
 	// 	{
 	// 		odb::transaction t(m_db->begin());
 	// 		m_db->update(record);

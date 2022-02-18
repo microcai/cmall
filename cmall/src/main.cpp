@@ -36,12 +36,13 @@
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;
 
+#include "cmall/cmall.hpp"
 #include "cmall/internal.hpp"
 #include "cmall/simple_http.hpp"
 #include "cmall/version.hpp"
-#include "cmall/cmall.hpp"
 
-int platform_init() {
+int platform_init()
+{
 #if defined(WIN32) || defined(_WIN32)
 	/* Disable the "application crashed" popup. */
 	SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
@@ -71,22 +72,26 @@ int platform_init() {
 	/* Enable minidump when application crashed. */
 #elif defined(__linux__)
 	rlimit of = { 50000, 100000 };
-	if (setrlimit(RLIMIT_NOFILE, &of) < 0) {
+	if (setrlimit(RLIMIT_NOFILE, &of) < 0)
+	{
 		perror("setrlimit for nofile");
 	}
 	struct rlimit core_limit;
 	core_limit.rlim_cur = RLIM_INFINITY;
 	core_limit.rlim_max = RLIM_INFINITY;
-	if (setrlimit(RLIMIT_CORE, &core_limit) < 0) {
+	if (setrlimit(RLIMIT_CORE, &core_limit) < 0)
+	{
 		perror("setrlimit for coredump");
 	}
 
 	/* Set the stack size programmatically with setrlimit */
 	rlimit rl;
 	int result = getrlimit(RLIMIT_STACK, &rl);
-	if (result == 0) {
+	if (result == 0)
+	{
 		const rlim_t stack_size = 100 * 1024 * 1024;
-		if (rl.rlim_cur < stack_size) {
+		if (rl.rlim_cur < stack_size)
+		{
 			rl.rlim_cur = stack_size;
 			result		= setrlimit(RLIMIT_STACK, &rl);
 			if (result != 0)
@@ -100,7 +105,8 @@ int platform_init() {
 	return 0;
 }
 
-std::string version_info() {
+std::string version_info()
+{
 	std::string os_name;
 
 #ifdef _WIN32
@@ -121,7 +127,8 @@ std::string version_info() {
 	int ma_ver, mi_ver, patch_ver;
 	sscanf(un.release, "%d.%d.%d", &ma_ver, &mi_ver, &patch_ver);
 
-	if (std::string(un.sysname) == "Linux" && ma_ver < 3) {
+	if (std::string(un.sysname) == "Linux" && ma_ver < 3)
+	{
 		std::cerr << "you are running a very very OLD kernel. please upgrade your system" << std::endl;
 	}
 
@@ -138,7 +145,8 @@ std::string version_info() {
 	return oss.str();
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
 	std::vector<std::string> http_listens;
 
 	std::string db_name;
@@ -148,19 +156,18 @@ int main(int argc, char** argv) {
 	unsigned short db_port;
 
 	po::options_description desc("Options");
-	desc.add_options()
-		("help,h", "Help message.")
-		("version", "Current version.")
+	desc.add_options()("help,h", "Help message.")("version", "Current version.")
 
 		("http", po::value<std::vector<std::string>>(&http_listens)->multitoken(), "http_listens.")
 
-		("db_name", po::value<std::string>(&db_name)->default_value("cmall"), "Database name.")
-		("db_host", po::value<std::string>(&db_host)->default_value("127.0.0.1"), "Database host.")
-		("db_port", po::value<unsigned short>(&db_port)->default_value(5432), "Database port.")
-		("db_user", po::value<std::string>(&db_user)->default_value("postgres"), "Database user.")
-		("db_passwd", po::value<std::string>(&db_passwd)->default_value("postgres"), "Database password.");
+			("db_name", po::value<std::string>(&db_name)->default_value("cmall"), "Database name.")(
+				"db_host", po::value<std::string>(&db_host)->default_value("127.0.0.1"), "Database host.")(
+				"db_port", po::value<unsigned short>(&db_port)->default_value(5432), "Database port.")(
+				"db_user", po::value<std::string>(&db_user)->default_value("postgres"), "Database user.")(
+				"db_passwd", po::value<std::string>(&db_passwd)->default_value("postgres"), "Database password.");
 
-	try {
+	try
+	{
 		// 解析命令行.
 		po::variables_map vm;
 		po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -170,11 +177,14 @@ int main(int argc, char** argv) {
 		LOG_INFO << version_info();
 
 		// 帮助输出.
-		if (vm.count("help") || argc == 1) {
+		if (vm.count("help") || argc == 1)
+		{
 			std::cout << desc;
 			return EXIT_SUCCESS;
 		}
-	} catch (const std::exception& e) {
+	}
+	catch (const std::exception& e)
+	{
 		std::cerr << "exception: " << e.what() << std::endl;
 		return EXIT_FAILURE;
 	}

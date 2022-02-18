@@ -53,7 +53,8 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 
 // 配置表.
 #pragma db object
-struct cmall_config {
+struct cmall_config
+{
 #pragma db id auto
 	std::uint64_t id_;
 	// long long id_{ -1 };
@@ -61,7 +62,8 @@ struct cmall_config {
 
 // 商户表.
 #pragma db object
-struct cmall_merchant {
+struct cmall_merchant
+{
 #pragma db id auto
 	std::uint64_t id_;
 	// long long id_{ -1 };
@@ -85,7 +87,8 @@ struct cmall_merchant {
 
 // 商品表.
 #pragma db object
-struct cmall_product {
+struct cmall_product
+{
 #pragma db id auto
 	std::uint64_t id_;
 	// long long id_{ -1 };
@@ -95,9 +98,9 @@ struct cmall_product {
 
 	std::string name_; // 商品名称.
 
- #pragma db type("numeric")
+#pragma db type("numeric")
 	cpp_numeric price_;
-	std::string currency_{"cny"}; // 币种
+	std::string currency_{ "cny" }; // 币种
 
 	std::string description_; // 商品描述
 
@@ -111,7 +114,8 @@ struct cmall_product {
 
 // 订单表
 #pragma db object
-struct cmall_order {
+struct cmall_order
+{
 #pragma db id auto
 	std::uint64_t id_;
 	// long long id_{ -1 };
@@ -126,13 +130,13 @@ struct cmall_order {
 #pragma db index
 	uint64_t pid_; // 商品id
 
- #pragma db type("numeric")
-	cpp_numeric price_; // 下单时价格
-	uint64_t quantity_; // 下单数量
+#pragma db type("numeric")
+	cpp_numeric price_;	   // 下单时价格
+	uint64_t quantity_;	   // 下单数量
 	std::string currency_; // 支付使用币种
- #pragma db type("numeric") default("1")
+#pragma db type("numeric") default("1")
 	cpp_numeric currency_rate_; // 币种汇率
- #pragma db type("numeric") default("0")
+#pragma db type("numeric") default("0")
 	cpp_numeric pay_amount_; // 支付数额
 
 	uint8_t stage_; // 订单状态;

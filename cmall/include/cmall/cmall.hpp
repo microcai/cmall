@@ -1,4 +1,5 @@
-﻿//
+﻿
+//
 // Copyright (C) 2019 Jack.
 //
 // Author: jack
@@ -20,15 +21,17 @@
 
 #include <boost/asio.hpp>
 
-namespace cmall {
+namespace cmall
+{
 
-	struct server_config {
+	struct server_config
+	{
 		std::vector<std::string> http_listens_;
 
 		cmall::db_config dbcfg_;
 	};
 
-	namespace net = boost::asio;
+	namespace net	  = boost::asio;
 	using string_body = boost::beast::http::string_body;
 	using fields	  = boost::beast::http::fields;
 	using request	  = boost::beast::http::request<string_body>;
@@ -36,7 +39,8 @@ namespace cmall {
 
 	using rpc_result = std::tuple<bool, boost::json::value>; // (true, result) or (false, error)
 
-	enum class req_methods {
+	enum class req_methods
+	{
 		user_login,
 
 		user_list_product,
@@ -53,8 +57,10 @@ namespace cmall {
 		merchant_del_product,
 	};
 
-	class cmall_service {
-		struct http_params {
+	class cmall_service
+	{
+		struct http_params
+		{
 			std::vector<std::string> command_;
 			size_t connection_id_;
 			boost::beast::tcp_stream& stream_;
@@ -77,13 +83,12 @@ namespace cmall {
 	private:
 		bool init_http_acceptors();
 		void start_http_listen(tcp::acceptor& a, boost::asio::yield_context& yield);
-		void start_http_connect(
-			size_t cid, boost::beast::tcp_stream stream, boost::asio::yield_context& yield);
+		void start_http_connect(size_t cid, boost::beast::tcp_stream stream, boost::asio::yield_context& yield);
 
 		void handle_request(const request_context& ctx);
 
 		void on_version(const http_params& params);
-	
+
 	private:
 		rpc_result on_user_login(const request_context& ctx);
 
