@@ -9,7 +9,6 @@
 #include <iterator>
 #include <algorithm>
 #include <random>
-#include <keccak/keccak.h>
 
 #ifdef __linux__
 
@@ -349,97 +348,4 @@ std::optional<std::string> from_contract_hexstring(const std::string& hexstring_
 		return {};
 
 	return std::string{ (const char*)vec.data(), vec.size() };
-}
-
-
-std::string checksum_encode(const std::string& addr)
-{
-	if (addr.size() != 42 || addr[0] != '0' || (addr[1] != 'x' && addr[1] != 'X'))
-		return {};
-
-	std::string result = boost::to_lower_copy(addr).substr(2);
-	std::string hash = to_hexstring(ethash_keccak256((const uint8_t*)result.data(), result.size()));
-
-	for (int i = 0; i < (int)result.size(); i++)
-	{
-		char ch = hash[i];
-		if (ch >= '0' && ch <= '9')
-			ch = (char)((int)ch - (int)'0');
-		else if (ch >= 'A' && ch <= 'F')
-			ch = (char)((int)(ch - 'A') + 10);
-		else if (ch >= 'a' && ch <= 'f')
-			ch = (char)((int)(ch - 'a') + 10);
-		else
-			return {};
-
-		char& c = result[i];
-		if (!std::isdigit(c) && (c < 'a' || c > 'f'))
-			return {};
-
-		if (ch >= 8)
-			c = (char)std::toupper(result[i]);
-	}
-
-	return "0x" + result;
-}
-
-
-bool check_address_and_tolower(std::string& address)
-{
-	if (address.size() != 42
-		|| address[0] != '0'
-		|| (address[1] != 'x' && address[1] != 'X'))
-		return false;
-
-	bool isupper = false;
-	for (size_t i = 2; i < 40; i++)
-	{
-		auto& c = address[i];
-		if ((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'))
-			continue;
-
-		isupper = true;
-		break;
-	}
-
-	if (isupper)
-	{
-		boost::to_lower(address);
-		return true;
-	}
-
-	std::string address_copy{ address };
-	boost::to_lower(address_copy);
-	if (address_copy == address)
-		return true;
-
-	address_copy = checksum_encode(address_copy);
-	if (address_copy != address)
-		return false;
-
-	boost::to_lower(address);
-	return true;
-}
-
-bool check_block_number(std::string blocknumber)
-{
-	for (auto c : blocknumber)
-	{
-		if (c >= '0' && c <= '9')
-			continue;
-
-		return false;
-	}
-
-	// try convert to int
-
-	try
-	{
-		cpp_int converted(blocknumber);
-		return true;
-	}
-	catch (...)
-	{}
-
-	return false;
 }

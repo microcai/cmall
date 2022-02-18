@@ -224,8 +224,6 @@ namespace cmall {
 		using request = boost::beast::http::request<string_body>;
 		using response = boost::beast::http::response<string_body>;
 
-		boost::system::error_code ec;
-
 		bool keep_alive = false;
 
 		auto http_simple_error_page = [&client_ptr](auto body, auto status_code,  unsigned version) mutable -> boost::asio::awaitable<void>
@@ -518,9 +516,9 @@ namespace cmall {
 		}
 		catch(boost::system::system_error& e)
 		{
-			boost::system::error_code ec;
+			boost::system::error_code ec = e.code();
 			connection_ptr->tcp_stream.close();
-			LOG_ERR << "coro: do_ws_write: [" << connection_id << "], exception:" << e.code().message();
+			LOG_ERR << "coro: do_ws_write: [" << connection_id << "], exception:" << ec.message();
 			co_return;
 		}
 	}
@@ -542,7 +540,6 @@ namespace cmall {
 	boost::asio::awaitable<void> cmall_service::close_all_ws()
 	{
 		{
-			boost::system::error_code ignore_ec;
 			std::lock_guard<std::mutex> lock(m_ws_mux);
 			for (auto& ws : m_ws_streams)
 			{
@@ -562,7 +559,7 @@ namespace cmall {
 	boost::asio::awaitable<void> cmall_service::websocket_write(client_connection_ptr connection_ptr, std::string message)
 	{
 		if (connection_ptr->ws_client)
-			boost::asio::post(connection_ptr->tcp_stream.get_executor(), [this, connection_ptr, message = std::move(message)]() mutable
+			boost::asio::post(connection_ptr->tcp_stream.get_executor(), [connection_ptr, message = std::move(message)]() mutable
 			{
 				connection_ptr->ws_client->message_channel.try_send(boost::system::error_code(), message);
 			});
@@ -571,7 +568,6 @@ namespace cmall {
 
 	boost::asio::awaitable<void> cmall_service::notify_message_to_all_client(std::string message)
 	{
-		boost::system::error_code ignore_ec;
 		std::lock_guard<std::mutex> lock(m_ws_mux);
 		for (auto& ws : m_ws_streams)
 		{
@@ -591,7 +587,6 @@ namespace cmall {
 		std::shared_ptr<ws_stream> wsp = std::make_shared<ws_stream>(co_await boost::asio::this_coro::executor);
 		tcp::socket& sock = boost::beast::get_lowest_layer(*wsp).socket();
 
-		boost::system::error_code ec;
 		tcp::resolver resolver{ m_io_context };
 
 		if (m_config.upstreams_.empty())

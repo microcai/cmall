@@ -77,9 +77,9 @@ namespace cmall {
 
 		client_connection(boost::beast::tcp_stream&& ws, int64_t connection_id, const std::string& remote_host)
 			: tcp_stream(std::move(ws))
+			, m_io(tcp_stream.get_executor())
 			, connection_id_(connection_id)
 			, remote_host_(remote_host)
-			, m_io(tcp_stream.get_executor())
 		{
 		}
 	};

@@ -100,13 +100,6 @@ namespace eth_misc {
 		return it->second;
 	}
 
-	inline std::string get_function_hash(std::string signature)
-	{
-		auto r = ethash_keccak256((const uint8_t*)(signature.c_str()), signature.length());
-
-		return to_hexstring(r.bytes, r.bytes + 4, "");
-	}
-
 	template<typename T>
 	std::string make_hex_data_element(T t)
 	{
@@ -898,25 +891,25 @@ class jsonrpc
 		void operator()(Handler&& handler, jsonrpc* parent, std::string method, boost::json::array params)
 		{
 			using namespace std::chrono_literals;
-			boost::asio::spawn(parent->get_executor(), [handler = std::move(handler), parent, method, params](boost::asio::yield_context yield) mutable
+			boost::asio::co_spawn(parent->get_executor(), [handler = std::move(handler), parent, method, params]() mutable -> boost::asio::awaitable<void>
 			{
 				auto context = make_rpc_json_string(parent->id++, method, params);
 
 				boost::beast::multi_buffer buf;
 				boost::system::error_code ec;
 				boost::beast::get_lowest_layer(parent->ws).expires_after(60s);
-				parent->ws.async_write(boost::asio::buffer(context), yield[ec]);
+				co_await parent->ws.async_write(boost::asio::buffer(context), boost::asio::redirect_error(boost::asio::use_awaitable, ec));
 				if (ec)
 				{
 					handler(ec, {});
-					return;
+					co_return;
 				}
 				boost::beast::get_lowest_layer(parent->ws).expires_after(60s);
-				parent->ws.async_read(buf, yield[ec]);
+				co_await parent->ws.async_read(buf, boost::asio::redirect_error(boost::asio::use_awaitable, ec));
 				if (ec)
 				{
 					handler(ec, {});
-					return;
+					co_return;
 				}
 				auto body = boost::beast::buffers_to_string(buf.data());
 				auto jv = boost::json::parse(body, ec, {}, { 64, false, false, true });
@@ -924,7 +917,7 @@ class jsonrpc
 				{
 					LOG_ERR << "jsonrpc replay parse error, json parse: " << ec.message() << ", block: " << body;
 					handler(ec, {});
-					return;
+					co_return;
 				}
 
 				handler(ec, jv);
@@ -939,7 +932,7 @@ class jsonrpc
 		{
 			using namespace std::chrono_literals;
 
-			boost::asio::spawn(parent->get_executor(), [handler = std::move(handler), parent, method, params](boost::asio::yield_context yield) mutable
+			boost::asio::post(parent->get_executor(), [handler = std::move(handler), parent, method, params]() mutable
 			{
 				boost::system::error_code ec;
 
@@ -1035,7 +1028,7 @@ class jsonrpc
 		}
 	}
 
-	void parallel_mode_writeloop(boost::system::error_code ec, std::size_t bytes_transfered, std::shared_ptr<bool> stop_flag)
+	void parallel_mode_writeloop(boost::system::error_code ec, std::size_t, std::shared_ptr<bool> stop_flag)
 	{
 		BOOST_ASIO_CORO_REENTER(writer)
 		{

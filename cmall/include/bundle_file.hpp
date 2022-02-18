@@ -51,7 +51,7 @@ namespace{
 	zlib_filefunc64_def exe_bundled_file_ops =
 	{
 		// .zopen64_file =
-		[](voidpf opaque, const void* filename, int mode) -> voidpf
+		[](voidpf, const void* , int ) -> voidpf
 		{
 			std::size_t zip_size;
 			voidpf zip_content;
@@ -66,7 +66,7 @@ namespace{
 			return filestream;
 		},
 		// .zread_file =
-		[](voidpf opaque, voidpf stream, void* buf, uLong size) -> uLong
+		[](voidpf, voidpf stream, void* buf, uLong size) -> uLong
 		{
 			exe_bundle_file * f = reinterpret_cast<exe_bundle_file*>(stream);
 			if (f->error == 0)
@@ -84,19 +84,18 @@ namespace{
 			return -1;
 		},
 		// .zwrite_file =
-		[](voidpf opaque, voidpf stream, const void* buf, uLong size) -> uLong
+		[](voidpf, voidpf, const void*, uLong) -> uLong
 		{
-			exe_bundle_file * f = reinterpret_cast<exe_bundle_file*>(stream);
 			return -1;
 		},
 		// .ztell64_file =
-		[](voidpf opaque, voidpf stream) -> ZPOS64_T
+		[](voidpf, voidpf stream) -> ZPOS64_T
 		{
 			exe_bundle_file * f = reinterpret_cast<exe_bundle_file*>(stream);
 			return f->offset;
 		},
 		// .zseek64_file =
-		[](voidpf opaque, voidpf stream, ZPOS64_T offset, int origin) -> long
+		[](voidpf, voidpf stream, ZPOS64_T offset, int origin) -> long
 		{
 			exe_bundle_file * f = reinterpret_cast<exe_bundle_file*>(stream);
 
@@ -118,25 +117,25 @@ namespace{
 			return 0;
 		},
 		// .zclose_file =
-		[](voidpf opaque, voidpf stream) -> int
+		[](voidpf, voidpf stream) -> int
 		{
 			exe_bundle_file * f = reinterpret_cast<exe_bundle_file*>(stream);
 			boost::checked_delete(f);
 			return 0;
 		},
 		// .zerror_file =
-		[](voidpf opaque, voidpf stream) -> int
+		[](voidpf, voidpf stream) -> int
 		{
 			exe_bundle_file * f = reinterpret_cast<exe_bundle_file*>(stream);
 			return f->error;
 		},
 		// .opaque
-//		reinterpret_cast<voidpf>(0)
+		reinterpret_cast<voidpf>(0)
 	};
 
 	time_t dos2unixtime(unsigned long dostime)
 	{
-		struct tm ltime = { 0 };
+		struct tm ltime = { };
 
 		ltime.tm_year = (dostime >> 25) + 80;
 		ltime.tm_mon = ((dostime >> 21) & 0x0f) - 1;

@@ -10,7 +10,6 @@
 #include <optional>
 #include <thread>
 #include <boost/date_time/posix_time/ptime.hpp>
-#include <keccak/keccak.h>
 #include <boost/json.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/asio.hpp>
@@ -40,48 +39,6 @@ bool check_block_number(std::string blocknumber);
 std::optional<std::string> from_contract_hexstring(const std::string& hexstring_length, std::string hexstring);
 
 boost::posix_time::ptime make_localtime(std::string_view time) noexcept;
-
-// 将wei单位转换为eth单位.
-template<class T>
-cpp_dec_float_50 wei_to_ether(const T& wei)
-{
-	cpp_dec_float_50 result;
-
-	if constexpr (!std::is_same_v<std::decay_t<T>, uint64_t> && !std::is_same_v<std::decay_t<T>, int64_t>
-		&& !std::is_same_v<std::decay_t<T>, cpp_dec_float_50>
-		&& !std::is_same_v<std::decay_t<T>, cpp_dec_float_100>
-		&& !std::is_same_v<std::decay_t<T>, cpp_int>)
-	{
-		static_assert(always_false<T>, "only uint64_t, int64_t, cpp_dec_float_50, cpp_dec_float_100, cpp_int");
-	}
-	else
-	{
-		result = static_cast<cpp_dec_float_50>(wei) / 1000000000000000000;
-	}
-
-	return result;
-}
-
-// 将ether单位转换为eth单位.
-template<class T>
-cpp_int ether_to_wei(const T& ether)
-{
-	cpp_int result;
-
-	if constexpr (!std::is_same_v<std::decay_t<T>, uint64_t> && !std::is_same_v<std::decay_t<T>, int64_t>
-		&& !std::is_same_v<std::decay_t<T>, cpp_dec_float_50>
-		&& !std::is_same_v<std::decay_t<T>, cpp_dec_float_100>
-		&& !std::is_same_v<std::decay_t<T>, cpp_int>)
-	{
-		static_assert(always_false<T>, "only uint64_t, int64_t, cpp_dec_float_50, cpp_dec_float_100, cpp_int");
-	}
-	else
-	{
-		result = static_cast<cpp_int>(static_cast<cpp_dec_float_50>(ether) * 1000000000000000000);
-	}
-
-	return result;
-}
 
 template<class Iterator>
 std::string to_hexstring(Iterator start, Iterator end, std::string const& prefix)
@@ -151,15 +108,6 @@ std::string to_hexstring(T const& data, std::streamsize digits = 64, std::string
 		if (data < 0)
 			return "-" + prefixed + to_hexstring_impl(0 - data, digits);
 		return prefixed + to_hexstring_impl(data, digits);
-	}
-	else if constexpr(std::is_same_v<std::decay_t<T>, ethash_hash256>)
-	{
-		const char* p = reinterpret_cast<const char*>(&data);
-		auto tmp = to_hexstring(p, p + sizeof(ethash_hash256), "");
-		int64_t num = static_cast<int64_t>(digits) - static_cast<int64_t>(tmp.size());
-		if (num > 0)
-			tmp = std::string(num, '0') + tmp;
-		return prefixed + tmp;
 	}
 	else
 	{

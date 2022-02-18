@@ -194,7 +194,6 @@ else()
 endif()
 
 add_subdirectory(third_party/fmt)
-add_subdirectory(third_party/keccak)
 
 if (WIN32)
 	add_subdirectory(third_party/libpq)
@@ -268,7 +267,6 @@ link_libraries(
 		Boost::json
 		Boost::timer
 
-		keccak
 		fmt
 		libodb
 		libodb-pgsql
