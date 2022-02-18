@@ -13,6 +13,9 @@
 #include <boost/asio/dispatch.hpp>
 #include <boost/asio/connect.hpp>
 
+#include <boost/asio/cancellation_signal.hpp>
+#include <boost/asio/associated_cancellation_slot.hpp>
+
 #include <boost/smart_ptr/local_shared_ptr.hpp>
 #include <boost/smart_ptr/make_local_shared.hpp>
 
@@ -90,6 +93,27 @@ namespace asio_util {
 				ConnectCondition connect_condition)
 			{
 				auto context = boost::make_local_shared<connect_context<Stream, Handler>>(std::move(handler));
+
+				auto cs = boost::asio::get_associated_cancellation_slot(context->handler_);
+				if (cs.is_connected())
+				{
+					cs.assign([weak_ptr = boost::weak_ptr<connect_context<Stream, Handler>>(context)](boost::asio::cancellation_type_t) mutable
+					{
+						auto context = weak_ptr.lock();
+						if (!context)
+							return;
+
+						auto& sockets = context->socket_;
+						for (auto& t : sockets)
+						{
+							if (!t)
+								continue;
+
+							boost::system::error_code ignore_ec;
+							t->cancel(ignore_ec);
+						}
+					});
+				}
 
 				context->flag_ = false;
 				context->num_ = std::distance(begin, end);
@@ -226,15 +250,15 @@ namespace asio_util {
 	}
 
 	template <typename Stream,
-	typename Iterator, typename IteratorConnectHandler>
-	BOOST_ASIO_INITFN_RESULT_TYPE(IteratorConnectHandler,
+	typename Iterator, typename ConnectHandler>
+		BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(ConnectHandler,
 		void(boost::system::error_code, Iterator))
 	async_connect(Stream& s, Iterator begin,
-		BOOST_ASIO_MOVE_ARG(IteratorConnectHandler) handler,
+		BOOST_ASIO_MOVE_ARG(ConnectHandler) handler,
 		typename boost::asio::enable_if<
 			!boost::asio::is_endpoint_sequence<Iterator>::value>::type* = 0)
 	{
-		return boost::asio::async_initiate<IteratorConnectHandler,
+		return boost::asio::async_initiate<ConnectHandler,
 			void(boost::system::error_code, Iterator)>
 			(detail::initiate_do_connect{}, handler, &s,
 				begin, Iterator(),
@@ -242,13 +266,13 @@ namespace asio_util {
 	}
 
 	template <typename Stream,
-		typename Iterator, typename IteratorConnectHandler>
-		inline BOOST_ASIO_INITFN_RESULT_TYPE(IteratorConnectHandler,
+		typename Iterator, typename ConnectHandler>
+		inline BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(ConnectHandler,
 			void(boost::system::error_code, Iterator))
 		async_connect(Stream& s, Iterator begin, Iterator end,
-			BOOST_ASIO_MOVE_ARG(IteratorConnectHandler) handler)
+			BOOST_ASIO_MOVE_ARG(ConnectHandler) handler)
 	{
-		return boost::asio::async_initiate<IteratorConnectHandler,
+		return boost::asio::async_initiate<ConnectHandler,
 			void(boost::system::error_code, Iterator)>
 			(detail::initiate_do_connect{}, handler, &s,
 				begin, end,
@@ -256,30 +280,30 @@ namespace asio_util {
 	}
 
 	template <typename Stream,
-		typename EndpointSequence, typename IteratorConnectHandler>
-		inline BOOST_ASIO_INITFN_RESULT_TYPE(IteratorConnectHandler,
+		typename EndpointSequence, typename ConnectHandler>
+		inline BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(ConnectHandler,
 			void(boost::system::error_code, typename Stream::endpoint_type))
 		async_connect(Stream& s, const EndpointSequence& endpoints,
-			BOOST_ASIO_MOVE_ARG(IteratorConnectHandler) handler,
+			BOOST_ASIO_MOVE_ARG(ConnectHandler) handler,
 			typename boost::asio::enable_if<
 				boost::asio::is_endpoint_sequence<EndpointSequence>::value>::type* = 0)
 	{
-		return boost::asio::async_initiate<IteratorConnectHandler,
+		return boost::asio::async_initiate<ConnectHandler,
 			void(boost::system::error_code, typename Stream::endpoint_type)>
 			(detail::initiate_do_connect{}, handler, &s, endpoints,
 				detail::default_connect_condition{});
 	}
 
 	template <typename Stream,
-	typename Iterator, typename IteratorConnectHandler, typename ConnectCondition>
-	BOOST_ASIO_INITFN_RESULT_TYPE(IteratorConnectHandler,
+	typename Iterator, typename ConnectHandler, typename ConnectCondition>
+		BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(ConnectHandler,
 		void(boost::system::error_code, Iterator))
 	async_connect(Stream& s, Iterator begin, ConnectCondition connect_condition,
-		BOOST_ASIO_MOVE_ARG(IteratorConnectHandler) handler,
+		BOOST_ASIO_MOVE_ARG(ConnectHandler) handler,
 		typename boost::asio::enable_if<
 			!boost::asio::is_endpoint_sequence<Iterator>::value>::type* = 0)
 	{
-		return boost::asio::async_initiate<IteratorConnectHandler,
+		return boost::asio::async_initiate<ConnectHandler,
 			void(boost::system::error_code, Iterator)>
 			(detail::initiate_do_connect{}, handler, &s,
 				begin, Iterator(),
@@ -287,13 +311,13 @@ namespace asio_util {
 	}
 
 	template <typename Stream,
-		typename Iterator, typename IteratorConnectHandler, typename ConnectCondition>
-		inline BOOST_ASIO_INITFN_RESULT_TYPE(IteratorConnectHandler,
+		typename Iterator, typename ConnectHandler, typename ConnectCondition>
+		inline BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(ConnectHandler,
 			void(boost::system::error_code, Iterator))
 		async_connect(Stream& s, Iterator begin, Iterator end, ConnectCondition connect_condition,
-			BOOST_ASIO_MOVE_ARG(IteratorConnectHandler) handler)
+			BOOST_ASIO_MOVE_ARG(ConnectHandler) handler)
 	{
-		return boost::asio::async_initiate<IteratorConnectHandler,
+		return boost::asio::async_initiate<ConnectHandler,
 			void(boost::system::error_code, Iterator)>
 			(detail::initiate_do_connect{}, handler, &s,
 				begin, end,
@@ -301,15 +325,15 @@ namespace asio_util {
 	}
 
 	template <typename Stream,
-		typename EndpointSequence, typename IteratorConnectHandler, typename ConnectCondition>
-		inline BOOST_ASIO_INITFN_RESULT_TYPE(IteratorConnectHandler,
+		typename EndpointSequence, typename ConnectHandler, typename ConnectCondition>
+		inline BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(ConnectHandler,
 			void(boost::system::error_code, typename Stream::endpoint_type))
 		async_connect(Stream& s, const EndpointSequence& endpoints, ConnectCondition connect_condition,
-			BOOST_ASIO_MOVE_ARG(IteratorConnectHandler) handler,
+			BOOST_ASIO_MOVE_ARG(ConnectHandler) handler,
 			typename boost::asio::enable_if<
 				boost::asio::is_endpoint_sequence<EndpointSequence>::value>::type* = 0)
 	{
-		return boost::asio::async_initiate<IteratorConnectHandler,
+		return boost::asio::async_initiate<ConnectHandler,
 			void(boost::system::error_code, typename Stream::endpoint_type)>
 			(detail::initiate_do_connect{}, handler, &s, endpoints, connect_condition);
 	}
