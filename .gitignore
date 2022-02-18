@@ -261,13 +261,6 @@ btest/
 CMakeLists.txt.asc
 CMakeLists.txt.asc.gpg
 CMakeLists.txt.gpg
-doc
-doc/.vscode/.cmaketools.json
-doc/.vscode/launch.json
-doc/app-none-wap.js
-doc/name
-doc/package-lock.json
-doc/package.json
 .DS_Store
 
 .ccls-cache
