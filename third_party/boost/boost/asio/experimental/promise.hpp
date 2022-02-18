@@ -27,6 +27,7 @@
 #include <boost/asio/post.hpp>
 
 #include <variant>
+#include <algorithm>
 
 #include <boost/asio/detail/push_options.hpp>
 
@@ -122,10 +123,10 @@ struct promise<void(Ts...), Executor>
   ~promise() { cancel(); }
 
   template <execution::executor Executor1, is_promise_c ... Ps>
-  static auto race(Executor1 exec, Ps ... ps)
+  static auto race(Executor1 exec, Ps& ... ps)
     -> promise<void(std::variant<typename Ps::value_type...>), Executor1>
   {
-    using var_t = std::variant<typename Ps::value_type...>;
+    typedef std::variant<typename Ps::value_type...> var_t;
     using pi = detail::promise_impl<void(var_t), Executor1>;
 
     struct impl_t : pi
@@ -173,8 +174,8 @@ struct promise<void(Ts...), Executor>
           {
             if (impl->done)
               return;
-            impl->result = var_t(std::in_place_index<I>,
-                std::forward<Args>(args)...);
+            impl->result = std::variant<typename Ps::value_type...> { std::in_place_index<I>,
+                std::forward<Args>(args)... };
             impl->done = true;
             if (auto f = std::exchange(impl->completion, nullptr); !!f)
               std::apply(std::move(f), std::move(*impl->result));

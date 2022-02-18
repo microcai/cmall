@@ -17,7 +17,7 @@ check_function_exists(swapcontext HAVE_UCONTEXT)
 
 SET(BOOST_ATOMIC_SRC libs/atomic/src/lock_pool.cpp)
 if(WIN32)
-	set(BOOST_ATOMIC_SRC ${BOOST_ATOMIC_SRC} libs/atomic/src/wait_ops_windows.cpp)
+	set(BOOST_ATOMIC_SRC ${BOOST_ATOMIC_SRC} libs/atomic/src/wait_on_address.cpp)
 endif()
 
 set(BOOST_SERIALIZATION_SRC
