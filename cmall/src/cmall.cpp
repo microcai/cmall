@@ -468,8 +468,9 @@ namespace cmall {
 				{
 					replay_message = co_await on_client_invoke(connection_id, method, jv);
 				}
-				catch (boost::system::system_error&)
+				catch (boost::system::system_error& e)
 				{
+					replay_message.insert_or_assign("error", e.what());
 				}
 				replay_message.insert_or_assign("id", jv.at("id"));
 				co_await websocket_write(connection_ptr, json_to_string(replay_message));
@@ -481,6 +482,7 @@ namespace cmall {
 	boost::asio::awaitable<boost::json::object> cmall_service::on_client_invoke(size_t connection_id, const std::string& method, boost::json::value jv)
 	{
 		boost::json::object replay_message;
+
 
 		co_return replay_message;
 	}

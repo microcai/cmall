@@ -18,6 +18,8 @@
 
 #include "jsonrpc.hpp"
 
+#include "cmall/error_code.hpp"
+
 namespace cmall {
 
 	struct server_config
