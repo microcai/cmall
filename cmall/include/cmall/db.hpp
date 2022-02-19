@@ -112,7 +112,7 @@ struct cmall_product {
 	cpp_numeric price_;
 	std::string currency_{"cny"}; // 币种
 
-	std::string description_; // 商品描述
+	std::string description_; // 商品描述, rtl 内容
 
 #pragma db index
 	uint8_t state_; // 状态: 0-未上架, 1: 上架, 2: 下架
