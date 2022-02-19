@@ -8,7 +8,7 @@ namespace cmall::error{
 	enum errc_t
 	{
 		/// wake_up called
-		network_error = 1,
+		internal_server_error = 1,
 		invalid_json,
 		quota_limited,
 	};

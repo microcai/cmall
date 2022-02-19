@@ -25,6 +25,7 @@ file(GLOB cmall_SRCS
 	include/fmt_extra.hpp
 	include/jsonrpc.hpp
 
+	src/error_code.cpp
 	src/default_cert.cpp
 	src/io_context_pool.cpp
 	src/main.cpp
