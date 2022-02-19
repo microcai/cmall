@@ -483,6 +483,35 @@ namespace cmall {
 	{
 		boost::json::object replay_message;
 
+		if (method == "list_goods")
+		{
+			// 列出 商品, 根据参数决定是首页还是商户
+			auto merchant = jsutil::json_as_string(jsutil::json_accessor(jv).get("merchant", ""));
+
+			if (merchant == "")
+			{
+				// 列举首页商品.
+
+				// 首页商品由管理员设置
+
+				// TODO
+				// m_database.async_load_front_page_goods();
+
+			}
+			else
+			{
+				// 列出商户的上架商品.
+
+
+			}
+		}
+		else if (method == "goods_detail")
+		{
+			// 获取商品信息, 注意这个不是商品描述, 而是商品 标题, 价格, 和缩略图. 用在商品列表页面.
+
+			// TODO
+			// NOTE: 商品的描述, 使用 GET 操作, 以便这种大段的富文本描述信息能被 CDN 缓存．
+		}
 
 		co_return replay_message;
 	}
