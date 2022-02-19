@@ -843,18 +843,21 @@ namespace cmall {
 
 	private:
 		template <typename T> db_result retry_database_op(T&& t) noexcept {
-			if (!m_db) {
-				try {
-					throw std::bad_function_call();
-				} catch (const std::exception&) { return std::current_exception(); }
+			if (!m_db)
+			{
+				return std::make_exception_ptr(std::bad_function_call{});
 			}
 
 			using namespace std::chrono_literals;
 			std::exception_ptr eptr;
-			for (int retry_count(0); retry_count < db_max_retries; retry_count++) {
-				try {
+			for (int retry_count(0); retry_count < db_max_retries; retry_count++)
+				{
+				try
+				{
 					return t();
-				} catch (const odb::recoverable&) {
+				}
+				catch (const odb::recoverable&)
+				{
 					eptr = std::current_exception();
 					std::this_thread::sleep_for(5s);
 					continue;
