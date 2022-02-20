@@ -243,8 +243,7 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 
 int main(int argc, char** argv)
 {
-	auto concurrency = boost::thread::hardware_concurrency() + 2;
-	io_context_pool ios{ concurrency };
+	io_context_pool ios{ boost::thread::hardware_concurrency() };
 
 	int main_return;
 
@@ -255,6 +254,7 @@ int main(int argc, char** argv)
 		ios.stop();
 	});
 
+	// FIXME, db 的 pool size 怎么设定? co_main 跑这个 run 跑起来才会执行.
 	ios.run();
 	return main_return;
 }

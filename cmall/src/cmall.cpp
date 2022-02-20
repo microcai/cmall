@@ -162,7 +162,7 @@ namespace cmall {
 		{
 
 			boost::system::error_code error;
-			tcp::socket socket(m_io_context_pool.get_io_context());
+			tcp::socket socket(co_await boost::asio::this_coro::executor);
 			co_await a.async_accept(socket, boost::asio::redirect_error(boost::asio::use_awaitable, error) );
 
 			if (error)
