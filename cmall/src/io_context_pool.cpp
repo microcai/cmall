@@ -44,11 +44,11 @@ void io_context_pool::run(std::size_t db_threads/* = 1*/)
 		threads.push_back(thread);
 	}
 
-	// Create more threads for database.
-	for (std::size_t i = 1; i < db_threads; ++i)
+	// Create threads for database.
+	for (std::size_t i = 0; i < db_threads; ++i)
 	{
         std::shared_ptr<std::thread> thread(new std::thread(
-			[this]() mutable { io_contexts_[2]->run();  }));
+			[this]() mutable { database_io_context_.run();  }));
 		set_thread_name(thread.get(), "database");
 		threads.push_back(thread);
 	}
