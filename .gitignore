@@ -271,3 +271,5 @@ llvm/
 
 .idea/
 .cache/
+
+doc/
