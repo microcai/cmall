@@ -215,7 +215,6 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 	dbcfg.dbname_ = db_name;
 	dbcfg.port_ = db_port;
 
-	cfg.chain_id_ = (ChainType)chain_id;
 	cfg.dbcfg_ = dbcfg;
 	cfg.upstreams_ = upstreams;
 	cfg.ws_listens_ = ws_listens;

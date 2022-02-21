@@ -24,8 +24,6 @@ namespace cmall {
 
 	struct server_config
 	{
-		ChainType chain_id_{ ChainType::CHAOS };
-
 		std::vector<std::string> upstreams_;
 		std::vector<std::string> ws_listens_;
 		std::string wsorigin_;
