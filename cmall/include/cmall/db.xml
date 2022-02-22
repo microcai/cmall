@@ -51,17 +51,13 @@
       <column name="id" type="BIGINT" null="false"/>
       <column name="oid" type="TEXT" null="false"/>
       <column name="buyer" type="BIGINT" null="false"/>
-      <column name="seller" type="BIGINT" null="false"/>
-      <column name="pid" type="BIGINT" null="false"/>
-      <column name="price" type="numeric" null="false"/>
-      <column name="quantity" type="BIGINT" null="false"/>
+      <column name="price" type="NUMERIC" null="false"/>
       <column name="currency" type="TEXT" null="false"/>
       <column name="currency_rate" type="numeric" null="false" default="'1'"/>
       <column name="pay_amount" type="numeric" null="false" default="'0'"/>
       <column name="stage" type="SMALLINT" null="false"/>
       <column name="payed_at" type="TIMESTAMP" null="true"/>
       <column name="close_at" type="TIMESTAMP" null="true"/>
-      <column name="product_snapshot" type="TEXT" null="true"/>
       <column name="ext" type="TEXT" null="true"/>
       <column name="created_at" type="TIMESTAMP" null="true"/>
       <column name="updated_at" type="TIMESTAMP" null="true"/>
@@ -75,11 +71,27 @@
       <index name="cmall_order_buyer_i">
         <column name="buyer"/>
       </index>
-      <index name="cmall_order_seller_i">
-        <column name="seller"/>
+    </table>
+    <table name="cmall_order_bought_goods" kind="container">
+      <column name="object_id" type="BIGINT" null="false"/>
+      <column name="index" type="BIGINT" null="false"/>
+      <column name="value_owner" type="BIGINT" null="false"/>
+      <column name="value_name" type="TEXT" null="false"/>
+      <column name="value_price" type="NUMERIC" null="false"/>
+      <column name="value_currency" type="TEXT" null="false"/>
+      <column name="value_description" type="TEXT" null="false"/>
+      <column name="value_original_id" type="BIGINT" null="false"/>
+      <foreign-key name="object_id_fk" on-delete="CASCADE">
+        <column name="object_id"/>
+        <references table="cmall_order">
+          <column name="id"/>
+        </references>
+      </foreign-key>
+      <index name="cmall_order_bought_goods_object_id_i">
+        <column name="object_id"/>
       </index>
-      <index name="cmall_order_pid_i">
-        <column name="pid"/>
+      <index name="cmall_order_bought_goods_index_i">
+        <column name="index"/>
       </index>
     </table>
   </model>

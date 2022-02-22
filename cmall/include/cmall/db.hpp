@@ -122,6 +122,21 @@ struct cmall_product {
 	odb::nullable<boost::posix_time::ptime> deleted_at_;
 };
 
+#pragma db value
+struct goods_snapshot
+{
+	uint64_t owner_; // 商品发布者.
+
+	std::string name_; // 商品名称.
+
+	cpp_numeric price_;
+	std::string currency_{"cny"}; // 币种
+
+	std::string description_; // 商品描述, rtl 内容
+
+	std::uint64_t original_id;
+};
+
 // 订单表
 #pragma db object
 struct cmall_order {
@@ -134,14 +149,8 @@ struct cmall_order {
 
 #pragma db index
 	uint64_t buyer_; // 购买者
-#pragma db index
-	uint64_t seller_; // 商户id
-#pragma db index
-	uint64_t pid_; // 商品id
 
- #pragma db type("numeric")
 	cpp_numeric price_; // 下单时价格
-	uint64_t quantity_; // 下单数量
 	std::string currency_; // 支付使用币种
  #pragma db type("numeric") default("1")
 	cpp_numeric currency_rate_; // 币种汇率
@@ -152,7 +161,7 @@ struct cmall_order {
 	odb::nullable<boost::posix_time::ptime> payed_at_;
 	odb::nullable<boost::posix_time::ptime> close_at_;
 
-	odb::nullable<std::string> product_snapshot_; // 商品快照
+	std::vector<goods_snapshot> bought_goods;
 
 	odb::nullable<std::string> ext_; // 扩展字段
 
