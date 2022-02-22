@@ -1,5 +1,5 @@
 
-API 分成 5 组, 未特殊说明, api 都是以 jsonrpc 在同一个连接里调用
+API 分成 6 组, 未特殊说明, api 都是以 jsonrpc 在同一个连接里调用
 
 # 浏览组
 
@@ -7,7 +7,7 @@ API 分成 5 组, 未特殊说明, api 都是以 jsonrpc 在同一个连接里�
 
 功能有, 枚举商户下的商品列表, 获取商品详情, 拉取详情页面, 搜索商品
 
-其中, 拉取详情页面的操作使用 HTTP GET /merchantid/prodid/ 的方式，获取html格式的描述，不是完整 html 文件, 需要嵌入前端.
+其中, 拉取详情页面的操作使用 HTTP GET /goods/merchantid/prodid/ 的方式，获取html格式的描述，不是完整 html 文件, 需要嵌入前端.
 
 
 # 购物车组

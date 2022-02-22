@@ -110,6 +110,7 @@ namespace cmall {
 		boost::asio::awaitable<void> listen_loop(tcp::acceptor& a);
 		boost::asio::awaitable<void> handle_accepted_client(size_t connection_id, client_connection_ptr);
 
+		boost::asio::awaitable<int> render_goods_detail_content(size_t connection_id, std::string merchant, std::string goods_id, boost::beast::tcp_stream& client, int httpver);
 		boost::asio::awaitable<int> do_http_handle(size_t connection_id, boost::beast::http::request<boost::beast::http::string_body>&, boost::beast::tcp_stream& client);
 		boost::asio::awaitable<void> do_ws_read(size_t connection_id, client_connection_ptr);
 		boost::asio::awaitable<void> do_ws_write(size_t connection_id, client_connection_ptr);

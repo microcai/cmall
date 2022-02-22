@@ -11,6 +11,7 @@
 
 #include <boost/json.hpp>
 #include <boost/date_time.hpp>
+#include <boost/regex.hpp>
 
 #ifdef __clang__
 #pragma clang diagnostic push
@@ -304,6 +305,31 @@ namespace cmall {
 					continue;
 				}
 
+				// 这个 /goods/${merchant}/${goods_id} 获取 富文本的商品描述.
+				if (target.starts_with("/goods"))
+				{
+					boost::match_results<boost::string_view::const_iterator> w;
+					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/goods/([^/]+)/([^/]+)")))
+					{
+						std::string merhcant = w[1].str();
+						std::string goods_id = w[2].str();
+
+						int status_code = co_await render_goods_detail_content(connection_id, merhcant, goods_id, client_ptr->tcp_stream, req.version());
+
+						if (status_code != 200)
+						{
+							co_await http_simple_error_page("ERRORED", status_code, req.version());
+						}
+					}
+					else
+					{
+						co_await http_simple_error_page("access denied", 401, req.version());
+					}
+					continue;
+				}
+
+				// 这里使用 zip 里打包的 angular 页面. 对不存在的地址其实直接替代性的返回 index.html 因此此
+				// api 绝对不返回 400. 如果解压内部 zip 发生错误, 会放回 500 错误代码.
 				int status_code = co_await do_http_handle(connection_id, req, client_ptr->tcp_stream);
 
 				if (status_code != 200)
@@ -436,6 +462,14 @@ namespace cmall {
 		co_return 200;
 	}
 
+	// 成功给用户返回内容, 返回 200. 如果没找到商品, 不要向 client 写任何数据, 直接放回 404, 由调用方统一返回错误页面.
+	boost::asio::awaitable<int> cmall_service::render_goods_detail_content(size_t connection_id, std::string merchant, std::string goods_id, boost::beast::tcp_stream& client, int http_ver)
+	{
+		// TODO
+
+		co_return 404;
+	}
+
 	boost::asio::awaitable<void> cmall_service::do_ws_read(size_t connection_id, client_connection_ptr connection_ptr)
 	{
 		auto& ws = connection_ptr->ws_client->ws_stream_;
@@ -496,6 +530,10 @@ namespace cmall {
 
 				// TODO
 				// m_database.async_load_front_page_goods();
+
+				// 格式化.
+
+				//
 
 			}
 			else
