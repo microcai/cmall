@@ -98,7 +98,8 @@ namespace cmall
 		cmall_database(const cmall_database&) = delete;
 		cmall_database& operator=(const cmall_database&) = delete;
 
-		template <typename T> struct initiate_do_add
+		template <typename T>
+		struct initiate_do_add
 		{
 			template <typename Handler> void operator()(Handler&& handler, cmall_database* db, T* value)
 			{
@@ -132,7 +133,8 @@ namespace cmall
 			}
 		};
 
-		template <typename T> struct initiate_do_update
+		template <typename T>
+		struct initiate_do_update
 		{
 			template <typename Handler> void operator()(Handler&& handler, cmall_database* db, T* value)
 			{
@@ -165,7 +167,8 @@ namespace cmall
 			}
 		};
 
-		template <SupportUpdateAt T> struct initiate_do_update<T>
+		template <SupportUpdateAt T>
+		struct initiate_do_update<T>
 		{
 			template <typename Handler> void operator()(Handler&& handler, cmall_database* db, T* value)
 			{
@@ -198,7 +201,8 @@ namespace cmall
 			}
 		};
 
-		template <typename T> struct initiate_do_soft_remove
+		template <typename T>
+		struct initiate_do_soft_remove
 		{
 			template <typename Handler> void operator()(Handler&& handler, cmall_database* db, T* value)
 			{
@@ -230,7 +234,9 @@ namespace cmall
 					});
 			}
 		};
-		template <typename T> struct initiate_do_soft_remove_by_id
+
+		template <typename T>
+		struct initiate_do_soft_remove_by_id
 		{
 			template <typename Handler> void operator()(Handler&& handler, cmall_database* db, std::uint64_t id)
 			{
@@ -262,7 +268,9 @@ namespace cmall
 					});
 			}
 		};
-		template <typename T> struct initiate_do_hard_remove
+
+		template <typename T>
+		struct initiate_do_hard_remove
 		{
 			template <typename Handler> void operator()(Handler&& handler, cmall_database* db, std::uint64_t id)
 			{
