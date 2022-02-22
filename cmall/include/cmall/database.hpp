@@ -818,42 +818,42 @@ namespace cmall
 
 	public:
 		template <typename Handler, typename T>
-		BOOST_ASIO_INITFN_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
+		BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
 		async_add(T& value, BOOST_ASIO_MOVE_ARG(Handler) handler)
 		{
 			return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
 				initiate_do_add<T>{}, handler, this, &value);
 		}
 		template <typename Handler, SupportUpdateAt T>
-		BOOST_ASIO_INITFN_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
+		BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
 		async_update(T& value, BOOST_ASIO_MOVE_ARG(Handler) handler)
 		{
 			return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
 				initiate_do_update<T>{}, handler, this, &value);
 		}
 		template <typename Handler, typename T>
-		BOOST_ASIO_INITFN_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
+		BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
 		async_update(T& value, BOOST_ASIO_MOVE_ARG(Handler) handler)
 		{
 			return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
 				initiate_do_update<T>{}, handler, this, &value);
 		}
 		template <typename T, typename Handler>
-		BOOST_ASIO_INITFN_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
+		BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
 		async_hard_remove(std::uint64_t id, BOOST_ASIO_MOVE_ARG(Handler) handler)
 		{
 			return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
 				initiate_do_hard_remove<T>{}, handler, this, id);
 		}
 		template <typename T, typename Handler>
-		BOOST_ASIO_INITFN_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
+		BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
 		async_soft_remove(T& value, BOOST_ASIO_MOVE_ARG(Handler) handler)
 		{
 			return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
 				initiate_do_soft_remove<T>{}, handler, this, &value);
 		}
 		template <typename T, typename Handler>
-		BOOST_ASIO_INITFN_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
+		BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
 		async_soft_remove(std::uint64_t id, BOOST_ASIO_MOVE_ARG(Handler) handler)
 		{
 			return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
@@ -861,28 +861,28 @@ namespace cmall
 		}
 
 		// template <typename Handler>
-		// BOOST_ASIO_INITFN_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
+		// BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
 		// async_load_config(cmall_config& config, BOOST_ASIO_MOVE_ARG(Handler) handler) {
 		// 	return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
 		// 		initiate_do_load_cmall_config{}, handler, this, &config);
 		// }
 
 		// template <typename Handler>
-		// BOOST_ASIO_INITFN_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
+		// BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
 		// async_add_config(cmall_config& config, BOOST_ASIO_MOVE_ARG(Handler) handler) {
 		// 	return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
 		// 		initiate_do_add_cmall_config{}, handler, this, &config);
 		// }
 
 		// template <typename Handler>
-		// BOOST_ASIO_INITFN_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
+		// BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
 		// async_update_config(const cmall_config& config, BOOST_ASIO_MOVE_ARG(Handler) handler) {
 		// 	return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
 		// 		initiate_do_update_cmall_config{}, handler, this, config);
 		// }
 
 		// template <typename Handler>
-		// BOOST_ASIO_INITFN_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
+		// BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
 		// async_load_records(std::vector<cmall_record>& records, uint16_t type, const std::string& name,
 		// 	BOOST_ASIO_MOVE_ARG(Handler) handler) {
 		// 	return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
@@ -890,7 +890,7 @@ namespace cmall
 		// }
 
 		// template <typename Handler>
-		// BOOST_ASIO_INITFN_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
+		// BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
 		// async_recursively_load_records(std::vector<cmall_record>& records, uint16_t type, const std::string& name,
 		// 	BOOST_ASIO_MOVE_ARG(Handler) handler) {
 		// 	return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
@@ -898,28 +898,28 @@ namespace cmall
 		// }
 
 		// template <typename Handler>
-		// BOOST_ASIO_INITFN_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
+		// BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
 		// async_get_record(cmall_record& record, std::uint64_t rid, BOOST_ASIO_MOVE_ARG(Handler) handler) {
 		// 	return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
 		// 		initiate_do_get_cmall_record{}, handler, this, &record, rid);
 		// }
 
 		// template <typename Handler>
-		// BOOST_ASIO_INITFN_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
+		// BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
 		// async_add_record(cmall_record& records, BOOST_ASIO_MOVE_ARG(Handler) handler) {
 		// 	return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
 		// 		initiate_do_add_cmall_records{}, handler, this, &records);
 		// }
 
 		// template <typename Handler>
-		// BOOST_ASIO_INITFN_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
+		// BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
 		// async_update_record(const cmall_record& record, BOOST_ASIO_MOVE_ARG(Handler) handler) {
 		// 	return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
 		// 		initiate_do_update_cmall_record{}, handler, this, &record);
 		// }
 
 		// template <typename Handler>
-		// BOOST_ASIO_INITFN_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
+		// BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
 		// async_remove_record(std::uint64_t rid, BOOST_ASIO_MOVE_ARG(Handler) handler) {
 		// 	return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
 		// 		initiate_do_remove_cmall_record{}, handler, this, rid);
