@@ -111,8 +111,10 @@ namespace cmall {
 	using client_connection_weakptr = std::weak_ptr<client_connection>;
 
 	enum class req_method {
+		user_prelogin,
 		user_login,
 		user_logout,
+		user_recover_session,
 
 		user_list_products,
 		user_apply_merchant,
@@ -125,6 +127,9 @@ namespace cmall {
 		order_create_direct,
 		order_status,
 		order_close,
+
+		goods_list,
+		goods_detail,
 
 		merchant_product_add,
 		merchant_product_mod,
