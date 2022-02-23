@@ -108,6 +108,36 @@ namespace cmall {
 	using client_connection_ptr = std::shared_ptr<client_connection>;
 	using client_connection_weakptr = std::weak_ptr<client_connection>;
 
+	enum class req_method {
+		user_login,
+		user_logout,
+
+		user_list_products,
+		user_apply_merchant,
+
+		cart_add,
+		cart_del,
+		cart_list,
+
+		order_create_cart,
+		order_create_direct,
+		order_status,
+		order_close,
+
+		merchant_product_add,
+		merchant_product_mod,
+		merchant_product_launch,
+		merchant_product_withdraw,
+
+		admin_user_list,
+		admin_user_ban,
+		admin_merchant_list,
+		admin_merchant_ban,
+		admin_product_list,
+		admin_product_withdraw,
+		admin_order_force_refund,
+	};
+
 	class cmall_service
 	{
 		// c++11 noncopyable.

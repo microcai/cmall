@@ -12,7 +12,7 @@ API 分成 6 组, 未特殊说明, api 都是以 jsonrpc 在同一个连接里�
 
 ```json
 {
-	method: "list_goods",
+	method: "user_list_products",
 	params: {
 		merchant: "0"
 	}
@@ -74,16 +74,26 @@ API 分成 6 组, 未特殊说明, api 都是以 jsonrpc 在同一个连接里�
 params
 
 ```json
-{ "phone": "12345678910", "code": "7894125" }
+{ "type": "b", "phone": "12345678910", "code": "7894125" }
+or
+{ "type": "c", "phone": "12345678910", "code": "7894125" }
 ```
+type表示作为B端或C端用户登录
+
 
 ## 快速登录[`user_login`]
 
 params
 
 ```json
-{ "sessid": "Kai1shaexe2Vea6u" },
+{ "type": "b", "sessid": "Kai1shaexe2Vea6u" }
+or
+{ "type": "c", "sessid": "Kai1shaexe2Vea6u" }
 ```
+
+## 查看商品列表[`user_list_products`]
+
+## 申请成为商户[`user_apply_merchant`]
 
 ## 注销[`user_logout`]
 
@@ -97,6 +107,8 @@ params
 ## 商品列表[`admin_product_list`]
 
 ## 禁用用户[`admin_user_ban`]
+
+## 禁用商户[`admin_merchant_ban`]
 
 ## 下架商品[`admin_product_withdraw`]
 

@@ -24,6 +24,7 @@ file(GLOB cmall_SRCS
 	include/bundle_file.hpp
 	include/fmt_extra.hpp
 	include/jsonrpc.hpp
+	include/magic_enum.hpp
 
 	src/error_code.cpp
 	src/default_cert.cpp
