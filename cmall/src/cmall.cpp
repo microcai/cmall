@@ -524,6 +524,7 @@ namespace cmall
 	boost::asio::awaitable<boost::json::object> cmall_service::on_client_invoke(
 		client_connection_ptr connection_ptr, const std::string& methodstr, boost::json::value jv)
 	{
+		client_connection& this_client = * connection_ptr;
 		boost::json::object reply_message;
 
 		auto method = magic_enum::enum_cast<req_method>(methodstr);
@@ -555,10 +556,6 @@ namespace cmall
 				auto jv = boost::json::parse(co_await session_cache_map.get(sessionid), {}, { 64, false, false, true });
 
 				// TODO reload saved info from jv
-
-				client_connection& this_client = * connection_ptr;
-
-				this_client.user_info.emplace();
 
 				authorized_client_info ci;
 
