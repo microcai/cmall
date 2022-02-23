@@ -496,11 +496,11 @@ namespace cmall {
 
 			auto method = jsutil::json_as_string(jsutil::json_accessor(jv).get("method", ""));
 
-			boost::asio::co_spawn(connection_ptr->m_io, [this, connection_ptr, connection_id, method, jv]() -> boost::asio::awaitable<void> {
+			boost::asio::co_spawn(connection_ptr->m_io, [this, connection_ptr, method, jv]() -> boost::asio::awaitable<void> {
 				boost::json::object replay_message;
 				try
 				{
-					replay_message = co_await on_client_invoke(connection_id, method, jv);
+					replay_message = co_await on_client_invoke(connection_ptr, method, jv);
 				}
 				catch (boost::system::system_error& e)
 				{
@@ -513,11 +513,11 @@ namespace cmall {
 
 	}
 
-	boost::asio::awaitable<boost::json::object> cmall_service::on_client_invoke(size_t connection_id, const std::string& method, boost::json::value jv)
+	boost::asio::awaitable<boost::json::object> cmall_service::on_client_invoke(client_connection_ptr connection_ptr, const std::string& method, boost::json::value jv)
 	{
 		boost::json::object replay_message;
 
-		if (method == "list_goods")
+		if (method == "goods.list")
 		{
 			// 列出 商品, 根据参数决定是首页还是商户
 			auto merchant = jsutil::json_as_string(jsutil::json_accessor(jv).get("merchant", ""));
@@ -543,12 +543,36 @@ namespace cmall {
 
 			}
 		}
-		else if (method == "goods_detail")
+		else if (method == "goods.detail")
 		{
 			// 获取商品信息, 注意这个不是商品描述, 而是商品 标题, 价格, 和缩略图. 用在商品列表页面.
 
 			// TODO
 			// NOTE: 商品的描述, 使用 GET 操作, 以便这种大段的富文本描述信息能被 CDN 缓存．
+		}
+		else if (method == "user.recover_session")
+		{
+			// TODO 从 mdbx 查找保存的 session
+
+
+
+
+		}
+		else if (method == "user.login")
+		{
+			std::string verify_code = jsutil::json_as_string(jsutil::json_accessor(jv).get("verify_code", ""));
+			std::string verify_code_token = jsutil::json_as_string(jsutil::json_accessor(jv).get("verify_code_token", ""));
+
+			// TODO 认证成功后， sessionid 写入 mdbx 数据库以便日后恢复.
+
+
+		}
+		else if (method == "user.prelogin")
+		{
+			// TODO 获取验证码.
+			// 拿到 verify_code_token,  要和 verify_code 一并传给 user.login
+			// verify_code_token 的有效期为 2 分钟.
+			// verify_code_token 对同一个手机号只能一分钟内请求一次.
 		}
 
 		co_return replay_message;

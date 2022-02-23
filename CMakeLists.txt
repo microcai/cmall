@@ -257,6 +257,8 @@ else()
 endif()
 include_directories(${OPENSSL_INCLUDE_DIR})
 
+set(MDBX_BUILD_TOOLS OFF)
+set(MDBX_BUILD_SHARED_LIBRARY OFF)
 add_subdirectory(third_party/libmdbx)
 
 link_libraries(
@@ -274,6 +276,8 @@ link_libraries(
 		libodb
 		libodb-pgsql
 		libodb-boost
+
+		mdbx-static
 
 		${OPENSSL_LIBRARIES}
 		${PostgreSQL_LIBRARIES}

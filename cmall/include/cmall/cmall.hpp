@@ -16,6 +16,8 @@
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>
 
+#include "libmdbx/mdbx.h++"
+
 #include "jsonrpc.hpp"
 
 #include "cmall/error_code.hpp"
@@ -54,6 +56,24 @@ namespace cmall {
 		boost::asio::experimental::concurrent_channel<void(boost::system::error_code, std::string)> message_channel;
 	};
 
+	enum client_capabilities
+	{
+		browerable,                                               // 可浏览商品.
+		orderable,                                                // 可下单.
+		deletable,                                                // 可下架商品.
+		editable,                                                 // 可编辑自己的商品.
+		price_alterable,                                          // 可修改售价.
+	};
+
+	struct authorized_client_info
+	{
+		cmall_chives db_user_entry;
+		std::set<client_capabilities> cap;
+
+		// 使用 session_id 可以快速找回已登录回话.
+		std::string session_id;
+	};
+
 	struct client_connection
 	{
 		boost::beast::tcp_stream tcp_stream;
@@ -62,6 +82,7 @@ namespace cmall {
 		std::string remote_host_;
 
 		std::optional<websocket_connection> ws_client;
+		std::optional<authorized_client_info> user_info;
 
 		~client_connection()
 		{
@@ -126,7 +147,7 @@ namespace cmall {
 		boost::asio::awaitable<void> mitigate_chaindb();
 
 		// 换算成人类读取单位.
-		boost::asio::awaitable<boost::json::object> on_client_invoke(size_t connection_id, const std::string& method, boost::json::value jv);
+		boost::asio::awaitable<boost::json::object> on_client_invoke(client_connection_ptr, const std::string& method, boost::json::value jv);
 
 	private:
 		boost::asio::awaitable<std::shared_ptr<ws_stream>> connect(size_t index = 0);

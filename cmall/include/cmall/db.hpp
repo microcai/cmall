@@ -72,15 +72,57 @@ struct cmall_config {
 	// long long id_{ -1 };
 };
 
+#pragma db value
+struct Recipient
+{
+	std::string address;
+
+	odb::nullable<std::string> province;
+	odb::nullable<std::string> city;
+	odb::nullable<std::string> district;
+
+	odb::nullable<std::string> specific_address;
+
+	#pragma db default(false)
+	bool as_default;
+};
+
+// 用户表.
+#pragma db object
+struct cmall_chives {
+#pragma db id auto
+	std::uint64_t uid_;
+	// long long id_{ -1 };
+
+#pragma db index
+	std::string name_; // 韭菜姓名.
+
+#pragma db index
+	// 手机号
+	std::string active_phone;
+
+	std::vector<std::string> used_phones;
+
+	// 收货地址管理.
+	std::vector<Recipient> recipients;
+
+	bool verified_{ false }; // 是否验证通过.
+
+	uint8_t state_{ 0 }; // 状态, 正常/停用/封禁.
+
+	odb::nullable<std::string> desc_;
+
+	boost::posix_time::ptime created_at_{ boost::posix_time::second_clock::local_time() };
+	boost::posix_time::ptime updated_at_{ boost::posix_time::second_clock::local_time() };
+	odb::nullable<boost::posix_time::ptime> deleted_at_;
+};
+
 // 商户表.
 #pragma db object
 struct cmall_merchant {
 #pragma db id auto
-	std::uint64_t id_;
-	// long long id_{ -1 };
-
-#pragma db index
 	std::uint64_t uid_;
+	// long long id_{ -1 };
 
 #pragma db index
 	std::string name_; // 商户名称.

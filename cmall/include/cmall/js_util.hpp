@@ -8,6 +8,8 @@
 #include "cmall/misc.hpp"
 #include "cmall/db.hpp"
 
+#include "cmall/rpc_defs.hpp"
+
 namespace jsutil
 {
 	template <typename T, typename = void>
