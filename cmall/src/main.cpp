@@ -169,7 +169,7 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 		("upstream", po::value<std::vector<std::string>>(&upstreams)->multitoken(), "Upstreams.")
 		("wsorigin", po::value<std::string>(&wsorigin)->default_value(""), "Websocket allowed origin.")
 		("ws", po::value<std::vector<std::string>>(&ws_listens)->multitoken(), "For websocket server listen.")
-		("session_cache", po::value<std::string>(&session_cache)->("/var/lib/cmall"), "the dir for session cache")
+		("session_cache", po::value<std::string>(&session_cache)->default_value("/var/lib/cmall"), "the dir for session cache")
 
 		("db_name", po::value<std::string>(&db_name)->default_value("cmall"), "Database name.")
 		("db_host", po::value<std::string>(&db_host)->default_value(""), "Database host.")

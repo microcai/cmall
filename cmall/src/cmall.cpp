@@ -509,7 +509,8 @@ namespace cmall
 					}
 					catch (boost::system::system_error& e)
 					{
-						replay_message.insert_or_assign("error", e.what());
+						//replay_message.insert_or_assign("error", e.what());
+						replay_message["error"] = { "code", e.code().value(), "message", e.code().message() };
 					}
 					replay_message.insert_or_assign("id", jv.at("id"));
 					co_await websocket_write(connection_ptr, json_to_string(replay_message));
@@ -526,8 +527,7 @@ namespace cmall
 		auto method = magic_enum::enum_cast<req_method>(methodstr);
 		if (!method.has_value())
 		{
-			reply_message["error"] = { "code", 4, "message", "unknown method" };
-			co_return reply_message;
+			throw boost::system::system_error(boost::system::error_code(cmall::error::unknown_method));
 		}
 		switch (method.value()) {
 

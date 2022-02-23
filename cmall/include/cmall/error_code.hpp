@@ -3,14 +3,14 @@
 
 #include <boost/system/error_code.hpp>
 
-namespace cmall::error{
+namespace cmall { namespace error{
 
 	enum errc_t
 	{
 		/// wake_up called
 		internal_server_error = 1,
 		invalid_json,
-		quota_limited,
+		unknown_method,
 	};
 
 	class cmall_category : public boost::system::error_category
@@ -28,4 +28,4 @@ namespace cmall::error{
 		return boost::system::error_code(static_cast<int>(e), error_category());
 	}
 
-}
+}}
