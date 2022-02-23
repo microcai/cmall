@@ -34,6 +34,7 @@
 namespace cmall
 {
 	using namespace std::chrono_literals;
+	using namespace mdbx;
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -42,9 +43,12 @@ namespace cmall
 		, m_io_context(m_io_context_pool.server_io_context())
 		, m_config(config)
 		, m_database(m_config.dbcfg_, m_io_context_pool.database_io_context())
-		, mdbx_env(m_config.session_cache_file, mdbx::env::operate_parameters{})
+		, mdbx_env(m_config.session_cache_file, env::operate_parameters{})
 	{
-
+		txn_managed t = mdbx_env.start_write();
+		mdbx_map = t.create_map("session");
+		t.put(mdbx_map, mdbx::slice("t"), mdbx::slice("t"), insert_unique);
+		t.commit();
 	}
 
 	cmall_service::~cmall_service() { LOG_DBG << "~cmall_service()"; }
@@ -548,6 +552,29 @@ namespace cmall
 			}break;
 			case req_method::user_recover_session:
 			{
+				std::string sessionid = jsutil::json_as_string(jsutil::json_accessor(jv).get("sessionid", ""));
+
+				txn_managed t = mdbx_env.start_read();
+				mdbx::slice v = t.get(mdbx_map, slice(sessionid));
+				auto jv = boost::json::parse(v.as_string(), {}, { 64, false, false, true });
+				t.commit();
+
+				// TODO reload saved info from jv
+
+				client_connection& this_client = * connection_ptr;
+
+				this_client.user_info.emplace();
+
+				authorized_client_info ci;
+
+				ci.session_id = sessionid;
+				//ci.cap =;
+				// TODO
+// 				ci.db_user_entry = m_database.async_load_user_entry();
+
+				this_client.user_info = ci;
+
+				reply_message["result"] = true;
 
 			}break;
 

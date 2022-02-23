@@ -196,6 +196,7 @@ namespace cmall {
 		server_config m_config;
 		cmall_database m_database;
 		mdbx::env_managed mdbx_env;
+		mdbx::map_handle mdbx_map;
 
 		// ws 服务端相关.
 		std::vector<tcp::acceptor> m_ws_acceptors;
