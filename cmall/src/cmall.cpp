@@ -513,8 +513,11 @@ namespace cmall
 					}
 					catch (boost::system::system_error& e)
 					{
-						//replay_message.insert_or_assign("error", e.what());
 						replay_message["error"] = { "code", e.code().value(), "message", e.code().message() };
+					}
+					catch (std::exception& e)
+					{
+						replay_message["error"] = { "code", 502, "message", "internal server error" };
 					}
 					replay_message.insert_or_assign("id", jv.at("id"));
 					co_await websocket_write(connection_ptr, json_to_string(replay_message));
