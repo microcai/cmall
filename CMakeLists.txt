@@ -129,6 +129,7 @@ add_definitions(-DUSE_STD_STRING_VIEW)
 if (NOT MSVC)
 	if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" )
 		add_definitions(-DBOOST_ASIO_HAS_CO_AWAIT)
+		add_compile_options(-Wno-unused-variable -Wno-unused-parameter)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 
 		if (ENABLE_COMPILER_RT)
