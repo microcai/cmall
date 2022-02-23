@@ -46,7 +46,7 @@ namespace cmall
 		, mdbx_env(m_config.session_cache_file, env::operate_parameters{})
 	{
 		txn_managed t = mdbx_env.start_write();
-		mdbx_map = t.create_map("session");
+		mdbx_map = t.create_map(NULL);
 		t.put(mdbx_map, mdbx::slice("t"), mdbx::slice("t"), insert_unique);
 		t.commit();
 	}

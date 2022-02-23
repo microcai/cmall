@@ -4758,7 +4758,7 @@ __cold env_managed::env_managed(const ::std::filesystem::path &pathname,
   setup(op.max_maps, op.max_readers);
   const path_to_pchar<::std::filesystem::path> utf8(pathname);
   error::success_or_throw(
-      ::mdbx_env_open(handle_, utf8, op.make_flags(accede), 0));
+	  ::mdbx_env_open(handle_, utf8, op.make_flags(accede), 0644));
 
   if (op.options.nested_write_transactions &&
       !get_options().nested_write_transactions)
