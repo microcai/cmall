@@ -529,82 +529,83 @@ namespace cmall
 		{
 			throw boost::system::system_error(boost::system::error_code(cmall::error::unknown_method));
 		}
-		switch (method.value()) {
 
-		case req_method::user_prelogin:
+		switch (method.value())
 		{
-			// TODO 获取验证码.
-			// 拿到 verify_code_token,  要和 verify_code 一并传给 user.login
-			// verify_code_token 的有效期为 2 分钟.
-			// verify_code_token 对同一个手机号只能一分钟内请求一次.
-		}break;
-		case req_method::user_login:
-		{
-			std::string verify_code = jsutil::json_as_string(jsutil::json_accessor(jv).get("verify_code", ""));
-			std::string verify_code_token = jsutil::json_as_string(jsutil::json_accessor(jv).get("verify_code_token", ""));
-
-			// TODO 认证成功后， sessionid 写入 mdbx 数据库以便日后恢复.
-		}break;
-		case req_method::user_recover_session:
-		{
-
-		}break;
-
-
-		case req_method::user_logout: break;
-		case req_method::user_list_products: break;
-		case req_method::user_apply_merchant: break;
-		case req_method::cart_add: break;
-		case req_method::cart_del: break;
-		case req_method::cart_list: break;
-		case req_method::order_create_cart: break;
-		case req_method::order_create_direct: break;
-		case req_method::order_status: break;
-		case req_method::order_close: break;
-
-		case req_method::goods_list:
-		{
-			// 列出 商品, 根据参数决定是首页还是商户
-			auto merchant = jsutil::json_as_string(jsutil::json_accessor(jsutil::json_accessor(jv).get("params", boost::json::object{})).get("merchant", ""));
-
-			if (merchant == "")
+			case req_method::user_prelogin:
 			{
-				// 列举首页商品.
+				// TODO 获取验证码.
+				// 拿到 verify_code_token,  要和 verify_code 一并传给 user.login
+				// verify_code_token 的有效期为 2 分钟.
+				// verify_code_token 对同一个手机号只能一分钟内请求一次.
+			}break;
+			case req_method::user_login:
+			{
+				std::string verify_code = jsutil::json_as_string(jsutil::json_accessor(jv).get("verify_code", ""));
+				std::string verify_code_token = jsutil::json_as_string(jsutil::json_accessor(jv).get("verify_code_token", ""));
 
-				// 首页商品由管理员设置
+				// TODO 认证成功后， sessionid 写入 mdbx 数据库以便日后恢复.
+			}break;
+			case req_method::user_recover_session:
+			{
+
+			}break;
+
+
+			case req_method::user_logout: break;
+			case req_method::user_list_products: break;
+			case req_method::user_apply_merchant: break;
+			case req_method::cart_add: break;
+			case req_method::cart_del: break;
+			case req_method::cart_list: break;
+			case req_method::order_create_cart: break;
+			case req_method::order_create_direct: break;
+			case req_method::order_status: break;
+			case req_method::order_close: break;
+
+			case req_method::goods_list:
+			{
+				// 列出 商品, 根据参数决定是首页还是商户
+				auto merchant = jsutil::json_as_string(jsutil::json_accessor(jsutil::json_accessor(jv).get("params", boost::json::object{})).get("merchant", ""));
+
+				if (merchant == "")
+				{
+					// 列举首页商品.
+
+					// 首页商品由管理员设置
+
+					// TODO
+					// m_database.async_load_front_page_goods();
+
+					// 格式化.
+
+					//
+				}
+				else
+				{
+					// 列出商户的上架商品.
+				}
+			}break;
+			case req_method::goods_detail:
+			{
+				// 获取商品信息, 注意这个不是商品描述, 而是商品 标题, 价格, 和缩略图. 用在商品列表页面.
 
 				// TODO
-				// m_database.async_load_front_page_goods();
+				// NOTE: 商品的描述, 使用 GET 操作, 以便这种大段的富文本描述信息能被 CDN 缓存．
 
-				// 格式化.
+			}break;
 
-				//
-			}
-			else
-			{
-				// 列出商户的上架商品.
-			}
-		}break;
-		case req_method::goods_detail:
-		{
-			// 获取商品信息, 注意这个不是商品描述, 而是商品 标题, 价格, 和缩略图. 用在商品列表页面.
-
-			// TODO
-			// NOTE: 商品的描述, 使用 GET 操作, 以便这种大段的富文本描述信息能被 CDN 缓存．
-
-		}break;
-
-		case req_method::merchant_product_add: break;
-		case req_method::merchant_product_mod: break;
-		case req_method::merchant_product_launch: break;
-		case req_method::merchant_product_withdraw: break;
-		case req_method::admin_user_list: break;
-		case req_method::admin_user_ban: break;
-		case req_method::admin_merchant_list: break;
-		case req_method::admin_merchant_ban: break;
-		case req_method::admin_product_list: break;
-		case req_method::admin_product_withdraw: break;
-		case req_method::admin_order_force_refund: break;
+			case req_method::merchant_product_add: break;
+			case req_method::merchant_product_mod: break;
+			case req_method::merchant_product_launch: break;
+			case req_method::merchant_product_withdraw: break;
+			case req_method::admin_user_list: break;
+			case req_method::admin_user_ban: break;
+			case req_method::admin_merchant_list: break;
+			case req_method::admin_merchant_ban: break;
+			case req_method::admin_product_list: break;
+			case req_method::admin_product_withdraw: break;
+			case req_method::admin_order_force_refund: break;
 		}
 
 		co_return reply_message;
