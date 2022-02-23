@@ -42,7 +42,9 @@ namespace cmall
 		, m_io_context(m_io_context_pool.server_io_context())
 		, m_config(config)
 		, m_database(m_config.dbcfg_, m_io_context_pool.database_io_context())
+		, mdbx_env(m_config.session_cache_file, mdbx::env::operate_parameters{})
 	{
+
 	}
 
 	cmall_service::~cmall_service() { LOG_DBG << "~cmall_service()"; }

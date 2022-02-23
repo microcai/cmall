@@ -32,6 +32,8 @@ namespace cmall {
 		std::string socks5proxy_;
 
 		cmall::db_config dbcfg_;
+
+		std::filesystem::path session_cache_file;
 	};
 
 	using ws_stream = websocket::stream<boost::beast::tcp_stream>;
@@ -188,6 +190,7 @@ namespace cmall {
 
 		server_config m_config;
 		cmall_database m_database;
+		mdbx::env_managed mdbx_env;
 
 		// ws 服务端相关.
 		std::vector<tcp::acceptor> m_ws_acceptors;
