@@ -8,6 +8,7 @@
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/experimental/promise.hpp>
 #include "utils/time_clock.hpp"
+#include "utils/logging.hpp"
 
 using steady_timer = boost::asio::basic_waitable_timer<time_clock::steady_clock>;
 
@@ -72,45 +73,50 @@ struct persist_map_impl
 		std::cerr << "background_task() running\n";
 		for (;;)
 		{
-			std::list<mdbx::slice> outdated_keys;
-			// TODO clean outdated key.
-			txn_managed txn = mdbx_env.start_read();
-
-			std::cerr << "background_task() open_cursor\n";
-
-			cursor_managed c = txn.open_cursor(mdbx_map);
-
-			for (c.to_first(); !c.on_last();  c.to_next())
+			try
 			{
-				cursor::move_result r = c.current();
+				std::list<mdbx::slice> outdated_keys;
+				// TODO clean outdated key.
+				txn_managed txn = mdbx_env.start_read();
 
-				std::cerr << "iterator key:" << r.key.as_string() << "\n";
+				std::cerr << "background_task() open_cursor\n";
 
-				if (r)
+				cursor_managed c = txn.open_cursor(mdbx_map);
+
+				for (c.to_first(); !c.eof();  c.to_next(false))
 				{
-					// TODO 从 value 里提取生成日期.
-					// TODO 然后把过期的时间
-					r.value;
+					cursor::move_result r = c.current();
 
-					outdated_keys.push_back(r.key);
+					std::cerr << "iterator key:" << r.key.as_string() << "\n";
+
+					if (r)
+					{
+						// TODO 从 value 里提取生成日期.
+						// TODO 然后把过期的时间
+
+						outdated_keys.push_back(r.key);
+					}
+				}
+
+				std::cerr << "background_task() close cursor\n";
+
+				c.close();
+				txn.commit();
+
+				for (auto& k : outdated_keys)
+				{
+					txn = mdbx_env.start_write();
+					txn.erase(mdbx_map, k);
+
+					std::cerr << "drop key:" << k.as_string() << "\n";
+
+					txn.commit();
 				}
 			}
-
-			std::cerr << "background_task() close cursor\n";
-
-			c.close();
-			txn.commit();
-
-			for (auto& k : outdated_keys)
+			catch(std::exception& e)
 			{
-				txn = mdbx_env.start_write();
-				txn.erase(mdbx_map, k);
-
-				std::cerr << "drop key:" << k.as_string() << "\n";
-
-				txn.commit();
+				std::cerr << "background_task() exception: " << e.what()  << "\n";
 			}
-
 			co_await boost::asio::this_coro::throw_if_cancelled();
 
 			m_task_timer.expires_from_now(std::chrono::seconds(60));
