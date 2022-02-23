@@ -13,25 +13,27 @@ API 分成 6 组, 未特殊说明, api 都是以 jsonrpc 在同一个连接里�
 ```json
 {
 	method: "list_goods",
-	merchant: "0"
+	params: {
+		merchant: "0"
+	}
 }
 ```
 回
 ```json
 {
-	results : [
+	result: [
 		{
 			merchant: 0,
 			name : "定位书包",
 			pic: "picutureid", // 图片的 ID
-			price: 1000.00,
+			price: "1000.00",
 			detial: "0/dingwei_shubao"
 		},
 		{
 			merchant: 0,
 			name : "小宝nas",
 			pic: "picutureid", // 图片的 ID
-			price: 4000.00,
+			price: "4000.00",
 			detial: "0/nas"
 		}
 	]
@@ -45,53 +47,68 @@ API 分成 6 组, 未特殊说明, api 都是以 jsonrpc 在同一个连接里�
 
 # 购物车组
 
-添加购物车
+## 添加到购物车[`cart_add`]
 
-删除购物车
+## 从购物车删除[`cart_del`]
+
+## 购物车列表[`cart_list`]
 
 
 # 订单组
 
-从商品创建订单
+## 从商品创建订单[`order_create_direct`]
 
-从购物车创建订单
+## 从购物车创建订单[`order_create_cart`]
 
-获取支付链接
+~~获取支付链接~~
 
-查询订单状态
+## 查询订单状态[`order_status`]
 
-取消订单
+## 取消订单[`order_close`]
 
 # 用户组
 
 
-登录
+## 登录[`user_login`]
 
-快速登录
+params
 
-注销
+```json
+{ "phone": "12345678910", "code": "7894125" }
+```
+
+## 快速登录[`user_login`]
+
+params
+
+```json
+{ "sessid": "Kai1shaexe2Vea6u" },
+```
+
+## 注销[`user_logout`]
 
 
 # 管理组
 
-用户列表
+## 用户列表[`admin_user_list`]
 
-商户列表
+## 商户列表[`admin_merchant_list`]
 
-商品列表
+## 商品列表[`admin_product_list`]
 
-禁用用户
+## 禁用用户[`admin_user_ban`]
 
-下架商品
+## 下架商品[`admin_product_withdraw`]
 
-强制退款
+## 强制退款[`admin_order_force_refund`]
 
 # 商户组
 
-添加商品/修改
+## 添加商品/修改[`merchant_product_add`/`merchant_product_mod`]
 
-商品上架
+## 商品上架[`merchant_product_launch`]
 
-商品下架
+## 商品下架[`merchant_product_withdraw`]
 
-物流管理
+
+## 物流管理
