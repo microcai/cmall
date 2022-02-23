@@ -34,7 +34,6 @@
 namespace cmall
 {
 	using namespace std::chrono_literals;
-	using namespace mdbx;
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -43,12 +42,8 @@ namespace cmall
 		, m_io_context(m_io_context_pool.server_io_context())
 		, m_config(config)
 		, m_database(m_config.dbcfg_, m_io_context_pool.database_io_context())
-		, mdbx_env(m_config.session_cache_file, env::operate_parameters{})
+		, session_cache_map(m_config.session_cache_file)
 	{
-		txn_managed t = mdbx_env.start_write();
-		mdbx_map = t.create_map(NULL);
-		t.put(mdbx_map, mdbx::slice("t"), mdbx::slice("t"), insert_unique);
-		t.commit();
 	}
 
 	cmall_service::~cmall_service() { LOG_DBG << "~cmall_service()"; }
@@ -557,10 +552,7 @@ namespace cmall
 			{
 				std::string sessionid = jsutil::json_as_string(jsutil::json_accessor(jv).get("sessionid", ""));
 
-				txn_managed t = mdbx_env.start_read();
-				mdbx::slice v = t.get(mdbx_map, slice(sessionid));
-				auto jv = boost::json::parse(v.as_string(), {}, { 64, false, false, true });
-				t.commit();
+				auto jv = boost::json::parse(co_await session_cache_map.get(sessionid), {}, { 64, false, false, true });
 
 				// TODO reload saved info from jv
 

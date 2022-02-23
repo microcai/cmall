@@ -16,11 +16,10 @@
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>
 
-#include "libmdbx/mdbx.h++"
-
 #include "jsonrpc.hpp"
 
 #include "cmall/error_code.hpp"
+#include "persist_map.hpp"
 
 namespace cmall {
 
@@ -195,8 +194,8 @@ namespace cmall {
 
 		server_config m_config;
 		cmall_database m_database;
-		mdbx::env_managed mdbx_env;
-		mdbx::map_handle mdbx_map;
+
+		persist_map session_cache_map;
 
 		// ws 服务端相关.
 		std::vector<tcp::acceptor> m_ws_acceptors;
