@@ -34,12 +34,8 @@ file(GLOB cmall_SRCS
 	src/internal.cpp
 )
 
-find_package(Embed REQUIRED)
-EMBED_TARGET(SITE site.zip)
-
 add_executable(cmall ${cmall_SRCS}
 	${ODB_GENERATED}
-	${EMBED_SITE_OUTPUTS}
 )
 target_include_directories(cmall PRIVATE
 	${CMAKE_BINARY_DIR}
