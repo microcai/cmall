@@ -475,7 +475,8 @@ namespace cmall
 					{
 						// SUCCESS.
 						cmall_user user;
-						if (co_await m_database.async_load_use_by_phone(this_client.session_info->verify_telephone, user))
+						if (co_await m_database.async_load_user_by_phone(
+								this_client.session_info->verify_telephone, user))
 						{
 
 

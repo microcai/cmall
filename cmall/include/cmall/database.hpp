@@ -881,7 +881,7 @@ namespace cmall
 	public:
 		template <typename T, typename Handler>
 		BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
-		async_load_use_by_phone(const std::string& phone, cmall_user& value, BOOST_ASIO_MOVE_ARG(Handler) handler)
+		async_load_user_by_phone(const std::string& phone, cmall_user& value, BOOST_ASIO_MOVE_ARG(Handler) handler)
 		{
 			return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
 				initiate_do_load_user_by_phone{}, handler, this, phone, &value);
