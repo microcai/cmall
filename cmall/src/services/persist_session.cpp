@@ -73,6 +73,11 @@ namespace services
 		return impl().load(session_id);
 	}
 
+	boost::asio::awaitable<void> persist_session::save(const client_session& session, std::chrono::duration<int> lifetime)
+	{
+		return impl().save(session.session_id, session, lifetime);
+	}
+
 	boost::asio::awaitable<void> persist_session::save(
 		std::string_view session_id, const client_session& session, std::chrono::duration<int> lifetime)
 	{

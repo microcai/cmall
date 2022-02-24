@@ -38,6 +38,7 @@ namespace services
 
 		boost::asio::awaitable<bool> exist(std::string_view session_id) const;
 		boost::asio::awaitable<client_session> load(std::string_view session_id) const;
+		boost::asio::awaitable<void> save(const client_session& session, std::chrono::duration<int> lifetime = std::chrono::seconds(86400 * 30));
 		boost::asio::awaitable<void> save(std::string_view session_id, const client_session& session, std::chrono::duration<int> lifetime = std::chrono::seconds(86400 * 30));
 		boost::asio::awaitable<void> update_lifetime(std::string_view session_id, std::chrono::duration<int> lifetime = std::chrono::seconds(86400 * 30));
 

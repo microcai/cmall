@@ -19,6 +19,8 @@
 
 #include "fmt_extra.hpp"
 
+std::string gen_uuid();
+
 void set_thread_name(const char* name);
 void set_thread_name(std::thread* thread, const char* name);
 

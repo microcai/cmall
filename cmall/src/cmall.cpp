@@ -430,6 +430,11 @@ namespace cmall
 				if (sessionid.empty() || !(co_await session_cache_map.exist(sessionid)))
 				{
 					// TODO 表示是第一次使用，所以创建一个新　session 给客户端.
+					this_client.session_info = std::make_shared<services::client_session>();
+
+					this_client.session_info->session_id = gen_uuid();
+
+					co_await session_cache_map.save(*this_client.session_info);
 				}
 
 				this_client.session_info = std::make_shared<services::client_session>(co_await session_cache_map.load(sessionid));
@@ -439,7 +444,7 @@ namespace cmall
 						*(this_client.session_info->user_info));
 				}
 
-				reply_message["result"] = true;
+				reply_message["result"] = { { "session_id", this_client.session_info->session_id }, {"isLogin", false} };
 
 			}break;
 
@@ -482,9 +487,16 @@ namespace cmall
 						}
 						else
 						{
+							cmall_user new_user;
+							new_user.active_phone = this_client.session_info->verify_telephone;
+
 							// TODO 新用户注册，赶紧创建个新用户
+							co_await m_database.async_add(new_user, boost::asio::use_awaitable);
+							this_client.session_info->user_info = new_user;
 
 						}
+						// 更新 session 保存的 uid_
+						co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info);
 						// TODO 认证成功后， sessionid 写入 mdbx 数据库以便日后恢复.
 						reply_message["result"] = { { "login", "success" },  { "usertype", "user" } };
 						break;
