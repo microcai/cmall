@@ -66,16 +66,16 @@ namespace cmall
 		// 初始化ws acceptors.
 		co_await init_ws_acceptors();
 
-		int pool_size = static_cast<int>(m_io_context_pool.pool_size());
+		constexpr int concurrent_accepter = 20;
 
 		try
 		{
 			std::vector<boost::asio::experimental::promise<void(std::exception_ptr)>> ws_runners;
-			for (int i = 0; i < pool_size; i++)
+			for (auto& a : m_ws_acceptors)
 			{
-				for (auto& a : m_ws_acceptors)
+				for (int i = 0; i < concurrent_accepter; i++)
 				{
-					ws_runners.emplace_back(boost::asio::co_spawn(m_io_context_pool.get_io_context().get_executor(),
+					ws_runners.emplace_back(boost::asio::co_spawn(a.get_executor(),
 						listen_loop(a), boost::asio::experimental::use_promise));
 				}
 			}
@@ -162,7 +162,7 @@ namespace cmall
 		{
 
 			boost::system::error_code error;
-			tcp::socket socket(co_await boost::asio::this_coro::executor);
+			tcp::socket socket(m_io_context_pool.get_io_context());
 			co_await a.async_accept(socket, boost::asio::redirect_error(boost::asio::use_awaitable, error));
 
 			if (error)
