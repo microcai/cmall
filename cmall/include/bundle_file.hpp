@@ -81,12 +81,12 @@ namespace{
 				f->error = EOF;
 				return 0;
 			}
-			return -1;
+			return (uLong) -1;
 		},
 		// .zwrite_file =
 		[](voidpf, voidpf, const void*, uLong) -> uLong
 		{
-			return -1;
+			return (uLong)-1;
 		},
 		// .ztell64_file =
 		[](voidpf, voidpf stream) -> ZPOS64_T
