@@ -89,13 +89,14 @@ struct Recipient
 
 // 用户表.
 #pragma db object
-struct cmall_chives {
+struct cmall_user 
+{
 #pragma db id auto
 	std::uint64_t uid_;
 	// long long id_{ -1 };
 
 #pragma db index
-	std::string name_; // 韭菜姓名.
+	std::string name_; // 姓名.
 
 #pragma db index
 	// 手机号

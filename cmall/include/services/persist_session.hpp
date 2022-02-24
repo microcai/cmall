@@ -21,7 +21,7 @@ namespace services
 
 	struct authorized_client_info
 	{
-		cmall_chives db_user_entry;
+		cmall_user db_user_entry;
 		std::set<client_capabilities> cap;
 	};
 

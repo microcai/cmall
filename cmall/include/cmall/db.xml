@@ -6,7 +6,7 @@
         <column name="id"/>
       </primary-key>
     </table>
-    <table name="cmall_chives" kind="object">
+    <table name="cmall_user" kind="object">
       <column name="uid" type="BIGINT" null="false"/>
       <column name="name" type="TEXT" null="false"/>
       <column name="active_phone" type="TEXT" null="false"/>
@@ -19,31 +19,31 @@
       <primary-key auto="true">
         <column name="uid"/>
       </primary-key>
-      <index name="cmall_chives_name_i">
+      <index name="cmall_user_name_i">
         <column name="name"/>
       </index>
-      <index name="cmall_chives_active_phone_i">
+      <index name="cmall_user_active_phone_i">
         <column name="active_phone"/>
       </index>
     </table>
-    <table name="cmall_chives_used_phones" kind="container">
+    <table name="cmall_user_used_phones" kind="container">
       <column name="object_id" type="BIGINT" null="false"/>
       <column name="index" type="BIGINT" null="false"/>
       <column name="value" type="TEXT" null="false"/>
       <foreign-key name="object_id_fk" on-delete="CASCADE">
         <column name="object_id"/>
-        <references table="cmall_chives">
+        <references table="cmall_user">
           <column name="uid"/>
         </references>
       </foreign-key>
-      <index name="cmall_chives_used_phones_object_id_i">
+      <index name="cmall_user_used_phones_object_id_i">
         <column name="object_id"/>
       </index>
-      <index name="cmall_chives_used_phones_index_i">
+      <index name="cmall_user_used_phones_index_i">
         <column name="index"/>
       </index>
     </table>
-    <table name="cmall_chives_recipients" kind="container">
+    <table name="cmall_user_recipients" kind="container">
       <column name="object_id" type="BIGINT" null="false"/>
       <column name="index" type="BIGINT" null="false"/>
       <column name="value_address" type="TEXT" null="false"/>
@@ -54,14 +54,14 @@
       <column name="value_as_default" type="BOOLEAN" null="false" default="FALSE"/>
       <foreign-key name="object_id_fk" on-delete="CASCADE">
         <column name="object_id"/>
-        <references table="cmall_chives">
+        <references table="cmall_user">
           <column name="uid"/>
         </references>
       </foreign-key>
-      <index name="cmall_chives_recipients_object_id_i">
+      <index name="cmall_user_recipients_object_id_i">
         <column name="object_id"/>
       </index>
-      <index name="cmall_chives_recipients_index_i">
+      <index name="cmall_user_recipients_index_i">
         <column name="index"/>
       </index>
     </table>
