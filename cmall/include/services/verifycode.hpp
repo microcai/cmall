@@ -11,7 +11,7 @@ namespace services
 	{
 	private:
 		std::string session_cookie;
-		friend class verifycode_impl;
+		friend struct verifycode_impl;
 	};
 
 	class verifycode

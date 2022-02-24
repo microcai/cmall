@@ -6,6 +6,7 @@ namespace services
 	struct verifycode_impl
 	{
 		verifycode_impl(boost::asio::io_context& io)
+			: io(io)
 		{}
 
 		// send verifycode, returns verify session.
@@ -24,8 +25,8 @@ namespace services
 			co_return true;
 		}
 
+		boost::asio::io_context& io;
 	};
-
 
 	// send verifycode, returns verify session.
 	boost::asio::awaitable<verify_session> verifycode::send_verify_code(std::string telephone, boost::system::error_code& ec)

@@ -35,7 +35,8 @@ struct persist_map_impl
 	std::vector<std::thread> runners;
 
 	env_managed mdbx_env;
-	map_handle mdbx_map;
+	map_handle mdbx_default_map;
+	map_handle mdbx_lifetime_map;
 
 	steady_timer m_task_timer;
 	boost::asio::experimental::promise<void(std::exception_ptr)> background_task_coro;
@@ -47,11 +48,16 @@ struct persist_map_impl
 		, background_task_coro(boost::asio::co_spawn(ioc, background_task(), boost::asio::experimental::use_promise))
 	{
 		txn_managed t = mdbx_env.start_write();
-		mdbx_map = t.create_map(NULL);
-		t.put(mdbx_map, mdbx::slice("_persistmap"), mdbx::slice("persistmap"), upsert);
+		mdbx_default_map = t.create_map(NULL);
+		t.put(mdbx_default_map, mdbx::slice("_persistmap"), mdbx::slice("persistmap"), upsert);
+		mdbx_lifetime_map = t.create_map("lifetime");
+		std::time_t _t;
+		std::time(&_t);
+		_t += 86400;
+		t.put(mdbx_lifetime_map, mdbx::slice("_persistmap"), mdbx::slice(&_t, sizeof(_t)), upsert);
 		t.commit();
 
-		for (int i = 0;  i < std::thread::hardware_concurrency(); i++)
+		for (unsigned i = 0;  i < std::thread::hardware_concurrency(); i++)
 			runners.push_back(std::thread(boost::bind(&boost::asio::io_context::run, &ioc)));
 	}
 
@@ -75,13 +81,16 @@ struct persist_map_impl
 		{
 			try
 			{
+				std::time_t _now;
+				std::time(&_now);
+
 				std::list<mdbx::slice> outdated_keys;
 				// TODO clean outdated key.
 				txn_managed txn = mdbx_env.start_read();
 
 				std::cerr << "background_task() open_cursor\n";
 
-				cursor_managed c = txn.open_cursor(mdbx_map);
+				cursor_managed c = txn.open_cursor(mdbx_lifetime_map);
 
 				for (c.to_first(); !c.eof();  c.to_next(false))
 				{
@@ -91,10 +100,11 @@ struct persist_map_impl
 
 					if (r)
 					{
-						// TODO 从 value 里提取生成日期.
-						// TODO 然后把过期的时间
+						std::time_t _expire_time;
+						std::memcpy(&_expire_time, r.value.data(), sizeof(_expire_time));
 
-						outdated_keys.push_back(r.key);
+						if (_expire_time > _now)
+							outdated_keys.push_back(r.key);
 					}
 				}
 
@@ -106,7 +116,8 @@ struct persist_map_impl
 				for (auto& k : outdated_keys)
 				{
 					txn = mdbx_env.start_write();
-					txn.erase(mdbx_map, k);
+					txn.erase(mdbx_default_map, k);
+					txn.erase(mdbx_lifetime_map, k);
 
 					std::cerr << "drop key:" << k.as_string() << "\n";
 
@@ -129,7 +140,7 @@ struct persist_map_impl
 		try
 		{
 			txn_managed t = mdbx_env.start_read();
-			mdbx::slice v = t.get(mdbx_map, mdbx::slice(key));
+			t.get(mdbx_default_map, mdbx::slice(key));
 			t.commit();
 			co_return true;
 		}catch(std::exception&)
@@ -141,7 +152,7 @@ struct persist_map_impl
 	boost::asio::awaitable<std::string> get(std::string_view key) const
 	{
 		txn_managed t = mdbx_env.start_read();
-		mdbx::slice v = t.get(mdbx_map, mdbx::slice(key));
+		mdbx::slice v = t.get(mdbx_default_map, mdbx::slice(key));
 		auto string_value = v.as_string();
 		t.commit();
 		co_return string_value;
@@ -150,7 +161,7 @@ struct persist_map_impl
 	boost::asio::awaitable<void> put(std::string_view key, std::string value, std::chrono::duration<int> lifetime)
 	{
 		txn_managed t = mdbx_env.start_write();
-		t.put(mdbx_map, mdbx::slice(key), mdbx::slice(value), upsert);
+		t.put(mdbx_default_map, mdbx::slice(key), mdbx::slice(value), upsert);
 		t.commit();
 		co_return;
 	}
