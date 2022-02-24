@@ -4,8 +4,12 @@
 #include <boost/asio/experimental/promise.hpp>
 #include <boost/scope_exit.hpp>
 
+#include "boost/asio/associated_allocator.hpp"
+#include "boost/asio/steady_timer.hpp"
+#include "boost/asio/this_coro.hpp"
 #include "boost/asio/use_awaitable.hpp"
 #include "cmall/cmall.hpp"
+#include "cmall/database.hpp"
 #include "cmall/db.hpp"
 #include "utils/async_connect.hpp"
 #include "utils/scoped_exit.hpp"
@@ -78,8 +82,8 @@ namespace cmall
 			{
 				for (int i = 0; i < concurrent_accepter; i++)
 				{
-					ws_runners.emplace_back(boost::asio::co_spawn(a.get_executor(),
-						listen_loop(a), boost::asio::experimental::use_promise));
+					ws_runners.emplace_back(boost::asio::co_spawn(
+						a.get_executor(), listen_loop(a), boost::asio::experimental::use_promise));
 				}
 			}
 
@@ -389,11 +393,11 @@ namespace cmall
 					}
 					catch (boost::system::system_error& e)
 					{
-						replay_message["error"] = { {"code", e.code().value()} , {"message", e.code().message()} };
+						replay_message["error"] = { { "code", e.code().value() }, { "message", e.code().message() } };
 					}
 					catch (std::exception& e)
 					{
-						replay_message["error"] = { { "code", 502}, {"message", "internal server error"} };
+						replay_message["error"] = { { "code", 502 }, { "message", "internal server error" } };
 					}
 					replay_message.insert_or_assign("id", jv.at("id"));
 					co_await websocket_write(connection_ptr, json_to_string(replay_message));
@@ -405,7 +409,7 @@ namespace cmall
 	boost::asio::awaitable<boost::json::object> cmall_service::on_client_invoke(
 		client_connection_ptr connection_ptr, const std::string& methodstr, boost::json::value jv)
 	{
-		client_connection& this_client = * connection_ptr;
+		client_connection& this_client = *connection_ptr;
 		boost::json::object reply_message;
 
 		boost::system::error_code ec;
@@ -437,11 +441,12 @@ namespace cmall
 					co_await session_cache_map.save(*this_client.session_info);
 				}
 
-				this_client.session_info = std::make_shared<services::client_session>(co_await session_cache_map.load(sessionid));
+				this_client.session_info
+					= std::make_shared<services::client_session>(co_await session_cache_map.load(sessionid));
 				if (this_client.session_info->user_info)
 				{
-					co_await m_database.async_load<cmall_user>(this_client.session_info->user_info->uid_,
-						*(this_client.session_info->user_info));
+					co_await m_database.async_load<cmall_user>(
+						this_client.session_info->user_info->uid_, *(this_client.session_info->user_info));
 				}
 
 				reply_message["result"] = { { "session_id", this_client.session_info->session_id }, {"isLogin", false} };
@@ -466,24 +471,26 @@ namespace cmall
 				else
 				{
 					this_client.session_info->verify_session_cookie = verify_session_cookie;
-					reply_message["result"] = true;
+					reply_message["result"]							= true;
 				}
-
-			}break;
+			}
+			break;
 			case req_method::user_login:
 			{
 				std::string verify_code = jsutil::json_as_string(jsutil::json_accessor(jv).get("verify_code", ""));
 
 				if (this_client.session_info->verify_session_cookie)
 				{
-					if (co_await telephone_verifier.verify_verify_code(verify_code, this_client.session_info->verify_session_cookie.value()))
+					if (co_await telephone_verifier.verify_verify_code(
+							verify_code, this_client.session_info->verify_session_cookie.value()))
 					{
 						// SUCCESS.
 						cmall_user user;
-						if (co_await m_database.async_load_user_by_phone(this_client.session_info->verify_telephone, user))
+						if (co_await m_database.async_load_user_by_phone(
+								this_client.session_info->verify_telephone, user))
 						{
 							// TODO, 载入成功
-							this_client.session_info->user_info = cmall_user {};
+							this_client.session_info->user_info = cmall_user{};
 						}
 						else
 						{
@@ -498,29 +505,41 @@ namespace cmall
 						// 更新 session 保存的 uid_
 						co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info);
 						// TODO 认证成功后， sessionid 写入 mdbx 数据库以便日后恢复.
-						reply_message["result"] = { { "login", "success" },  { "usertype", "user" } };
+						reply_message["result"] = { { "login", "success" }, { "usertype", "user" } };
 						break;
 					}
 				}
 				throw boost::system::system_error(cmall::error::invalid_verify_code);
+			}
+			break;
 
-			}break;
-
-			case req_method::user_logout: break;
-			case req_method::user_list_products: break;
-			case req_method::user_apply_merchant: break;
-			case req_method::cart_add: break;
-			case req_method::cart_del: break;
-			case req_method::cart_list: break;
-			case req_method::order_create_cart: break;
-			case req_method::order_create_direct: break;
-			case req_method::order_status: break;
-			case req_method::order_close: break;
+			case req_method::user_logout:
+				break;
+			case req_method::user_list_products:
+				break;
+			case req_method::user_apply_merchant:
+				break;
+			case req_method::cart_add:
+				break;
+			case req_method::cart_del:
+				break;
+			case req_method::cart_list:
+				break;
+			case req_method::order_create_cart:
+				break;
+			case req_method::order_create_direct:
+				break;
+			case req_method::order_status:
+				break;
+			case req_method::order_close:
+				break;
 
 			case req_method::goods_list:
 			{
 				// 列出 商品, 根据参数决定是首页还是商户
-				auto merchant = jsutil::json_as_string(jsutil::json_accessor(jsutil::json_accessor(jv).get("params", boost::json::object{})).get("merchant", ""));
+				auto merchant = jsutil::json_as_string(
+					jsutil::json_accessor(jsutil::json_accessor(jv).get("params", boost::json::object{}))
+						.get("merchant", ""));
 
 				if (merchant == "")
 				{
@@ -539,27 +558,39 @@ namespace cmall
 				{
 					// 列出商户的上架商品.
 				}
-			}break;
+			}
+			break;
 			case req_method::goods_detail:
 			{
 				// 获取商品信息, 注意这个不是商品描述, 而是商品 标题, 价格, 和缩略图. 用在商品列表页面.
 
 				// TODO
 				// NOTE: 商品的描述, 使用 GET 操作, 以便这种大段的富文本描述信息能被 CDN 缓存．
+			}
+			break;
 
-			}break;
-
-			case req_method::merchant_product_add: break;
-			case req_method::merchant_product_mod: break;
-			case req_method::merchant_product_launch: break;
-			case req_method::merchant_product_withdraw: break;
-			case req_method::admin_user_list: break;
-			case req_method::admin_user_ban: break;
-			case req_method::admin_merchant_list: break;
-			case req_method::admin_merchant_ban: break;
-			case req_method::admin_product_list: break;
-			case req_method::admin_product_withdraw: break;
-			case req_method::admin_order_force_refund: break;
+			case req_method::merchant_product_add:
+				break;
+			case req_method::merchant_product_mod:
+				break;
+			case req_method::merchant_product_launch:
+				break;
+			case req_method::merchant_product_withdraw:
+				break;
+			case req_method::admin_user_list:
+				break;
+			case req_method::admin_user_ban:
+				break;
+			case req_method::admin_merchant_list:
+				break;
+			case req_method::admin_merchant_ban:
+				break;
+			case req_method::admin_product_list:
+				break;
+			case req_method::admin_product_withdraw:
+				break;
+			case req_method::admin_order_force_refund:
+				break;
 		}
 
 		co_return reply_message;

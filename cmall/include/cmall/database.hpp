@@ -213,7 +213,7 @@ namespace cmall
 					}
 					else
 					{
-						record->deleted_at = now;
+						record->deleted_at_ = now;
 						m_db->update<T>(*record);
 						ret = true;
 					}
@@ -265,9 +265,9 @@ namespace cmall
 		{
 			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
 				void(boost::system::error_code, bool)>(
-				[this, value](auto&& handler) mutable 
+				[this, &value](auto&& handler) mutable 
 				{
-					boost::asio::post(m_io_context, [handler = std::move(handler), this, value]() mutable {
+					boost::asio::post(m_io_context, [handler = std::move(handler), this, &value]() mutable {
 						auto ret = add<T>(value);
 						post_result(ret, std::move(handler));
 					});
@@ -280,9 +280,9 @@ namespace cmall
 		{
 			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
 				void(boost::system::error_code, bool)>(
-				[this, value](auto&& handler) mutable 
+				[this, &value](auto&& handler) mutable 
 				{
-					boost::asio::post(m_io_context, [handler = std::move(handler), this, value]() mutable {
+					boost::asio::post(m_io_context, [handler = std::move(handler), this, &value]() mutable {
 						auto ret = update<T>(value);
 						post_result(ret, std::move(handler));
 					});
@@ -295,9 +295,9 @@ namespace cmall
 		{
 			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
 				void(boost::system::error_code, bool)>(
-				[this, value](auto&& handler) mutable 
+				[this, &value](auto&& handler) mutable 
 				{
-					boost::asio::post(m_io_context, [handler = std::move(handler), this, value]() mutable {
+					boost::asio::post(m_io_context, [handler = std::move(handler), this, &value]() mutable {
 						auto ret = update<T>(value);
 						post_result(ret, std::move(handler));
 					});
@@ -340,9 +340,9 @@ namespace cmall
 		{
 			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
 				void(boost::system::error_code, bool)>(
-				[this, value](auto&& handler) mutable 
+				[this, &value](auto&& handler) mutable 
 				{
-					boost::asio::post(m_io_context, [handler = std::move(handler), this, value]() mutable {
+					boost::asio::post(m_io_context, [handler = std::move(handler), this, &value]() mutable {
 						auto ret = soft_remove<T>(value);
 						post_result(ret, std::move(handler));
 					});
