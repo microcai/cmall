@@ -90,6 +90,25 @@ namespace cmall {
 			return true;
 		});
 	}
+	db_result cmall_database::load_user_by_phone(const std::string& phone, cmall_user& user)
+	{
+		return retry_database_op([&, this]() mutable
+		{
+			odb::transaction t(m_db->begin());
+			using query = odb::query<cmall_user>;
+			auto r(m_db->query<cmall_user>(query::active_phone == phone));
+			if (r.empty())
+			{
+				t.commit();
+				return false;
+			}
+
+			user = *r.begin();
+			t.commit();
+
+			return true;
+		});
+	}
 
 	// db_result cmall_database::load_dns_records(std::vector<cmall_record> &records, uint16_t type, const std::string& name)
 	// {

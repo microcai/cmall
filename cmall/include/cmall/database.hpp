@@ -99,6 +99,72 @@ namespace cmall
 		cmall_database& operator=(const cmall_database&) = delete;
 
 		template <typename T>
+		struct initiate_do_load_by_id
+		{
+			template <typename Handler> void operator()(Handler&& handler, cmall_database* db, std::uint64_t id, T* value)
+			{
+				auto mdb = db->m_db;
+				if (!mdb)
+				{
+					auto ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
+					handler(ec, false);
+					return;
+				}
+
+				db->m_io_context.post(
+					[this, db, handler = std::move(handler), id, value]() mutable
+					{
+						auto ret = db->get<T>(id, *value);
+						std::visit(
+							[&handler](auto&& arg) mutable
+							{
+								const auto [ec, result, msg] = extract_result(arg);
+								if (ec || !result)
+								{
+									LOG_WARN << "initial_do_load_by_id failed: " << msg;
+								}
+								auto executor = boost::asio::get_associated_executor(handler);
+								boost::asio::post(
+									executor, [ec = ec, handler, result = result]() mutable { handler(ec, result); });
+							},
+							ret);
+					});
+			}
+		};
+		struct initiate_do_load_user_by_phone
+		{
+			template <typename Handler> void operator()(Handler&& handler, cmall_database* db, const std::string phone, cmall_user* value)
+			{
+				auto mdb = db->m_db;
+				if (!mdb)
+				{
+					auto ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
+					handler(ec, false);
+					return;
+				}
+
+				db->m_io_context.post(
+					[this, db, handler = std::move(handler), phone, value]() mutable
+					{
+						auto ret = db->load_user_by_phone(phone, *value);
+						std::visit(
+							[&handler](auto&& arg) mutable
+							{
+								const auto [ec, result, msg] = extract_result(arg);
+								if (ec || !result)
+								{
+									LOG_WARN << "initial_do_load_user_by_phone failed: " << msg;
+								}
+								auto executor = boost::asio::get_associated_executor(handler);
+								boost::asio::post(
+									executor, [ec = ec, handler, result = result]() mutable { handler(ec, result); });
+							},
+							ret);
+					});
+			}
+		};
+
+		template <typename T>
 		struct initiate_do_add
 		{
 			template <typename Handler> void operator()(Handler&& handler, cmall_database* db, T* value)
@@ -677,6 +743,8 @@ namespace cmall
 		db_result add_config(cmall_config& config);
 		db_result update_config(const cmall_config& config);
 
+		db_result load_user_by_phone(const::std::string& phone, cmall_user& user);
+
 		template <typename T> db_result get(std::uint64_t id, T& ret)
 		{
 			if (!m_db)
@@ -817,6 +885,21 @@ namespace cmall
 		// remove_dns_record(std::uint64_t rid);
 
 	public:
+		template <typename T, typename Handler>
+		BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
+		async_load_use_by_phone(const std::string& phone, cmall_user& value, BOOST_ASIO_MOVE_ARG(Handler) handler)
+		{
+			return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
+				initiate_do_load_user_by_phone{}, handler, this, phone, &value);
+		}
+
+		template <typename T, typename Handler>
+		BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
+		async_load(std::uint64_t id, T& value, BOOST_ASIO_MOVE_ARG(Handler) handler)
+		{
+			return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
+				initiate_do_load_by_id<T>{}, handler, this, id, &value);
+		}
 		template <typename Handler, typename T>
 		BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
 		async_add(T& value, BOOST_ASIO_MOVE_ARG(Handler) handler)
