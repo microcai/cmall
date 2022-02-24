@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.1)
 cmake_policy(SET CMP0091 NEW) # for CMAKE_MSVC_RUNTIME_LIBRARY
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 project(cmall)
@@ -248,6 +248,8 @@ else()
 endif()
 include_directories(${OPENSSL_INCLUDE_DIR})
 
+set(MDBX_BUILD_CXX ON)
+set(MDBX_CXX_STANDARD 20)
 set(MDBX_BUILD_TOOLS OFF)
 set(MDBX_BUILD_SHARED_LIBRARY OFF)
 add_subdirectory(third_party/libmdbx)

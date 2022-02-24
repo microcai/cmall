@@ -22,15 +22,6 @@
 #define __GLIBCXX_TYPE_INT_N_0 __int128
 #endif /* Workaround for modern libstdc++ with CLANG < 4.x */
 
-#if !defined(__cplusplus) || __cplusplus < 201103L
-#if !defined(_MSC_VER) || _MSC_VER < 1900
-#error "C++11 compiler or better is required"
-#elif _MSC_VER >= 1910
-#error                                                                         \
-    "Please add `/Zc:__cplusplus` to MSVC compiler options to enforce it conform ISO C++"
-#endif /* MSVC is mad and don't define __cplusplus properly */
-#endif /* __cplusplus < 201103L */
-
 #if (defined(_WIN32) || defined(_WIN64)) && MDBX_WITHOUT_MSVC_CRT
 #error                                                                         \
     "CRT is required for C++ API, the MDBX_WITHOUT_MSVC_CRT option must be disabled"
