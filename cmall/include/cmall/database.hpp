@@ -19,9 +19,14 @@
 #include <variant>
 #include <vector>
 
+#include "boost/asio/any_io_executor.hpp"
+#include "boost/asio/associated_executor.hpp"
 #include "boost/asio/async_result.hpp"
+#include "boost/asio/awaitable.hpp"
 #include "boost/asio/detail/config.hpp"
 #include "boost/asio/error.hpp"
+#include "boost/asio/impl/use_awaitable.hpp"
+#include "boost/asio/use_awaitable.hpp"
 #include "boost/date_time/posix_time/posix_time_types.hpp"
 #include "boost/date_time/posix_time/ptime.hpp"
 #include "boost/system/detail/error_code.hpp"
@@ -54,9 +59,7 @@ namespace cmall
 	// using dns_records_t = std::vector<cmall_record>;
 
 	using extract_result_t	  = std::tuple<boost::system::error_code, bool, std::string>;
-	const auto extract_result = overloaded
-	{
-		[](bool ok) -> extract_result_t
+	const auto extract_result = overloaded{ [](bool ok) -> extract_result_t
 		{
 			boost::system::error_code ec;
 			std::string msg;
@@ -78,18 +81,21 @@ namespace cmall
 			auto ec			  = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
 			auto ret		  = false;
 			return std::tie(ec, ret, msg);
-		}
-	};
+		} };
 
 	template <typename T>
 	concept SupportSoftDeletion = requires(T t)
 	{
-		{ t.deleted_at_ } -> std::convertible_to<odb::nullable<boost::posix_time::ptime>>;
+		{
+			t.deleted_at_
+			} -> std::convertible_to<odb::nullable<boost::posix_time::ptime>>;
 	};
 	template <typename T>
 	concept SupportUpdateAt = requires(T t)
 	{
-		{ t.updated_at_ } -> std::convertible_to<boost::posix_time::ptime>;
+		{
+			t.updated_at_
+			} -> std::convertible_to<boost::posix_time::ptime>;
 	};
 
 	class cmall_database
@@ -98,10 +104,10 @@ namespace cmall
 		cmall_database(const cmall_database&) = delete;
 		cmall_database& operator=(const cmall_database&) = delete;
 
-		template <typename T>
-		struct initiate_do_load_by_id
+		template <typename T> struct initiate_do_load_by_id
 		{
-			template <typename Handler> void operator()(Handler&& handler, cmall_database* db, std::uint64_t id, T* value)
+			template <typename Handler>
+			void operator()(Handler&& handler, cmall_database* db, std::uint64_t id, T* value)
 			{
 				auto mdb = db->m_db;
 				if (!mdb)
@@ -133,7 +139,8 @@ namespace cmall
 		};
 		struct initiate_do_load_user_by_phone
 		{
-			template <typename Handler> void operator()(Handler&& handler, cmall_database* db, const std::string phone, cmall_user* value)
+			template <typename Handler>
+			void operator()(Handler&& handler, cmall_database* db, const std::string phone, cmall_user* value)
 			{
 				auto mdb = db->m_db;
 				if (!mdb)
@@ -164,8 +171,7 @@ namespace cmall
 			}
 		};
 
-		template <typename T>
-		struct initiate_do_add
+		template <typename T> struct initiate_do_add
 		{
 			template <typename Handler> void operator()(Handler&& handler, cmall_database* db, T* value)
 			{
@@ -194,13 +200,11 @@ namespace cmall
 									executor, [ec = ec, handler, result = result]() mutable { handler(ec, result); });
 							},
 							ret);
-					}
-				);
+					});
 			}
 		};
 
-		template <typename T>
-		struct initiate_do_update
+		template <typename T> struct initiate_do_update
 		{
 			template <typename Handler> void operator()(Handler&& handler, cmall_database* db, T* value)
 			{
@@ -233,8 +237,7 @@ namespace cmall
 			}
 		};
 
-		template <SupportUpdateAt T>
-		struct initiate_do_update<T>
+		template <SupportUpdateAt T> struct initiate_do_update<T>
 		{
 			template <typename Handler> void operator()(Handler&& handler, cmall_database* db, T* value)
 			{
@@ -267,8 +270,7 @@ namespace cmall
 			}
 		};
 
-		template <typename T>
-		struct initiate_do_soft_remove
+		template <typename T> struct initiate_do_soft_remove
 		{
 			template <typename Handler> void operator()(Handler&& handler, cmall_database* db, T* value)
 			{
@@ -301,8 +303,7 @@ namespace cmall
 			}
 		};
 
-		template <typename T>
-		struct initiate_do_soft_remove_by_id
+		template <typename T> struct initiate_do_soft_remove_by_id
 		{
 			template <typename Handler> void operator()(Handler&& handler, cmall_database* db, std::uint64_t id)
 			{
@@ -335,8 +336,7 @@ namespace cmall
 			}
 		};
 
-		template <typename T>
-		struct initiate_do_hard_remove
+		template <typename T> struct initiate_do_hard_remove
 		{
 			template <typename Handler> void operator()(Handler&& handler, cmall_database* db, std::uint64_t id)
 			{
@@ -743,7 +743,7 @@ namespace cmall
 		db_result add_config(cmall_config& config);
 		db_result update_config(const cmall_config& config);
 
-		db_result load_user_by_phone(const::std::string& phone, cmall_user& user);
+		db_result load_user_by_phone(const ::std::string& phone, cmall_user& user);
 
 		template <typename T> db_result get(std::uint64_t id, T& ret)
 		{
@@ -900,6 +900,37 @@ namespace cmall
 			return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
 				initiate_do_load_by_id<T>{}, handler, this, id, &value);
 		}
+
+		template <typename T>
+		boost::asio::awaitable<bool> async_load(std::uint64_t id, T& value)
+		{
+			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code, bool)>(
+				[this, id, value](auto&& handler) mutable
+				{
+					boost::asio::post(m_io_context,
+					[handler = std::move(handler), this, id, value]()
+					{
+						auto ret = get<T>(id, value);
+						std::visit(
+							[handler = std::move(handler)](auto&& arg) mutable
+							{
+								const auto [ec, result, msg] = extract_result(arg);
+								if (ec || !result)
+								{
+									LOG_WARN << "initial_do_load_by_id failed: " << msg;
+								}
+								auto executor = boost::asio::get_associated_executor(handler);
+								boost::asio::post(executor,
+									[ec = ec, handler = std::move(handler), result = result]() mutable
+									{ handler(ec, result); });
+							},
+							ret);
+					});
+
+				}, boost::asio::use_awaitable);
+
+		}
+
 		template <typename Handler, typename T>
 		BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
 		async_add(T& value, BOOST_ASIO_MOVE_ARG(Handler) handler)
