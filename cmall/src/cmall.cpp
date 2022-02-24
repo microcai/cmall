@@ -389,11 +389,11 @@ namespace cmall
 					}
 					catch (boost::system::system_error& e)
 					{
-						replay_message["error"] = { "code", e.code().value(), "message", e.code().message() };
+						replay_message["error"] = { {"code", e.code().value()} , {"message", e.code().message()} };
 					}
 					catch (std::exception& e)
 					{
-						replay_message["error"] = { "code", 502, "message", "internal server error" };
+						replay_message["error"] = { { "code", 502}, {"message", "internal server error"} };
 					}
 					replay_message.insert_or_assign("id", jv.at("id"));
 					co_await websocket_write(connection_ptr, json_to_string(replay_message));
@@ -435,8 +435,8 @@ namespace cmall
 				this_client.session_info = std::make_shared<services::client_session>(co_await session_cache_map.load(sessionid));
 				if (this_client.session_info->user_info)
 				{
-					co_await m_database.async_load<cmall_user>(this_client.session_info->user_info->db_user_entry.uid_,
-						this_client.session_info->user_info->db_user_entry);
+					co_await m_database.async_load<cmall_user>(this_client.session_info->user_info->uid_,
+						*(this_client.session_info->user_info));
 				}
 
 				reply_message["result"] = true;
@@ -477,18 +477,21 @@ namespace cmall
 						cmall_user user;
 						if (co_await m_database.async_load_user_by_phone(this_client.session_info->verify_telephone, user))
 						{
-
+							// TODO, 载入成功
+							this_client.session_info->user_info = cmall_user {};
+						}
+						else
+						{
+							// TODO 新用户注册，赶紧创建个新用户
 
 						}
+						// TODO 认证成功后， sessionid 写入 mdbx 数据库以便日后恢复.
+						reply_message["result"] = { { "login", "success" },  { "usertype", "user" } };
+						break;
 					}
 				}
-				else
-				{
+				throw boost::system::system_error(cmall::error::invalid_verify_code);
 
-				}
-
-
-				// TODO 认证成功后， sessionid 写入 mdbx 数据库以便日后恢复.
 			}break;
 
 			case req_method::user_logout: break;

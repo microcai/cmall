@@ -20,17 +20,11 @@ namespace services
 		price_alterable,                                          // 可修改售价.
 	};
 
-	struct authorized_client_info
-	{
-		cmall_user db_user_entry;
-		std::set<client_capabilities> cap;
-	};
-
 	struct client_session
 	{
 		// 使用 session_id 可以快速找回已登录回话.
 		std::string session_id;
-		std::optional<authorized_client_info> user_info;
+		std::optional<cmall_user> user_info;
 		std::string verify_telephone;
 		std::optional<verify_session> verify_session_cookie;
 	};

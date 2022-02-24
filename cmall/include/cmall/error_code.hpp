@@ -11,6 +11,7 @@ namespace cmall { namespace error{
 		internal_server_error = 1,
 		invalid_json,
 		unknown_method,
+		invalid_verify_code,
 		session_needed,
 		not_implemented,
 	};
