@@ -149,6 +149,7 @@ persist_map::~persist_map()
 
 persist_map::persist_map(std::filesystem::path persist_file)
 {
+	static_assert(sizeof (obj_stor) >= sizeof (persist_map_impl));
 	std::construct_at<persist_map_impl>(reinterpret_cast<persist_map_impl*>(obj_stor.data()), persist_file);
 }
 
