@@ -103,7 +103,7 @@ struct persist_map_impl
 						std::time_t _expire_time;
 						std::memcpy(&_expire_time, r.value.data(), sizeof(_expire_time));
 
-						if (_expire_time > _now)
+						if (_expire_time < _now)
 							outdated_keys.push_back(r.key);
 					}
 				}
