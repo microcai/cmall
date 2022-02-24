@@ -32,15 +32,6 @@
 
 namespace cmall
 {
-
-	template <typename... Ts>
-	struct overloaded : Ts...
-	{
-		using Ts::operator()...;
-	};
-	template <typename... Ts>
-	overloaded(Ts...) -> overloaded<Ts...>;
-
 	struct db_config
 	{
 		std::string user_{ "postgres" };
@@ -55,29 +46,23 @@ namespace cmall
 	// using dns_records_t = std::vector<cmall_record>;
 
 	using extract_result_t	  = std::tuple<boost::system::error_code, bool, std::string>;
-	const auto extract_result = overloaded{ [](bool ok) -> extract_result_t
+
+	template<typename Handler>
+	void post_result(db_result v, Handler&& handler)
+	{
+		boost::system::error_code ec;
+		bool ok = false;
+		if (std::holds_alternative<bool>(v))
 		{
-			boost::system::error_code ec;
-			std::string msg;
-			if (!ok)
-				msg = "db operation return false";
-			return std::tie(ec, ok, msg);
-		},
-		[](std::exception_ptr& ex) -> extract_result_t
+			ok = std::get<0>(v);
+		}
+		else
 		{
-			std::string msg;
-			try
-			{
-				std::rethrow_exception(ex);
-			}
-			catch (const std::exception& e)
-			{
-				msg = e.what();
-			}
-			auto ec			  = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-			auto ret		  = false;
-			return std::tie(ec, ret, msg);
-		} };
+			ec = boost::asio::error::no_recovery;
+		}
+		auto excutor = boost::asio::get_associated_executor(handler);
+		boost::asio::post(excutor,  [ handler = std::move(handler),  ec,  ok]() mutable{ handler(ec, ok); });
+	}
 
 	template <typename T>
 	concept SupportSoftDeletion = requires(T t)
@@ -134,39 +119,7 @@ namespace cmall
 					});
 			}
 		};
-		struct initiate_do_load_user_by_phone
-		{
-			template <typename Handler>
-			void operator()(Handler&& handler, cmall_database* db, const std::string phone, cmall_user* value)
-			{
-				auto mdb = db->m_db;
-				if (!mdb)
-				{
-					auto ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-					handler(ec, false);
-					return;
-				}
 
-				db->m_io_context.post(
-					[this, db, handler = std::move(handler), phone, value]() mutable
-					{
-						auto ret = db->load_user_by_phone(phone, *value);
-						std::visit(
-							[&handler](auto&& arg) mutable
-							{
-								const auto [ec, result, msg] = extract_result(arg);
-								if (ec || !result)
-								{
-									LOG_WARN << "initial_do_load_user_by_phone failed: " << msg;
-								}
-								auto executor = boost::asio::get_associated_executor(handler);
-								boost::asio::post(
-									executor, [ec = ec, handler, result = result]() mutable { handler(ec, result); });
-							},
-							ret);
-					});
-			}
-		};
 
 		template <typename T>
 		struct initiate_do_add
@@ -186,19 +139,7 @@ namespace cmall
 					[this, db, handler = std::move(handler), value]() mutable
 					{
 						auto ret = db->add<T>(*value);
-						std::visit(
-							[&handler](auto&& arg) mutable
-							{
-								const auto [ec, result, msg] = extract_result(arg);
-								if (ec || !result)
-								{
-									LOG_WARN << "initial_do_add failed: " << msg;
-								}
-								auto executor = boost::asio::get_associated_executor(handler);
-								boost::asio::post(
-									executor, [ec = ec, handler, result = result]() mutable { handler(ec, result); });
-							},
-							ret);
+						post_result(ret, std::move(handler));
 					});
 			}
 		};
@@ -221,19 +162,8 @@ namespace cmall
 					[this, db, handler = std::move(handler), value]() mutable
 					{
 						auto ret = db->update<T>(*value);
-						std::visit(
-							[&handler](auto&& arg) mutable
-							{
-								const auto [ec, result, msg] = extract_result(arg);
-								if (ec || !result)
-								{
-									LOG_WARN << "initial_do_update failed: " << msg;
-								}
-								auto executor = boost::asio::get_associated_executor(handler);
-								boost::asio::post(
-									executor, [ec = ec, handler, result = result]() mutable { handler(ec, result); });
-							},
-							ret);
+						post_result(ret, std::move(handler));
+
 					});
 			}
 		};
@@ -256,19 +186,7 @@ namespace cmall
 					[this, db, handler = std::move(handler), value]() mutable
 					{
 						auto ret = db->update<T>(*value);
-						std::visit(
-							[&handler](auto&& arg) mutable
-							{
-								const auto [ec, result, msg] = extract_result(arg);
-								if (ec || !result)
-								{
-									LOG_WARN << "initial_do_update failed: " << msg;
-								}
-								auto executor = boost::asio::get_associated_executor(handler);
-								boost::asio::post(
-									executor, [ec = ec, handler, result = result]() mutable { handler(ec, result); });
-							},
-							ret);
+						post_result(ret, std::move(handler));
 					});
 			}
 		};
@@ -291,19 +209,7 @@ namespace cmall
 					[this, db, handler = std::move(handler), value]() mutable
 					{
 						auto ret = db->soft_remove<T>(*value);
-						std::visit(
-							[&handler](auto&& arg) mutable
-							{
-								const auto [ec, result, msg] = extract_result(arg);
-								if (ec || !result)
-								{
-									LOG_WARN << "initial_do_soft_remove failed: " << msg;
-								}
-								auto executor = boost::asio::get_associated_executor(handler);
-								boost::asio::post(
-									executor, [ec = ec, handler, result = result]() mutable { handler(ec, result); });
-							},
-							ret);
+						post_result(ret, std::move(handler));
 					});
 			}
 		};
@@ -326,19 +232,7 @@ namespace cmall
 					[this, db, handler = std::move(handler), id]() mutable
 					{
 						auto ret = db->soft_remove<T>(id);
-						std::visit(
-							[&handler](auto&& arg) mutable
-							{
-								const auto [ec, result, msg] = extract_result(arg);
-								if (ec || !result)
-								{
-									LOG_WARN << "initial_do_soft_remove failed: " << msg;
-								}
-								auto executor = boost::asio::get_associated_executor(handler);
-								boost::asio::post(
-									executor, [ec = ec, handler, result = result]() mutable { handler(ec, result); });
-							},
-							ret);
+						post_result(ret, std::move(handler));
 					});
 			}
 		};
@@ -361,19 +255,7 @@ namespace cmall
 					[this, db, handler = std::move(handler), id]() mutable
 					{
 						auto ret = db->hard_remove<T>(id);
-						std::visit(
-							[&handler](auto&& arg) mutable
-							{
-								const auto [ec, result, msg] = extract_result(arg);
-								if (ec || !result)
-								{
-									LOG_WARN << "initial_do_hard_remove failed: " << msg;
-								}
-								auto executor = boost::asio::get_associated_executor(handler);
-								boost::asio::post(
-									executor, [ec = ec, handler, result = result]() mutable { handler(ec, result); });
-							},
-							ret);
+						post_result(ret, std::move(handler));
 					});
 			}
 		};
@@ -901,20 +783,18 @@ namespace cmall
 		// remove_dns_record(std::uint64_t rid);
 
 	public:
-		template <typename T, typename Handler>
-		BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
-		async_load_user_by_phone(const std::string& phone, cmall_user& value, BOOST_ASIO_MOVE_ARG(Handler) handler)
+		boost::asio::awaitable<bool> async_load_user_by_phone(const std::string& phone, cmall_user& value)
 		{
-			return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
-				initiate_do_load_user_by_phone{}, handler, this, phone, &value);
-		}
-
-		template <typename T, typename Handler>
-		BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
-		async_load(std::uint64_t id, T& value, BOOST_ASIO_MOVE_ARG(Handler) handler)
-		{
-			return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
-				initiate_do_load_by_id<T>{}, handler, this, id, &value);
+			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code, bool)>(
+				[this, phone, value](auto&& handler) mutable
+				{
+					boost::asio::post(m_io_context,
+					[this, handler = std::move(handler), phone, value]() mutable
+					{
+						auto ret = load_user_by_phone(phone, value);
+						post_result(ret, std::move(handler));
+					});
+				}, boost::asio::use_awaitable);
 		}
 
 		template <typename T>
@@ -925,26 +805,13 @@ namespace cmall
 				[this, id, value](auto&& handler) mutable
 				{
 					boost::asio::post(m_io_context,
-						[handler = std::move(handler), this, id, value]() mutable
-						{
-							auto ret = get<T>(id, value);
-							std::visit(
-								[handler = std::move(handler)](auto&& arg) mutable
-								{
-									const auto [ec, result, msg] = extract_result(arg);
-									if (ec || !result)
-									{
-										LOG_WARN << "initial_do_load_by_id failed: " << msg;
-									}
-									auto executor = boost::asio::get_associated_executor(handler);
-									boost::asio::post(executor,
-										[ec = ec, handler = std::move(handler), result = result]() mutable
-										{ handler(ec, result); });
-								},
-								ret);
-						});
-				},
-				boost::asio::use_awaitable);
+					[handler = std::move(handler), this, id, value]() mutable
+					{
+						auto ret = get<T>(id, value);
+						post_result(ret, std::move(handler));
+					});
+
+				}, boost::asio::use_awaitable);
 		}
 
 		template <typename Handler, typename T>
