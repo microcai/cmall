@@ -160,8 +160,14 @@ struct persist_map_impl
 
 	boost::asio::awaitable<void> put(std::string_view key, std::string value, std::chrono::duration<int> lifetime)
 	{
+		std::time_t _expire_time;
+		std::time(&_expire_time);
+
+		_expire_time += lifetime.count();
+
 		txn_managed t = mdbx_env.start_write();
 		t.put(mdbx_default_map, mdbx::slice(key), mdbx::slice(value), upsert);
+		t.put(mdbx_lifetime_map, mdbx::slice(key), mdbx::slice(&_expire_time, sizeof _expire_time), upsert);
 		t.commit();
 		co_return;
 	}

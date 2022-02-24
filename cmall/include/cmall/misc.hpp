@@ -9,6 +9,7 @@
 
 #include <optional>
 #include <thread>
+#include <boost/beast.hpp>
 #include <boost/date_time/posix_time/ptime.hpp>
 #include <boost/json.hpp>
 #include <boost/algorithm/string.hpp>

@@ -6,13 +6,31 @@
 
 namespace services
 {
+	struct verify_session_access;
 	struct verifycode_impl;
 	struct verify_session
 	{
 	private:
 		std::string session_cookie;
 		friend struct verifycode_impl;
+		friend struct verify_session_access;
 	};
+
+	struct verify_session_access
+	{
+		static std::string as_string(const verify_session& s)
+		{
+			return s.session_cookie;
+		}
+
+		static verify_session from_string(std::string s)
+		{
+			verify_session r;
+			r.session_cookie = s;
+			return r;
+		}
+	};
+
 
 	class verifycode
 	{

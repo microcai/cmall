@@ -1,6 +1,7 @@
 
 
 #include <boost/asio.hpp>
+#include <boost/asio/co_spawn.hpp>
 #include <boost/bind.hpp>
 #include <boost/json.hpp>
 #include <filesystem>
@@ -15,6 +16,8 @@ using steady_timer = boost::asio::basic_waitable_timer<time_clock::steady_clock>
 
 #include "persist_map.hpp"
 #include "services/persist_session.hpp"
+
+#include "cmall/js_util.hpp"
 
 namespace services
 {
@@ -48,7 +51,13 @@ namespace services
 			std::string_view session_id, const client_session& session, std::chrono::duration<int> lifetime)
 		{
 			// TODO, 用　mdbx 保存 session
-			co_return;
+
+			boost::json::object ser;
+			if (session.user_info)
+				ser["uid"] = session.user_info->uid_;
+			ser["verifyinfo"] = { { "tel", session.verify_telephone },  { "verify_cookie", session.verify_session_cookie ? verify_session_access::as_string(session.verify_session_cookie.value()) : std::string("") } };
+
+			co_await mdbx_db.put(session_id, jsutil::json_as_string(ser) );
 		}
 
 		boost::asio::awaitable<void> update_lifetime(std::string_view session_id, std::chrono::duration<int> lifetime)
