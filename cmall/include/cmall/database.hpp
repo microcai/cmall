@@ -21,6 +21,9 @@
 
 #include <boost/asio.hpp>
 
+#include "boost/asio/async_result.hpp"
+#include "boost/asio/awaitable.hpp"
+#include "boost/asio/use_awaitable.hpp"
 #include "boost/date_time/posix_time/posix_time_types.hpp"
 #include "boost/date_time/posix_time/ptime.hpp"
 #include "boost/system/detail/error_code.hpp"
@@ -43,11 +46,10 @@ namespace cmall
 	};
 
 	using db_result = std::variant<bool, std::exception_ptr>;
-	// using dns_records_t = std::vector<cmall_record>;
 
-	using extract_result_t	  = std::tuple<boost::system::error_code, bool, std::string>;
+	using extract_result_t = std::tuple<boost::system::error_code, bool, std::string>;
 
-	template<typename Handler>
+	template <typename Handler>
 	void post_result(db_result v, Handler&& handler)
 	{
 		boost::system::error_code ec;
@@ -61,7 +63,7 @@ namespace cmall
 			ec = boost::asio::error::no_recovery;
 		}
 		auto excutor = boost::asio::get_associated_executor(handler);
-		boost::asio::post(excutor,  [ handler = std::move(handler),  ec,  ok]() mutable{ handler(ec, ok); });
+		boost::asio::post(excutor, [handler = std::move(handler), ec, ok]() mutable { handler(ec, ok); });
 	}
 
 	template <typename T>
@@ -108,7 +110,6 @@ namespace cmall
 			}
 		};
 
-
 		template <typename T>
 		struct initiate_do_add
 		{
@@ -151,7 +152,6 @@ namespace cmall
 					{
 						auto ret = db->update<T>(*value);
 						post_result(ret, std::move(handler));
-
 					});
 			}
 		};
@@ -781,13 +781,13 @@ namespace cmall
 				[this, id, value](auto&& handler) mutable
 				{
 					boost::asio::post(m_io_context,
-					[handler = std::move(handler), this, id, value]() mutable
-					{
-						auto ret = get<T>(id, value);
-						post_result(ret, std::move(handler));
-					});
-
-				}, boost::asio::use_awaitable);
+						[handler = std::move(handler), this, id, value]() mutable
+						{
+							auto ret = get<T>(id, value);
+							post_result(ret, std::move(handler));
+						});
+				},
+				boost::asio::use_awaitable);
 		}
 
 		template <typename Handler, typename T>
@@ -797,6 +797,22 @@ namespace cmall
 			return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
 				initiate_do_add<T>{}, handler, this, &value);
 		}
+
+		template <typename T>
+		boost::asio::awaitable<bool> async_add(T& value)
+		{
+			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
+				void(boost::system::error_code, bool)>(
+				[this, value](auto&& handler) mutable 
+				{
+					boost::asio::post(m_io_context, [handler = std::move(handler), this, value]() mutable {
+						auto ret = add<T>(value);
+						post_result(ret, std::move(handler));
+					});
+				},
+				boost::asio::use_awaitable);
+		}
+
 		template <typename Handler, SupportUpdateAt T>
 		BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
 		async_update(T& value, BOOST_ASIO_MOVE_ARG(Handler) handler)
