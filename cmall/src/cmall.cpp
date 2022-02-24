@@ -4,7 +4,9 @@
 #include <boost/asio/experimental/promise.hpp>
 #include <boost/scope_exit.hpp>
 
+#include "boost/asio/use_awaitable.hpp"
 #include "cmall/cmall.hpp"
+#include "cmall/db.hpp"
 #include "utils/async_connect.hpp"
 #include "utils/scoped_exit.hpp"
 #include "utils/url_parser.hpp"
@@ -465,7 +467,25 @@ namespace cmall
 			case req_method::user_login:
 			{
 				std::string verify_code = jsutil::json_as_string(jsutil::json_accessor(jv).get("verify_code", ""));
-				std::string verify_code_token = jsutil::json_as_string(jsutil::json_accessor(jv).get("verify_code_token", ""));
+
+				if (this_client.session_info->verify_session_cookie)
+				{
+					if (co_await telephone_verifier.verify_verify_code(verify_code, this_client.session_info->verify_session_cookie.value()))
+					{
+						// SUCCESS.
+						cmall_user user;
+						if (co_await m_database.async_load_use_by_phone(this_client.session_info->verify_telephone, user))
+						{
+
+
+						}
+					}
+				}
+				else
+				{
+
+				}
+
 
 				// TODO 认证成功后， sessionid 写入 mdbx 数据库以便日后恢复.
 			}break;
