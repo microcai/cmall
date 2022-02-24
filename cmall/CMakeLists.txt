@@ -26,6 +26,7 @@ file(GLOB cmall_SRCS
 	include/jsonrpc.hpp
 	include/magic_enum.hpp
 	include/persist_map.hpp
+	include/http_static_file_handle.hpp
 
 	src/error_code.cpp
 	src/default_cert.cpp
@@ -35,6 +36,7 @@ file(GLOB cmall_SRCS
 	src/database.cpp
 	src/internal.cpp
 	src/persist_map.cpp
+	src/http_static_file_handle.cpp
 )
 
 find_package(Embed REQUIRED)
