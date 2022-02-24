@@ -12,7 +12,7 @@ API 分成 6 组, 未特殊说明, api 都是以 jsonrpc 在同一个连接里�
 
 ```json
 {
-	method: "user_list_products",
+	method: "goods_list",
 	params: {
 		merchant: "0"
 	}

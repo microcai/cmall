@@ -381,15 +381,16 @@ namespace cmall
 			}
 
 			auto method = jsutil::json_as_string(jsutil::json_accessor(jv).get("method", ""));
+			auto params = jsutil::json_accessor(jv).get("params", boost::json::object{});
 
 			boost::asio::co_spawn(
 				connection_ptr->m_io,
-				[this, connection_ptr, method, jv]() -> boost::asio::awaitable<void>
+				[this, connection_ptr, method, params, jv]() -> boost::asio::awaitable<void>
 				{
 					boost::json::object replay_message;
 					try
 					{
-						replay_message = co_await on_client_invoke(connection_ptr, method, jv);
+						replay_message = co_await on_client_invoke(connection_ptr, method, params.as_object());
 					}
 					catch (boost::system::system_error& e)
 					{
@@ -408,7 +409,7 @@ namespace cmall
 	}
 
 	boost::asio::awaitable<boost::json::object> cmall_service::on_client_invoke(
-		client_connection_ptr connection_ptr, const std::string& methodstr, boost::json::value jv)
+		client_connection_ptr connection_ptr, const std::string& methodstr, boost::json::object params)
 	{
 		client_connection& this_client = *connection_ptr;
 		boost::json::object reply_message;
@@ -430,7 +431,7 @@ namespace cmall
 		{
 			case req_method::recover_session:
 			{
-				std::string sessionid = jsutil::json_as_string(jsutil::json_accessor(jv).get("sessionid", ""));
+				std::string sessionid = jsutil::json_as_string(jsutil::json_accessor(params).get("sessionid", ""));
 
 				if (sessionid.empty() || !(co_await session_cache_map.exist(sessionid)))
 				{
@@ -463,7 +464,7 @@ namespace cmall
 				// verify_code_token 的有效期为 2 分钟.
 				// verify_code_token 对同一个手机号只能一分钟内请求一次.
 
-				std::string tel = jsutil::json_as_string(jsutil::json_accessor(jv).get("telephone", ""));
+				std::string tel = jsutil::json_as_string(jsutil::json_accessor(params).get("telephone", ""));
 				// TODO 获取验证码.
 				verify_session_cookie = co_await telephone_verifier.send_verify_code(tel, ec);
 
@@ -480,7 +481,7 @@ namespace cmall
 			break;
 			case req_method::user_login:
 			{
-				std::string verify_code = jsutil::json_as_string(jsutil::json_accessor(jv).get("verify_code", ""));
+				std::string verify_code = jsutil::json_as_string(jsutil::json_accessor(params).get("verify_code", ""));
 
 				if (this_client.session_info->verify_session_cookie)
 				{
@@ -540,9 +541,7 @@ namespace cmall
 			case req_method::goods_list:
 			{
 				// 列出 商品, 根据参数决定是首页还是商户
-				auto merchant = jsutil::json_as_string(
-					jsutil::json_accessor(jsutil::json_accessor(jv).get("params", boost::json::object{}))
-						.get("merchant", ""));
+				auto merchant = jsutil::json_as_string(jsutil::json_accessor(params).get("merchant", ""));
 
 				if (merchant == "")
 				{
@@ -561,6 +560,7 @@ namespace cmall
 				{
 					// 列出商户的上架商品.
 				}
+				reply_message["result"] = boost::json::array{};
 			}
 			break;
 			case req_method::goods_detail:
