@@ -22,7 +22,7 @@ static env::operate_parameters get_default_operate_parameters()
 {
 	env::operate_parameters db_param;
 
-	db_param.max_maps = 0;
+	db_param.max_maps = 4;
 	db_param.reclaiming = env::reclaiming_options(MDBX_LIFORECLAIM);
 
 	return db_param;
