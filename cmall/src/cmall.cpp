@@ -435,7 +435,8 @@ namespace cmall
 				this_client.session_info = std::make_shared<services::client_session>(co_await session_cache_map.load(sessionid));
 				if (this_client.session_info->user_info)
 				{
-					co_await m_database.async_load<cmall_user>(this_client.session_info->user_info->db_user_entry.uid_, this_client.session_info->user_info->db_user_entry);
+					co_await m_database.async_load<cmall_user>(this_client.session_info->user_info->db_user_entry.uid_,
+						this_client.session_info->user_info->db_user_entry);
 				}
 
 				reply_message["result"] = true;
