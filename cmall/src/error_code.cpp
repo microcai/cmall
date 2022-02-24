@@ -18,6 +18,8 @@ std::string cmall::error::cmall_category::message(int ev) const
 			return (const char*) u8"jsonrpc 方法未知";
 		case session_needed:
 			return (const char*) u8"需要先获取session";
+		case not_implemented:
+			return (const char*) u8"本功能还没实现";
 	}
 	return "error message";
 }

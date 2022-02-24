@@ -12,6 +12,7 @@ namespace cmall { namespace error{
 		invalid_json,
 		unknown_method,
 		session_needed,
+		not_implemented,
 	};
 
 	class cmall_category : public boost::system::error_category
