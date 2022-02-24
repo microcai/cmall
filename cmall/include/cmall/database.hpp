@@ -87,530 +87,6 @@ namespace cmall
 		cmall_database(const cmall_database&) = delete;
 		cmall_database& operator=(const cmall_database&) = delete;
 
-		template <typename T>
-		struct initiate_do_load_by_id
-		{
-			template <typename Handler>
-			void operator()(Handler&& handler, cmall_database* db, std::uint64_t id, T* value)
-			{
-				auto mdb = db->m_db;
-				if (!mdb)
-				{
-					auto ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-					handler(ec, false);
-					return;
-				}
-
-				boost::asio::post(db->m_io_context,
-					[this, db, handler = std::move(handler), id, value]() mutable
-					{
-						auto ret = db->get<T>(id, *value);
-						post_result(ret, std::move(handler));
-					});
-			}
-		};
-
-		template <typename T>
-		struct initiate_do_add
-		{
-			template <typename Handler>
-			void operator()(Handler&& handler, cmall_database* db, T* value)
-			{
-				auto mdb = db->m_db;
-				if (!mdb)
-				{
-					auto ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-					handler(ec, false);
-					return;
-				}
-
-				boost::asio::post(db->m_io_context,
-					[db, handler = std::move(handler), value]() mutable
-					{
-						auto ret = db->add<T>(*value);
-						post_result(ret, std::move(handler));
-					});
-			}
-		};
-
-		template <typename T>
-		struct initiate_do_update
-		{
-			template <typename Handler>
-			void operator()(Handler&& handler, cmall_database* db, T* value)
-			{
-				auto mdb = db->m_db;
-				if (!mdb)
-				{
-					auto ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-					handler(ec, false);
-					return;
-				}
-
-				boost::asio::post(db->m_io_context,
-					[db, handler = std::move(handler), value]() mutable
-					{
-						auto ret = db->update<T>(*value);
-						post_result(ret, std::move(handler));
-					});
-			}
-		};
-
-		template <SupportUpdateAt T>
-		struct initiate_do_update<T>
-		{
-			template <typename Handler>
-			void operator()(Handler&& handler, cmall_database* db, T* value)
-			{
-				auto mdb = db->m_db;
-				if (!mdb)
-				{
-					auto ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-					handler(ec, false);
-					return;
-				}
-
-				boost::asio::post(db->m_io_context,
-					[db, handler = std::move(handler), value]() mutable
-					{
-						auto ret = db->update<T>(*value);
-						post_result(ret, std::move(handler));
-					});
-			}
-		};
-
-		template <typename T>
-		struct initiate_do_soft_remove
-		{
-			template <typename Handler>
-			void operator()(Handler&& handler, cmall_database* db, T* value)
-			{
-				auto mdb = db->m_db;
-				if (!mdb)
-				{
-					auto ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-					handler(ec, false);
-					return;
-				}
-
-				boost::asio::post(db->m_io_context,
-					[db, handler = std::move(handler), value]() mutable
-					{
-						auto ret = db->soft_remove<T>(*value);
-						post_result(ret, std::move(handler));
-					});
-			}
-		};
-
-		template <typename T>
-		struct initiate_do_soft_remove_by_id
-		{
-			template <typename Handler>
-			void operator()(Handler&& handler, cmall_database* db, std::uint64_t id)
-			{
-				auto mdb = db->m_db;
-				if (!mdb)
-				{
-					auto ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-					handler(ec, false);
-					return;
-				}
-
-				boost::asio::post(db->m_io_context,
-					[db, handler = std::move(handler), id]() mutable
-					{
-						auto ret = db->soft_remove<T>(id);
-						post_result(ret, std::move(handler));
-					});
-			}
-		};
-
-		template <typename T>
-		struct initiate_do_hard_remove
-		{
-			template <typename Handler>
-			void operator()(Handler&& handler, cmall_database* db, std::uint64_t id)
-			{
-				auto mdb = db->m_db;
-				if (!mdb)
-				{
-					auto ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-					handler(ec, false);
-					return;
-				}
-
-				boost::asio::post(db->m_io_context,
-					[db, handler = std::move(handler), id]() mutable
-					{
-						auto ret = db->hard_remove<T>(id);
-						post_result(ret, std::move(handler));
-					});
-			}
-		};
-
-		// struct initiate_do_load_cmall_config {
-		// 	template <typename Handler> void operator()(Handler&& handler, cmall_database* db, cmall_config* config) {
-		// 		auto mdb = db->m_db;
-		// 		if (!mdb) {
-		// 			auto ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-		// 			handler(ec, false);
-		// 			return;
-		// 		}
-
-		// 		boost::asio::post(db->m_io_context, [this, db, mdb, handler = std::move(handler), config]() mutable {
-		// 			boost::system::error_code ec;
-		// 			bool result = false;
-
-		// 			auto ret = db->load_config(*config);
-		// 			std::visit(
-		// 				[&handler, &ec, &result](auto&& arg) mutable {
-		// 					using T = std::decay_t<decltype(arg)>;
-		// 					if constexpr (std::is_same_v<T, bool>) {
-		// 						result = arg;
-		// 					} else if constexpr (std::is_same_v<T, std::exception_ptr>) {
-		// 						try {
-		// 							std::rethrow_exception(arg);
-		// 						} catch (const std::exception& e) {
-		// 							LOG_WARN << "initiate_do_load_cmall_config: exception: " << e.what();
-		// 						}
-		// 						ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-		// 					} else {
-		// 						static_assert(
-		// 							always_false<T>, "initiate_do_load_cmall_config, non-exhaustive visitor!");
-		// 					}
-
-		// 					auto executor = boost::asio::get_associated_executor(handler);
-		// 					boost::asio::post(executor, [ec, handler, result]() mutable { handler(ec, result); });
-		// 				},
-		// 				ret);
-		// 		});
-		// 	}
-		// };
-
-		// struct initiate_do_add_cmall_config {
-		// 	template <typename Handler> void operator()(Handler&& handler, cmall_database* db, cmall_config* config) {
-		// 		auto mdb = db->m_db;
-		// 		if (!db->m_db) {
-		// 			auto ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-		// 			handler(ec, false);
-		// 			return;
-		// 		}
-
-		// 		boost::asio::post(db->m_io_context, [this, db, mdb, handler = std::move(handler), config]() mutable {
-		// 			boost::system::error_code ec;
-		// 			bool result = false;
-
-		// 			auto ret = db->add_config(*config);
-
-		// 			std::visit(
-		// 				[&handler, &ec, &result](auto&& arg) mutable {
-		// 					using T = std::decay_t<decltype(arg)>;
-		// 					if constexpr (std::is_same_v<T, bool>) {
-		// 						result = arg;
-		// 					} else if constexpr (std::is_same_v<T, std::exception_ptr>) {
-		// 						try {
-		// 							std::rethrow_exception(arg);
-		// 						} catch (const std::exception& e) {
-		// 							LOG_WARN << "initiate_do_add_cmall_config: exception: " << e.what();
-		// 						}
-		// 						ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-		// 					} else {
-		// 						static_assert(always_false<T>, "initiate_do_add_cmall_config, non-exhaustive visitor!");
-		// 					}
-
-		// 					auto executor = boost::asio::get_associated_executor(handler);
-		// 					boost::asio::post(executor, [ec, handler, result]() mutable { handler(ec, result); });
-		// 				},
-		// 				ret);
-		// 		});
-		// 	}
-		// };
-
-		// struct initiate_do_update_cmall_config {
-		// 	template <typename Handler>
-		// 	void operator()(Handler&& handler, cmall_database* db, const cmall_config& config) {
-		// 		auto mdb = db->m_db;
-		// 		if (!db->m_db) {
-		// 			auto ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-		// 			handler(ec, false);
-		// 			return;
-		// 		}
-
-		// 		boost::asio::post(db->m_io_context, [this, db, mdb, handler = std::move(handler), config]() mutable {
-		// 			boost::system::error_code ec;
-		// 			bool result = false;
-
-		// 			auto ret = db->update_config(config);
-
-		// 			std::visit(
-		// 				[&handler, &ec, &result](auto&& arg) mutable {
-		// 					using T = std::decay_t<decltype(arg)>;
-		// 					if constexpr (std::is_same_v<T, bool>) {
-		// 						result = arg;
-		// 					} else if constexpr (std::is_same_v<T, std::exception_ptr>) {
-		// 						try {
-		// 							std::rethrow_exception(arg);
-		// 						} catch (const std::exception& e) {
-		// 							LOG_WARN << "initiate_do_update_cmall_config: exception: " << e.what();
-		// 						}
-		// 						ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-		// 					} else {
-		// 						static_assert(
-		// 							always_false<T>, "initiate_do_update_cmall_config, non-exhaustive visitor!");
-		// 					}
-
-		// 					auto executor = boost::asio::get_associated_executor(handler);
-		// 					boost::asio::post(executor, [ec, handler, result]() mutable { handler(ec, result); });
-		// 				},
-		// 				ret);
-		// 		});
-		// 	}
-		// };
-
-		// struct initiate_do_load_cmall_records {
-		// 	template <typename Handler>
-		// 	void operator()(Handler&& handler, cmall_database* db, std::vector<cmall_record>* records, uint16_t type,
-		// 		const std::string& name) {
-		// 		auto mdb = db->m_db;
-		// 		if (!mdb) {
-		// 			auto ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-		// 			handler(ec, false);
-		// 			return;
-		// 		}
-
-		// 		boost::asio::post(db->m_io_context, [this, db, mdb, handler = std::move(handler), records, type, name]() mutable {
-		// 			boost::system::error_code ec;
-		// 			bool result = false;
-
-		// 			auto ret = db->load_dns_records(*records, type, name);
-		// 			std::visit(
-		// 				[&handler, &ec, &result](auto&& arg) mutable {
-		// 					using T = std::decay_t<decltype(arg)>;
-		// 					if constexpr (std::is_same_v<T, bool>) {
-		// 						result = arg;
-		// 					} else if constexpr (std::is_same_v<T, std::exception_ptr>) {
-		// 						try {
-		// 							std::rethrow_exception(arg);
-		// 						} catch (const std::exception& e) {
-		// 							LOG_WARN << "initiate_do_load_cmall_records: exception: " << e.what();
-		// 						}
-		// 						ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-		// 					} else {
-		// 						static_assert(
-		// 							always_false<T>, "initiate_do_load_cmall_records, non-exhaustive visitor!");
-		// 					}
-
-		// 					auto executor = boost::asio::get_associated_executor(handler);
-		// 					boost::asio::post(executor, [ec, handler, result]() mutable { handler(ec, result); });
-		// 				},
-		// 				ret);
-		// 		});
-		// 	}
-		// };
-
-		// struct initiate_do_recursive_load_cmall_records {
-		// 	template <typename Handler>
-		// 	void operator()(Handler&& handler, cmall_database* db, std::vector<cmall_record>* records, uint16_t type,
-		// 		const std::string& name) {
-		// 		auto mdb = db->m_db;
-		// 		if (!mdb) {
-		// 			auto ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-		// 			handler(ec, false);
-		// 			return;
-		// 		}
-
-		// 		boost::asio::post(db->m_io_context, [this, db, mdb, handler = std::move(handler), records, type, name]() mutable {
-		// 			boost::system::error_code ec;
-		// 			bool result = false;
-
-		// 			auto ret = db->load_dns_records_recursively(*records, type, name);
-		// 			std::visit(
-		// 				[&handler, &ec, &result](auto&& arg) mutable {
-		// 					using T = std::decay_t<decltype(arg)>;
-		// 					if constexpr (std::is_same_v<T, bool>) {
-		// 						result = arg;
-		// 					} else if constexpr (std::is_same_v<T, std::exception_ptr>) {
-		// 						try {
-		// 							std::rethrow_exception(arg);
-		// 						} catch (const std::exception& e) {
-		// 							LOG_WARN << "initiate_do_recursive_load_cmall_records: exception: " << e.what();
-		// 						}
-		// 						ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-		// 					} else {
-		// 						static_assert(
-		// 							always_false<T>, "initiate_do_recursive_load_cmall_records, non-exhaustive
-		// visitor!");
-		// 					}
-
-		// 					auto executor = boost::asio::get_associated_executor(handler);
-		// 					boost::asio::post(executor, [ec, handler, result]() mutable { handler(ec, result); });
-		// 				},
-		// 				ret);
-		// 		});
-		// 	}
-		// };
-
-		// struct initiate_do_get_cmall_record {
-		// 	template <typename Handler>
-		// 	void operator()(Handler&& handler, cmall_database* db, cmall_record* record, std::uint64_t rid) {
-		// 		auto mdb = db->m_db;
-		// 		if (!mdb) {
-		// 			auto ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-		// 			handler(ec, false);
-		// 			return;
-		// 		}
-
-		// 		boost::asio::post(db->m_io_context, [this, db, mdb, handler = std::move(handler), record, rid]() mutable {
-		// 			boost::system::error_code ec;
-		// 			bool result = false;
-
-		// 			auto ret = db->get_dns_record(rid, *record);
-		// 			std::visit(
-		// 				[&handler, &ec, &result](auto&& arg) mutable {
-		// 					using T = std::decay_t<decltype(arg)>;
-		// 					if constexpr (std::is_same_v<T, bool>) {
-		// 						result = arg;
-		// 					} else if constexpr (std::is_same_v<T, std::exception_ptr>) {
-		// 						try {
-		// 							std::rethrow_exception(arg);
-		// 						} catch (const std::exception& e) {
-		// 							LOG_WARN << "initiate_do_get_cmall_records: exception: " << e.what();
-		// 						}
-		// 						ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-		// 					} else {
-		// 						static_assert(
-		// 							always_false<T>, "initiate_do_get_cmall_records, non-exhaustive visitor!");
-		// 					}
-
-		// 					auto executor = boost::asio::get_associated_executor(handler);
-		// 					boost::asio::post(executor, [ec, handler, result]() mutable { handler(ec, result); });
-		// 				},
-		// 				ret);
-		// 		});
-		// 	}
-		// };
-
-		// struct initiate_do_add_cmall_records {
-		// 	template <typename Handler> void operator()(Handler&& handler, cmall_database* db, cmall_record* records) {
-		// 		auto mdb = db->m_db;
-		// 		if (!db->m_db) {
-		// 			auto ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-		// 			handler(ec, false);
-		// 			return;
-		// 		}
-
-		// 		boost::asio::post(db->m_io_context, [this, db, mdb, handler = std::move(handler), records]() mutable {
-		// 			boost::system::error_code ec;
-		// 			bool result = false;
-
-		// 			auto ret = db->add_dns_record(*records);
-
-		// 			std::visit(
-		// 				[&handler, &ec, &result](auto&& arg) mutable {
-		// 					using T = std::decay_t<decltype(arg)>;
-		// 					if constexpr (std::is_same_v<T, bool>) {
-		// 						result = arg;
-		// 					} else if constexpr (std::is_same_v<T, std::exception_ptr>) {
-		// 						try {
-		// 							std::rethrow_exception(arg);
-		// 						} catch (const std::exception& e) {
-		// 							LOG_WARN << "initiate_do_add_cmall_records: exception: " << e.what();
-		// 						}
-		// 						ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-		// 					} else {
-		// 						static_assert(
-		// 							always_false<T>, "initiate_do_add_cmall_records, non-exhaustive visitor!");
-		// 					}
-
-		// 					auto executor = boost::asio::get_associated_executor(handler);
-		// 					boost::asio::post(executor, [ec, handler, result]() mutable { handler(ec, result); });
-		// 				},
-		// 				ret);
-		// 		});
-		// 	}
-		// };
-
-		// struct initiate_do_update_cmall_record {
-		// 	template <typename Handler>
-		// 	void operator()(Handler&& handler, cmall_database* db, const cmall_record* record) {
-		// 		auto mdb = db->m_db;
-		// 		if (!db->m_db) {
-		// 			auto ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-		// 			handler(ec, false);
-		// 			return;
-		// 		}
-
-		// 		boost::asio::post(db->m_io_context, [this, db, mdb, handler = std::move(handler), record]() mutable {
-		// 			boost::system::error_code ec;
-		// 			bool result = false;
-
-		// 			auto ret = db->update_dns_record(*record);
-
-		// 			std::visit(
-		// 				[&handler, &ec, &result](auto&& arg) mutable {
-		// 					using T = std::decay_t<decltype(arg)>;
-		// 					if constexpr (std::is_same_v<T, bool>) {
-		// 						result = arg;
-		// 					} else if constexpr (std::is_same_v<T, std::exception_ptr>) {
-		// 						try {
-		// 							std::rethrow_exception(arg);
-		// 						} catch (const std::exception& e) {
-		// 							LOG_WARN << "initiate_do_update_cmall_record: exception: " << e.what();
-		// 						}
-		// 						ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-		// 					} else {
-		// 						static_assert(
-		// 							always_false<T>, "initiate_do_update_cmall_record, non-exhaustive visitor!");
-		// 					}
-
-		// 					auto executor = boost::asio::get_associated_executor(handler);
-		// 					boost::asio::post(executor, [ec, handler, result]() mutable { handler(ec, result); });
-		// 				},
-		// 				ret);
-		// 		});
-		// 	}
-		// };
-
-		// struct initiate_do_remove_cmall_record {
-		// 	template <typename Handler> void operator()(Handler&& handler, cmall_database* db, std::uint64_t rid) {
-		// 		auto mdb = db->m_db;
-		// 		if (!db->m_db) {
-		// 			auto ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-		// 			handler(ec, false);
-		// 			return;
-		// 		}
-
-		// 		boost::asio::post(db->m_io_context, [this, db, mdb, handler = std::move(handler), rid]() mutable {
-		// 			boost::system::error_code ec;
-		// 			bool result = false;
-
-		// 			auto ret = db->remove_dns_record(rid);
-
-		// 			std::visit(
-		// 				[&handler, &ec, &result](auto&& arg) mutable {
-		// 					using T = std::decay_t<decltype(arg)>;
-		// 					if constexpr (std::is_same_v<T, bool>) {
-		// 						result = arg;
-		// 					} else if constexpr (std::is_same_v<T, std::exception_ptr>) {
-		// 						try {
-		// 							std::rethrow_exception(arg);
-		// 						} catch (const std::exception& e) {
-		// 							LOG_WARN << "initiate_do_remove_cmall_record: exception: " << e.what();
-		// 						}
-		// 						ec = boost::asio::error::make_error_code(boost::asio::error::no_recovery);
-		// 					} else {
-		// 						static_assert(
-		// 							always_false<T>, "initiate_do_remove_cmall_record, non-exhaustive visitor!");
-		// 					}
-
-		// 					auto executor = boost::asio::get_associated_executor(handler);
-		// 					boost::asio::post(executor, [ec, handler, result]() mutable { handler(ec, result); });
-		// 				},
-		// 				ret);
-		// 		});
-		// 	}
-		// };
-
 	public:
 		cmall_database(const db_config& cfg, boost::asio::io_context& ioc);
 		~cmall_database() = default;
@@ -764,12 +240,6 @@ namespace cmall
 				});
 		}
 
-		// db_result load_dns_records(std::vector<cmall_record>& records, uint16_t type, const std::string& name);
-		// db_result load_dns_records_recursively(std::vector<cmall_record>& records, uint16_t type, const std::string&
-		// name); db_result get_dns_record(std::uint64_t rid, cmall_record& record); // get by id db_result
-		// add_dns_record(cmall_record& record); db_result update_dns_record(const cmall_record& record); db_result
-		// remove_dns_record(std::uint64_t rid);
-
 	public:
 		boost::asio::awaitable<bool> async_load_user_by_phone(const std::string& phone, cmall_user& value);
 
@@ -790,14 +260,6 @@ namespace cmall
 				boost::asio::use_awaitable);
 		}
 
-		template <typename Handler, typename T>
-		BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
-		async_add(T& value, BOOST_ASIO_MOVE_ARG(Handler) handler)
-		{
-			return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
-				initiate_do_add<T>{}, handler, this, &value);
-		}
-
 		template <typename T>
 		boost::asio::awaitable<bool> async_add(T& value)
 		{
@@ -813,106 +275,81 @@ namespace cmall
 				boost::asio::use_awaitable);
 		}
 
-		template <typename Handler, SupportUpdateAt T>
-		BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
-		async_update(T& value, BOOST_ASIO_MOVE_ARG(Handler) handler)
+		template<SupportUpdateAt T>
+		boost::asio::awaitable<bool> async_update(T& value)
 		{
-			return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
-				initiate_do_update<T>{}, handler, this, &value);
-		}
-		template <typename Handler, typename T>
-		BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
-		async_update(T& value, BOOST_ASIO_MOVE_ARG(Handler) handler)
-		{
-			return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
-				initiate_do_update<T>{}, handler, this, &value);
-		}
-		template <typename T, typename Handler>
-		BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
-		async_hard_remove(std::uint64_t id, BOOST_ASIO_MOVE_ARG(Handler) handler)
-		{
-			return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
-				initiate_do_hard_remove<T>{}, handler, this, id);
-		}
-		template <typename T, typename Handler>
-		BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
-		async_soft_remove(T& value, BOOST_ASIO_MOVE_ARG(Handler) handler)
-		{
-			return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
-				initiate_do_soft_remove<T>{}, handler, this, &value);
-		}
-		template <typename T, typename Handler>
-		BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
-		async_soft_remove(std::uint64_t id, BOOST_ASIO_MOVE_ARG(Handler) handler)
-		{
-			return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
-				initiate_do_soft_remove_by_id<T>{}, handler, this, id);
+			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
+				void(boost::system::error_code, bool)>(
+				[this, value](auto&& handler) mutable 
+				{
+					boost::asio::post(m_io_context, [handler = std::move(handler), this, value]() mutable {
+						auto ret = update<T>(value);
+						post_result(ret, std::move(handler));
+					});
+				},
+				boost::asio::use_awaitable);
 		}
 
-		// template <typename Handler>
-		// BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
-		// async_load_config(cmall_config& config, BOOST_ASIO_MOVE_ARG(Handler) handler) {
-		// 	return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
-		// 		initiate_do_load_cmall_config{}, handler, this, &config);
-		// }
+		template<typename T>
+		boost::asio::awaitable<bool> async_update(T& value)
+		{
+			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
+				void(boost::system::error_code, bool)>(
+				[this, value](auto&& handler) mutable 
+				{
+					boost::asio::post(m_io_context, [handler = std::move(handler), this, value]() mutable {
+						auto ret = update<T>(value);
+						post_result(ret, std::move(handler));
+					});
+				},
+				boost::asio::use_awaitable);
+		}
 
-		// template <typename Handler>
-		// BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
-		// async_add_config(cmall_config& config, BOOST_ASIO_MOVE_ARG(Handler) handler) {
-		// 	return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
-		// 		initiate_do_add_cmall_config{}, handler, this, &config);
-		// }
+		template<typename T>
+		boost::asio::awaitable<bool> async_hard_remove(std::uint64_t id)
+		{
+			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
+				void(boost::system::error_code, bool)>(
+				[this, id](auto&& handler) mutable 
+				{
+					boost::asio::post(m_io_context, [handler = std::move(handler), this, id]() mutable {
+						auto ret = hard_remove<T>(id);
+						post_result(ret, std::move(handler));
+					});
+				},
+				boost::asio::use_awaitable);
+		}
 
-		// template <typename Handler>
-		// BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
-		// async_update_config(const cmall_config& config, BOOST_ASIO_MOVE_ARG(Handler) handler) {
-		// 	return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
-		// 		initiate_do_update_cmall_config{}, handler, this, config);
-		// }
+		template<SupportSoftDeletion T>
+		boost::asio::awaitable<bool> async_soft_remove(std::uint64_t id)
+		{
+			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
+				void(boost::system::error_code, bool)>(
+				[this, id](auto&& handler) mutable 
+				{
+					boost::asio::post(m_io_context, [handler = std::move(handler), this, id]() mutable {
+						auto ret = soft_remove<T>(id);
+						post_result(ret, std::move(handler));
+					});
+				},
+				boost::asio::use_awaitable);
+		}
 
-		// template <typename Handler>
-		// BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
-		// async_load_records(std::vector<cmall_record>& records, uint16_t type, const std::string& name,
-		// 	BOOST_ASIO_MOVE_ARG(Handler) handler) {
-		// 	return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
-		// 		initiate_do_load_cmall_records{}, handler, this, &records, type, name);
-		// }
+		template<SupportSoftDeletion T>
+		boost::asio::awaitable<bool> async_soft_remove(T& value)
+		{
+			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
+				void(boost::system::error_code, bool)>(
+				[this, value](auto&& handler) mutable 
+				{
+					boost::asio::post(m_io_context, [handler = std::move(handler), this, value]() mutable {
+						auto ret = soft_remove<T>(value);
+						post_result(ret, std::move(handler));
+					});
+				},
+				boost::asio::use_awaitable);
+		}
 
-		// template <typename Handler>
-		// BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
-		// async_recursively_load_records(std::vector<cmall_record>& records, uint16_t type, const std::string& name,
-		// 	BOOST_ASIO_MOVE_ARG(Handler) handler) {
-		// 	return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
-		// 		initiate_do_recursive_load_cmall_records{}, handler, this, &records, type, name);
-		// }
-
-		// template <typename Handler>
-		// BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
-		// async_get_record(cmall_record& record, std::uint64_t rid, BOOST_ASIO_MOVE_ARG(Handler) handler) {
-		// 	return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
-		// 		initiate_do_get_cmall_record{}, handler, this, &record, rid);
-		// }
-
-		// template <typename Handler>
-		// BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
-		// async_add_record(cmall_record& records, BOOST_ASIO_MOVE_ARG(Handler) handler) {
-		// 	return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
-		// 		initiate_do_add_cmall_records{}, handler, this, &records);
-		// }
-
-		// template <typename Handler>
-		// BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
-		// async_update_record(const cmall_record& record, BOOST_ASIO_MOVE_ARG(Handler) handler) {
-		// 	return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
-		// 		initiate_do_update_cmall_record{}, handler, this, &record);
-		// }
-
-		// template <typename Handler>
-		// BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(Handler, void(boost::system::error_code, bool))
-		// async_remove_record(std::uint64_t rid, BOOST_ASIO_MOVE_ARG(Handler) handler) {
-		// 	return boost::asio::async_initiate<Handler, void(boost::system::error_code, bool)>(
-		// 		initiate_do_remove_cmall_record{}, handler, this, rid);
-		// }
 
 	private:
 		template <typename T>

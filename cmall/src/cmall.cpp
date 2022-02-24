@@ -491,7 +491,7 @@ namespace cmall
 							new_user.active_phone = this_client.session_info->verify_telephone;
 
 							// TODO 新用户注册，赶紧创建个新用户
-							co_await m_database.async_add(new_user, boost::asio::use_awaitable);
+							co_await m_database.async_add(new_user);
 							this_client.session_info->user_info = new_user;
 
 						}
