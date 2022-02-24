@@ -27,6 +27,7 @@ file(GLOB cmall_SRCS
 	include/magic_enum.hpp
 	include/persist_map.hpp
 	include/http_static_file_handle.hpp
+	include/services/verifycode.cpp
 
 	src/error_code.cpp
 	src/default_cert.cpp
@@ -37,6 +38,7 @@ file(GLOB cmall_SRCS
 	src/internal.cpp
 	src/persist_map.cpp
 	src/http_static_file_handle.cpp
+	src/services/verifycode.cpp
 )
 
 find_package(Embed REQUIRED)
