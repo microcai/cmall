@@ -1,4 +1,4 @@
-﻿
+
 #include "utils/logging.hpp"
 
 #include "cmall/database.hpp"
@@ -259,4 +259,19 @@ namespace cmall {
 	// 		return true;
 	// 	});
 	// }
+
+	boost::asio::awaitable<bool> cmall_database::async_load_user_by_phone(const std::string& phone, cmall_user& value)
+	{
+		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code, bool)>(
+			[this, phone, value](auto&& handler) mutable
+			{
+				boost::asio::post(m_io_context,
+				[this, handler = std::move(handler), phone, value]() mutable
+				{
+					auto ret = load_user_by_phone(phone, value);
+					post_result(ret, std::move(handler));
+				});
+			}, boost::asio::use_awaitable);
+	}
+
 }

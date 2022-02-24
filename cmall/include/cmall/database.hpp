@@ -783,19 +783,7 @@ namespace cmall
 		// remove_dns_record(std::uint64_t rid);
 
 	public:
-		boost::asio::awaitable<bool> async_load_user_by_phone(const std::string& phone, cmall_user& value)
-		{
-			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code, bool)>(
-				[this, phone, value](auto&& handler) mutable
-				{
-					boost::asio::post(m_io_context,
-					[this, handler = std::move(handler), phone, value]() mutable
-					{
-						auto ret = load_user_by_phone(phone, value);
-						post_result(ret, std::move(handler));
-					});
-				}, boost::asio::use_awaitable);
-		}
+		boost::asio::awaitable<bool> async_load_user_by_phone(const std::string& phone, cmall_user& value);
 
 		template <typename T>
 		boost::asio::awaitable<bool> async_load(std::uint64_t id, T& value)
