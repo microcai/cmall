@@ -124,6 +124,20 @@ struct persist_map_impl
 		}
 	}
 
+	boost::asio::awaitable<bool> has_key(std::string_view key) const
+	{
+		try
+		{
+			txn_managed t = mdbx_env.start_read();
+			mdbx::slice v = t.get(mdbx_map, mdbx::slice(key));
+			t.commit();
+			co_return true;
+		}catch(std::exception&)
+		{
+			co_return false;
+		}
+	}
+
 	boost::asio::awaitable<std::string> get(std::string_view key) const
 	{
 		txn_managed t = mdbx_env.start_read();
@@ -151,6 +165,11 @@ persist_map::persist_map(std::filesystem::path persist_file)
 {
 	static_assert(sizeof (obj_stor) >= sizeof (persist_map_impl));
 	std::construct_at<persist_map_impl>(reinterpret_cast<persist_map_impl*>(obj_stor.data()), persist_file);
+}
+
+boost::asio::awaitable<bool> persist_map::has_key(std::string_view key) const
+{
+	return impl().has_key(key);
 }
 
 boost::asio::awaitable<std::string> persist_map::get(std::string_view key) const

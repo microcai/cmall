@@ -13,6 +13,7 @@ public:
 	persist_map(std::filesystem::path persist_file);
 	~persist_map();
 
+	boost::asio::awaitable<bool> has_key(std::string_view key) const;
 	boost::asio::awaitable<std::string> get(std::string_view key) const;
 	boost::asio::awaitable<void> put(std::string_view key, std::string value, std::chrono::duration<int> lifetime = std::chrono::seconds(86400 * 30));
 

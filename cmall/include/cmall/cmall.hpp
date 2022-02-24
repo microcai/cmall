@@ -20,6 +20,8 @@
 
 #include "cmall/error_code.hpp"
 #include "persist_map.hpp"
+#include "services/verifycode.hpp"
+#include "services/persist_session.hpp"
 
 namespace cmall {
 
@@ -57,24 +59,6 @@ namespace cmall {
 		boost::asio::experimental::concurrent_channel<void(boost::system::error_code, std::string)> message_channel;
 	};
 
-	enum client_capabilities
-	{
-		browerable,                                               // 可浏览商品.
-		orderable,                                                // 可下单.
-		deletable,                                                // 可下架商品.
-		editable,                                                 // 可编辑自己的商品.
-		price_alterable,                                          // 可修改售价.
-	};
-
-	struct authorized_client_info
-	{
-		cmall_chives db_user_entry;
-		std::set<client_capabilities> cap;
-
-		// 使用 session_id 可以快速找回已登录回话.
-		std::string session_id;
-	};
-
 	struct client_connection
 	{
 		boost::beast::tcp_stream tcp_stream;
@@ -83,7 +67,8 @@ namespace cmall {
 		std::string remote_host_;
 
 		std::optional<websocket_connection> ws_client;
-		std::optional<authorized_client_info> user_info;
+
+		std::shared_ptr<services::client_session> session_info;
 
 		~client_connection()
 		{
@@ -110,10 +95,11 @@ namespace cmall {
 	using client_connection_weakptr = std::weak_ptr<client_connection>;
 
 	enum class req_method {
+		recover_session,
+
 		user_prelogin,
 		user_login,
 		user_logout,
-		user_recover_session,
 
 		user_list_products,
 		user_apply_merchant,
@@ -194,7 +180,8 @@ namespace cmall {
 		server_config m_config;
 		cmall_database m_database;
 
-		persist_map session_cache_map;
+		services::persist_session session_cache_map;
+		services::verifycode telephone_verifier;
 
 		// ws 服务端相关.
 		std::vector<tcp::acceptor> m_ws_acceptors;

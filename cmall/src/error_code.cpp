@@ -14,6 +14,10 @@ std::string cmall::error::cmall_category::message(int ev) const
 	{
 		case internal_server_error:
 			return (const char*) u8"服务器内部错误";
+		case unknown_method:
+			return (const char*) u8"jsonrpc 方法未知";
+		case session_needed:
+			return (const char*) u8"需要先获取session";
 	}
 	return "error message";
 }

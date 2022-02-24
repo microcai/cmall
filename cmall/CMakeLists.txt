@@ -28,6 +28,7 @@ file(GLOB cmall_SRCS
 	include/persist_map.hpp
 	include/http_static_file_handle.hpp
 	include/services/verifycode.cpp
+	include/services/persist_session.hpp
 
 	src/error_code.cpp
 	src/default_cert.cpp
@@ -39,6 +40,7 @@ file(GLOB cmall_SRCS
 	src/persist_map.cpp
 	src/http_static_file_handle.cpp
 	src/services/verifycode.cpp
+	src/services/persist_session.cpp
 )
 
 find_package(Embed REQUIRED)

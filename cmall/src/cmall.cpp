@@ -43,6 +43,7 @@ namespace cmall
 		, m_config(config)
 		, m_database(m_config.dbcfg_, m_io_context_pool.database_io_context())
 		, session_cache_map(m_config.session_cache_file)
+		, telephone_verifier(m_io_context)
 	{
 	}
 
@@ -405,20 +406,57 @@ namespace cmall
 		client_connection& this_client = * connection_ptr;
 		boost::json::object reply_message;
 
+		boost::system::error_code ec;
+
 		auto method = magic_enum::enum_cast<req_method>(methodstr);
 		if (!method.has_value())
 		{
 			throw boost::system::system_error(boost::system::error_code(cmall::error::unknown_method));
 		}
 
+		if (!this_client.session_info && (method.value() != req_method::recover_session))
+		{
+			throw boost::system::system_error(boost::system::error_code(cmall::error::session_needed));
+		}
+
 		switch (method.value())
 		{
+			case req_method::recover_session:
+			{
+				std::string sessionid = jsutil::json_as_string(jsutil::json_accessor(jv).get("sessionid", ""));
+
+				if (sessionid.empty() || !(co_await session_cache_map.exist(sessionid)))
+				{
+					// TODO 表示是第一次使用，所以创建一个新　session 给客户端.
+				}
+
+				this_client.session_info = std::make_shared<services::client_session>(co_await session_cache_map.load(sessionid));
+
+				reply_message["result"] = true;
+
+			}break;
+
 			case req_method::user_prelogin:
 			{
-				// TODO 获取验证码.
+				services::verify_session verify_session_cookie;
 				// 拿到 verify_code_token,  要和 verify_code 一并传给 user.login
 				// verify_code_token 的有效期为 2 分钟.
 				// verify_code_token 对同一个手机号只能一分钟内请求一次.
+
+				std::string tel = jsutil::json_as_string(jsutil::json_accessor(jv).get("telephone", ""));
+				// TODO 获取验证码.
+				verify_session_cookie = co_await telephone_verifier.send_verify_code(tel, ec);
+
+				if (ec)
+				{
+					// TODO, 汇报验证码发送失败.
+				}
+				else
+				{
+					this_client.session_info->verify_session_cookie = verify_session_cookie;
+					reply_message["result"] = true;
+				}
+
 			}break;
 			case req_method::user_login:
 			{
@@ -427,27 +465,6 @@ namespace cmall
 
 				// TODO 认证成功后， sessionid 写入 mdbx 数据库以便日后恢复.
 			}break;
-			case req_method::user_recover_session:
-			{
-				std::string sessionid = jsutil::json_as_string(jsutil::json_accessor(jv).get("sessionid", ""));
-
-				auto jv = boost::json::parse(co_await session_cache_map.get(sessionid), {}, { 64, false, false, true });
-
-				// TODO reload saved info from jv
-
-				authorized_client_info ci;
-
-				ci.session_id = sessionid;
-				//ci.cap =;
-				// TODO
-// 				ci.db_user_entry = m_database.async_load_user_entry();
-
-				this_client.user_info = ci;
-
-				reply_message["result"] = true;
-
-			}break;
-
 
 			case req_method::user_logout: break;
 			case req_method::user_list_products: break;

@@ -11,6 +11,7 @@ namespace cmall { namespace error{
 		internal_server_error = 1,
 		invalid_json,
 		unknown_method,
+		session_needed,
 	};
 
 	class cmall_category : public boost::system::error_category

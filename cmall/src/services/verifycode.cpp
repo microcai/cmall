@@ -33,6 +33,19 @@ namespace services
 		return impl().send_verify_code(telephone, ec);
 	}
 
+	boost::asio::awaitable<verify_session> verifycode::send_verify_code(std::string telephone)
+	{
+		boost::system::error_code ec;
+		auto ret = co_await impl().send_verify_code(telephone, ec);
+
+		if (ec)
+		{
+			throw boost::system::system_error(ec);
+		}
+
+		co_return ret;
+	}
+
 	// verify the user input verify_code against verify_session
 	boost::asio::awaitable<bool> verifycode::verify_verify_code(std::string verify_code, verify_session verify_session_tag)
 	{

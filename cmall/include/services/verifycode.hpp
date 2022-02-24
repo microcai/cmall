@@ -21,6 +21,7 @@ namespace services
 		~verifycode();
 
 		// send verifycode, returns verify session.
+		boost::asio::awaitable<verify_session> send_verify_code(std::string telephone);
 		boost::asio::awaitable<verify_session> send_verify_code(std::string telephone, boost::system::error_code& ec);
 
 		// verify the user input verify_code against verify_session
