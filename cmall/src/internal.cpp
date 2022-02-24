@@ -106,6 +106,11 @@ inline std::string uuid_to_string(boost::uuids::uuid const& u)
 	return result;
 }
 
+std::string gen_uuid()
+{
+	return uuid_to_string(boost::uuids::random_generator()());
+}
+
 bool parse_endpoint_string(const std::string& str, std::string& host, std::string& port, bool& ipv6only)
 {
 	ipv6only = false;
