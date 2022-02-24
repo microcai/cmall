@@ -17,6 +17,9 @@ public:
 	boost::asio::awaitable<void> put(std::string_view key, std::string value, std::chrono::duration<int> lifetime = std::chrono::seconds(86400 * 30));
 
 private:
-	std::shared_ptr<persist_map_impl> impl;
+	const persist_map_impl& impl() const;
+	persist_map_impl& impl();
+
+	std::array<char, 512> obj_stor;
 };
 

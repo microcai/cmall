@@ -143,19 +143,31 @@ struct persist_map_impl
 };
 
 persist_map::~persist_map()
-{}
+{
+	impl().~persist_map_impl();
+}
 
 persist_map::persist_map(std::filesystem::path persist_file)
 {
-	impl.reset(new persist_map_impl(persist_file));
+	std::construct_at<persist_map_impl>(reinterpret_cast<persist_map_impl*>(obj_stor.data()), persist_file);
 }
 
 boost::asio::awaitable<std::string> persist_map::get(std::string_view key) const
 {
-	return impl->get(key);
+	return impl().get(key);
 }
 
 boost::asio::awaitable<void> persist_map::put(std::string_view key, std::string value, std::chrono::duration<int> lifetime)
 {
-	return impl->put(key, value, lifetime);
+	return impl().put(key, value, lifetime);
+}
+
+const persist_map_impl& persist_map::impl() const
+{
+	return *reinterpret_cast<const persist_map_impl*>(obj_stor.data());
+}
+
+persist_map_impl& persist_map::impl()
+{
+	return *reinterpret_cast<persist_map_impl*>(obj_stor.data());
 }
