@@ -19,6 +19,12 @@ using steady_timer = boost::asio::basic_waitable_timer<time_clock::steady_clock>
 
 #include "cmall/js_util.hpp"
 
+static inline std::string json_to_string(const boost::json::value& jv, bool lf = true)
+{
+	if (lf) return boost::json::serialize(jv) + "\n";
+	return boost::json::serialize(jv);
+}
+
 namespace services
 {
 	struct persist_session_impl
@@ -36,13 +42,16 @@ namespace services
 		boost::asio::awaitable<client_session> load(std::string_view session_id) const
 		{
 			client_session cs;
-			auto jv = boost::json::parse(co_await mdbx_db.get(session_id), {}, { 64, false, false, true });
+			boost::json::object jv;
+			jv = boost::json::parse(co_await mdbx_db.get(session_id), {}, { 64, false, false, true }).as_object();
 
 			// TODO reload saved info from jv
 			cs.session_id = session_id;
-			// ci.cap =;
-			//  TODO
-			// 				ci.db_user_entry = m_database.async_load_user_entry();
+
+			cs.verify_telephone = jsutil::json_as_string(jv["verifyinfo"].as_object()["tel"]);
+			auto verify_cookie = jsutil::json_as_string(jv["verifyinfo"].as_object()["verify_cookie"]);
+			if (!verify_cookie.empty())
+				cs.verify_session_cookie = verify_session_access::from_string(verify_cookie);
 
 			co_return cs;
 		}
@@ -57,7 +66,7 @@ namespace services
 				ser["uid"] = session.user_info->uid_;
 			ser["verifyinfo"] = { { "tel", session.verify_telephone },  { "verify_cookie", session.verify_session_cookie ? verify_session_access::as_string(session.verify_session_cookie.value()) : std::string("") } };
 
-			co_await mdbx_db.put(session_id, jsutil::json_as_string(ser) );
+			co_await mdbx_db.put(session_id, json_to_string(ser) );
 		}
 
 		boost::asio::awaitable<void> update_lifetime(std::string_view session_id, std::chrono::duration<int> lifetime)

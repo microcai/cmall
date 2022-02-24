@@ -397,6 +397,7 @@ namespace cmall
 					}
 					catch (std::exception& e)
 					{
+						LOG_ERR << e.what();
 						replay_message["error"] = { { "code", 502 }, { "message", "internal server error" } };
 					}
 					replay_message.insert_or_assign("id", jv.at("id"));
@@ -437,12 +438,14 @@ namespace cmall
 					this_client.session_info = std::make_shared<services::client_session>();
 
 					this_client.session_info->session_id = gen_uuid();
+					sessionid = this_client.session_info->session_id;
 
 					co_await session_cache_map.save(*this_client.session_info);
+				}else
+				{
+					this_client.session_info = std::make_shared<services::client_session>(co_await session_cache_map.load(sessionid));
 				}
 
-				this_client.session_info
-					= std::make_shared<services::client_session>(co_await session_cache_map.load(sessionid));
 				if (this_client.session_info->user_info)
 				{
 					co_await m_database.async_load<cmall_user>(

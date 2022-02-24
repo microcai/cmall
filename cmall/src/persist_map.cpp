@@ -162,13 +162,20 @@ struct persist_map_impl
 	{
 		std::time_t _expire_time;
 		std::time(&_expire_time);
-
 		_expire_time += lifetime.count();
 
-		txn_managed t = mdbx_env.start_write();
-		t.put(mdbx_default_map, mdbx::slice(key), mdbx::slice(value), upsert);
-		t.put(mdbx_lifetime_map, mdbx::slice(key), mdbx::slice(&_expire_time, sizeof _expire_time), upsert);
-		t.commit();
+		co_await boost::asio::co_spawn(ioc, [this, key, _expire_time, value = std::move(value)]() mutable -> boost::asio::awaitable<void>
+		{
+			txn_managed t = mdbx_env.start_write();
+			t.put(mdbx_default_map, mdbx::slice(key), mdbx::slice(value), upsert);
+			t.put(mdbx_lifetime_map, mdbx::slice(key), mdbx::slice(&_expire_time, sizeof _expire_time), upsert);
+			t.commit();
+
+			std::cerr << "commit ok?\n";
+
+			co_return;
+		}, boost::asio::use_awaitable);
+
 		co_return;
 	}
 };
