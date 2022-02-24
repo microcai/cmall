@@ -19,14 +19,8 @@
 #include <variant>
 #include <vector>
 
-#include "boost/asio/any_io_executor.hpp"
-#include "boost/asio/associated_executor.hpp"
-#include "boost/asio/async_result.hpp"
-#include "boost/asio/awaitable.hpp"
-#include "boost/asio/detail/config.hpp"
-#include "boost/asio/error.hpp"
-#include "boost/asio/impl/use_awaitable.hpp"
-#include "boost/asio/use_awaitable.hpp"
+#include <boost/asio.hpp>
+
 #include "boost/date_time/posix_time/posix_time_types.hpp"
 #include "boost/date_time/posix_time/ptime.hpp"
 #include "boost/system/detail/error_code.hpp"
@@ -908,7 +902,7 @@ namespace cmall
 				[this, id, value](auto&& handler) mutable
 				{
 					boost::asio::post(m_io_context,
-					[handler = std::move(handler), this, id, value]()
+					[handler = std::move(handler), this, id, value]() mutable
 					{
 						auto ret = get<T>(id, value);
 						std::visit(
