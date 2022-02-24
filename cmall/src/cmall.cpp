@@ -47,7 +47,7 @@ namespace cmall
 		: m_io_context_pool(ios)
 		, m_io_context(m_io_context_pool.server_io_context())
 		, m_config(config)
-		, m_database(m_config.dbcfg_, m_io_context_pool.database_io_context())
+		, m_database(m_config.dbcfg_)
 		, session_cache_map(m_config.session_cache_file)
 		, telephone_verifier(m_io_context)
 	{

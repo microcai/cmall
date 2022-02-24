@@ -6,9 +6,9 @@
 #include "odb/transaction.hxx"
 
 namespace cmall {
-	cmall_database::cmall_database(const db_config& cfg, boost::asio::io_context& ioc)
+	cmall_database::cmall_database(const db_config& cfg)
 		: m_config(cfg)
-		, m_io_context(ioc)
+		, thread_pool(cfg.pool_)
 	{
 		if (m_config.host_.empty() ||
 			m_config.dbname_.empty() ||
@@ -44,6 +44,7 @@ namespace cmall {
 
 	void cmall_database::shutdown()
 	{
+		thread_pool.join();
 		m_db.reset();
 	}
 
@@ -265,7 +266,7 @@ namespace cmall {
 		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code, bool)>(
 			[this, phone, value](auto&& handler) mutable
 			{
-				boost::asio::post(m_io_context,
+				boost::asio::post(thread_pool,
 				[this, handler = std::move(handler), phone, value]() mutable
 				{
 					auto ret = load_user_by_phone(phone, value);

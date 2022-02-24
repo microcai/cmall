@@ -88,7 +88,7 @@ namespace cmall
 		cmall_database& operator=(const cmall_database&) = delete;
 
 	public:
-		cmall_database(const db_config& cfg, boost::asio::io_context& ioc);
+		cmall_database(const db_config& cfg);
 		~cmall_database() = default;
 
 	public:
@@ -250,7 +250,7 @@ namespace cmall
 				void(boost::system::error_code, bool)>(
 				[this, id, value](auto&& handler) mutable
 				{
-					boost::asio::post(m_io_context,
+					boost::asio::post(thread_pool,
 						[handler = std::move(handler), this, id, value]() mutable
 						{
 							auto ret = get<T>(id, value);
@@ -267,7 +267,7 @@ namespace cmall
 				void(boost::system::error_code, bool)>(
 				[this, &value](auto&& handler) mutable 
 				{
-					boost::asio::post(m_io_context, [handler = std::move(handler), this, &value]() mutable {
+					boost::asio::post(thread_pool, [handler = std::move(handler), this, &value]() mutable {
 						auto ret = add<T>(value);
 						post_result(ret, std::move(handler));
 					});
@@ -282,7 +282,7 @@ namespace cmall
 				void(boost::system::error_code, bool)>(
 				[this, &value](auto&& handler) mutable 
 				{
-					boost::asio::post(m_io_context, [handler = std::move(handler), this, &value]() mutable {
+					boost::asio::post(thread_pool, [handler = std::move(handler), this, &value]() mutable {
 						auto ret = update<T>(value);
 						post_result(ret, std::move(handler));
 					});
@@ -297,7 +297,7 @@ namespace cmall
 				void(boost::system::error_code, bool)>(
 				[this, &value](auto&& handler) mutable 
 				{
-					boost::asio::post(m_io_context, [handler = std::move(handler), this, &value]() mutable {
+					boost::asio::post(thread_pool, [handler = std::move(handler), this, &value]() mutable {
 						auto ret = update<T>(value);
 						post_result(ret, std::move(handler));
 					});
@@ -312,7 +312,7 @@ namespace cmall
 				void(boost::system::error_code, bool)>(
 				[this, id](auto&& handler) mutable 
 				{
-					boost::asio::post(m_io_context, [handler = std::move(handler), this, id]() mutable {
+					boost::asio::post(thread_pool, [handler = std::move(handler), this, id]() mutable {
 						auto ret = hard_remove<T>(id);
 						post_result(ret, std::move(handler));
 					});
@@ -327,7 +327,7 @@ namespace cmall
 				void(boost::system::error_code, bool)>(
 				[this, id](auto&& handler) mutable 
 				{
-					boost::asio::post(m_io_context, [handler = std::move(handler), this, id]() mutable {
+					boost::asio::post(thread_pool, [handler = std::move(handler), this, id]() mutable {
 						auto ret = soft_remove<T>(id);
 						post_result(ret, std::move(handler));
 					});
@@ -342,7 +342,7 @@ namespace cmall
 				void(boost::system::error_code, bool)>(
 				[this, &value](auto&& handler) mutable 
 				{
-					boost::asio::post(m_io_context, [handler = std::move(handler), this, &value]() mutable {
+					boost::asio::post(thread_pool, [handler = std::move(handler), this, &value]() mutable {
 						auto ret = soft_remove<T>(value);
 						post_result(ret, std::move(handler));
 					});
@@ -389,7 +389,7 @@ namespace cmall
 			db_max_retries = 25
 		};
 		db_config m_config;
-		boost::asio::io_context& m_io_context;
+		boost::asio::thread_pool thread_pool;
 		boost::shared_ptr<odb::core::database> m_db;
 	};
 }

@@ -14,10 +14,6 @@ io_context_pool::io_context_pool(std::size_t pool_size)
 	if (pool_size == 0)
 		throw std::runtime_error("io_context_pool size is 0");
 
-	// push a worker for database.
-	work_ptr work(new boost::asio::io_context::work(database_io_context_));
-	work_.push_back(work);
-
 	// Give all the io_contexts work to do so that their run() functions will not
 	// exit until they are explicitly stopped.
 	for (std::size_t i = 0; i < pool_size; ++i)
@@ -41,15 +37,6 @@ void io_context_pool::run(std::size_t db_threads/* = 1*/)
         std::shared_ptr<std::thread> thread(new std::thread(
 			[this, i]() mutable { io_contexts_[i]->run();  }));
 			set_thread_name(thread.get(), "round-robin io runner");
-		threads.push_back(thread);
-	}
-
-	// Create threads for database.
-	for (std::size_t i = 0; i < db_threads; ++i)
-	{
-        std::shared_ptr<std::thread> thread(new std::thread(
-			[this]() mutable { database_io_context_.run();  }));
-		set_thread_name(thread.get(), "database");
 		threads.push_back(thread);
 	}
 
@@ -79,11 +66,6 @@ boost::asio::io_context& io_context_pool::get_io_context()
 boost::asio::io_context& io_context_pool::server_io_context()
 {
 	return main_io_context_;
-}
-
-boost::asio::io_context& io_context_pool::database_io_context()
-{
-	return database_io_context_;
 }
 
 std::size_t io_context_pool::pool_size() const

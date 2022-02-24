@@ -33,9 +33,6 @@ public:
 	/// Get main_io_context_ to use.
 	boost::asio::io_context& server_io_context();
 
-	/// Get an database io_context to use.
-	boost::asio::io_context& database_io_context();
-
 	/// Get pool size.
 	std::size_t pool_size() const;
 
@@ -45,9 +42,6 @@ private:
 
 	// main io_context that used to run the main logic
 	boost::asio::io_context main_io_context_;
-
-	// the database_io_context_ that used to serve as thread pool for database connection
-	boost::asio::io_context database_io_context_;
 
 	/// The pool of io_contexts for client sockets
 	std::vector<io_context_ptr> io_contexts_;
