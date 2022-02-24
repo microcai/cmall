@@ -99,23 +99,11 @@ namespace cmall
 					return;
 				}
 
-				db->m_io_context.post(
+				boost::asio::post(db->m_io_context,
 					[this, db, handler = std::move(handler), id, value]() mutable
 					{
 						auto ret = db->get<T>(id, *value);
-						std::visit(
-							[&handler](auto&& arg) mutable
-							{
-								const auto [ec, result, msg] = extract_result(arg);
-								if (ec || !result)
-								{
-									LOG_WARN << "initial_do_load_by_id failed: " << msg;
-								}
-								auto executor = boost::asio::get_associated_executor(handler);
-								boost::asio::post(
-									executor, [ec = ec, handler, result = result]() mutable { handler(ec, result); });
-							},
-							ret);
+						post_result(ret, std::move(handler));
 					});
 			}
 		};
@@ -135,8 +123,8 @@ namespace cmall
 					return;
 				}
 
-				db->m_io_context.post(
-					[this, db, handler = std::move(handler), value]() mutable
+				boost::asio::post(db->m_io_context,
+					[db, handler = std::move(handler), value]() mutable
 					{
 						auto ret = db->add<T>(*value);
 						post_result(ret, std::move(handler));
@@ -158,8 +146,8 @@ namespace cmall
 					return;
 				}
 
-				db->m_io_context.post(
-					[this, db, handler = std::move(handler), value]() mutable
+				boost::asio::post(db->m_io_context,
+					[db, handler = std::move(handler), value]() mutable
 					{
 						auto ret = db->update<T>(*value);
 						post_result(ret, std::move(handler));
@@ -182,8 +170,8 @@ namespace cmall
 					return;
 				}
 
-				db->m_io_context.post(
-					[this, db, handler = std::move(handler), value]() mutable
+				boost::asio::post(db->m_io_context,
+					[db, handler = std::move(handler), value]() mutable
 					{
 						auto ret = db->update<T>(*value);
 						post_result(ret, std::move(handler));
@@ -205,8 +193,8 @@ namespace cmall
 					return;
 				}
 
-				db->m_io_context.post(
-					[this, db, handler = std::move(handler), value]() mutable
+				boost::asio::post(db->m_io_context,
+					[db, handler = std::move(handler), value]() mutable
 					{
 						auto ret = db->soft_remove<T>(*value);
 						post_result(ret, std::move(handler));
@@ -228,8 +216,8 @@ namespace cmall
 					return;
 				}
 
-				db->m_io_context.post(
-					[this, db, handler = std::move(handler), id]() mutable
+				boost::asio::post(db->m_io_context,
+					[db, handler = std::move(handler), id]() mutable
 					{
 						auto ret = db->soft_remove<T>(id);
 						post_result(ret, std::move(handler));
@@ -251,8 +239,8 @@ namespace cmall
 					return;
 				}
 
-				db->m_io_context.post(
-					[this, db, handler = std::move(handler), id]() mutable
+				boost::asio::post(db->m_io_context,
+					[db, handler = std::move(handler), id]() mutable
 					{
 						auto ret = db->hard_remove<T>(id);
 						post_result(ret, std::move(handler));
@@ -269,7 +257,7 @@ namespace cmall
 		// 			return;
 		// 		}
 
-		// 		db->m_io_context.post([this, db, mdb, handler = std::move(handler), config]() mutable {
+		// 		boost::asio::post(db->m_io_context, [this, db, mdb, handler = std::move(handler), config]() mutable {
 		// 			boost::system::error_code ec;
 		// 			bool result = false;
 
@@ -308,7 +296,7 @@ namespace cmall
 		// 			return;
 		// 		}
 
-		// 		db->m_io_context.post([this, db, mdb, handler = std::move(handler), config]() mutable {
+		// 		boost::asio::post(db->m_io_context, [this, db, mdb, handler = std::move(handler), config]() mutable {
 		// 			boost::system::error_code ec;
 		// 			bool result = false;
 
@@ -348,7 +336,7 @@ namespace cmall
 		// 			return;
 		// 		}
 
-		// 		db->m_io_context.post([this, db, mdb, handler = std::move(handler), config]() mutable {
+		// 		boost::asio::post(db->m_io_context, [this, db, mdb, handler = std::move(handler), config]() mutable {
 		// 			boost::system::error_code ec;
 		// 			bool result = false;
 
@@ -390,7 +378,7 @@ namespace cmall
 		// 			return;
 		// 		}
 
-		// 		db->m_io_context.post([this, db, mdb, handler = std::move(handler), records, type, name]() mutable {
+		// 		boost::asio::post(db->m_io_context, [this, db, mdb, handler = std::move(handler), records, type, name]() mutable {
 		// 			boost::system::error_code ec;
 		// 			bool result = false;
 
@@ -431,7 +419,7 @@ namespace cmall
 		// 			return;
 		// 		}
 
-		// 		db->m_io_context.post([this, db, mdb, handler = std::move(handler), records, type, name]() mutable {
+		// 		boost::asio::post(db->m_io_context, [this, db, mdb, handler = std::move(handler), records, type, name]() mutable {
 		// 			boost::system::error_code ec;
 		// 			bool result = false;
 
@@ -472,7 +460,7 @@ namespace cmall
 		// 			return;
 		// 		}
 
-		// 		db->m_io_context.post([this, db, mdb, handler = std::move(handler), record, rid]() mutable {
+		// 		boost::asio::post(db->m_io_context, [this, db, mdb, handler = std::move(handler), record, rid]() mutable {
 		// 			boost::system::error_code ec;
 		// 			bool result = false;
 
@@ -511,7 +499,7 @@ namespace cmall
 		// 			return;
 		// 		}
 
-		// 		db->m_io_context.post([this, db, mdb, handler = std::move(handler), records]() mutable {
+		// 		boost::asio::post(db->m_io_context, [this, db, mdb, handler = std::move(handler), records]() mutable {
 		// 			boost::system::error_code ec;
 		// 			bool result = false;
 
@@ -552,7 +540,7 @@ namespace cmall
 		// 			return;
 		// 		}
 
-		// 		db->m_io_context.post([this, db, mdb, handler = std::move(handler), record]() mutable {
+		// 		boost::asio::post(db->m_io_context, [this, db, mdb, handler = std::move(handler), record]() mutable {
 		// 			boost::system::error_code ec;
 		// 			bool result = false;
 
@@ -592,7 +580,7 @@ namespace cmall
 		// 			return;
 		// 		}
 
-		// 		db->m_io_context.post([this, db, mdb, handler = std::move(handler), rid]() mutable {
+		// 		boost::asio::post(db->m_io_context, [this, db, mdb, handler = std::move(handler), rid]() mutable {
 		// 			boost::system::error_code ec;
 		// 			bool result = false;
 
