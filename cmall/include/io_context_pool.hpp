@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (C) 2019 Jack.
 //
 // Author: jack
@@ -22,7 +22,7 @@ public:
 	explicit io_context_pool(std::size_t pool_size);
 
 	/// Run all io_context objects in the pool.
-	void run(std::size_t db_threads = 20);
+	void run();
 
 	/// Stop all io_context objects in the pool.
 	void stop();

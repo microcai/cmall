@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (C) 2019 Jack.
 //
 // Author: jack
@@ -28,7 +28,7 @@ io_context_pool::io_context_pool(std::size_t pool_size)
 	// if no more work left
 }
 
-void io_context_pool::run(std::size_t db_threads/* = 1*/)
+void io_context_pool::run()
 {
 	// Create a pool of threads to run all of the io_contexts.
     std::vector<std::shared_ptr<std::thread>> threads;
