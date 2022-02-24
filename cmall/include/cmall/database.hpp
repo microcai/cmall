@@ -33,11 +33,13 @@
 namespace cmall
 {
 
-	template <typename... Ts> struct overloaded : Ts...
+	template <typename... Ts>
+	struct overloaded : Ts...
 	{
 		using Ts::operator()...;
 	};
-	template <typename... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+	template <typename... Ts>
+	overloaded(Ts...) -> overloaded<Ts...>;
 
 	struct db_config
 	{
@@ -98,7 +100,8 @@ namespace cmall
 		cmall_database(const cmall_database&) = delete;
 		cmall_database& operator=(const cmall_database&) = delete;
 
-		template <typename T> struct initiate_do_load_by_id
+		template <typename T>
+		struct initiate_do_load_by_id
 		{
 			template <typename Handler>
 			void operator()(Handler&& handler, cmall_database* db, std::uint64_t id, T* value)
@@ -165,9 +168,11 @@ namespace cmall
 			}
 		};
 
-		template <typename T> struct initiate_do_add
+		template <typename T>
+		struct initiate_do_add
 		{
-			template <typename Handler> void operator()(Handler&& handler, cmall_database* db, T* value)
+			template <typename Handler>
+			void operator()(Handler&& handler, cmall_database* db, T* value)
 			{
 				auto mdb = db->m_db;
 				if (!mdb)
@@ -198,9 +203,11 @@ namespace cmall
 			}
 		};
 
-		template <typename T> struct initiate_do_update
+		template <typename T>
+		struct initiate_do_update
 		{
-			template <typename Handler> void operator()(Handler&& handler, cmall_database* db, T* value)
+			template <typename Handler>
+			void operator()(Handler&& handler, cmall_database* db, T* value)
 			{
 				auto mdb = db->m_db;
 				if (!mdb)
@@ -231,9 +238,11 @@ namespace cmall
 			}
 		};
 
-		template <SupportUpdateAt T> struct initiate_do_update<T>
+		template <SupportUpdateAt T>
+		struct initiate_do_update<T>
 		{
-			template <typename Handler> void operator()(Handler&& handler, cmall_database* db, T* value)
+			template <typename Handler>
+			void operator()(Handler&& handler, cmall_database* db, T* value)
 			{
 				auto mdb = db->m_db;
 				if (!mdb)
@@ -264,9 +273,11 @@ namespace cmall
 			}
 		};
 
-		template <typename T> struct initiate_do_soft_remove
+		template <typename T>
+		struct initiate_do_soft_remove
 		{
-			template <typename Handler> void operator()(Handler&& handler, cmall_database* db, T* value)
+			template <typename Handler>
+			void operator()(Handler&& handler, cmall_database* db, T* value)
 			{
 				auto mdb = db->m_db;
 				if (!mdb)
@@ -297,9 +308,11 @@ namespace cmall
 			}
 		};
 
-		template <typename T> struct initiate_do_soft_remove_by_id
+		template <typename T>
+		struct initiate_do_soft_remove_by_id
 		{
-			template <typename Handler> void operator()(Handler&& handler, cmall_database* db, std::uint64_t id)
+			template <typename Handler>
+			void operator()(Handler&& handler, cmall_database* db, std::uint64_t id)
 			{
 				auto mdb = db->m_db;
 				if (!mdb)
@@ -330,9 +343,11 @@ namespace cmall
 			}
 		};
 
-		template <typename T> struct initiate_do_hard_remove
+		template <typename T>
+		struct initiate_do_hard_remove
 		{
-			template <typename Handler> void operator()(Handler&& handler, cmall_database* db, std::uint64_t id)
+			template <typename Handler>
+			void operator()(Handler&& handler, cmall_database* db, std::uint64_t id)
 			{
 				auto mdb = db->m_db;
 				if (!mdb)
@@ -739,7 +754,8 @@ namespace cmall
 
 		db_result load_user_by_phone(const ::std::string& phone, cmall_user& user);
 
-		template <typename T> db_result get(std::uint64_t id, T& ret)
+		template <typename T>
+		db_result get(std::uint64_t id, T& ret)
 		{
 			if (!m_db)
 				return false;
@@ -764,7 +780,8 @@ namespace cmall
 				});
 		}
 
-		template <typename T> db_result add(T& value)
+		template <typename T>
+		db_result add(T& value)
 		{
 			if (!m_db)
 				return false;
@@ -779,7 +796,8 @@ namespace cmall
 				});
 		}
 
-		template <SupportUpdateAt T> db_result update(T& value)
+		template <SupportUpdateAt T>
+		db_result update(T& value)
 		{
 			if (!m_db)
 				return false;
@@ -797,7 +815,8 @@ namespace cmall
 				});
 		}
 
-		template <typename T> db_result update(T& value)
+		template <typename T>
+		db_result update(T& value)
 		{
 			if (!m_db)
 				return false;
@@ -813,7 +832,8 @@ namespace cmall
 				});
 		}
 
-		template <typename T> db_result hard_remove(std::uint64_t id)
+		template <typename T>
+		db_result hard_remove(std::uint64_t id)
 		{
 			if (!m_db)
 				return false;
@@ -828,7 +848,8 @@ namespace cmall
 				});
 		}
 
-		template <SupportSoftDeletion T> db_result soft_remove(std::uint64_t id)
+		template <SupportSoftDeletion T>
+		db_result soft_remove(std::uint64_t id)
 		{
 			if (!m_db)
 				return false;
@@ -855,7 +876,8 @@ namespace cmall
 				});
 		}
 
-		template <SupportSoftDeletion T> db_result soft_remove(T& value)
+		template <SupportSoftDeletion T>
+		db_result soft_remove(T& value)
 		{
 			if (!m_db)
 				return false;
@@ -898,31 +920,31 @@ namespace cmall
 		template <typename T>
 		boost::asio::awaitable<bool> async_load(std::uint64_t id, T& value)
 		{
-			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code, bool)>(
+			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
+				void(boost::system::error_code, bool)>(
 				[this, id, value](auto&& handler) mutable
 				{
 					boost::asio::post(m_io_context,
-					[handler = std::move(handler), this, id, value]() mutable
-					{
-						auto ret = get<T>(id, value);
-						std::visit(
-							[handler = std::move(handler)](auto&& arg) mutable
-							{
-								const auto [ec, result, msg] = extract_result(arg);
-								if (ec || !result)
+						[handler = std::move(handler), this, id, value]() mutable
+						{
+							auto ret = get<T>(id, value);
+							std::visit(
+								[handler = std::move(handler)](auto&& arg) mutable
 								{
-									LOG_WARN << "initial_do_load_by_id failed: " << msg;
-								}
-								auto executor = boost::asio::get_associated_executor(handler);
-								boost::asio::post(executor,
-									[ec = ec, handler = std::move(handler), result = result]() mutable
-									{ handler(ec, result); });
-							},
-							ret);
-					});
-
-				}, boost::asio::use_awaitable);
-
+									const auto [ec, result, msg] = extract_result(arg);
+									if (ec || !result)
+									{
+										LOG_WARN << "initial_do_load_by_id failed: " << msg;
+									}
+									auto executor = boost::asio::get_associated_executor(handler);
+									boost::asio::post(executor,
+										[ec = ec, handler = std::move(handler), result = result]() mutable
+										{ handler(ec, result); });
+								},
+								ret);
+						});
+				},
+				boost::asio::use_awaitable);
 		}
 
 		template <typename Handler, typename T>
@@ -1034,7 +1056,8 @@ namespace cmall
 		// }
 
 	private:
-		template <typename T> db_result retry_database_op(T&& t) noexcept
+		template <typename T>
+		db_result retry_database_op(T&& t) noexcept
 		{
 			if (!m_db)
 			{

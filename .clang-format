@@ -15,7 +15,7 @@ AlignAfterOpenBracket: DontAlign
 AlignConsecutiveAssignments: 'true'
 AlignTrailingComments: 'true'
 
-AlwaysBreakTemplateDeclarations: 'MultiLine'
+AlwaysBreakTemplateDeclarations: 'true'
 
 # BreakBeforeBraces: 'Linux'
 BreakConstructorInitializers: BeforeComma
