@@ -1,4 +1,4 @@
-/*-------------------------------------------------------------------------
+﻿/*-------------------------------------------------------------------------
  *
  * getaddrinfo.h
  *	  Support getaddrinfo() on platforms that don't have it.
@@ -13,7 +13,7 @@
  * This code will also work on platforms where struct addrinfo is defined
  * in the system headers but no getaddrinfo() can be located.
  *
- * Copyright (c) 2003-2013, PostgreSQL Global Development Group
+ * Copyright (c) 2003-2021, PostgreSQL Global Development Group
  *
  * src/include/getaddrinfo.h
  *
@@ -22,9 +22,12 @@
 #ifndef GETADDRINFO_H
 #define GETADDRINFO_H
 
+#ifndef _WIN32
 #include <sys/socket.h>
 #include <netdb.h>
-
+#else
+#include <WinSock2.h>
+#endif
 
 /* Various macros that ought to be in <netdb.h>, but might not be */
 
@@ -40,13 +43,11 @@
 #define EAI_MEMORY		(-10)
 #define EAI_SYSTEM		(-11)
 #else							/* WIN32 */
-#ifdef WIN32_ONLY_COMPILER
+#ifdef _MSC_VER
 #ifndef WSA_NOT_ENOUGH_MEMORY
 #define WSA_NOT_ENOUGH_MEMORY	(WSAENOBUFS)
 #endif
-#ifndef __BORLANDC__
 #define WSATYPE_NOT_FOUND		(WSABASEERR+109)
-#endif
 #endif
 #define EAI_AGAIN		WSATRY_AGAIN
 #define EAI_BADFLAGS	WSAEINVAL
@@ -57,8 +58,8 @@
 #define EAI_NONAME		WSAHOST_NOT_FOUND
 #define EAI_SERVICE		WSATYPE_NOT_FOUND
 #define EAI_SOCKTYPE	WSAESOCKTNOSUPPORT
-#endif   /* !WIN32 */
-#endif   /* !EAI_FAIL */
+#endif							/* !WIN32 */
+#endif							/* !EAI_FAIL */
 
 #ifndef AI_PASSIVE
 #define AI_PASSIVE		0x0001
@@ -126,7 +127,7 @@ struct addrinfo
 	struct addrinfo *ai_next;
 };
 #endif
-#endif   /* HAVE_STRUCT_ADDRINFO */
+#endif							/* HAVE_STRUCT_ADDRINFO */
 
 
 #ifndef HAVE_GETADDRINFO
@@ -152,13 +153,13 @@ struct addrinfo
 #endif
 #define getnameinfo pg_getnameinfo
 
-extern int getaddrinfo(const char *node, const char *service,
-			const struct addrinfo * hints, struct addrinfo ** res);
-extern void freeaddrinfo(struct addrinfo * res);
+extern int	getaddrinfo(const char *node, const char *service,
+						const struct addrinfo *hints, struct addrinfo **res);
+extern void freeaddrinfo(struct addrinfo *res);
 extern const char *gai_strerror(int errcode);
-extern int getnameinfo(const struct sockaddr * sa, int salen,
-			char *node, int nodelen,
-			char *service, int servicelen, int flags);
-#endif   /* HAVE_GETADDRINFO */
+extern int	getnameinfo(const struct sockaddr *sa, int salen,
+						char *node, int nodelen,
+						char *service, int servicelen, int flags);
+#endif							/* HAVE_GETADDRINFO */
 
-#endif   /* GETADDRINFO_H */
+#endif							/* GETADDRINFO_H */

@@ -189,14 +189,8 @@ else()
 endif()
 
 add_subdirectory(third_party/fmt)
-
-if (WIN32)
-	add_subdirectory(third_party/libpq)
-	set(PostgreSQL_LIBRARIES libpq)
-	set(PostgreSQL_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libpq/include)
-else()
-	find_package(PostgreSQL REQUIRED)
-endif()
+add_subdirectory(third_party/libpq)
+set(PostgreSQL_LIBRARIES libpq)
 
 if (NOT USE_BUNDLED_ODB_FILE)
 	if(WIN32)
