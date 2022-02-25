@@ -105,7 +105,7 @@ namespace jsutil
 		j.insert_or_assign("name", t.name_ );
 		j.insert_or_assign("merchant", t.owner_);
 		j.insert_or_assign("id", t.id_ );
-		j.insert_or_assign("price", t.price_ );
+		j.insert_or_assign("price", to_json(t.price_) );
 		j.insert_or_assign("describe", t.description_ );
 
 		return j;
