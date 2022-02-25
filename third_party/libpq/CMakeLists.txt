@@ -155,7 +155,13 @@ if (NOT APPLE)
 	set(STRLCPY_SRC port/strlcpy.c)
 endif()
 
+file(GLOB_RECURSE libpq_headers
+	include
+	*.h
+)
+
 add_library(libpq STATIC
+	${libpq_headers}
 	fe-auth-scram.c
 	fe-auth.c
 	fe-connect.c
