@@ -69,16 +69,12 @@ namespace cmall
 	template <typename T>
 	concept SupportSoftDeletion = requires(T t)
 	{
-		{
-			t.deleted_at_
-			} -> std::convertible_to<odb::nullable<boost::posix_time::ptime>>;
+		{ t.deleted_at_ } -> std::convertible_to<odb::nullable<boost::posix_time::ptime>>;
 	};
 	template <typename T>
 	concept SupportUpdateAt = requires(T t)
 	{
-		{
-			t.updated_at_
-			} -> std::convertible_to<boost::posix_time::ptime>;
+		{ t.updated_at_ } -> std::convertible_to<boost::posix_time::ptime>;
 	};
 
 	class cmall_database
@@ -143,7 +139,7 @@ namespace cmall
 				});
 		}
 
-		template <SupportUpdateAt T>
+		template <typename T> requires SupportUpdateAt<T>
 		db_result update(T& value)
 		{
 			if (!m_db)
@@ -195,7 +191,7 @@ namespace cmall
 				});
 		}
 
-		template <SupportSoftDeletion T>
+		template <typename T> requires SupportSoftDeletion<T>
 		db_result soft_remove(std::uint64_t id)
 		{
 			if (!m_db)
@@ -223,7 +219,7 @@ namespace cmall
 				});
 		}
 
-		template <SupportSoftDeletion T>
+		template <typename T> requires SupportSoftDeletion<T>
 		db_result soft_remove(T& value)
 		{
 			if (!m_db)
