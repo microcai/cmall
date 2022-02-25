@@ -1,4 +1,4 @@
-﻿add_library(libscrypt STATIC
+add_library(libscrypt STATIC
 	crypto_scrypt-nosse.c
 	sha256.c
 	crypto-mcf.c

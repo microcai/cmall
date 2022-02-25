@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.0)
 file(GLOB FMT_SRC src/*.cc include/fmt/*.h)
 
 add_library(fmt STATIC ${FMT_SRC})

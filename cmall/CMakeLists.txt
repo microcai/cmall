@@ -1,4 +1,4 @@
-﻿ADD_ODB_INTERFACE(ODB_GENERATED ${CMAKE_CURRENT_SOURCE_DIR}/include/cmall/db.hpp ${CMAKE_CURRENT_BINARY_DIR} --include-prefix cmall)
+ADD_ODB_INTERFACE(ODB_GENERATED ${CMAKE_CURRENT_SOURCE_DIR}/include/cmall/db.hpp ${CMAKE_CURRENT_BINARY_DIR} --include-prefix cmall)
 
 add_definitions(-DLOGGING_COMPRESS_LOGS)
 

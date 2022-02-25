@@ -1,4 +1,4 @@
-﻿# Please ensure your changes or patch meets minimum requirements.
+# Please ensure your changes or patch meets minimum requirements.
 #   The minimum requirements are 2.8.5. They roughly equate to Ubuntu 12.04 LTS
 #   Please do not check in something for 2.8.12 or 3.5.0. To test your changes,
 #   please set up a Ubuntu 12.04 LTS system. Then, manually install Cmake 2.8.5
