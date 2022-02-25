@@ -417,6 +417,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows" AND EXISTS "${MDBX_SOURCE_DIR}/ntdll.
     # LY: Sometimes CMake requires a nightmarish magic for simple things.
     # 1) create a target out of the library compilation result
     add_custom_target(ntdll_extra_target DEPENDS "${MDBX_NTDLL_EXTRA_IMPLIB}")
+	set_target_properties(ntdll_extra_target PROPERTIES FOLDER "third_party/mdbx")
     # 2) create an library target out of the library compilation result
     add_library(ntdll_extra STATIC IMPORTED GLOBAL)
     add_dependencies(ntdll_extra ntdll_extra_target)
@@ -623,6 +624,7 @@ if(MDBX_INSTALL_STATIC)
 else()
   add_library(mdbx-static STATIC EXCLUDE_FROM_ALL ${LIBMDBX_SOURCES})
 endif()
+set_target_properties(mdbx-static PROPERTIES FOLDER "third_party/mdbx")
 set_target_properties(mdbx-static PROPERTIES PUBLIC_HEADER "${LIBMDBX_PUBLIC_HEADERS}")
 target_compile_definitions(mdbx-static PRIVATE MDBX_BUILD_SHARED_LIBRARY=0)
 target_setup_options(mdbx-static)
