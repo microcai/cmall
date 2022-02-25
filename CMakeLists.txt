@@ -57,7 +57,8 @@ CHECK_CXX_COMPILER_FLAG(-fvisibility=hidden COMPILER_HAS_VISIBILITY_HIDDEN)
 CHECK_CXX_COMPILER_FLAG(-fdiagnostics-color=always COMPILER_HAS_COLOR)
 
 if (${COMPILER_HAS_VISIBILITY_INLINE_HIDDEN})
-	add_compile_options(-fvisibility-inlines-hidden)
+	# C 不能使用这个 flag. gcc 会报错
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden")
 endif()
 
 if (${COMPILER_HAS_VISIBILITY_HIDDEN})
