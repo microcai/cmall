@@ -71,14 +71,14 @@ asm(
 	\"data: .incbin \\\"${InputAbs}\\\"\\n\"
 	\"end_data:\\n\"
 )\;
-extern const char data[]\;
-extern const char end_data[]\;
-struct Res ${Name}(void) {
-	struct Res r = { data, end_data - data }\;
+extern \"C\" const char data[]\;
+extern \"C\" const char end_data[]\;
+extern \"C\" struct Res ${Name}(void) {
+	struct Res r = { data, static_cast<size_t>(end_data - data) }\;
 	return r\;
 }"
 		)
-		set(OutputC "${CMAKE_CURRENT_BINARY_DIR}/${Name}.c")
+		set(OutputC "${CMAKE_CURRENT_BINARY_DIR}/${Name}.cxx")
 		set(Outputs ${OutputC})
 		file(WRITE ${OutputC} ${CODE})
 
