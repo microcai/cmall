@@ -242,6 +242,8 @@ namespace cmall
 
 	public:
 		boost::asio::awaitable<bool> async_load_user_by_phone(const std::string& phone, cmall_user& value);
+		boost::asio::awaitable<bool> async_load_all_products(std::vector<cmall_product>& products);
+
 
 		template <typename T>
 		boost::asio::awaitable<bool> async_load(std::uint64_t id, T& value)

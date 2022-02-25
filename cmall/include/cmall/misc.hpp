@@ -119,6 +119,7 @@ std::string to_hexstring(T const& data, std::streamsize digits = 64, std::string
 }
 
 std::string to_string(const boost::posix_time::ptime& t);
+
 inline std::string to_string(cpp_dec_float_50 bvalue){
 	std::stringstream oss;
 

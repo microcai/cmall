@@ -1,6 +1,8 @@
 ﻿
 #pragma once
 
+#include <concepts>
+#include <vector>
 #include <boost/json.hpp>
 
 #include <odb/nullable.hxx>
@@ -12,16 +14,17 @@
 
 namespace jsutil
 {
-	template <typename T, typename = void>
-	struct is_vector : std::false_type {};
+	template <typename T>
+	concept isString = requires(T t)
+	{
+		{t} -> std::convertible_to<std::string>;
+	};
 
 	template <typename T>
-	struct is_vector<T
-	, std::void_t<decltype(std::declval<T>().data())
-		, decltype(std::declval<T>().size())>> : std::true_type {};
-
-	template<>
-	struct is_vector<std::string> : std::false_type {};
+	concept isArray = requires (T f) {
+		{ f[0] } -> std::convertible_to<typename T::value_type>;
+		{ f.size() } -> std::same_as<std::size_t>;
+	};
 
 	template<typename T>
 	inline boost::json::value value_to_json(const T& t)
@@ -30,12 +33,20 @@ namespace jsutil
 	}
 
 	template<typename T>
-	inline boost::json::value vector_to_json(std::vector<T>& vector_of_t)
+	requires isString<T>
+	inline boost::json::value to_json(T str)
+	{
+		return boost::json::value(str);
+	}
+
+	template<typename T>
+	requires isArray<T>
+	inline boost::json::value to_json(T& vector_of_t)
 	{
 		boost::json::array array;
 
 		for (const auto& t :  vector_of_t)
-			array.push_back(value_to_json<T>(t));
+			array.push_back(value_to_json<typename T::value_type>(t));
 
 		return array;
 	}
@@ -43,10 +54,7 @@ namespace jsutil
 	template<typename T>
 	inline boost::json::value to_json(T&& t)
 	{
-		if constexpr ( is_vector<T>::value )
-			return vector_to_json(t);
-		else
-			return value_to_json(t);
+		return value_to_json(t);
 	}
 
 	template<>
@@ -80,7 +88,19 @@ namespace jsutil
 	template<>
 	inline boost::json::value value_to_json(const boost::posix_time::ptime& t)
 	{
-		boost::json::string j(to_string(t));
+		boost::json::string j([](auto && t) -> std::string
+		{
+			if (t.is_not_a_date_time())
+				return "";
+			return boost::posix_time::to_iso_extended_string(t);
+		}(t));
+		return j;
+	}
+
+	template<>
+	inline boost::json::value value_to_json(const cmall_product& t)
+	{
+		boost::json::string j {t.name_};
 		return j;
 	}
 

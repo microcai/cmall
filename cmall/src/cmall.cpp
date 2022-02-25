@@ -539,9 +539,17 @@ namespace cmall
 			{
 				// 列出 商品, 根据参数决定是首页还是商户
 				auto merchant = jsutil::json_as_string(jsutil::json_accessor(params).get("merchant", ""));
+				std::vector<cmall_product> products;
 
 				if (merchant == "")
 				{
+					// FIXME, 目前商品少, 这个调用就把全站的商品都返回了吧.
+
+					if (co_await m_database.async_load_all_products(products))
+					{
+
+					}
+
 					// 列举首页商品.
 
 					// 首页商品由管理员设置
@@ -557,7 +565,10 @@ namespace cmall
 				{
 					// 列出商户的上架商品.
 				}
-				reply_message["result"] = boost::json::array{};
+
+
+
+				reply_message["result"] = jsutil::to_json(products);
 			}
 			break;
 			case req_method::goods_detail:
