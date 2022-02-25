@@ -1,0 +1,7 @@
+
+md build
+
+cd build
+
+cmake -G "Visual Studio 19 2022" -DENABLE_BUILD_WERROR=OFF -DENABLE_SYSTEM_OPENSSL=OFF -DENABLE_SYSTEM_ZLIB=OFF ..
+
