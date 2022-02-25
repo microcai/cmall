@@ -99,6 +99,7 @@ namespace cmall
 		db_result update_config(const cmall_config& config);
 
 		db_result load_user_by_phone(const ::std::string& phone, cmall_user& user);
+		db_result load_all_products(std::vector<cmall_product>& products);
 
 		template <typename T>
 		db_result get(std::uint64_t id, T& ret)

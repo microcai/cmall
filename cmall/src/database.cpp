@@ -91,6 +91,7 @@ namespace cmall {
 			return true;
 		});
 	}
+
 	db_result cmall_database::load_user_by_phone(const std::string& phone, cmall_user& user)
 	{
 		return retry_database_op([&, this]() mutable
@@ -111,155 +112,20 @@ namespace cmall {
 		});
 	}
 
-	// db_result cmall_database::load_dns_records(std::vector<cmall_record> &records, uint16_t type, const std::string& name)
-	// {
-	// 	if (!m_db)
-	// 		return false;
+	db_result cmall_database::load_all_products(std::vector<cmall_product>& products)
+	{
+		return retry_database_op([&, this]() mutable
+		{
+			odb::transaction t(m_db->begin());
+			auto r(m_db->query<cmall_product>(odb::query<cmall_product>::deleted_at.is_null()));
 
-	// 	return retry_database_op([&, this]() mutable
-	// 	{
-	// 		odb::transaction t(m_db->begin());
+			for (auto i : r)
+				products.push_back(i);
+			t.commit();
 
-	// 		using query = odb::query<cmall_record>;
-
-	// 		auto result(m_db->query<cmall_record>((query::type == type && query::name == name) + " order by created_at desc"));
-	// 		if (result.empty()) {
-	// 			t.commit();
-	// 			return false;
-	// 		}
-
-	// 		for (auto& r : result)
-	// 			records.push_back(r);
-	// 		t.commit();
-
-	// 		return true;
-	// 	});
-	// }
-
-	// db_result cmall_database::load_dns_records_recursively(std::vector<cmall_record> &records, uint16_t type, const std::string& name)
-	// {
-	// 	if (!m_db)
-	// 		return false;
-
-	// 	return retry_database_op([&, this]() mutable
-	// 	{
-	// 		odb::transaction t(m_db->begin());
-
-	// 		using query = odb::query<cmall_record>;
-
-	// 		if (type == to_underlying(dns_type::CNAME)) { // directly querying CNAME
-	// 			auto result(m_db->query<cmall_record>((query::type == type && query::name == name) + " order by created_at desc"));
-	// 			if (result.empty()) {
-	// 				t.commit();
-	// 				return false;
-	// 			}
-
-	// 			for (auto& r : result)
-	// 				records.push_back(r);
-	// 			t.commit();
-
-	// 			return true;
-	// 		} else {
-	// 			std::deque<std::string> qn;
-	// 			bool found = false;
-
-	// 			auto result(m_db->query<cmall_record>(query::name == name));
-	// 			if (result.empty()) {
-	// 				t.commit();
-	// 				return false;
-	// 			}
-
-	// 			for (auto& r : result) {
-	// 				records.push_back(r);
-	// 				if (r.type_ == type) found = true;
-	// 				if (r.type_ == to_underlying(dns_type::CNAME)) {
-	// 					qn.push_back(r.content_);
-	// 				}
-	// 			}
-	// 			if (found) {
-	// 				t.commit();
-	// 				return true;
-	// 			}
-
-	// 			while (qn.size() > 0) {
-	// 				auto const &it = qn[0];
-	// 				auto result(m_db->query<cmall_record>(query::name == it));
-	// 				if (!result.empty()) {
-	// 					for (auto& r : result) {
-	// 						records.push_back(r);
-	// 						if (r.type_ == type) found = true;
-	// 						if (r.type_ == to_underlying(dns_type::CNAME)) {
-	// 							qn.push_back(r.content_);
-	// 						}
-	// 					}
-	// 				}
-
-	// 				qn.pop_front();
-	// 			}
-
-	// 			t.commit();
-	// 			return found;
-	// 		}
-
-	// 	});
-	// }
-
-	// db_result cmall_database::get_dns_record(std::uint64_t rid, cmall_record &record)
-	// {
-	// 	if (!m_db)
-	// 		return false;
-
-	// 	return retry_database_op([&, this]()
-	// 	{
-	// 		auto ret = false;
-	// 		odb::transaction t(m_db->begin());
-	// 		ret = m_db->find<cmall_record>(rid, record);
-	// 		t.commit();
-	// 		return ret;
-	// 	});
-	// }
-
-	// db_result cmall_database::add_dns_record(cmall_record &record)
-	// {
-	// 	if (!m_db)
-	// 		return false;
-
-	// 	return retry_database_op([&, this]() mutable
-	// 	{
-	// 		odb::transaction t(m_db->begin());
-	// 		m_db->persist(record);
-	// 		t.commit();
-	// 		return true;
-	// 	});
-	// }
-
-	// db_result cmall_database::update_dns_record(const cmall_record &record)
-	// {
-	// 	if (!m_db)
-	// 		return false;
-
-	// 	return retry_database_op([&, this]() 
-	// 	{
-	// 		odb::transaction t(m_db->begin());
-	// 		m_db->update(record);
-	// 		t.commit();
-	// 		return true;
-	// 	});
-	// }
-
-	// db_result cmall_database::remove_dns_record(std::uint64_t rid)
-	// {
-	// 	if (!m_db)
-	// 		return false;
-
-	// 	return retry_database_op([&, this]()
-	// 	{
-	// 		odb::transaction t(m_db->begin());
-	// 		m_db->erase<cmall_record>(rid);
-	// 		t.commit();
-	// 		return true;
-	// 	});
-	// }
+			return true;
+		});
+	}
 
 	boost::asio::awaitable<bool> cmall_database::async_load_user_by_phone(const std::string& phone, cmall_user& value)
 	{
@@ -270,6 +136,20 @@ namespace cmall {
 				[this, handler = std::move(handler), phone, value]() mutable
 				{
 					auto ret = load_user_by_phone(phone, value);
+					post_result(ret, std::move(handler));
+				});
+			}, boost::asio::use_awaitable);
+	}
+
+	boost::asio::awaitable<bool> cmall_database::async_load_all_products(std::vector<cmall_product>& products)
+	{
+		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code, bool)>(
+			[this, products](auto&& handler) mutable
+			{
+				boost::asio::post(thread_pool,
+				[this, handler = std::move(handler), products]() mutable
+				{
+					auto ret = load_all_products(products);
 					post_result(ret, std::move(handler));
 				});
 			}, boost::asio::use_awaitable);
