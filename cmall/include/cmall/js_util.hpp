@@ -120,6 +120,12 @@ namespace jsutil
 	}
 
 	template<typename T>
+	inline boost::json::value to_json(T&& t)
+	{
+		return value_to_json(std::forward<T>(t));
+	}
+
+	template<typename T>
 	requires isString<T>
 	inline boost::json::value to_json(T&& str)
 	{
@@ -136,12 +142,6 @@ namespace jsutil
 			array.push_back(value_to_json(t));
 
 		return array;
-	}
-
-	template<typename T>
-	inline boost::json::value to_json(T&& t)
-	{
-		return value_to_json(std::forward<T>(t));
 	}
 
 	template<>

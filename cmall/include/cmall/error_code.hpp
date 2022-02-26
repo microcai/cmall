@@ -13,6 +13,9 @@ namespace cmall { namespace error{
 		unknown_method,
 		invalid_verify_code,
 		session_needed,
+		login_required,
+		merchant_user_required,
+		admin_user_required,
 		not_implemented,
 	};
 

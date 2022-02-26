@@ -421,6 +421,24 @@ namespace cmall
 			throw boost::system::system_error(boost::system::error_code(cmall::error::session_needed));
 		}
 
+		auto ensure_login = [&, this]( bool check_admin = false, bool check_merchant = false ) mutable -> boost::asio::awaitable<void>
+		{
+			if (!this_client.session_info->user_info)
+				throw boost::system::system_error(error::login_required);
+
+			if (check_admin)
+			{
+				// TODO, 检查用户是否是 admin 才能继续操作.
+			}
+
+			if (check_merchant)
+			{
+				// TODO, 检查用户是否是 admin 才能继续操作.
+			}
+
+			co_return;
+		};
+
 		switch (method.value())
 		{
 			case req_method::recover_session:
@@ -536,7 +554,12 @@ namespace cmall
 			case req_method::order_create_cart:
 				break;
 			case req_method::order_create_direct:
-				break;
+			{
+				// 这个是目前阶段最最最需要使用的 API.
+				co_await ensure_login();
+
+			}
+			break;
 			case req_method::order_status:
 				break;
 			case req_method::order_close:
@@ -570,6 +593,12 @@ namespace cmall
 				}
 				else
 				{
+					long merchant_id = strtoll(merchant.c_str(), nullptr, 10);
+
+					if (co_await m_database.async_load_all_products_by_merchant(products, merchant_id))
+					{
+
+					}
 					// 列出商户的上架商品.
 				}
 
@@ -586,6 +615,7 @@ namespace cmall
 			break;
 
 			case req_method::merchant_product_add:
+				ensure_login(false, true);
 				break;
 			case req_method::merchant_product_mod:
 				break;

@@ -127,13 +127,28 @@ namespace cmall {
 		});
 	}
 
+	db_result cmall_database::load_all_products_by_merchant(std::vector<cmall_product>& products, long merchant_id)
+	{
+		return retry_database_op([&, this]() mutable
+		{
+			odb::transaction t(m_db->begin());
+			auto r(m_db->query<cmall_product>(odb::query<cmall_product>::owner == merchant_id && odb::query<cmall_product>::deleted_at.is_null()));
+
+			for (auto i : r)
+				products.push_back(i);
+			t.commit();
+
+			return true;
+		});
+	}
+
 	boost::asio::awaitable<bool> cmall_database::async_load_user_by_phone(const std::string& phone, cmall_user& value)
 	{
 		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code, bool)>(
-			[this, phone, value](auto&& handler) mutable
+			[=, this](auto&& handler) mutable
 			{
 				boost::asio::post(thread_pool,
-				[this, handler = std::move(handler), phone, value]() mutable
+				[=, this, handler = std::move(handler)]() mutable
 				{
 					auto ret = load_user_by_phone(phone, value);
 					post_result(ret, std::move(handler));
@@ -144,12 +159,26 @@ namespace cmall {
 	boost::asio::awaitable<bool> cmall_database::async_load_all_products(std::vector<cmall_product>& products)
 	{
 		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code, bool)>(
-			[this, products](auto&& handler) mutable
+			[=, this](auto&& handler) mutable
 			{
 				boost::asio::post(thread_pool,
-				[this, handler = std::move(handler), products]() mutable
+				[=, this, handler = std::move(handler)]() mutable
 				{
 					auto ret = load_all_products(products);
+					post_result(ret, std::move(handler));
+				});
+			}, boost::asio::use_awaitable);
+	}
+
+	boost::asio::awaitable<bool> cmall_database::async_load_all_products_by_merchant(std::vector<cmall_product>& products, long merchant_id)
+	{
+		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code, bool)>(
+			[=, this](auto&& handler) mutable
+			{
+				boost::asio::post(thread_pool,
+				[=, this, handler = std::move(handler)]() mutable
+				{
+					auto ret = load_all_products_by_merchant(products, merchant_id);
 					post_result(ret, std::move(handler));
 				});
 			}, boost::asio::use_awaitable);
