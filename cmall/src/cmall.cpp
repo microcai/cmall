@@ -355,22 +355,15 @@ namespace cmall
 
 	boost::asio::awaitable<void> cmall_service::do_ws_read(size_t connection_id, client_connection_ptr connection_ptr)
 	{
-		auto& ws = connection_ptr->ws_client->ws_stream_;
-
 		boost::beast::error_code ec;
 
 		while (!m_abort)
 		{
 			boost::beast::multi_buffer buffer{ 4 * 1024 * 1024 }; // max multi_buffer size 4M.
-			co_await ws.async_read(buffer, boost::asio::use_awaitable);
+			co_await connection_ptr->ws_client->ws_stream_.async_read(buffer, boost::asio::use_awaitable);
 
 			auto body = boost::beast::buffers_to_string(buffer.data());
-			auto jv	  = boost::json::parse(body, ec, {}, { 64, false, false, true });
-			if (ec)
-			{
-				LOG_ERR << "do_ws_read, parse json error: " << ec.message() << ", body: " << body;
-				co_return;
-			}
+			auto jv	  = boost::json::parse(body, {}, { 64, false, false, true });
 
 			if (!jv.is_object())
 			{
@@ -380,6 +373,7 @@ namespace cmall
 			auto method = jsutil::json_accessor(jv).get_string("method");
 			auto params = jsutil::json_accessor(jv).get_obj("params");
 
+			// 每个请求都单开线程处理
 			boost::asio::co_spawn(
 				connection_ptr->m_io,
 				[this, connection_ptr, method, params, jv]() -> boost::asio::awaitable<void>
@@ -398,6 +392,9 @@ namespace cmall
 						LOG_ERR << e.what();
 						replay_message["error"] = { { "code", 502 }, { "message", "internal server error" } };
 					}
+					// 每个请求都单开线程处理, 因此客户端收到的应答是乱序的,
+					// 这就是 jsonrpc 里 id 字段的重要意义.
+					// 将 id 字段原原本本的还回去, 客户端就可以根据 返回的 id 找到原来发的请求
 					replay_message.insert_or_assign("id", jv.at("id"));
 					co_await websocket_write(connection_ptr, json_to_string(replay_message));
 				},
