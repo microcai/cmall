@@ -377,8 +377,8 @@ namespace cmall
 				co_return;
 			}
 
-			auto method = jsutil::json_as_string(jsutil::json_accessor(jv).get("method", ""));
-			auto params = jsutil::json_accessor(jv).get("params", boost::json::object{});
+			auto method = jsutil::json_accessor(jv).get_string("method");
+			auto params = jsutil::json_accessor(jv).get_obj("params");
 
 			boost::asio::co_spawn(
 				connection_ptr->m_io,
@@ -387,7 +387,7 @@ namespace cmall
 					boost::json::object replay_message;
 					try
 					{
-						replay_message = co_await on_client_invoke(connection_ptr, method, params.as_object());
+						replay_message = co_await on_client_invoke(connection_ptr, method, params);
 					}
 					catch (boost::system::system_error& e)
 					{
@@ -428,7 +428,7 @@ namespace cmall
 		{
 			case req_method::recover_session:
 			{
-				std::string sessionid = jsutil::json_as_string(jsutil::json_accessor(params).get("sessionid", ""));
+				std::string sessionid = jsutil::json_accessor(params).get_string("sessionid");
 
 				if (sessionid.empty() || !(co_await session_cache_map.exist(sessionid)))
 				{
@@ -478,7 +478,7 @@ namespace cmall
 			break;
 			case req_method::user_login:
 			{
-				std::string verify_code = jsutil::json_as_string(jsutil::json_accessor(params).get("verify_code", ""));
+				std::string verify_code = jsutil::json_accessor(params).get_string("verify_code");
 
 				if (this_client.session_info->verify_session_cookie)
 				{
@@ -548,7 +548,7 @@ namespace cmall
 			case req_method::goods_list:
 			{
 				// 列出 商品, 根据参数决定是首页还是商户
-				auto merchant = jsutil::json_as_string(jsutil::json_accessor(params).get("merchant", ""));
+				auto merchant = jsutil::json_accessor(params).get_string("merchant");
 				std::vector<cmall_product> products;
 
 				if (merchant == "")
