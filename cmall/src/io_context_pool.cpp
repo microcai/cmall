@@ -73,3 +73,9 @@ std::size_t io_context_pool::pool_size() const
 	return io_contexts_.size();
 }
 
+void io_context_pool::notify_fork(boost::asio::execution_context::fork_event event)
+{
+	main_io_context_.notify_fork(event);
+	for (auto& io: io_contexts_)
+		io->notify_fork(event);
+}

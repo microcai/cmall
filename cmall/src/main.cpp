@@ -260,11 +260,10 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 	co_return EXIT_SUCCESS;
 }
 
+io_context_pool ios{ boost::thread::hardware_concurrency() };
 
 int main(int argc, char** argv)
 {
-	io_context_pool ios{ boost::thread::hardware_concurrency() };
-
 	int main_return;
 
 	boost::asio::co_spawn(ios.server_io_context(), co_main(argc, argv, ios), [&](std::exception_ptr e, int ret){
@@ -273,7 +272,15 @@ int main(int argc, char** argv)
 		main_return = ret;
 		ios.stop();
 	});
-
+#ifndef _WIN32
+	pthread_atfork([](){
+		ios.notify_fork(boost::asio::execution_context::fork_prepare);
+	}, [](){
+		ios.notify_fork(boost::asio::execution_context::fork_parent);
+	}, [](){
+		ios.notify_fork(boost::asio::execution_context::fork_child);
+	});
+#endif
 	// FIXME, db 的 pool size 怎么设定? co_main 跑这个 run 跑起来才会执行.
 	ios.run();
 	return main_return;

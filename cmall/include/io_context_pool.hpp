@@ -36,6 +36,9 @@ public:
 	/// Get pool size.
 	std::size_t pool_size() const;
 
+	void notify_fork(boost::asio::execution_context::fork_event event);
+
+
 private:
 	using io_context_ptr = std::shared_ptr<boost::asio::io_context>;
 	using work_ptr = std::shared_ptr<boost::asio::io_context::work>;
