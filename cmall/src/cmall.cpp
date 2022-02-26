@@ -381,7 +381,7 @@ namespace cmall
 					boost::json::object replay_message;
 					try
 					{
-						replay_message = co_await on_client_invoke(connection_ptr, method, params);
+						replay_message = co_await handle_jsonrpc_call(connection_ptr, method, params);
 					}
 					catch (boost::system::system_error& e)
 					{
@@ -402,7 +402,7 @@ namespace cmall
 		}
 	}
 
-	boost::asio::awaitable<boost::json::object> cmall_service::on_client_invoke(
+	boost::asio::awaitable<boost::json::object> cmall_service::handle_jsonrpc_call(
 		client_connection_ptr connection_ptr, const std::string& methodstr, boost::json::object params)
 	{
 		client_connection& this_client = *connection_ptr;
