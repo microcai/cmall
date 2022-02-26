@@ -33,7 +33,7 @@ namespace po = boost::program_options;
 #include "cmall/internal.hpp"
 #include "cmall/cmall.hpp"
 
-int platform_init()
+static int platform_init()
 {
 #if defined(WIN32) || defined(_WIN32)
 	/* Disable the "application crashed" popup. */
@@ -103,7 +103,7 @@ int platform_init()
 	return 0;
 }
 
-std::string version_info()
+static std::string version_info()
 {
 	std::string os_name;
 
@@ -260,11 +260,11 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 	co_return EXIT_SUCCESS;
 }
 
-io_context_pool ios{ boost::thread::hardware_concurrency() };
-
 int main(int argc, char** argv)
 {
 	int main_return;
+
+	io_context_pool ios{ boost::thread::hardware_concurrency() };
 
 	boost::asio::co_spawn(ios.server_io_context(), co_main(argc, argv, ios), [&](std::exception_ptr e, int ret){
 		if (e)
@@ -272,7 +272,7 @@ int main(int argc, char** argv)
 		main_return = ret;
 		ios.stop();
 	});
-#ifndef _WIN32
+#if 0
 	pthread_atfork([](){
 		ios.notify_fork(boost::asio::execution_context::fork_prepare);
 	}, [](){
