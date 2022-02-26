@@ -57,14 +57,14 @@ namespace jsutil
 
 	template<typename T>
 	requires isString<T>
-	inline boost::json::value to_json(T str)
+	inline boost::json::value to_json(T&& str)
 	{
 		return boost::json::value(str);
 	}
 
 	template<typename T>
 	requires isVector<T> && (!isString<T>)
-	inline boost::json::value to_json(const T& vector_of_t)
+	inline boost::json::value to_json(T&& vector_of_t)
 	{
 		boost::json::array array;
 
