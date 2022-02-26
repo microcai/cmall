@@ -105,6 +105,11 @@ namespace cmall {
 		user_list_products,
 		user_apply_merchant,
 
+		user_list_receipt_address,
+		user_add_receipt_address,
+		user_modify_receipt_address,
+		user_erase_receipt_address,
+
 		cart_add,
 		cart_del,
 		cart_list,

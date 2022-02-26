@@ -545,6 +545,14 @@ namespace cmall
 				break;
 			case req_method::user_apply_merchant:
 				break;
+			case req_method::user_list_receipt_address:
+				break;
+			case req_method::user_add_receipt_address:
+				break;
+			case req_method::user_modify_receipt_address:
+				break;
+			case req_method::user_erase_receipt_address:
+				break;
 			case req_method::cart_add:
 				break;
 			case req_method::cart_del:
