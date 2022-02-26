@@ -38,7 +38,7 @@ namespace jsutil
 
 	template <typename T>
 	concept isContainer = requires (T f) {
-		{ std::begin(f) };
+		{ ++std::begin(f) };
 		{ std::end(f) };
 		{ f.size() } -> std::same_as<std::size_t>;
 	};
