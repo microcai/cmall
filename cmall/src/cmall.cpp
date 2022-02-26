@@ -564,7 +564,32 @@ namespace cmall
 			case req_method::order_create_direct:
 			{
 				// 这个是目前阶段最最最需要使用的 API.
+				// 首先确保用户已登录.
 				co_await ensure_login();
+
+				long goods_id = jsutil::json_accessor(params).get("goods_id", -1).as_int64();
+
+				// 重新载入 user_info, 以便获取正确的收件人地址信息.
+				co_await m_database.async_load<cmall_user>(this_client.session_info->user_info->uid_, *this_client.session_info->user_info);
+
+				cmall_product product_in_mall;
+				co_await m_database.async_load<cmall_product>(goods_id, product_in_mall);
+
+				goods_snapshot good_snap;
+
+				good_snap = product_in_mall;
+
+				cmall_order new_order;
+
+				new_order.buyer_ = this_client.session_info->user_info->uid_;
+				new_order.oid_ = gen_uuid();
+				new_order.stage_ = order_unpay;
+				new_order.bought_goods.push_back(good_snap);
+				new_order.price_ = good_snap.price_;
+
+				co_await m_database.async_add(new_order);
+
+				reply_message["result"] = { { "orderid", new_order.oid_ },};
 
 			}
 			break;

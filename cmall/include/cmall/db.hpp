@@ -178,6 +178,30 @@ struct goods_snapshot
 	std::string description_; // 商品描述, rtl 内容
 
 	std::uint64_t original_id;
+
+	goods_snapshot& operator = (const cmall_product& o)
+	{
+		owner_ = o.owner_;
+		name_ = o.name_;
+		price_ = o.price_;
+		currency_ = o.currency_;
+		description_ = o.description_;
+		original_id = o.id_;
+	}
+};
+
+goods_snapshot operator = ()
+{
+
+}
+
+enum order_status_t
+{
+	order_unpay,
+	order_payed,
+	order_shipped,
+	order_success,
+	// TODO, more
 };
 
 // 订单表
