@@ -515,7 +515,17 @@ namespace cmall
 			break;
 
 			case req_method::user_logout:
-				break;
+			{
+				this_client.session_info->user_info = {};
+				co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info);
+				reply_message["result"] = { "status", "success" };
+			}
+			break;
+			case req_method::user_islogin:
+			{
+				reply_message["result"] = { "isLogin", static_cast<bool>((this_client.session_info->user_info)) };
+			}
+			break;
 			case req_method::user_list_products:
 				break;
 			case req_method::user_apply_merchant:
@@ -565,8 +575,6 @@ namespace cmall
 				{
 					// 列出商户的上架商品.
 				}
-
-
 
 				reply_message["result"] = jsutil::to_json(products);
 			}

@@ -100,6 +100,7 @@ namespace cmall {
 		user_prelogin,
 		user_login,
 		user_logout,
+		user_islogin,
 
 		user_list_products,
 		user_apply_merchant,
