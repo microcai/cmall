@@ -187,13 +187,9 @@ struct goods_snapshot
 		currency_ = o.currency_;
 		description_ = o.description_;
 		original_id = o.id_;
+		return *this;
 	}
 };
-
-goods_snapshot operator = ()
-{
-
-}
 
 enum order_status_t
 {
