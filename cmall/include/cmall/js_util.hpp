@@ -17,9 +17,6 @@ namespace jsutil
 	template <typename T>
 	concept isString = std::convertible_to<std::string, T>;
 
-	template<typename T>
-	struct array_value_type{ typedef void value_type; };
-
 	namespace detail {
 		template<typename T, int size>
 		constexpr auto get_array_size(const T (&array)[size])
