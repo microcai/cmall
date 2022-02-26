@@ -17,17 +17,32 @@ namespace jsutil
 	template <typename T>
 	concept isString = std::convertible_to<std::string, T>;
 
+	template<typename T>
+	struct array_value_type{ typedef void value_type; };
+
+	namespace detail {
+		template<typename T, int size>
+		constexpr auto get_array_size(const T (&array)[size])
+		{
+			return size;
+		}
+
+		template<typename T, int size>
+		constexpr auto get_array_size(T (array)[size])
+		{
+			return size;
+		}
+	}
+
 	template <typename T>
-	concept isArray = requires (T f) {
-		{ f[233] } -> std::convertible_to<typename T::value_type>;
-		{ sizeof(f) / sizeof (f[1])} -> std::same_as<std::size_t>;
+	concept isArray = requires (const T& f) {
+		 detail::get_array_size(f);
 	};
 
 	template <typename T>
 	concept isContainer = requires (T f) {
-		{ f.begin() };
-		{ f.end() };
-		{ f.begin() } -> std::convertible_to<typename T::value_type*>;
+		{ std::begin(f) };
+		{ std::end(f) };
 		{ f.size() } -> std::same_as<std::size_t>;
 	};
 
@@ -49,12 +64,12 @@ namespace jsutil
 
 	template<typename T>
 	requires isVector<T> && (!isString<T>)
-	inline boost::json::value to_json(T& vector_of_t)
+	inline boost::json::value to_json(const T& vector_of_t)
 	{
 		boost::json::array array;
 
 		for (const auto& t :  vector_of_t)
-			array.push_back(value_to_json<typename T::value_type>(t));
+			array.push_back(value_to_json(t));
 
 		return array;
 	}
@@ -62,7 +77,7 @@ namespace jsutil
 	template<typename T>
 	inline boost::json::value to_json(T&& t)
 	{
-		return value_to_json(t);
+		return value_to_json(std::forward<T>(t));
 	}
 
 	template<>
