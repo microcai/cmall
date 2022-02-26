@@ -129,7 +129,9 @@ static std::string version_info()
 	int ma_ver, mi_ver, patch_ver;
 	sscanf(un.release, "%d.%d.%d", &ma_ver, &mi_ver, &patch_ver);
 
-	if (std::string(un.sysname) == "Linux" && ma_ver < 3)
+	int kernel_version = ma_ver * 10000 + mi_ver * 100 + patch_ver;
+
+	if (std::string(un.sysname) == "Linux" && kernel_version < 50800)
 	{
 		std::cerr << "you are running a very very OLD kernel. please upgrade your system" << std::endl;
 	}
