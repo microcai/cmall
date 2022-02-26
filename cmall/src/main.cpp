@@ -1,4 +1,7 @@
-﻿#include <iostream>
+﻿
+#include "io_context_pool.hpp"
+
+#include <iostream>
 #include <iterator>
 #include <algorithm>
 #include <functional>
@@ -32,6 +35,7 @@ namespace po = boost::program_options;
 #include "cmall/version.hpp"
 #include "cmall/internal.hpp"
 #include "cmall/cmall.hpp"
+
 
 static int platform_init()
 {
@@ -264,7 +268,7 @@ int main(int argc, char** argv)
 {
 	int main_return;
 
-	io_context_pool ios{ boost::thread::hardware_concurrency() };
+	io_context_pool ios(boost::thread::hardware_concurrency());
 
 	boost::asio::co_spawn(ios.server_io_context(), co_main(argc, argv, ios), [&](std::exception_ptr e, int ret){
 		if (e)
