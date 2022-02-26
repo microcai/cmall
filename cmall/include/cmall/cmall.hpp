@@ -119,6 +119,8 @@ namespace cmall {
 		order_status,
 		order_close,
 
+		order_get_pay_url,
+
 		goods_list,
 		goods_detail,
 
