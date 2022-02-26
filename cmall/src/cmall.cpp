@@ -623,7 +623,7 @@ namespace cmall
 			break;
 
 			case req_method::merchant_product_add:
-				ensure_login(false, true);
+				co_await ensure_login(false, true);
 				break;
 			case req_method::merchant_product_mod:
 				break;
