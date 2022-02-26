@@ -14,6 +14,73 @@
 
 namespace jsutil
 {
+	namespace json = boost::json;
+	class json_accessor
+	{
+	public:
+		json_accessor(const json::object& obj)
+			: obj_(obj)
+		{}
+
+        json_accessor(const json::value& obj)
+            : obj_(obj.as_object())
+        {}
+
+		inline json::value get(char const* key, json::value default_value) const
+		{
+			try {
+				if (obj_.contains(key))
+					return obj_.at(key);
+			}
+			catch (const std::invalid_argument&)
+			{}
+
+			return default_value;
+		}
+
+		inline json::object get_obj(char const* key) const
+		{
+			try {
+				if (obj_.contains(key))
+					return obj_.at(key).as_object();
+			}
+			catch (const std::invalid_argument&)
+			{}
+
+			return json::object{};
+		}
+
+		inline std::string get_string(char const* key) const
+		{
+			try {
+				if (obj_.contains(key))
+				{
+					auto ref = obj_.at(key).as_string();
+					return std::string(ref.begin(), ref.end());
+				}
+			}
+			catch (const std::invalid_argument&)
+			{}
+
+			return std::string{};
+		}
+
+	private:
+		const json::object& obj_;
+	};
+
+	inline std::string json_as_string(const json::value& value, std::string default_value = "")
+	{
+		try {
+			auto ref = value.as_string();
+			return std::string(ref.begin(), ref.end());
+		}
+		catch (const std::invalid_argument&)
+		{}
+
+		return default_value;
+	}
+
 	template <typename T>
 	concept isString = std::convertible_to<std::string, T>;
 
@@ -129,73 +196,6 @@ namespace jsutil
 		j.insert_or_assign("describe", t.description_ );
 
 		return j;
-	}
-
-	namespace json = boost::json;
-	class json_accessor
-	{
-	public:
-		json_accessor(const json::object& obj)
-			: obj_(obj)
-		{}
-
-        json_accessor(const json::value& obj)
-            : obj_(obj.as_object())
-        {}
-
-		inline json::value get(char const* key, json::value default_value) const
-		{
-			try {
-				if (obj_.contains(key))
-					return obj_.at(key);
-			}
-			catch (const std::invalid_argument&)
-			{}
-
-			return default_value;
-		}
-
-		inline json::object get_obj(char const* key) const
-		{
-			try {
-				if (obj_.contains(key))
-					return obj_.at(key).as_object();
-			}
-			catch (const std::invalid_argument&)
-			{}
-
-			return json::object{};
-		}
-
-		inline std::string get_string(char const* key) const
-		{
-			try {
-				if (obj_.contains(key))
-				{
-					auto ref = obj_.at(key).as_string();
-					return std::string(ref.begin(), ref.end());
-				}
-			}
-			catch (const std::invalid_argument&)
-			{}
-
-			return std::string{};
-		}
-
-	private:
-		const json::object& obj_;
-	};
-
-	inline std::string json_as_string(const json::value& value, std::string default_value = "")
-	{
-		try {
-			auto ref = value.as_string();
-			return std::string(ref.begin(), ref.end());
-		}
-		catch (const std::invalid_argument&)
-		{}
-
-		return default_value;
 	}
 
 }
