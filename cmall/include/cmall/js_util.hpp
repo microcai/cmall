@@ -15,16 +15,24 @@
 namespace jsutil
 {
 	template <typename T>
-	concept isString = requires(T t)
-	{
-		{t} -> std::convertible_to<std::string>;
-	};
+	concept isString = std::convertible_to<std::string, T>;
 
 	template <typename T>
 	concept isArray = requires (T f) {
-		{ f[0] } -> std::convertible_to<typename T::value_type>;
+		{ f[233] } -> std::convertible_to<typename T::value_type>;
+		{ sizeof(f) / sizeof (f[1])} -> std::same_as<std::size_t>;
+	};
+
+	template <typename T>
+	concept isContainer = requires (T f) {
+		{ f.begin() };
+		{ f.end() };
+		{ f.begin() } -> std::convertible_to<typename T::value_type*>;
 		{ f.size() } -> std::same_as<std::size_t>;
 	};
+
+	template <typename T>
+	concept isVector = isContainer<T> || isArray<T>;
 
 	template<typename T>
 	inline boost::json::value value_to_json(const T& t)
@@ -40,7 +48,7 @@ namespace jsutil
 	}
 
 	template<typename T>
-	requires isArray<T>
+	requires isVector<T> && (!isString<T>)
 	inline boost::json::value to_json(T& vector_of_t)
 	{
 		boost::json::array array;
