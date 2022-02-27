@@ -703,6 +703,19 @@ namespace cmall
 			case req_method::user_list_receipt_address:
 				break;
 			case req_method::user_add_receipt_address:
+				{
+					// TODO, 从 params 里拿新地址.
+					Recipient new_address;
+
+					cmall_user& user_info = * this_client.session_info->user_info;
+					// 重新载入 user_info, 以便获取正确的收件人地址信息.
+					bool is_db_op_ok = co_await m_database.async_update<cmall_user>(user_info.uid_, [&](cmall_user value) {
+						value.recipients.push_back(new_address);
+						user_info = value;
+						return value;
+					});
+					reply_message["result"] = is_db_op_ok;
+				}
 				break;
 			case req_method::user_modify_receipt_address:
 				break;

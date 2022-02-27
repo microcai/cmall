@@ -159,6 +159,28 @@ namespace cmall
 				});
 		}
 
+		template <typename T, typename UPDATER> requires SupportUpdateAt<T>
+		db_result update(const typename odb::object_traits<T>::id_type id, UPDATER&& updater)
+		{
+			if (!m_db)
+				return false;
+
+			LOG_DBG << "call update with SupportUpdateAt";
+			return retry_database_op(
+				[&, this]() mutable
+				{
+					odb::transaction t(m_db->begin());
+					T old_value;
+					m_db->load<T>(id, old_value);
+					T new_value = updater(old_value);
+					auto now		  = boost::posix_time::second_clock::local_time();
+					new_value.updated_at_ = now;
+					m_db->update(new_value);
+					t.commit();
+					return true;
+				});
+		}
+
 		template <typename T>
 		db_result update(T& value)
 		{
@@ -171,6 +193,26 @@ namespace cmall
 				{
 					odb::transaction t(m_db->begin());
 					m_db->update(value);
+					t.commit();
+					return true;
+				});
+		}
+
+		template <typename T, typename UPDATER>
+		db_result update(const typename odb::object_traits<T>::id_type id, UPDATER&& updater)
+		{
+			if (!m_db)
+				return false;
+
+			LOG_DBG << "call update with SupportUpdateAt";
+			return retry_database_op(
+				[&, this]() mutable
+				{
+					odb::transaction t(m_db->begin());
+					T old_value;
+					m_db->load<T>(id, old_value);
+					T new_value = updater(old_value);
+					m_db->update(new_value);
 					t.commit();
 					return true;
 				});
@@ -275,7 +317,7 @@ namespace cmall
 				boost::asio::use_awaitable);
 		}
 
-		template<SupportUpdateAt T>
+		template<typename T>
 		boost::asio::awaitable<bool> async_update(T& value)
 		{
 			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
@@ -290,15 +332,15 @@ namespace cmall
 				boost::asio::use_awaitable);
 		}
 
-		template<typename T>
-		boost::asio::awaitable<bool> async_update(T& value)
+		template<typename T, typename UPDATER>
+		boost::asio::awaitable<bool> async_update(const typename odb::object_traits<T>::id_type id, UPDATER && updater)
 		{
 			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
 				void(boost::system::error_code, bool)>(
-				[this, &value](auto&& handler) mutable 
+				[this, id, updater = std::forward<UPDATER>(updater)](auto&& handler) mutable
 				{
-					boost::asio::post(thread_pool, [handler = std::move(handler), this, &value]() mutable {
-						auto ret = update<T>(value);
+					boost::asio::post(thread_pool, [handler = std::move(handler), this, id, updater = std::forward<UPDATER>(updater)]() mutable {
+						auto ret = update<T>(id, std::forward<UPDATER>(updater));
 						post_result(ret, std::move(handler));
 					});
 				},
