@@ -6,7 +6,7 @@
 namespace conversion
 {
 
-	void tag_invoke(const boost::json::value_from_tag&, boost::json::value& jv, const cmall_user& u)
+	void tag_invoke(const value_from_tag&, value& jv, const cmall_user& u)
 	{
 		jv = {
 			{ "uid", u.uid_ },
@@ -19,7 +19,7 @@ namespace conversion
 			{ "created_at", to_string(u.created_at_) },
 		};
 	}
-	void tag_invoke(const boost::json::value_from_tag&, boost::json::value& jv, const Recipient& r)
+	void tag_invoke(const value_from_tag&, value& jv, const Recipient& r)
 	{
 		jv = {
 			{ "address", r.address },
@@ -31,4 +31,23 @@ namespace conversion
 		};
 	}
 
+	jsonrpc_request_t tag_invoke(const value_to_tag<jsonrpc_request_t>&, const value& jv) 
+	{
+		const auto& obj = jv.get_object();
+		auto jsonrpc	= value_to<std::string>(obj.at("jsonrpc"));
+		auto method	 = value_to<std::string>(obj.at("method")); // will throw if not found
+
+		jsonrpc_request_t req{ .jsonrpc = jsonrpc, .method = method, .id = {}, .params = {} };
+		if (obj.contains("id"))
+		{
+			req.id = value_to<std::string>(obj.at("id"));
+		}
+
+		if (obj.contains("params"))
+		{
+			req.params = obj.at("params");
+		}
+
+		return req;
+	}
 }

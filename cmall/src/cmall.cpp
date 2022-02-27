@@ -397,8 +397,18 @@ namespace cmall
 				co_return;
 			}
 
-			auto method = jsutil::json_accessor(jv).get_string("method");
-			auto params = jsutil::json_accessor(jv).get_obj("params");
+			jsonrpc_request_t req;
+			try
+			{
+				req = boost::json::value_to<jsonrpc_request_t>(jv);
+			}
+			catch (...)
+			{
+				co_return;
+			}
+
+			auto method = req.method;
+			auto params = req.params.value_or(boost::json::object{}).as_object();
 
 			// 每个请求都单开线程处理
 			boost::asio::co_spawn(

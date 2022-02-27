@@ -7,6 +7,19 @@
 
 inline namespace conversion
 {
-	void tag_invoke(const boost::json::value_from_tag&, boost::json::value& jv, const cmall_user& u);
-	void tag_invoke(const boost::json::value_from_tag&, boost::json::value& jv, const Recipient& u);
+	using namespace boost::json;
+	// serialization
+	void tag_invoke(const value_from_tag&, value& jv, const cmall_user& u);
+	void tag_invoke(const value_from_tag&, value& jv, const Recipient& u);
+
+	struct jsonrpc_request_t
+	{
+		std::string jsonrpc; // must be "2.0"
+		std::string method;
+		std::optional<std::string> id; // TODO: type could be string or number
+		std::optional<value> params; // must be [] or {}
+	};
+
+	// deserialization
+	jsonrpc_request_t tag_invoke(const value_to_tag<jsonrpc_request_t>&, const value&);
 }
