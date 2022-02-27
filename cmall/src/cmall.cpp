@@ -384,8 +384,6 @@ namespace cmall
 
 	boost::asio::awaitable<void> cmall_service::do_ws_read(size_t connection_id, client_connection_ptr connection_ptr)
 	{
-		boost::beast::error_code ec;
-
 		while (!m_abort)
 		{
 			boost::beast::multi_buffer buffer{ 4 * 1024 * 1024 }; // max multi_buffer size 4M.
@@ -437,8 +435,6 @@ namespace cmall
 		client_connection& this_client = *connection_ptr;
 		boost::json::object reply_message;
 
-		boost::system::error_code ec;
-
 		auto method = magic_enum::enum_cast<req_method>(methodstr);
 		if (!method.has_value())
 		{
@@ -450,7 +446,7 @@ namespace cmall
 			throw boost::system::system_error(boost::system::error_code(cmall::error::session_needed));
 		}
 
-		auto ensure_login = [&, this]( bool check_admin = false, bool check_merchant = false ) mutable -> boost::asio::awaitable<void>
+		auto ensure_login = [&]( bool check_admin = false, bool check_merchant = false ) mutable -> boost::asio::awaitable<void>
 		{
 			if (!this_client.session_info->user_info)
 				throw boost::system::system_error(error::login_required);
@@ -499,89 +495,22 @@ namespace cmall
 			}break;
 
 			case req_method::user_prelogin:
-			{
-				services::verify_session verify_session_cookie;
-				// 拿到 verify_code_token,  要和 verify_code 一并传给 user.login
-				// verify_code_token 的有效期为 2 分钟.
-				// verify_code_token 对同一个手机号只能一分钟内请求一次.
-
-				std::string tel = jsutil::json_as_string(jsutil::json_accessor(params).get("telephone", ""));
-				// TODO 获取验证码.
-				verify_session_cookie = co_await telephone_verifier.send_verify_code(tel, ec);
-
-				if (ec)
-				{
-					// TODO, 汇报验证码发送失败.
-				}
-				else
-				{
-					this_client.session_info->verify_session_cookie = verify_session_cookie;
-					reply_message["result"]							= true;
-				}
-			}
-			break;
 			case req_method::user_login:
-			{
-				std::string verify_code = jsutil::json_accessor(params).get_string("verify_code");
-
-				if (this_client.session_info->verify_session_cookie)
-				{
-					if (co_await telephone_verifier.verify_verify_code(
-							verify_code, this_client.session_info->verify_session_cookie.value()))
-					{
-						// SUCCESS.
-						cmall_user user;
-						if (co_await m_database.async_load_user_by_phone(
-								this_client.session_info->verify_telephone, user))
-						{
-							// TODO, 载入成功
-							this_client.session_info->user_info = cmall_user{};
-						}
-						else
-						{
-							cmall_user new_user;
-							new_user.active_phone = this_client.session_info->verify_telephone;
-
-							// TODO 新用户注册，赶紧创建个新用户
-							co_await m_database.async_add(new_user);
-							this_client.session_info->user_info = new_user;
-
-						}
-						// 更新 session 保存的 uid_
-						co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info);
-						// TODO 认证成功后， sessionid 写入 mdbx 数据库以便日后恢复.
-						reply_message["result"] = { { "login", "success" }, { "usertype", "user" } };
-						break;
-					}
-				}
-				throw boost::system::system_error(cmall::error::invalid_verify_code);
-			}
-			break;
-
-			case req_method::user_logout:
-			{
-				this_client.session_info->user_info = {};
-				co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info);
-				reply_message["result"] = { "status", "success" };
-			}
-			break;
 			case req_method::user_islogin:
-			{
-				reply_message["result"] = { "isLogin", static_cast<bool>((this_client.session_info->user_info)) };
-			}
-			break;
+			case req_method::user_logout:
+				co_return co_await handle_jsonrpc_user_api(connection_ptr, method.value(), params);
+				break;
+
 			case req_method::user_list_products:
-				break;
 			case req_method::user_apply_merchant:
-				break;
 			case req_method::user_list_receipt_address:
-				break;
 			case req_method::user_add_receipt_address:
-				break;
 			case req_method::user_modify_receipt_address:
-				break;
 			case req_method::user_erase_receipt_address:
+				co_await ensure_login();
+				co_return co_await handle_jsonrpc_user_api(connection_ptr, method.value(), params);
 				break;
+
 			case req_method::cart_add:
 				break;
 			case req_method::cart_del:
@@ -710,6 +639,119 @@ namespace cmall
 				break;
 			case req_method::admin_order_force_refund:
 				break;
+		}
+
+		co_return reply_message;
+	}
+
+	boost::asio::awaitable<boost::json::object> cmall_service::handle_jsonrpc_user_api(client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
+	{
+		client_connection& this_client = *connection_ptr;
+		boost::json::object reply_message;
+
+		boost::system::error_code ec;
+
+		switch (method)
+		{
+			case req_method::user_prelogin:
+			{
+				services::verify_session verify_session_cookie;
+				// 拿到 verify_code_token,  要和 verify_code 一并传给 user.login
+				// verify_code_token 的有效期为 2 分钟.
+				// verify_code_token 对同一个手机号只能一分钟内请求一次.
+
+				std::string tel = jsutil::json_as_string(jsutil::json_accessor(params).get("telephone", ""));
+				// TODO 获取验证码.
+				verify_session_cookie = co_await telephone_verifier.send_verify_code(tel, ec);
+
+				if (ec)
+				{
+					// TODO, 汇报验证码发送失败.
+				}
+				else
+				{
+					this_client.session_info->verify_session_cookie = verify_session_cookie;
+					reply_message["result"]							= true;
+				}
+			}
+			break;
+			case req_method::user_login:
+			{
+				std::string verify_code = jsutil::json_accessor(params).get_string("verify_code");
+
+				if (this_client.session_info->verify_session_cookie)
+				{
+					if (co_await telephone_verifier.verify_verify_code(
+							verify_code, this_client.session_info->verify_session_cookie.value()))
+					{
+						// SUCCESS.
+						cmall_user user;
+						if (co_await m_database.async_load_user_by_phone(
+								this_client.session_info->verify_telephone, user))
+						{
+							// TODO, 载入成功
+							this_client.session_info->user_info = cmall_user{};
+						}
+						else
+						{
+							cmall_user new_user;
+							new_user.active_phone = this_client.session_info->verify_telephone;
+
+							// TODO 新用户注册，赶紧创建个新用户
+							co_await m_database.async_add(new_user);
+							this_client.session_info->user_info = new_user;
+
+						}
+						// 更新 session 保存的 uid_
+						co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info);
+						// TODO 认证成功后， sessionid 写入 mdbx 数据库以便日后恢复.
+						reply_message["result"] = { { "login", "success" }, { "usertype", "user" } };
+						break;
+					}
+				}
+				throw boost::system::system_error(cmall::error::invalid_verify_code);
+			}
+			break;
+
+			case req_method::user_logout:
+			{
+				this_client.session_info->user_info = {};
+				co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info);
+				reply_message["result"] = { "status", "success" };
+			}
+			break;
+			case req_method::user_islogin:
+			{
+				reply_message["result"] = { "isLogin", static_cast<bool>((this_client.session_info->user_info)) };
+			}
+			break;
+			case req_method::user_list_products:
+				break;
+			case req_method::user_apply_merchant:
+				break;
+			case req_method::user_list_receipt_address:
+				break;
+			case req_method::user_add_receipt_address:
+				{
+					// TODO, 从 params 里拿新地址.
+					Recipient new_address;
+
+					cmall_user& user_info = * this_client.session_info->user_info;
+					// 重新载入 user_info, 以便获取正确的收件人地址信息.
+					bool is_db_op_ok = co_await m_database.async_update<cmall_user>(user_info.uid_, [&](cmall_user value) {
+						value.recipients.push_back(new_address);
+						user_info = value;
+						return value;
+					});
+					reply_message["result"] = is_db_op_ok;
+				}
+				break;
+			case req_method::user_modify_receipt_address:
+				break;
+			case req_method::user_erase_receipt_address:
+				break;
+			default:
+				throw "this should never be excuted";
 		}
 
 		co_return reply_message;
