@@ -1,4 +1,4 @@
-﻿
+
 #include <boost/scope_exit.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
@@ -34,6 +34,9 @@
 #include "jsonrpc.hpp"
 #include "magic_enum.hpp"
 
+#include "cmall/conversion.hpp"
+
+
 namespace cmall
 {
 	using namespace std::chrono_literals;
@@ -67,6 +70,32 @@ namespace cmall
 
 	boost::asio::awaitable<int> cmall_service::run_httpd()
 	{
+		//auto now	 = boost::posix_time::second_clock::local_time();
+		//cmall_user u = 
+		//{
+		//	.uid_		  = 16,
+		//	.name_		  = (const char *)u8"起名好难",
+		//	.active_phone = "1723424",
+		//	.recipients	  = {},
+		//	.verified_	  = true,
+		//	.state_		  = 1,
+		//	.created_at_  = now,
+		//	.updated_at_  = now,
+		//};
+		//std::vector<Recipient> r;
+		//for (auto i = 0; i < 5; i++) {
+		//	Recipient it;
+		//	it.address = "address " + std::to_string(i);
+		//	it.province = "province " + std::to_string(i);
+
+		//	r.emplace_back(std::move(it));
+		//}
+		//u.recipients		 = r;
+
+		//auto jv = boost::json::value_from(u);
+		//std::string json_str = boost::json::serialize(jv);
+		//LOG_INFO << "json_str: " << json_str;
+
 		// 初始化ws acceptors.
 		co_await init_ws_acceptors();
 

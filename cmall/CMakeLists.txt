@@ -23,6 +23,7 @@ file(GLOB cmall_SRCS
 	include/cmall/internal.hpp
 	include/cmall/js_util.hpp
 	include/cmall/misc.hpp
+	include/cmall/conversion.hpp
 	include/db_traits.hpp
 	include/io_context_pool.hpp
 	include/traits-pgsql.hpp
@@ -42,6 +43,7 @@ file(GLOB cmall_SRCS
 	src/cmall.cpp
 	src/database.cpp
 	src/internal.cpp
+	src/conversion.cpp
 	src/persist_map.cpp
 	src/http_static_file_handle.cpp
 	src/services/verifycode.cpp
