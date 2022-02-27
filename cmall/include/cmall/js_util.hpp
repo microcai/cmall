@@ -11,6 +11,7 @@
 #include "cmall/db.hpp"
 
 #include "cmall/rpc_defs.hpp"
+#include "./myconcepts"
 
 namespace jsutil
 {
@@ -81,38 +82,6 @@ namespace jsutil
 		return default_value;
 	}
 
-	template <typename T>
-	concept isString = std::convertible_to<std::string, T>;
-
-	namespace detail {
-		template<typename T, int size>
-		constexpr auto get_array_size(const T (&array)[size])
-		{
-			return size;
-		}
-
-		template<typename T, int size>
-		constexpr auto get_array_size(T (array)[size])
-		{
-			return size;
-		}
-	}
-
-	template <typename T>
-	concept isArray = requires (const T& f) {
-		 detail::get_array_size(f);
-	};
-
-	template <typename T>
-	concept isContainer = requires (T f) {
-		{ ++std::begin(f) };
-		{ std::end(f) };
-		{ f.size() } -> std::same_as<std::size_t>;
-	};
-
-	template <typename T>
-	concept isVector = isContainer<T> || isArray<T>;
-
 	template<typename T>
 	inline boost::json::value value_to_json(const T& t)
 	{
@@ -126,14 +95,14 @@ namespace jsutil
 	}
 
 	template<typename T>
-	requires isString<T>
+	requires concepts::isString<T>
 	inline boost::json::value to_json(T&& str)
 	{
 		return boost::json::value(str);
 	}
 
 	template<typename T>
-	requires isVector<T> && (!isString<T>)
+	requires concepts::isVector<T> && (!concepts::isString<T>)
 	inline boost::json::value to_json(T&& vector_of_t)
 	{
 		boost::json::array array;
