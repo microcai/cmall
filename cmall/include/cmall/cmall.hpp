@@ -175,8 +175,9 @@ namespace cmall {
 
 		boost::asio::awaitable<void> mitigate_chaindb();
 
-		// 换算成人类读取单位.
 		boost::asio::awaitable<boost::json::object> handle_jsonrpc_call(client_connection_ptr, const std::string& method, boost::json::object params);
+
+		boost::asio::awaitable<boost::json::object> handle_jsonrpc_user_api(client_connection_ptr, const req_method method, boost::json::object params);
 
 	private:
 		boost::asio::awaitable<std::shared_ptr<ws_stream>> connect(size_t index = 0);
