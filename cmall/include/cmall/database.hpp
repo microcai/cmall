@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (C) 2019 Jack.
 //
 // Author: jack
@@ -198,7 +198,7 @@ namespace cmall
 				});
 		}
 
-		template <typename T, typename UPDATER>
+		template <typename T, typename UPDATER> requires (!SupportUpdateAt<T>)
 		db_result update(const typename odb::object_traits<T>::id_type id, UPDATER&& updater)
 		{
 			if (!m_db)
