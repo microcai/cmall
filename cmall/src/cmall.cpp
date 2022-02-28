@@ -1,4 +1,4 @@
-
+﻿
 #include <boost/scope_exit.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
@@ -394,6 +394,8 @@ namespace cmall
 
 			if (!jv.is_object())
 			{
+				// 这里直接　co_return, 连接会关闭. 因为用户发来的数据连 json 都不是.
+				// 对这种垃圾客户端，直接暴力断开不搭理.
 				co_return;
 			}
 
@@ -402,8 +404,9 @@ namespace cmall
 			{
 				req = boost::json::value_to<jsonrpc_request_t>(jv);
 			}
-			catch (...)
+			catch (...)                                              // FIXME 不要使用　...　捕获
 			{
+				// FIXME, 如果发的json格式不对，应该返回错误，　而不是粗暴的关闭连接.
 				co_return;
 			}
 
