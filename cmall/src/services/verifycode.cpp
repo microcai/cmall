@@ -1,5 +1,8 @@
 ﻿
 #include "services/verifycode.hpp"
+#include <boost/process.hpp>
+
+#include "utils/timedmap.hpp"
 
 namespace services
 {
@@ -12,6 +15,13 @@ namespace services
 		// send verifycode, returns verify session.
 		boost::asio::awaitable<verify_session> send_verify_code(std::string telephone, boost::system::error_code& ec)
 		{
+
+			boost::process::async_pipe ap(io);
+
+			//boost::process::child node_js_code_sender(boost::process::search_path("sendsms_verify"), telephone, boost::process::std_out > ap);
+
+		//	co_await boost::asio::d
+
 			verify_session ret;
 
 			ret.session_cookie = "fake_test:" + telephone;
@@ -26,6 +36,8 @@ namespace services
 		}
 
 		boost::asio::io_context& io;
+
+
 	};
 
 	// send verifycode, returns verify session.
