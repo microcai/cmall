@@ -18,6 +18,7 @@ inline namespace conversion
 			{ "created_at", to_string(u.created_at_) },
 		};
 	}
+
 	void tag_invoke(const value_from_tag&, value& jv, const Recipient& r)
 	{
 		jv = {
@@ -29,6 +30,7 @@ inline namespace conversion
 			{ "specific_address", r.specific_address.null() ? "" : r.specific_address.get() },
 		};
 	}
+
 	void tag_invoke(const value_from_tag&, value& jv, const cmall_product& p)
 	{
 		jv = {
@@ -42,6 +44,7 @@ inline namespace conversion
 			{ "created_at", to_string(p.created_at_) },
 		};
 	}
+
 	void tag_invoke(const value_from_tag&, value& jv, const cmall_order& o)
 	{
 		jv = {
@@ -50,7 +53,7 @@ inline namespace conversion
 			{ "buyer", o.buyer_ },
 			{ "price", to_string(o.price_) },
 			{ "currency", o.currency_ },
-			{ "pay_amount", o.pay_amount_ },
+			{ "pay_amount", to_string(o.pay_amount_) },
 			{ "stage", o.stage_ },
 			{ "payed_at", o.payed_at_.null() ? "" : to_string(o.payed_at_.get()) },
 			{ "close_at", o.close_at_.null() ? "" : to_string(o.close_at_.get()) },
