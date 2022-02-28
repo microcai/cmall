@@ -100,20 +100,26 @@ namespace utility
 			while (!(co_await check_canceled()))
 			{
 				boost::timer::cpu_timer avoid_stucker;
-				auto pruge_time = time_clock::steady_clock::now() - lifetime;
+
+				auto now		= time_clock::steady_clock::now();
+
+				auto pruge_time = now - lifetime;
 
 				auto & ordered_by_insert_time = stor.template get<tag_insert_time>();
 
-				auto last_to_erase = ordered_by_insert_time.lower_bound(pruge_time);
+				auto last_to_erase = ordered_by_insert_time.upper_bound(pruge_time);
 
 				for (auto it = ordered_by_insert_time.begin(); it != last_to_erase; co_await check_canceled())
 				{
 					ordered_by_insert_time.erase(it++);
 				}
 
+				// last_to_erase.insert_time > purge_time
+				auto diff = (*last_to_erase).insert_time - pruge_time;
+
 				boost::asio::basic_waitable_timer<time_clock::steady_clock> timer(co_await boost::asio::this_coro::executor);
 				co_await check_canceled();
-				timer.expires_from_now(lifetime/2);
+				timer.expires_from_now(diff);
 				co_await timer.async_wait(boost::asio::bind_cancellation_slot(cancell_signal.slot(), boost::asio::use_awaitable));
 
 			}
