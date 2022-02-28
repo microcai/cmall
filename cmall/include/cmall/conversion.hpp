@@ -11,7 +11,9 @@ inline namespace conversion
 	using namespace boost::json;
 	// serialization
 	void tag_invoke(const value_from_tag&, value& jv, const cmall_user& u);
-	void tag_invoke(const value_from_tag&, value& jv, const Recipient& u);
+	void tag_invoke(const value_from_tag&, value& jv, const Recipient& r);
+	void tag_invoke(const value_from_tag&, value& jv, const cmall_product& p);
+	void tag_invoke(const value_from_tag&, value& jv, const cmall_order& o);
 
 	struct jsonrpc_request_t
 	{
