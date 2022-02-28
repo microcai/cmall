@@ -1,11 +1,38 @@
 ﻿
-#include "services/verifycode.hpp"
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 #include <boost/process.hpp>
+
+#include "services/verifycode.hpp"
 
 #include "utils/timedmap.hpp"
 
 namespace services
 {
+	static std::string uuid_to_string(boost::uuids::uuid const& u)
+	{
+		std::string result;
+		result.reserve(36);
+
+		std::size_t i = 0;
+		boost::uuids::uuid::const_iterator it_data = u.begin();
+		for (; it_data != u.end(); ++it_data, ++i)
+		{
+			const size_t hi = ((*it_data) >> 4) & 0x0F;
+			result += boost::uuids::detail::to_char(hi);
+
+			const size_t lo = (*it_data) & 0x0F;
+			result += boost::uuids::detail::to_char(lo);
+		}
+		return result;
+	}
+
+	static std::string gen_uuid()
+	{
+		return uuid_to_string(boost::uuids::random_generator()());
+	}
+
 	struct verifycode_impl
 	{
 		verifycode_impl(boost::asio::io_context& io)
@@ -19,11 +46,19 @@ namespace services
 
 			boost::process::async_pipe ap(io);
 
-			//boost::process::child node_js_code_sender(boost::process::search_path("sendsms_verify"), telephone, boost::process::std_out > ap);
+			boost::process::child node_js_code_sender(boost::process::search_path("sendsms_verify"), telephone, boost::process::std_out > ap);
 
-		//	co_await boost::asio::d
+			std::string sended_smscode;
 
+			sended_smscode.resize(6);
+
+			std::size_t sended_smscode_len = co_await boost::asio::async_read(ap, boost::asio::buffer(sended_smscode), boost::asio::use_awaitable);
+			sended_smscode.resize(sended_smscode_len);
 			verify_session ret;
+
+			ret.session_cookie = gen_uuid();
+
+			verify_code_stor.put(ret.session_cookie, sended_smscode);
 
 			ret.session_cookie = "fake_test:" + telephone;
 

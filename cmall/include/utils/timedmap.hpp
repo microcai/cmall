@@ -36,7 +36,6 @@ namespace utility
 		typedef boost::multi_index::multi_index_container<
 			container_item_type,
 			boost::multi_index::indexed_by<
-				boost::multi_index::sequenced<>,
 				boost::multi_index::ordered_non_unique<
 					boost::multi_index::tag<tag_insert_time>,
 					boost::multi_index::member<container_item_type, time_clock::steady_clock::time_point, &container_item_type::insert_time>
@@ -68,12 +67,22 @@ namespace utility
 		{
 			auto it = this->stor.template get<tag_key>().find(key);
 
-			if (it!= this->stor.template get<2>().end())
+			if (it!= this->stor.template get<tag_key>().end())
 				return it->value;
 			return {};
 		}
 
-		void put(key_type k, value_type v);
+		void put(key_type k, value_type v)
+		{
+			auto& ordered_by_key = this->stor.template get<tag_key>();
+
+			container_item_type cv;
+			cv.key = k;
+			cv.value = v;
+			cv.insert_time = time_clock::steady_clock::now();
+
+			ordered_by_key.insert(cv);
+		}
 
 	private:
 
