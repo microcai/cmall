@@ -18,7 +18,7 @@ inline namespace conversion
 	struct jsonrpc_request_t
 	{
 		std::string method;
-		std::optional<std::string> id; // TODO: type could be string or number
+		boost::json::value id;
 		std::optional<value> params; // must be [] or {}
 	};
 	using maybe_jsonrpc_request_t = std::optional<jsonrpc_request_t>;

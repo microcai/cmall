@@ -1,4 +1,4 @@
-﻿
+
 #include <boost/asio.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/experimental/promise.hpp>
@@ -402,7 +402,7 @@ namespace cmall
 			{
 				boost::json::object reply_message;
 				reply_message["jsonrpc"] = "2.0";
-				reply_message["id"]		 = nullptr;
+				reply_message["id"]		 = jv.at("id");
 				reply_message["error"]	 = { { "code", -32600 }, { "message", "Invalid Request" } };
 				co_await websocket_write(connection_ptr, json_to_string(reply_message));
 				continue;
