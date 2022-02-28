@@ -202,13 +202,13 @@ namespace{
 			+ tm->tm_hour) * 60 + tm->tm_min) * 60 + tm->tm_sec;
 	}
 
-	static const char * const wkday[] = {
+	static const char * const gwkday[] = {
 		"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"
 	};
-	static const char * const weekday[] = {
+	static const char * const gweekday[] = {
 		"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
 	};
-	static const char * const month[] = {
+	static const char * const gmonth[] = {
 		"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 	};
 	typedef struct {
@@ -319,9 +319,9 @@ namespace{
 			bool found = false;
 
 			if (len > 3)
-				what = &weekday[0];
+				what = &gweekday[0];
 			else
-				what = &wkday[0];
+				what = &gwkday[0];
 			for (i = 0; i < 7; i++)
 			{
 				if (strcasecmp(check, what[0]) == 0)
@@ -340,7 +340,7 @@ namespace{
 			const char * const *what;
 			bool found = false;
 
-			what = &month[0];
+			what = &gmonth[0];
 			for (i = 0; i < 12; i++)
 			{
 				if (strcasecmp(check, what[0]) == 0)
