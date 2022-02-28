@@ -71,7 +71,7 @@ namespace cmall
 	boost::asio::awaitable<int> cmall_service::run_httpd()
 	{
 		//auto now	 = boost::posix_time::second_clock::local_time();
-		//cmall_user u = 
+		//cmall_user u =
 		//{
 		//	.uid_		  = 16,
 		//	.name_		  = (const char *)u8"起名好难",
@@ -538,7 +538,7 @@ namespace cmall
 				// 首先确保用户已登录.
 				co_await ensure_login();
 
-				long goods_id = jsutil::json_accessor(params).get("goods_id", -1).as_int64();
+				auto goods_id = jsutil::json_accessor(params).get("goods_id", -1).as_int64();
 
 				// 重新载入 user_info, 以便获取正确的收件人地址信息.
 				co_await m_database.async_load<cmall_user>(this_client.session_info->user_info->uid_, *this_client.session_info->user_info);
@@ -608,9 +608,9 @@ namespace cmall
 				}
 				else
 				{
-					long merchant_id = strtoll(merchant.c_str(), nullptr, 10);
+					auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
 
-					if (co_await m_database.async_load_all_products_by_merchant(products, merchant_id))
+					if (co_await m_database.async_load_all_products_by_merchant(products, static_cast<long>(merchant_id)))
 					{
 
 					}
