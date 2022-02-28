@@ -1,4 +1,4 @@
-﻿
+
 #pragma once
 
 #include <concepts>
@@ -47,8 +47,12 @@ namespace jsutil
 		{
 			if (obj_.contains(key))
 			{
-				auto ref = obj_.at(key).as_string();
-				return std::string(ref.begin(), ref.end());
+				auto value = obj_.at(key);
+				if (value.is_string())
+				{
+					auto ref = value.as_string();
+					return std::string(ref.begin(), ref.end());
+				}
 			}
 
 			return std::string{};
