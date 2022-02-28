@@ -86,9 +86,9 @@ inline namespace conversion
 			req.id = obj.at("id");
 		}
 
-		if (obj.contains("params") && (obj.at("params").is_object() || obj.at("params").is_array()))
+		if (obj.contains("params") && obj.at("params").is_object() )
 		{
-			req.params = obj.at("params");
+			req.params = obj.at("params").as_object();
 		}
 
 		return req;

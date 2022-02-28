@@ -411,7 +411,7 @@ namespace cmall
 
 			auto req	= maybe_req.value();
 			auto method = req.method;
-			auto params = req.params.value_or(boost::json::object{}).as_object();
+			auto params = req.params;
 
 			// 每个请求都单开线程处理
 			boost::asio::co_spawn(

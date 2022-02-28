@@ -19,7 +19,7 @@ inline namespace conversion
 	{
 		std::string method;
 		boost::json::value id;
-		std::optional<value> params; // must be [] or {}
+		boost::json::object params; // only {}
 	};
 	using maybe_jsonrpc_request_t = std::optional<jsonrpc_request_t>;
 
