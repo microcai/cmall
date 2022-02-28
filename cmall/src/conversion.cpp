@@ -30,19 +30,28 @@ inline namespace conversion
 		};
 	}
 
-	jsonrpc_request_t tag_invoke(const value_to_tag<jsonrpc_request_t>&, const value& jv) 
+	maybe_jsonrpc_request_t tag_invoke(const value_to_tag<maybe_jsonrpc_request_t>&, const value& jv) 
 	{
+		if (!jv.is_object())
+			return {};
+
 		const auto& obj = jv.get_object();
+
+		if (!obj.contains("jsonrpc") || !obj.at("jsonrpc").is_string())
+			return {};
+		if (!obj.contains("method") || !obj.at("method").is_string())
+			return {};
+
 		auto jsonrpc	= value_to<std::string>(obj.at("jsonrpc"));
 		auto method	 = value_to<std::string>(obj.at("method")); // will throw if not found
 
 		jsonrpc_request_t req{ .jsonrpc = jsonrpc, .method = method, .id = {}, .params = {} };
-		if (obj.contains("id"))
+		if (obj.contains("id") && obj.at("id").is_string())
 		{
 			req.id = value_to<std::string>(obj.at("id"));
 		}
 
-		if (obj.contains("params"))
+		if (obj.contains("params") && (obj.at("params").is_object() || obj.at("params").is_array()))
 		{
 			req.params = obj.at("params");
 		}

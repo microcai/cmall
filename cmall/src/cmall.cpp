@@ -1,11 +1,11 @@
 ﻿
-#include <boost/scope_exit.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/experimental/promise.hpp>
 #include <boost/date_time.hpp>
 #include <boost/json.hpp>
 #include <boost/regex.hpp>
+#include <boost/scope_exit.hpp>
 
 #include "utils/async_connect.hpp"
 #include "utils/scoped_exit.hpp"
@@ -14,7 +14,6 @@
 #include "cmall/cmall.hpp"
 #include "cmall/database.hpp"
 #include "cmall/db.hpp"
-
 
 #ifdef __clang__
 #pragma clang diagnostic push
@@ -35,7 +34,6 @@
 #include "magic_enum.hpp"
 
 #include "cmall/conversion.hpp"
-
 
 namespace cmall
 {
@@ -70,8 +68,8 @@ namespace cmall
 
 	boost::asio::awaitable<int> cmall_service::run_httpd()
 	{
-		//auto now	 = boost::posix_time::second_clock::local_time();
-		//cmall_user u =
+		// auto now	 = boost::posix_time::second_clock::local_time();
+		// cmall_user u =
 		//{
 		//	.uid_		  = 16,
 		//	.name_		  = (const char *)u8"起名好难",
@@ -81,20 +79,20 @@ namespace cmall
 		//	.state_		  = 1,
 		//	.created_at_  = now,
 		//	.updated_at_  = now,
-		//};
-		//std::vector<Recipient> r;
-		//for (auto i = 0; i < 5; i++) {
+		// };
+		// std::vector<Recipient> r;
+		// for (auto i = 0; i < 5; i++) {
 		//	Recipient it;
 		//	it.address = "address " + std::to_string(i);
 		//	it.province = "province " + std::to_string(i);
 
 		//	r.emplace_back(std::move(it));
 		//}
-		//u.recipients		 = r;
+		// u.recipients		 = r;
 
-		//auto jv = boost::json::value_from(u);
-		//std::string json_str = boost::json::serialize(jv);
-		//LOG_INFO << "json_str: " << json_str;
+		// auto jv = boost::json::value_from(u);
+		// std::string json_str = boost::json::serialize(jv);
+		// LOG_INFO << "json_str: " << json_str;
 
 		// 初始化ws acceptors.
 		co_await init_ws_acceptors();
@@ -399,17 +397,19 @@ namespace cmall
 				co_return;
 			}
 
-			jsonrpc_request_t req;
-			try
+			maybe_jsonrpc_request_t maybe_req = boost::json::value_to<maybe_jsonrpc_request_t>(jv);
+			if (!maybe_req.has_value())
 			{
-				req = boost::json::value_to<jsonrpc_request_t>(jv);
+				boost::json::object reply_message;
+				reply_message["jsonrpc"] = "2.0";
+				reply_message["id"]		 = nullptr;
+				reply_message["error"]	 = { { "code", -32600 }, { "message", "Invalid Request" } };
+				co_await websocket_write(connection_ptr, json_to_string(reply_message));
+				continue;
 			}
-			catch (...)                                              // FIXME 不要使用　...　捕获
-			{
-				// FIXME, 如果发的json格式不对，应该返回错误，　而不是粗暴的关闭连接.
-				co_return;
-			}
+			// FIXME, 如果发的json格式不对，应该返回错误，　而不是粗暴的关闭连接.
 
+			auto req	= maybe_req.value();
 			auto method = req.method;
 			auto params = req.params.value_or(boost::json::object{}).as_object();
 
@@ -459,7 +459,8 @@ namespace cmall
 			throw boost::system::system_error(boost::system::error_code(cmall::error::session_needed));
 		}
 
-		auto ensure_login = [&]( bool check_admin = false, bool check_merchant = false ) mutable -> boost::asio::awaitable<void>
+		auto ensure_login
+			= [&](bool check_admin = false, bool check_merchant = false) mutable -> boost::asio::awaitable<void>
 		{
 			if (!this_client.session_info->user_info)
 				throw boost::system::system_error(error::login_required);
@@ -489,12 +490,14 @@ namespace cmall
 					this_client.session_info = std::make_shared<services::client_session>();
 
 					this_client.session_info->session_id = gen_uuid();
-					sessionid = this_client.session_info->session_id;
+					sessionid							 = this_client.session_info->session_id;
 
 					co_await session_cache_map.save(*this_client.session_info);
-				}else
+				}
+				else
 				{
-					this_client.session_info = std::make_shared<services::client_session>(co_await session_cache_map.load(sessionid));
+					this_client.session_info
+						= std::make_shared<services::client_session>(co_await session_cache_map.load(sessionid));
 				}
 
 				if (this_client.session_info->user_info)
@@ -503,9 +506,10 @@ namespace cmall
 						this_client.session_info->user_info->uid_, *(this_client.session_info->user_info));
 				}
 
-				reply_message["result"] = { { "session_id", this_client.session_info->session_id }, {"isLogin", false} };
-
-			}break;
+				reply_message["result"]
+					= { { "session_id", this_client.session_info->session_id }, { "isLogin", false } };
+			}
+			break;
 
 			case req_method::user_prelogin:
 			case req_method::user_login:
@@ -541,7 +545,8 @@ namespace cmall
 				auto goods_id = jsutil::json_accessor(params).get("goods_id", -1).as_int64();
 
 				// 重新载入 user_info, 以便获取正确的收件人地址信息.
-				co_await m_database.async_load<cmall_user>(this_client.session_info->user_info->uid_, *this_client.session_info->user_info);
+				co_await m_database.async_load<cmall_user>(
+					this_client.session_info->user_info->uid_, *this_client.session_info->user_info);
 
 				cmall_product product_in_mall;
 				co_await m_database.async_load<cmall_product>(goods_id, product_in_mall);
@@ -553,15 +558,16 @@ namespace cmall
 				cmall_order new_order;
 
 				new_order.buyer_ = this_client.session_info->user_info->uid_;
-				new_order.oid_ = gen_uuid();
+				new_order.oid_	 = gen_uuid();
 				new_order.stage_ = order_unpay;
 				new_order.bought_goods.push_back(good_snap);
 				new_order.price_ = good_snap.price_;
 
 				co_await m_database.async_add(new_order);
 
-				reply_message["result"] = { { "orderid", new_order.oid_ },};
-
+				reply_message["result"] = {
+					{ "orderid", new_order.oid_ },
+				};
 			}
 			break;
 			case req_method::order_status:
@@ -576,7 +582,6 @@ namespace cmall
 
 				// 对已经存在的订单, 获取支付连接.
 				// TODO, 支付连接只能获取一次? 还是可以多次获取?
-
 			}
 			break;
 
@@ -590,10 +595,7 @@ namespace cmall
 				{
 					// FIXME, 目前商品少, 这个调用就把全站的商品都返回了吧.
 
-					if (co_await m_database.async_load_all_products(products))
-					{
-
-					}
+					if (co_await m_database.async_load_all_products(products)) { }
 
 					// 列举首页商品.
 
@@ -657,7 +659,8 @@ namespace cmall
 		co_return reply_message;
 	}
 
-	boost::asio::awaitable<boost::json::object> cmall_service::handle_jsonrpc_user_api(client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
+	boost::asio::awaitable<boost::json::object> cmall_service::handle_jsonrpc_user_api(
+		client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
 	{
 		client_connection& this_client = *connection_ptr;
 		boost::json::object reply_message;
@@ -713,10 +716,10 @@ namespace cmall
 							// TODO 新用户注册，赶紧创建个新用户
 							co_await m_database.async_add(new_user);
 							this_client.session_info->user_info = new_user;
-
 						}
 						// 更新 session 保存的 uid_
-						co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info);
+						co_await session_cache_map.save(
+							this_client.session_info->session_id, *this_client.session_info);
 						// TODO 认证成功后， sessionid 写入 mdbx 数据库以便日后恢复.
 						reply_message["result"] = { { "login", "success" }, { "usertype", "user" } };
 						break;
@@ -745,20 +748,22 @@ namespace cmall
 			case req_method::user_list_receipt_address:
 				break;
 			case req_method::user_add_receipt_address:
-				{
-					// TODO, 从 params 里拿新地址.
-					Recipient new_address;
+			{
+				// TODO, 从 params 里拿新地址.
+				Recipient new_address;
 
-					cmall_user& user_info = * this_client.session_info->user_info;
-					// 重新载入 user_info, 以便获取正确的收件人地址信息.
-					bool is_db_op_ok = co_await m_database.async_update<cmall_user>(user_info.uid_, [&](cmall_user value) {
-						value.recipients.push_back(new_address);
-						user_info = value;
-						return value;
-					});
-					reply_message["result"] = is_db_op_ok;
-				}
-				break;
+				cmall_user& user_info = *this_client.session_info->user_info;
+				// 重新载入 user_info, 以便获取正确的收件人地址信息.
+				bool is_db_op_ok		= co_await m_database.async_update<cmall_user>(user_info.uid_,
+					   [&](cmall_user value)
+					   {
+						   value.recipients.push_back(new_address);
+						   user_info = value;
+						   return value;
+					   });
+				reply_message["result"] = is_db_op_ok;
+			}
+			break;
 			case req_method::user_modify_receipt_address:
 				break;
 			case req_method::user_erase_receipt_address:

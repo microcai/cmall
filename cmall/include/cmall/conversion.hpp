@@ -2,6 +2,7 @@
 #pragma once
 
 #include <boost/json.hpp>
+#include <optional>
 #include "cmall/db-odb.hxx"
 #include "cmall/db.hpp"
 
@@ -19,7 +20,8 @@ inline namespace conversion
 		std::optional<std::string> id; // TODO: type could be string or number
 		std::optional<value> params; // must be [] or {}
 	};
+	using maybe_jsonrpc_request_t = std::optional<jsonrpc_request_t>;
 
 	// deserialization
-	jsonrpc_request_t tag_invoke(const value_to_tag<jsonrpc_request_t>&, const value&);
+	maybe_jsonrpc_request_t tag_invoke(const value_to_tag<maybe_jsonrpc_request_t>&, const value&);
 }
