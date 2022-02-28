@@ -17,7 +17,6 @@ inline namespace conversion
 
 	struct jsonrpc_request_t
 	{
-		std::string jsonrpc; // must be "2.0"
 		std::string method;
 		std::optional<std::string> id; // TODO: type could be string or number
 		std::optional<value> params; // must be [] or {}
