@@ -1,4 +1,4 @@
-
+﻿
 #pragma once
 
 #include <concepts>
@@ -27,41 +27,29 @@ namespace jsutil
             : obj_(obj.as_object())
         {}
 
-		inline json::value get(char const* key, json::value default_value) const
+		inline json::value get(char const* key, json::value default_value) const noexcept
 		{
-			try {
-				if (obj_.contains(key))
-					return obj_.at(key);
-			}
-			catch (const std::invalid_argument&)
-			{}
+			if (obj_.contains(key))
+				return obj_.at(key);
 
 			return default_value;
 		}
 
-		inline json::object get_obj(char const* key) const
+		inline json::object get_obj(char const* key) const noexcept
 		{
-			try {
-				if (obj_.contains(key))
-					return obj_.at(key).as_object();
-			}
-			catch (const std::invalid_argument&)
-			{}
+			if (obj_.contains(key))
+				return obj_.at(key).as_object();
 
 			return json::object{};
 		}
 
-		inline std::string get_string(char const* key) const
+		inline std::string get_string(char const* key) const noexcept
 		{
-			try {
-				if (obj_.contains(key))
-				{
-					auto ref = obj_.at(key).as_string();
-					return std::string(ref.begin(), ref.end());
-				}
+			if (obj_.contains(key))
+			{
+				auto ref = obj_.at(key).as_string();
+				return std::string(ref.begin(), ref.end());
 			}
-			catch (const std::invalid_argument&)
-			{}
 
 			return std::string{};
 		}
