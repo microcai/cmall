@@ -4,6 +4,12 @@
 
 inline namespace conversion
 {
+	using namespace boost::json;
+
+	void tag_invoke(const value_from_tag&, value& jv, const cpp_numeric& u)
+	{
+		jv = to_string(u);
+	}
 
 	void tag_invoke(const value_from_tag&, value& jv, const cmall_user& u)
 	{
