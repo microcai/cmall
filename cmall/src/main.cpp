@@ -168,7 +168,6 @@ static boost::asio::awaitable<std::string> get_default_cache_dir()
 
 boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 {
-	platform_init();
 	std::vector<std::string> upstreams;
 	std::vector<std::string> ws_listens;
 	std::string wsorigin;
@@ -247,7 +246,7 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 	cfg.wsorigin_ = wsorigin;
 	cfg.session_cache_file = session_cache;
 
-	cmall::cmall_service xsrv{ios, cfg};
+	cmall::cmall_service xsrv(ios, cfg);
 
 	using namespace boost::asio::experimental::awaitable_operators;
 
@@ -268,6 +267,8 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 
 int main(int argc, char** argv)
 {
+	platform_init();
+
 	int main_return;
 
 	io_context_pool ios(boost::thread::hardware_concurrency());
