@@ -2,8 +2,7 @@
 #include "cmall/conversion.hpp"
 #include "cmall/misc.hpp"
 
-
-namespace conversion
+inline namespace conversion
 {
 
 	void tag_invoke(const value_from_tag&, value& jv, const cmall_user& u)
