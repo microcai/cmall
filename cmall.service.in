@@ -5,7 +5,7 @@ Requires=postgresql.service
 
 [Service]
 ExecStartPre=/usr/bin/mkdir -p /var/log/cmall
-ExecStart=@CMAKE_INSTALL_PREFIX@/bin/cmall --db_host 127.0.0.1 --http 127.0.0.1:9797
+ExecStart=@CMAKE_INSTALL_PREFIX@/bin/cmall --db_host 127.0.0.1 --ws 127.0.0.1:9797
 WorkingDirectory=/var/log/cmall
 
 LimitNOFILE=900000
