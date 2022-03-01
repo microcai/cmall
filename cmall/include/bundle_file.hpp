@@ -30,7 +30,8 @@ namespace{
 		{ ".js", "application/javascript" },
 		{ ".css", "text/css" },
 		{ ".woff", "application/x-font-woff" },
-		{ ".png", "image/png" }
+		{ ".png", "image/png" },
+		{ ".svg", "image/svg" }
 	};
 
 	struct exe_bundle_file
