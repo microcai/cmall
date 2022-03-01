@@ -163,7 +163,7 @@ if (IOUring_FOUND)
 	add_definitions(-DBOOST_ASIO_HAS_IO_URING -DBOOST_ASIO_DISABLE_EPOLL)
 	link_libraries(${IOUring_LIBRARIES})
 endif()
-add_subdirectory(third_party/boost)
+add_subdirectory(third_party/boost EXCLUDE_FROM_ALL)
 
 if (ENABLE_TCMALLOC_STATIC)
 	find_package(Tcmalloc)
@@ -252,8 +252,6 @@ set(MDBX_BUILD_SHARED_LIBRARY OFF)
 add_subdirectory(third_party/libmdbx)
 
 link_libraries(
-		Boost::coroutine
-		Boost::context
 		Boost::thread
 		Boost::date_time
 		Boost::filesystem
