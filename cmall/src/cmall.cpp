@@ -816,7 +816,8 @@ namespace cmall
 	{
 		client_connection& this_client = *connection_ptr;
 		boost::json::object reply_message;
-		cmall_user& this_user = *(this_client.session_info->user_info);
+		services::client_session& session_info = *this_client.session_info;
+		cmall_user& this_user = *(session_info.user_info);
 
 		switch (method)
 		{
@@ -866,9 +867,8 @@ namespace cmall
 				break;
 			case req_method::order_list:
 			{
-				auto uid = this_client.session_info->user_info->uid_;
 				std::vector<cmall_order> orders;
-				co_await m_database.async_load_all_user_orders(orders, uid);
+				co_await m_database.async_load_all_user_orders(orders, this_user.uid_);
 
 				LOG_DBG << "order_list retrived, " << orders.size() << " items";
 				reply_message["result"] = boost::json::value_from(orders);
