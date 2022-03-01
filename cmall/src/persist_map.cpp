@@ -6,13 +6,15 @@
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/experimental/promise.hpp>
+#include <boost/asio/cancellation_signal.hpp>
+
 #include "utils/time_clock.hpp"
 #include "utils/logging.hpp"
 
 using steady_timer = boost::asio::basic_waitable_timer<time_clock::steady_clock>;
 
 #include "persist_map.hpp"
+#include "utils/coroyield.hpp"
 
 #include "libmdbx/mdbx.h++"
 
@@ -38,15 +40,13 @@ struct persist_map_impl
 	map_handle mdbx_default_map;
 	map_handle mdbx_lifetime_map;
 
-	steady_timer m_task_timer;
-	boost::asio::experimental::promise<void(std::exception_ptr)> background_task_coro;
+	boost::asio::cancellation_signal m_cancell_signal;
 
 	persist_map_impl(std::filesystem::path session_cache_file)
 		: work(std::make_shared<boost::asio::io_context::work>(ioc))
 		, mdbx_env(session_cache_file, get_default_operate_parameters())
-		, m_task_timer(ioc)
-		, background_task_coro(boost::asio::co_spawn(ioc, background_task(), boost::asio::experimental::use_promise))
 	{
+		boost::asio::co_spawn(ioc, background_task(), boost::asio::bind_cancellation_slot(m_cancell_signal.slot(), boost::asio::detached));
 		txn_managed t = mdbx_env.start_write();
 		mdbx_default_map = t.create_map(NULL);
 		t.put(mdbx_default_map, mdbx::slice("_persistmap"), mdbx::slice("persistmap"), upsert);
@@ -65,19 +65,26 @@ struct persist_map_impl
 	{
 		work.reset();
 
-		boost::system::error_code ec;
-		m_task_timer.cancel(ec);
-
-		background_task_coro.cancel();
+		m_cancell_signal.emit(boost::asio::cancellation_type::terminal);
 
 		for (auto & runner : runners)
 			runner.join();
 	}
 
+	static boost::asio::awaitable<bool> check_canceled()
+	{
+		boost::asio::cancellation_state cs = co_await boost::asio::this_coro::cancellation_state;
+		if (cs.cancelled() != boost::asio::cancellation_type::none)
+			throw boost::system::system_error(boost::asio::error::operation_aborted);
+		co_return false;
+	}
+
 	boost::asio::awaitable<void> background_task()
 	{
+		co_await this_coro::coro_yield();
+
 		std::cerr << "background_task() running\n";
-		for (;;)
+		for (co_await check_canceled(); !co_await check_canceled(); co_await check_canceled())
 		{
 			try
 			{
@@ -128,10 +135,12 @@ struct persist_map_impl
 			{
 				std::cerr << "background_task() exception: " << e.what()  << "\n";
 			}
-			co_await boost::asio::this_coro::throw_if_cancelled();
 
-			m_task_timer.expires_from_now(std::chrono::seconds(60));
-			co_await m_task_timer.async_wait(boost::asio::use_awaitable);
+			co_await check_canceled();
+
+			steady_timer timer(co_await boost::asio::this_coro::executor);
+			timer.expires_from_now(std::chrono::seconds(60));
+			co_await timer.async_wait(boost::asio::bind_cancellation_slot(m_cancell_signal.slot(), boost::asio::use_awaitable));
 		}
 	}
 

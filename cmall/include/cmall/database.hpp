@@ -1,4 +1,4 @@
-//
+﻿//
 // Copyright (C) 2019 Jack.
 //
 // Author: jack
@@ -290,10 +290,10 @@ namespace cmall
 		{
 			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
 				void(boost::system::error_code, bool)>(
-				[this, id, value](auto&& handler) mutable
+				[id, &value, this](auto&& handler) mutable
 				{
 					boost::asio::post(thread_pool,
-						[handler = std::move(handler), this, id, value]() mutable
+						[id, &value, this, handler = std::move(handler)]() mutable
 						{
 							auto ret = get<T>(id, value);
 							post_result(ret, std::move(handler));
