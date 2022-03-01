@@ -60,8 +60,6 @@ namespace services
 
 			verify_code_stor.put(ret.session_cookie, sended_smscode);
 
-			ret.session_cookie = "fake_test:" + telephone;
-
 			co_return ret;
 		}
 
