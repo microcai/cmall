@@ -19,7 +19,6 @@ inline namespace conversion
 			{ "phone", u.active_phone },
 			{ "verified", u.verified_ },
 			{ "state", u.state_ },
-			{ "recipients", u.recipients },
 			{ "desc", u.desc_.null() ? "" : u.desc_.get() },
 			{ "created_at", to_string(u.created_at_) },
 		};
