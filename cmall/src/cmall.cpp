@@ -753,7 +753,7 @@ namespace cmall
 				reply_message["result"] = true;
 			}
 			break;
-			case req_method::user_list_receipt_address:
+			case req_method::user_list_recipient_address:
 			{
 				// 重新载入 user_info, 以便获取正确的收件人地址信息.
 				co_await m_database.async_load<cmall_user>(session_info.user_info->uid_, *(session_info.user_info));
@@ -768,7 +768,7 @@ namespace cmall
 				reply_message["result"] = recipients_array;
 			}
 			break;
-			case req_method::user_add_receipt_address:
+			case req_method::user_add_recipient_address:
 			{
 				Recipient new_address;
 

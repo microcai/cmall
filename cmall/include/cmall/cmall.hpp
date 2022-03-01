@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (C) 2019 Jack.
 //
 // Author: jack
@@ -104,8 +104,8 @@ namespace cmall {
 		user_list_products,
 		user_apply_merchant,
 
-		user_list_receipt_address,
-		user_add_receipt_address,
+		user_list_recipient_address,
+		user_add_recipient_address,
 		user_modify_receipt_address,
 		user_erase_receipt_address,
 
