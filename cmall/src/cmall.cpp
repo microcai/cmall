@@ -866,6 +866,8 @@ namespace cmall
 				// TODO, 支付连接只能获取一次? 还是可以多次获取?
 			}
 			break;
+			default:
+				throw "this should never be excuted";
 		}
 		co_return reply_message;
 	}
