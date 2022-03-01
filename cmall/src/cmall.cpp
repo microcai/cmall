@@ -1,4 +1,4 @@
-
+﻿
 #include <boost/asio.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/experimental/promise.hpp>
@@ -869,6 +869,8 @@ namespace cmall
 				auto uid = this_client.session_info->user_info->uid_;
 				std::vector<cmall_order> orders;
 				co_await m_database.async_load_all_user_orders(orders, uid);
+
+				LOG_DBG << "order_list retrived, " << orders.size() << " items";
 				reply_message["result"] = boost::json::value_from(orders);
 
 			}break;
