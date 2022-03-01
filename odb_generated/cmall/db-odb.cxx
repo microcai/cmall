@@ -3778,6 +3778,7 @@ namespace odb
     pgsql::text_oid,
     pgsql::text_oid,
     pgsql::text_oid,
+    pgsql::text_oid,
     pgsql::int2_oid,
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
@@ -3794,6 +3795,7 @@ namespace odb
   update_statement_types[] =
   {
     pgsql::int8_oid,
+    pgsql::text_oid,
     pgsql::text_oid,
     pgsql::text_oid,
     pgsql::text_oid,
@@ -3908,21 +3910,29 @@ namespace odb
       grew = true;
     }
 
-    // state_
+    // detail_
     //
-    t[6UL] = 0;
+    if (t[6UL])
+    {
+      i.detail_value.capacity (i.detail_size);
+      grew = true;
+    }
 
-    // created_at_
+    // state_
     //
     t[7UL] = 0;
 
-    // updated_at_
+    // created_at_
     //
     t[8UL] = 0;
 
-    // deleted_at_
+    // updated_at_
     //
     t[9UL] = 0;
+
+    // deleted_at_
+    //
+    t[10UL] = 0;
 
     return grew;
   }
@@ -3989,6 +3999,15 @@ namespace odb
     b[n].capacity = i.description_value.capacity ();
     b[n].size = &i.description_size;
     b[n].is_null = &i.description_null;
+    n++;
+
+    // detail_
+    //
+    b[n].type = pgsql::bind::text;
+    b[n].buffer = i.detail_value.data ();
+    b[n].capacity = i.detail_value.capacity ();
+    b[n].size = &i.detail_size;
+    b[n].is_null = &i.detail_null;
     n++;
 
     // state_
@@ -4138,6 +4157,27 @@ namespace odb
       i.description_null = is_null;
       i.description_size = size;
       grew = grew || (cap != i.description_value.capacity ());
+    }
+
+    // detail_
+    //
+    {
+      ::std::string const& v =
+        o.detail_;
+
+      bool is_null (false);
+      std::size_t size (0);
+      std::size_t cap (i.detail_value.capacity ());
+      pgsql::value_traits<
+          ::std::string,
+          pgsql::id_string >::set_image (
+        i.detail_value,
+        size,
+        is_null,
+        v);
+      i.detail_null = is_null;
+      i.detail_size = size;
+      grew = grew || (cap != i.detail_value.capacity ());
     }
 
     // state_
@@ -4296,6 +4336,21 @@ namespace odb
         i.description_null);
     }
 
+    // detail_
+    //
+    {
+      ::std::string& v =
+        o.detail_;
+
+      pgsql::value_traits<
+          ::std::string,
+          pgsql::id_string >::set_value (
+        v,
+        i.detail_value,
+        i.detail_size,
+        i.detail_null);
+    }
+
     // state_
     //
     {
@@ -4374,12 +4429,13 @@ namespace odb
   "\"price\", "
   "\"currency\", "
   "\"description\", "
+  "\"detail\", "
   "\"state\", "
   "\"created_at\", "
   "\"updated_at\", "
   "\"deleted_at\") "
   "VALUES "
-  "(DEFAULT, $1, $2, $3::numeric, $4, $5, $6, $7, $8, $9) "
+  "(DEFAULT, $1, $2, $3::numeric, $4, $5, $6, $7, $8, $9, $10) "
   "RETURNING \"id\"";
 
   const char access::object_traits_impl< ::cmall_product, id_pgsql >::find_statement[] =
@@ -4390,6 +4446,7 @@ namespace odb
   "\"cmall_product\".\"price\"::TEXT, "
   "\"cmall_product\".\"currency\", "
   "\"cmall_product\".\"description\", "
+  "\"cmall_product\".\"detail\", "
   "\"cmall_product\".\"state\", "
   "\"cmall_product\".\"created_at\", "
   "\"cmall_product\".\"updated_at\", "
@@ -4405,11 +4462,12 @@ namespace odb
   "\"price\"=$3::numeric, "
   "\"currency\"=$4, "
   "\"description\"=$5, "
-  "\"state\"=$6, "
-  "\"created_at\"=$7, "
-  "\"updated_at\"=$8, "
-  "\"deleted_at\"=$9 "
-  "WHERE \"id\"=$10";
+  "\"detail\"=$6, "
+  "\"state\"=$7, "
+  "\"created_at\"=$8, "
+  "\"updated_at\"=$9, "
+  "\"deleted_at\"=$10 "
+  "WHERE \"id\"=$11";
 
   const char access::object_traits_impl< ::cmall_product, id_pgsql >::erase_statement[] =
   "DELETE FROM \"cmall_product\" "
@@ -4423,6 +4481,7 @@ namespace odb
   "\"cmall_product\".\"price\"::TEXT, "
   "\"cmall_product\".\"currency\", "
   "\"cmall_product\".\"description\", "
+  "\"cmall_product\".\"detail\", "
   "\"cmall_product\".\"state\", "
   "\"cmall_product\".\"created_at\", "
   "\"cmall_product\".\"updated_at\", "
@@ -7301,6 +7360,7 @@ namespace odb
                       "  \"price\" numeric NOT NULL,\n"
                       "  \"currency\" TEXT NOT NULL,\n"
                       "  \"description\" TEXT NOT NULL,\n"
+                      "  \"detail\" TEXT NOT NULL,\n"
                       "  \"state\" SMALLINT NOT NULL,\n"
                       "  \"created_at\" TIMESTAMP NULL,\n"
                       "  \"updated_at\" TIMESTAMP NULL,\n"
@@ -7374,7 +7434,7 @@ namespace odb
                       "  \"migration\" BOOLEAN NOT NULL)");
           db.execute ("INSERT INTO \"schema_version\" (\n"
                       "  \"name\", \"version\", \"migration\")\n"
-                      "  SELECT '', 2, FALSE\n"
+                      "  SELECT '', 3, FALSE\n"
                       "  WHERE NOT EXISTS (\n"
                       "    SELECT 1 FROM \"schema_version\" WHERE \"name\" = '')");
           return false;
@@ -7414,6 +7474,8 @@ namespace odb
           db.execute ("ALTER TABLE \"cmall_user_recipients\"\n"
                       "  ADD COLUMN \"value_name\" TEXT NULL,\n"
                       "  ADD COLUMN \"value_telephone\" TEXT NULL");
+          db.execute ("ALTER TABLE \"cmall_product\"\n"
+                      "  ADD COLUMN \"detail\" TEXT NULL");
           db.execute ("CREATE TABLE \"cmall_order_recipient\" (\n"
                       "  \"object_id\" BIGINT NOT NULL,\n"
                       "  \"index\" BIGINT NOT NULL,\n"
@@ -7455,6 +7517,8 @@ namespace odb
         }
         case 2:
         {
+          db.execute ("ALTER TABLE \"cmall_product\"\n"
+                      "  ALTER COLUMN \"detail\" SET NOT NULL");
           db.execute ("ALTER TABLE \"cmall_user_recipients\"\n"
                       "  ALTER COLUMN \"value_name\" SET NOT NULL,\n"
                       "  ALTER COLUMN \"value_telephone\" SET NOT NULL");
@@ -7475,6 +7539,58 @@ namespace odb
     "",
     2ULL,
     &migrate_schema_2);
+
+  static bool
+  migrate_schema_3 (database& db, unsigned short pass, bool pre)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (pass);
+    ODB_POTENTIALLY_UNUSED (pre);
+
+    if (pre)
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"version\" = 3, \"migration\" = TRUE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+    else
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"migration\" = FALSE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  static const schema_catalog_migrate_entry
+  migrate_schema_entry_3_ (
+    id_pgsql,
+    "",
+    3ULL,
+    &migrate_schema_3);
 }
 
 #include <odb/post.hxx>

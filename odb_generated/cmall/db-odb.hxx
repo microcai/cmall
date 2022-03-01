@@ -1450,6 +1450,18 @@ namespace odb
 
     static const description_type_ description;
 
+    // detail
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::std::string,
+        pgsql::id_string >::query_type,
+      pgsql::id_string >
+    detail_type_;
+
+    static const detail_type_ detail;
+
     // state
     //
     typedef
@@ -1530,6 +1542,11 @@ namespace odb
   description (A::table_name, "\"description\"", 0);
 
   template <typename A>
+  const typename query_columns< ::cmall_product, id_pgsql, A >::detail_type_
+  query_columns< ::cmall_product, id_pgsql, A >::
+  detail (A::table_name, "\"detail\"", 0);
+
+  template <typename A>
   const typename query_columns< ::cmall_product, id_pgsql, A >::state_type_
   query_columns< ::cmall_product, id_pgsql, A >::
   state (A::table_name, "\"state\"", 0);
@@ -1604,6 +1621,12 @@ namespace odb
       std::size_t description_size;
       bool description_null;
 
+      // detail_
+      //
+      details::buffer detail_value;
+      std::size_t detail_size;
+      bool detail_null;
+
       // state_
       //
       short state_value;
@@ -1666,7 +1689,7 @@ namespace odb
 
     typedef pgsql::query_base query_base_type;
 
-    static const std::size_t column_count = 10UL;
+    static const std::size_t column_count = 11UL;
     static const std::size_t id_column_count = 1UL;
     static const std::size_t inverse_column_count = 0UL;
     static const std::size_t readonly_column_count = 0UL;
