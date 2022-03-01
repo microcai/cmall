@@ -600,7 +600,7 @@ namespace cmall
 					// 列出商户的上架商品.
 				}
 
-				reply_message["result"] = jsutil::to_json(products);
+				reply_message["result"] = boost::json::from_value(products);
 			}
 			break;
 			case req_method::goods_detail:
@@ -610,6 +610,8 @@ namespace cmall
 				// TODO
 				// NOTE: 商品的描述, 使用 GET 操作, 以便这种大段的富文本描述信息能被 CDN 缓存．
 			}
+			break;
+			case merchant_product_list:
 			break;
 
 			case req_method::merchant_product_add:
@@ -726,8 +728,6 @@ namespace cmall
 				reply_message["result"] = boost::json::value_from(uinfo);
 			}
 			break;
-			case req_method::user_list_products:
-				break;
 			case req_method::user_apply_merchant:
 			{
 				auto uid = session_info.user_info->uid_;
@@ -761,7 +761,7 @@ namespace cmall
 				boost::json::array recipients_array;
 				for (int i = 0; i < user_info.recipients.size(); i++)
 				{
-					auto jsobj =  jsutil::to_json(user_info.recipients[i]);
+					auto jsobj =  boost::json::value_from(user_info.recipients[i]);
 					jsobj.as_object()["id"] = i;
 					recipients_array.push_back(jsobj);
 				}

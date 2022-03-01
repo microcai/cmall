@@ -28,6 +28,8 @@ inline namespace conversion
 	{
 		jv = {
 			{ "address", r.address },
+			{ "telephone", r.telephone},
+			{ "name", r.name},
 			{ "is_default", r.as_default },
 			{ "province", r.province.null() ? "" : r.province.get() },
 			{ "city", r.city.null() ? "" : r.city.get() },

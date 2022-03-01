@@ -100,8 +100,6 @@ namespace cmall {
 		user_logout,
 		user_islogin,
 		user_info,
-
-		user_list_products,
 		user_apply_merchant,
 
 		user_list_recipient_address,
@@ -124,6 +122,7 @@ namespace cmall {
 		goods_list,
 		goods_detail,
 
+		merchant_product_list,
 		merchant_product_add,
 		merchant_product_mod,
 		merchant_product_launch,

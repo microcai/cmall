@@ -11,7 +11,6 @@
 #include "cmall/db.hpp"
 
 #include "cmall/rpc_defs.hpp"
-#include "./myconcepts"
 
 namespace jsutil
 {
@@ -78,102 +77,5 @@ namespace jsutil
 	{
 		if (lf) return boost::json::serialize(jv) + "\n";
 		return boost::json::serialize(jv);
-	}
-
-	template<typename T>
-	inline boost::json::value value_to_json(const T& t)
-	{
-		return boost::json::value(t);
-	}
-
-	template<typename T>
-	inline boost::json::value to_json(T&& t)
-	{
-		return value_to_json(std::forward<T>(t));
-	}
-
-	template<typename T>
-	requires concepts::isString<T>
-	inline boost::json::value to_json(T&& str)
-	{
-		return boost::json::value(str);
-	}
-
-	template<typename T>
-	requires concepts::isVector<T> && (!concepts::isString<T>)
-	inline boost::json::value to_json(T&& vector_of_t)
-	{
-		boost::json::array array;
-
-		for (const auto& t :  vector_of_t)
-			array.push_back(value_to_json(t));
-
-		return array;
-	}
-
-	template<>
-	inline boost::json::value value_to_json(const cpp_numeric& t)
-	{
-		boost::json::string j(to_string(t));
-		return j;
-	}
-
-	template<>
-	inline boost::json::value value_to_json(const cpp_int& t)
-	{
-		boost::json::string j(to_string(t));
-		return j;
-	}
-
-	template<>
-	inline boost::json::value value_to_json(const odb::nullable<std::string>& t)
-	{
-		boost::json::string j(t.get());
-		return j;
-	}
-
-	template<>
-	inline boost::json::value value_to_json(const odb::nullable<long>& t)
-	{
-		boost::json::value j(t.get());
-		return j;
-	}
-
-	template<>
-	inline boost::json::value value_to_json(const boost::posix_time::ptime& t)
-	{
-		boost::json::string j([](auto && t) -> std::string
-		{
-			if (t.is_not_a_date_time())
-				return "";
-			return boost::posix_time::to_iso_extended_string(t);
-		}(t));
-		return j;
-	}
-
-	template<>
-	inline boost::json::value value_to_json(const cmall_product& t)
-	{
-		boost::json::object j;
-
-		j.insert_or_assign("name", t.name_ );
-		j.insert_or_assign("merchant", t.owner_);
-		j.insert_or_assign("id", t.id_ );
-		j.insert_or_assign("price", to_json(t.price_) );
-		j.insert_or_assign("describe", t.description_ );
-
-		return j;
-	}
-
-	template<>
-	inline boost::json::value value_to_json(const Recipient& t)
-	{
-		boost::json::object j;
-
-		j.insert_or_assign("name", t.name );
-		j.insert_or_assign("address", t.address);
-		j.insert_or_assign("telephone", to_json(t.telephone) );
-
-		return j;
 	}
 }
