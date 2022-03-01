@@ -154,12 +154,13 @@ struct cmall_product {
 
 	std::string name_; // 商品名称.
 
- #pragma db type("numeric")
+#pragma db type("numeric")
 	cpp_numeric price_;
 	std::string currency_{"cny"}; // 币种
 
 	std::string description_; // 商品描述, rtl 内容
 
+#pragma db default("")
 	std::string detail_; // 商品详情
 
 #pragma db index
