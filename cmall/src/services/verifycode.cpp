@@ -7,6 +7,7 @@
 #include "services/verifycode.hpp"
 
 #include "utils/timedmap.hpp"
+#include "utils/logging.hpp"
 
 namespace services
 {
@@ -53,6 +54,9 @@ namespace services
 
 			std::size_t sended_smscode_len = co_await boost::asio::async_read(ap, boost::asio::buffer(sended_smscode), boost::asio::use_awaitable);
 			sended_smscode.resize(sended_smscode_len);
+
+			LOG_DBG << "sendsms_verify returned: " << sended_smscode;
+
 			verify_session ret;
 
 			ret.session_cookie = gen_uuid();
