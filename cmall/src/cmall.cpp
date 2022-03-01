@@ -664,6 +664,7 @@ namespace cmall
 	{
 		client_connection& this_client = *connection_ptr;
 		boost::json::object reply_message;
+		services::client_session& session_info = *this_client.session_info;
 
 		boost::system::error_code ec;
 
@@ -677,50 +678,43 @@ namespace cmall
 				// verify_code_token 对同一个手机号只能一分钟内请求一次.
 
 				std::string tel = jsutil::json_as_string(jsutil::json_accessor(params).get("telephone", ""));
-				// TODO 获取验证码.
-				verify_session_cookie = co_await telephone_verifier.send_verify_code(tel, ec);
 
-				if (ec)
-				{
-					// TODO, 汇报验证码发送失败.
-				}
-				else
-				{
-					this_client.session_info->verify_session_cookie = verify_session_cookie;
-					reply_message["result"]							= true;
-				}
+				session_info.verify_telephone = tel;
+				verify_session_cookie = co_await telephone_verifier.send_verify_code(tel);
+
+				session_info.verify_session_cookie = verify_session_cookie;
+				reply_message["result"] = true;
+
 			}
 			break;
 			case req_method::user_login:
 			{
 				std::string verify_code = jsutil::json_accessor(params).get_string("verify_code");
 
-				if (this_client.session_info->verify_session_cookie)
+				if (session_info.verify_session_cookie)
 				{
 					if (co_await telephone_verifier.verify_verify_code(
 							verify_code, this_client.session_info->verify_session_cookie.value()))
 					{
 						// SUCCESS.
 						cmall_user user;
-						if (co_await m_database.async_load_user_by_phone(
-								this_client.session_info->verify_telephone, user))
+						if (co_await m_database.async_load_user_by_phone(session_info.verify_telephone, user))
 						{
-							// TODO, 载入成功
-							this_client.session_info->user_info = cmall_user{};
+							session_info.user_info = user;
 						}
 						else
 						{
 							cmall_user new_user;
 							new_user.active_phone = this_client.session_info->verify_telephone;
 
-							// TODO 新用户注册，赶紧创建个新用户
+							// 新用户注册，赶紧创建个新用户
 							co_await m_database.async_add(new_user);
 							this_client.session_info->user_info = new_user;
 						}
-						// 更新 session 保存的 uid_
+						session_info.verify_session_cookie = {};
+						// 认证成功后， sessionid 写入 mdbx 数据库以便日后恢复.
 						co_await session_cache_map.save(
 							this_client.session_info->session_id, *this_client.session_info);
-						// TODO 认证成功后， sessionid 写入 mdbx 数据库以便日后恢复.
 						reply_message["result"] = { { "login", "success" }, { "usertype", "user" } };
 						break;
 					}
