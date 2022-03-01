@@ -56,7 +56,7 @@ namespace services
 			if (jv.contains("uid"))
 			{
 				cs.user_info = cmall_user{};
-				cs.user_info->uid_ = jv.at("uid").as_uint64();
+				cs.user_info->uid_ = jv.at("uid").as_int64();
 			}
 
 			co_return cs;
@@ -69,7 +69,7 @@ namespace services
 
 			boost::json::object ser;
 			if (session.user_info)
-				ser["uid"] = session.user_info->uid_;
+				ser["uid"] = static_cast<std::uint64_t>(session.user_info->uid_);
 			ser["verifyinfo"] = { { "tel", session.verify_telephone },  { "verify_cookie", session.verify_session_cookie ? verify_session_access::as_string(session.verify_session_cookie.value()) : std::string("") } };
 
 			co_await mdbx_db.put(session_id, json_to_string(ser) );
