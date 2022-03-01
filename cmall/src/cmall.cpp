@@ -800,7 +800,7 @@ namespace cmall
 		co_return reply_message;
 	}
 
-	boost::asio::awaitable<boost::json::object> handle_jsonrpc_order_api(client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
+	boost::asio::awaitable<boost::json::object> cmall_service::handle_jsonrpc_order_api(client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
 	{
 		client_connection& this_client = *connection_ptr;
 		boost::json::object reply_message;
