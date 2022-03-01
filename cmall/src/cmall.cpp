@@ -780,7 +780,7 @@ namespace cmall
 				Recipient new_address;
 
 				// 这次这里获取不到就 throw 出去， 给客户端一点颜色 see see.
-				new_address.telphone = params["telphone"].as_string();
+				new_address.telephone = params["telephone"].as_string();
 				new_address.address =  params["address"].as_string();
 				new_address.name = params["name"].as_string();
 
