@@ -46,7 +46,7 @@ namespace services
 
 			boost::process::async_pipe ap(io);
 
-			boost::process::child node_js_code_sender(boost::process::search_path("sendsms_verify"), telephone, boost::process::std_out > ap);
+			boost::process::child node_js_code_sender(boost::process::search_path("sendsms_verify"), "--phone", telephone, boost::process::std_out > ap);
 
 			std::string sended_smscode;
 
@@ -103,6 +103,7 @@ namespace services
 
 	verifycode::verifycode(boost::asio::io_context& io)
 	{
+		static_assert(sizeof(obj_stor) >= sizeof(verifycode_impl));
 		std::construct_at(reinterpret_cast<verifycode_impl*>(obj_stor.data()), io);
 	}
 
