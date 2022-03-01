@@ -804,6 +804,7 @@ namespace cmall
 	{
 		client_connection& this_client = *connection_ptr;
 		boost::json::object reply_message;
+		cmall_user& this_user = this_client.session_info->user_info;
 
 		switch (method)
 		{
@@ -860,10 +861,9 @@ namespace cmall
 			}break;
 			case req_method::order_get_pay_url:
 			{
-
-
 				// 对已经存在的订单, 获取支付连接.
 				// TODO, 支付连接只能获取一次? 还是可以多次获取?
+				reply_message["result"] = { {"type", "url"}, {"url", "chspay://to=xxxxx&value=1000&token=xxx" } };
 			}
 			break;
 			default:
