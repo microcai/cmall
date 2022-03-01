@@ -53,6 +53,12 @@ namespace services
 			if (!verify_cookie.empty())
 				cs.verify_session_cookie = verify_session_access::from_string(verify_cookie);
 
+			if (jv.contains("uid"))
+			{
+				cs.user_info = cmall_user{};
+				cs.user_info->uid_ = jv.at("uid").as_uint64();
+			}
+
 			co_return cs;
 		}
 
