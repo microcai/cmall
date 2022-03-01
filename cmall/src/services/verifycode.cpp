@@ -46,7 +46,7 @@ namespace services
 
 			boost::process::async_pipe ap(io);
 
-			boost::process::child node_js_code_sender(boost::process::search_path("sendsms_verify"), "--phone", telephone, boost::process::std_out > ap);
+			boost::process::child node_js_code_sender(boost::process::search_path("sendsms_verify"), telephone, boost::process::std_out > ap);
 
 			std::string sended_smscode;
 
