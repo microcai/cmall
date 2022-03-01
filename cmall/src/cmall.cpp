@@ -777,7 +777,7 @@ namespace cmall
 				boost::json::array recipients_array;
 				for (int i = 0; i < user_info.recipients.size(); i++)
 				{
-					auto jsobj =  jsutil::to_json(user_info.recipients);
+					auto jsobj =  jsutil::to_json(user_info.recipients[i]);
 					jsobj.as_object()["id"] = i;
 					recipients_array.push_back(jsobj);
 				}
