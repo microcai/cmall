@@ -74,6 +74,12 @@ namespace jsutil
 		return default_value;
 	}
 
+	inline std::string json_to_string(const boost::json::value& jv, bool lf = true)
+	{
+		if (lf) return boost::json::serialize(jv) + "\n";
+		return boost::json::serialize(jv);
+	}
+
 	template<typename T>
 	inline boost::json::value value_to_json(const T& t)
 	{

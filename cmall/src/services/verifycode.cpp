@@ -43,10 +43,9 @@ namespace services
 		// send verifycode, returns verify session.
 		boost::asio::awaitable<verify_session> send_verify_code(std::string telephone, boost::system::error_code& ec)
 		{
-
 			boost::process::async_pipe ap(io);
 
-			boost::process::child node_js_code_sender(boost::process::search_path("sendsms_verify"), telephone, boost::process::std_out > ap);
+			boost::process::child node_js_code_sender(boost::process::search_path("sendsms_verify"), "--phone", telephone, boost::process::std_out > ap);
 
 			std::string sended_smscode;
 
@@ -59,6 +58,11 @@ namespace services
 			ret.session_cookie = gen_uuid();
 
 			verify_code_stor.put(ret.session_cookie, sended_smscode);
+
+			std::error_code stdec;
+			node_js_code_sender.wait_for(std::chrono::milliseconds(12), stdec);
+			if (!node_js_code_sender.running())
+				node_js_code_sender.join();
 
 			co_return ret;
 		}

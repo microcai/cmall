@@ -35,7 +35,6 @@
 
 #include "cmall/http_static_file_handle.hpp"
 #include "cmall/js_util.hpp"
-#include "jsonrpc.hpp"
 #include "magic_enum.hpp"
 
 #include "cmall/conversion.hpp"
@@ -410,7 +409,7 @@ namespace cmall
 				reply_message["jsonrpc"] = "2.0";
 				reply_message["id"]		 = jv.at("id");
 				reply_message["error"]	 = { { "code", -32600 }, { "message", "Invalid Request" } };
-				co_await websocket_write(connection_ptr, json_to_string(reply_message));
+				co_await websocket_write(connection_ptr, jsutil::json_to_string(reply_message));
 				continue;
 			}
 			// FIXME, 如果发的json格式不对，应该返回错误，　而不是粗暴的关闭连接.
@@ -427,7 +426,7 @@ namespace cmall
 				// 未有 session 前， 先不并发处理 request，避免 客户端恶意并发 recover_session 把程序挂掉
 				replay_message = co_await handle_jsonrpc_call(connection_ptr, method, params);
 				replay_message.insert_or_assign("id", jv.at("id"));
-				co_await websocket_write(connection_ptr, json_to_string(replay_message));
+				co_await websocket_write(connection_ptr, jsutil::json_to_string(replay_message));
 				continue;
 			}
 
@@ -454,7 +453,7 @@ namespace cmall
 					// 这就是 jsonrpc 里 id 字段的重要意义.
 					// 将 id 字段原原本本的还回去, 客户端就可以根据 返回的 id 找到原来发的请求
 					replay_message.insert_or_assign("id", jv.at("id"));
-					co_await websocket_write(connection_ptr, json_to_string(replay_message));
+					co_await websocket_write(connection_ptr, jsutil::json_to_string(replay_message));
 				},
 				boost::asio::detached);
 		}
@@ -617,7 +616,7 @@ namespace cmall
 			{
 				co_await ensure_login(false, true);
 
-				auto uid = this_client.session_info->user_info->uid_;
+//				auto uid = this_client.session_info->user_info->uid_;
 
 			}
 			break;
@@ -813,8 +812,7 @@ namespace cmall
 			case req_method::order_create_direct:
 			{
 				// 重新载入 user_info, 以便获取正确的收件人地址信息.
-				co_await m_database.async_load<cmall_user>(
-					this_client.session_info->user_info->uid_, *this_client.session_info->user_info);
+				co_await m_database.async_load<cmall_user>(this_user.uid_, *this_client.session_info->user_info);
 				cmall_user& user_info = *(this_client.session_info->user_info);
 
 				auto goods_id	  = jsutil::json_accessor(params).get("goods_id", -1).as_int64();
