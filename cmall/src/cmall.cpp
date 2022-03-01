@@ -730,7 +730,7 @@ namespace cmall
 			break;
 			case req_method::user_islogin:
 			{
-				reply_message["result"] = { "isLogin", static_cast<bool>((this_client.session_info->user_info)) };
+				reply_message["result"] = static_cast<bool>(session_info.user_info);
 			}
 			break;
 			case req_method::user_list_products:
