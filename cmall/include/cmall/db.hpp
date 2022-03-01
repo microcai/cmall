@@ -76,7 +76,7 @@ struct cmall_config {
 struct Recipient
 {
 	std::string name;
-	std::string telphone;
+	std::string telephone;
 
 	std::string address;
 

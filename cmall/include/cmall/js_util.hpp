@@ -166,7 +166,7 @@ namespace jsutil
 
 		j.insert_or_assign("name", t.name );
 		j.insert_or_assign("address", t.address);
-		j.insert_or_assign("telphone", to_json(t.telphone) );
+		j.insert_or_assign("telephone", to_json(t.telephone) );
 
 		return j;
 	}
