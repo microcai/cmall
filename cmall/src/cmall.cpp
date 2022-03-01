@@ -8,6 +8,9 @@
 #include <boost/scope_exit.hpp>
 
 #include "boost/json/value_from.hpp"
+#include "boost/system/detail/error_code.hpp"
+#include "boost/system/system_error.hpp"
+#include "cmall/error_code.hpp"
 #include "utils/async_connect.hpp"
 #include "utils/scoped_exit.hpp"
 #include "utils/url_parser.hpp"
@@ -234,7 +237,8 @@ namespace cmall
 
 			auto client_ptr = add_ws(connection_id, remote_host, std::move(stream));
 
-			boost::asio::co_spawn(socket.get_executor(), handle_accepted_client(connection_id, client_ptr),
+			boost::asio::co_spawn(socket.get_executor(),
+				handle_accepted_client(connection_id, client_ptr),
 				[this, connection_id, client_ptr](std::exception_ptr)
 				{
 					remove_ws(connection_id);
@@ -478,6 +482,7 @@ namespace cmall
 			if (!this_client.session_info->user_info)
 				throw boost::system::system_error(error::login_required);
 
+			auto uid = this_client.session_info->user_info->uid_;
 			if (check_admin)
 			{
 				// TODO, 检查用户是否是 admin 才能继续操作.
@@ -485,7 +490,9 @@ namespace cmall
 
 			if (check_merchant)
 			{
-				// TODO, 检查用户是否是 admin 才能继续操作.
+				cmall_merchant merchant;
+				if (!co_await m_database.async_load<cmall_merchant>(uid, merchant))
+					throw boost::system::system_error(error::merchant_user_required);
 			}
 
 			co_return;
@@ -519,8 +526,8 @@ namespace cmall
 						this_client.session_info->user_info->uid_, *(this_client.session_info->user_info));
 				}
 
-				reply_message["result"]
-					= { { "session_id", this_client.session_info->session_id }, { "isLogin", static_cast<bool>(this_client.session_info->user_info) } };
+				reply_message["result"] = { { "session_id", this_client.session_info->session_id },
+					{ "isLogin", static_cast<bool>(this_client.session_info->user_info) } };
 			}
 			break;
 
@@ -560,13 +567,13 @@ namespace cmall
 					this_client.session_info->user_info->uid_, *this_client.session_info->user_info);
 				cmall_user& user_info = *(this_client.session_info->user_info);
 
-				auto goods_id = jsutil::json_accessor(params).get("goods_id", -1).as_int64();
+				auto goods_id	  = jsutil::json_accessor(params).get("goods_id", -1).as_int64();
 				auto recipient_id = jsutil::json_accessor(params).get("recipient_id", -1).as_int64();
 
-				if ( !(recipient_id >= 0 && recipient_id < user_info.recipients.size()))
+				if (!(recipient_id >= 0 && recipient_id < user_info.recipients.size()))
 				{
-					 throw boost::system::system_error(boost::system::error_code(cmall::error::recipient_id_out_of_range));
-
+					throw boost::system::system_error(
+						boost::system::error_code(cmall::error::recipient_id_out_of_range));
 				}
 
 				cmall_product product_in_mall;
@@ -584,14 +591,13 @@ namespace cmall
 				new_order.bought_goods.push_back(good_snap);
 				new_order.price_ = good_snap.price_;
 
-				new_order.recipient.push_back( user_info.recipients[recipient_id] );
+				new_order.recipient.push_back(user_info.recipients[recipient_id]);
 
 				co_await m_database.async_add(new_order);
 
 				reply_message["result"] = {
 					{ "orderid", new_order.oid_ },
 				};
-
 			}
 			break;
 			case req_method::order_status:
@@ -619,7 +625,9 @@ namespace cmall
 				{
 					// FIXME, 目前商品少, 这个调用就把全站的商品都返回了吧.
 
-					if (co_await m_database.async_load_all_products(products)) { }
+					if (co_await m_database.async_load_all_products(products))
+					{
+					}
 
 					// 列举首页商品.
 
@@ -636,9 +644,9 @@ namespace cmall
 				{
 					auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
 
-					if (co_await m_database.async_load_all_products_by_merchant(products, static_cast<long>(merchant_id)))
+					if (co_await m_database.async_load_all_products_by_merchant(
+							products, static_cast<long>(merchant_id)))
 					{
-
 					}
 					// 列出商户的上架商品.
 				}
@@ -656,8 +664,13 @@ namespace cmall
 			break;
 
 			case req_method::merchant_product_add:
+			{
 				co_await ensure_login(false, true);
-				break;
+
+				auto uid = this_client.session_info->user_info->uid_;
+
+			}
+			break;
 			case req_method::merchant_product_mod:
 				break;
 			case req_method::merchant_product_launch:
@@ -702,11 +715,10 @@ namespace cmall
 				std::string tel = jsutil::json_as_string(jsutil::json_accessor(params).get("telephone", ""));
 
 				session_info.verify_telephone = tel;
-				verify_session_cookie = co_await telephone_verifier.send_verify_code(tel);
+				verify_session_cookie		  = co_await telephone_verifier.send_verify_code(tel);
 
 				session_info.verify_session_cookie = verify_session_cookie;
-				reply_message["result"] = true;
-
+				reply_message["result"]			   = true;
 			}
 			break;
 			case req_method::user_login:
@@ -768,10 +780,33 @@ namespace cmall
 			case req_method::user_list_products:
 				break;
 			case req_method::user_apply_merchant:
-				break;
+			{
+				auto uid = session_info.user_info->uid_;
+				cmall_merchant m;
+				if (co_await m_database.async_load<cmall_merchant>(uid, m)) 
+				{
+					// already applied
+					throw boost::system::system_error(cmall::error::already_exist);
+				}
+
+				std::string name = jsutil::json_accessor(params).get_string("name");
+				if (name.empty())
+					throw boost::system::system_error(cmall::error::invalid_params);
+
+				std::string desc = jsutil::json_accessor(params).get_string("desc");
+
+				m.uid_ = uid;
+				m.name_ = name;
+				m.verified_ = false;
+				if (!desc.empty())
+					m.desc_ = desc;
+				co_await m_database.async_add<cmall_merchant>(m);
+				reply_message["result"] = true;
+			}
+			break;
 			case req_method::user_list_receipt_address:
 			{
-	   			// 重新载入 user_info, 以便获取正确的收件人地址信息.
+				// 重新载入 user_info, 以便获取正确的收件人地址信息.
 				co_await m_database.async_load<cmall_user>(session_info.user_info->uid_, *(session_info.user_info));
 				cmall_user& user_info = *(session_info.user_info);
 				boost::json::array recipients_array;
@@ -790,8 +825,8 @@ namespace cmall
 
 				// 这次这里获取不到就 throw 出去， 给客户端一点颜色 see see.
 				new_address.telephone = params["telephone"].as_string();
-				new_address.address =  params["address"].as_string();
-				new_address.name = params["name"].as_string();
+				new_address.address	  = params["address"].as_string();
+				new_address.name	  = params["name"].as_string();
 
 				cmall_user& user_info = *(session_info.user_info);
 				// 重新载入 user_info, 以便获取正确的收件人地址信息.

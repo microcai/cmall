@@ -123,10 +123,10 @@ struct cmall_user
 
 // 商户表.
 #pragma db object
-struct cmall_merchant {
-#pragma db id auto
+struct cmall_merchant 
+{
+#pragma db id
 	std::uint64_t uid_;
-	// long long id_{ -1 };
 
 #pragma db index
 	std::string name_; // 商户名称.
@@ -147,7 +147,6 @@ struct cmall_merchant {
 struct cmall_product {
 #pragma db id auto
 	std::uint64_t id_;
-	// long long id_{ -1 };
 
 #pragma db index
 	uint64_t owner_; // 商品发布者.

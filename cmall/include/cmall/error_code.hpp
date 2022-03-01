@@ -18,6 +18,9 @@ namespace cmall { namespace error{
 		admin_user_required,
 		not_implemented,
 		recipient_id_out_of_range, 
+		duplicate_operation,
+		already_exist,
+		invalid_params,
 	};
 
 	class cmall_category : public boost::system::error_category

@@ -111,7 +111,7 @@
       <column name="created_at" type="TIMESTAMP" null="true"/>
       <column name="updated_at" type="TIMESTAMP" null="true"/>
       <column name="deleted_at" type="TIMESTAMP" null="true"/>
-      <primary-key auto="true">
+      <primary-key>
         <column name="uid"/>
       </primary-key>
       <index name="cmall_merchant_name_i">

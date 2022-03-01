@@ -30,6 +30,12 @@ std::string cmall::error::cmall_category::message(int ev) const
 			return (const char*) u8"本功能还没实现";
 		case recipient_id_out_of_range:
 			return (const char*) u8"收件地址id错误";
+		case duplicate_operation:
+			return (const char*) u8"请勿重复操作";
+		case already_exist:
+			return (const char*) u8"记录已存在";
+		case invalid_params:
+			return (const char*) u8"参数错误";
 	}
 	return "error message";
 }
