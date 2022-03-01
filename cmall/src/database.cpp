@@ -141,6 +141,22 @@ namespace cmall {
 		});
 	}
 
+	db_result cmall_database::load_all_user_orders(std::vector<cmall_order>& orders, std::uint64_t uid)
+	{
+		return retry_database_op([&, this]() mutable
+		{
+			odb::transaction t(m_db->begin());
+			using query = odb::query<cmall_order>;
+			auto r(m_db->query<cmall_order>(query::buyer == uid && query::deleted_at.is_null()));
+
+			for (auto i : r)
+				orders.push_back(i);
+			t.commit();
+
+			return true;
+		});
+	}
+
 	boost::asio::awaitable<bool> cmall_database::async_load_user_by_phone(const std::string& phone, cmall_user& value)
 	{
 		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code, bool)>(
@@ -178,6 +194,20 @@ namespace cmall {
 				[&, this, handler = std::move(handler)]() mutable
 				{
 					auto ret = load_all_products_by_merchant(products, merchant_id);
+					post_result(ret, std::move(handler));
+				});
+			}, boost::asio::use_awaitable);
+	}
+
+	boost::asio::awaitable<bool> cmall_database::async_load_all_user_orders(std::vector<cmall_order>& orders, std::uint64_t uid)
+	{
+		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code, bool)>(
+			[&, this](auto&& handler) mutable
+			{
+				boost::asio::post(thread_pool,
+				[&, this, handler = std::move(handler)]() mutable
+				{
+					auto ret = load_all_user_orders(orders, uid);
 					post_result(ret, std::move(handler));
 				});
 			}, boost::asio::use_awaitable);

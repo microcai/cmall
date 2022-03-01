@@ -6,6 +6,7 @@
 #include <boost/json.hpp>
 #include <boost/regex.hpp>
 #include <boost/scope_exit.hpp>
+#include <vector>
 
 #include "boost/json/value_from.hpp"
 #include "boost/system/detail/error_code.hpp"
@@ -855,8 +856,10 @@ namespace cmall
 				break;
 			case req_method::order_list:
 			{
-	   //  TODO.
-				// m_database.async_load_all_orders_by_user();
+				auto uid = this_client.session_info->user_info->uid_;
+				std::vector<cmall_order> orders;
+				co_await m_database.async_load_all_user_orders(orders, uid);
+				reply_message["result"] = boost::json::value_from(orders);
 
 			}break;
 			case req_method::order_get_pay_url:

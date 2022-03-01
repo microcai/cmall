@@ -68,6 +68,18 @@ inline namespace conversion
 		};
 	}
 
+	void tag_invoke(const value_from_tag&, value& jv, const goods_snapshot& g)
+	{
+		jv = {
+			{ "owner", g.owner_ },
+			{ "name", g.name_ },
+			{ "price", to_string(g.price_) },
+			{ "currency", g.currency_ },
+			{ "description", g.description_ },
+			{ "original_id", g.original_id },
+		};
+	}
+
 	maybe_jsonrpc_request_t tag_invoke(const value_to_tag<maybe_jsonrpc_request_t>&, const value& jv)
 	{
 		if (!jv.is_object())
