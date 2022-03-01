@@ -413,6 +413,18 @@ namespace cmall
 			auto method = req.method;
 			auto params = req.params;
 
+			client_connection& this_client = *connection_ptr;
+
+			if (!this_client.session_info)
+			{
+				boost::json::object replay_message;
+				// 未有 session 前， 先不并发处理 request，避免 客户端恶意并发 recover_session 把程序挂掉
+				replay_message = co_await handle_jsonrpc_call(connection_ptr, method, params);
+				replay_message.insert_or_assign("id", jv.at("id"));
+				co_await websocket_write(connection_ptr, json_to_string(replay_message));
+				continue;
+			}
+
 			// 每个请求都单开线程处理
 			boost::asio::co_spawn(
 				connection_ptr->m_io,
