@@ -538,10 +538,9 @@ namespace cmall
 				co_return co_await handle_jsonrpc_user_api(connection_ptr, method.value(), params);
 				break;
 			case req_method::user_info:
-			case req_method::user_list_products:
 			case req_method::user_apply_merchant:
-			case req_method::user_list_receipt_address:
-			case req_method::user_add_receipt_address:
+			case req_method::user_list_recipient_address:
+			case req_method::user_add_recipient_address:
 			case req_method::user_modify_receipt_address:
 			case req_method::user_erase_receipt_address:
 				co_await ensure_login();
@@ -600,7 +599,7 @@ namespace cmall
 					// 列出商户的上架商品.
 				}
 
-				reply_message["result"] = boost::json::from_value(products);
+				reply_message["result"] = boost::json::value_from(products);
 			}
 			break;
 			case req_method::goods_detail:
@@ -611,7 +610,7 @@ namespace cmall
 				// NOTE: 商品的描述, 使用 GET 操作, 以便这种大段的富文本描述信息能被 CDN 缓存．
 			}
 			break;
-			case merchant_product_list:
+			case req_method::merchant_product_list:
 			break;
 
 			case req_method::merchant_product_add:
@@ -799,7 +798,7 @@ namespace cmall
 				bool is_db_op_ok = co_await m_database.async_update<cmall_user>(user_info.uid_,
 					[&](cmall_user value) {
 						if (recipient_id_to_remove >= 0 && recipient_id_to_remove < value.recipients.size())
-							value.recipients.erase(recipient_id_to_remove);
+							value.recipients.erase(value.recipients.begin() + recipient_id_to_remove);
 						user_info = value;
 						return value;
 					});
@@ -807,7 +806,7 @@ namespace cmall
 			}
 			break;
 			default:
-				throw "this should never be excuted";
+				throw "this should never be executed";
 		}
 
 		co_return reply_message;
@@ -881,7 +880,7 @@ namespace cmall
 			}
 			break;
 			default:
-				throw "this should never be excuted";
+				throw "this should never be executed";
 		}
 		co_return reply_message;
 	}
