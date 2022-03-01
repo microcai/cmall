@@ -800,6 +800,7 @@ namespace cmall
 					[&](cmall_user value) {
 						if (recipient_id_to_remove >= 0 && recipient_id_to_remove < value.recipients.size())
 							value.recipients.erase(recipient_id_to_remove);
+						user_info = value;
 						return value;
 					});
 				reply_message["result"] = is_db_op_ok;
