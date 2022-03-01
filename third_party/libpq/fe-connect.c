@@ -20,7 +20,7 @@
 #include <ctype.h>
 #include <time.h>
 
-#ifdef HAVE_UNISTD_H
+#ifndef _WIN32
 #include <unistd.h>
 #endif
 
