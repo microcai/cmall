@@ -1,4 +1,4 @@
-
+﻿
 #include <boost/asio.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/experimental/promise.hpp>
@@ -507,7 +507,7 @@ namespace cmall
 				}
 
 				reply_message["result"]
-					= { { "session_id", this_client.session_info->session_id }, { "isLogin", false } };
+					= { { "session_id", this_client.session_info->session_id }, { "isLogin", static_cast<bool>(this_client.session_info->user_info) } };
 			}
 			break;
 
