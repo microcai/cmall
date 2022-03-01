@@ -555,65 +555,14 @@ namespace cmall
 			case req_method::cart_list:
 				break;
 			case req_method::order_create_cart:
-				break;
 			case req_method::order_create_direct:
-			{
-				// 这个是目前阶段最最最需要使用的 API.
-				// 首先确保用户已登录.
-				co_await ensure_login();
-
-				// 重新载入 user_info, 以便获取正确的收件人地址信息.
-				co_await m_database.async_load<cmall_user>(
-					this_client.session_info->user_info->uid_, *this_client.session_info->user_info);
-				cmall_user& user_info = *(this_client.session_info->user_info);
-
-				auto goods_id	  = jsutil::json_accessor(params).get("goods_id", -1).as_int64();
-				auto recipient_id = jsutil::json_accessor(params).get("recipient_id", -1).as_int64();
-
-				if (!(recipient_id >= 0 && recipient_id < user_info.recipients.size()))
-				{
-					throw boost::system::system_error(
-						boost::system::error_code(cmall::error::recipient_id_out_of_range));
-				}
-
-				cmall_product product_in_mall;
-				co_await m_database.async_load<cmall_product>(goods_id, product_in_mall);
-
-				goods_snapshot good_snap;
-
-				good_snap = product_in_mall;
-
-				cmall_order new_order;
-
-				new_order.buyer_ = user_info.uid_;
-				new_order.oid_	 = gen_uuid();
-				new_order.stage_ = order_unpay;
-				new_order.bought_goods.push_back(good_snap);
-				new_order.price_ = good_snap.price_;
-
-				new_order.recipient.push_back(user_info.recipients[recipient_id]);
-
-				co_await m_database.async_add(new_order);
-
-				reply_message["result"] = {
-					{ "orderid", new_order.oid_ },
-				};
-			}
-			break;
 			case req_method::order_status:
-				break;
 			case req_method::order_close:
-				break;
-
+			case req_method::order_list:
 			case req_method::order_get_pay_url:
-			{
-				// 首先确保用户已登录.
 				co_await ensure_login();
-
-				// 对已经存在的订单, 获取支付连接.
-				// TODO, 支付连接只能获取一次? 还是可以多次获取?
-			}
-			break;
+				co_return co_await handle_jsonrpc_order_api(connection_ptr, method.value(), params);
+				break;
 
 			case req_method::goods_list:
 			{
@@ -850,6 +799,77 @@ namespace cmall
 
 		co_return reply_message;
 	}
+
+	boost::asio::awaitable<boost::json::object> handle_jsonrpc_order_api(client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
+	{
+		client_connection& this_client = *connection_ptr;
+		boost::json::object reply_message;
+
+		switch (method)
+		{
+			case req_method::order_create_cart:
+			case req_method::order_create_direct:
+			{
+				// 重新载入 user_info, 以便获取正确的收件人地址信息.
+				co_await m_database.async_load<cmall_user>(
+					this_client.session_info->user_info->uid_, *this_client.session_info->user_info);
+				cmall_user& user_info = *(this_client.session_info->user_info);
+
+				auto goods_id	  = jsutil::json_accessor(params).get("goods_id", -1).as_int64();
+				auto recipient_id = jsutil::json_accessor(params).get("recipient_id", -1).as_int64();
+
+				if (!(recipient_id >= 0 && recipient_id < user_info.recipients.size()))
+				{
+					throw boost::system::system_error(
+						boost::system::error_code(cmall::error::recipient_id_out_of_range));
+				}
+
+				cmall_product product_in_mall;
+				co_await m_database.async_load<cmall_product>(goods_id, product_in_mall);
+
+				goods_snapshot good_snap;
+
+				good_snap = product_in_mall;
+
+				cmall_order new_order;
+
+				new_order.buyer_ = user_info.uid_;
+				new_order.oid_	 = gen_uuid();
+				new_order.stage_ = order_unpay;
+				new_order.bought_goods.push_back(good_snap);
+				new_order.price_ = good_snap.price_;
+
+				new_order.recipient.push_back(user_info.recipients[recipient_id]);
+
+				co_await m_database.async_add(new_order);
+
+				reply_message["result"] = {
+					{ "orderid", new_order.oid_ },
+				};
+			}
+			break;
+			case req_method::order_status:
+				break;
+			case req_method::order_close:
+				break;
+			case req_method::order_list:
+			{
+	   //  TODO.
+				// m_database.async_load_all_orders_by_user();
+
+			}break;
+			case req_method::order_get_pay_url:
+			{
+
+
+				// 对已经存在的订单, 获取支付连接.
+				// TODO, 支付连接只能获取一次? 还是可以多次获取?
+			}
+			break;
+		}
+		co_return reply_message;
+	}
+
 
 	boost::asio::awaitable<void> cmall_service::do_ws_write(size_t connection_id, client_connection_ptr connection_ptr)
 	{
