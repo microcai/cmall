@@ -591,11 +591,11 @@ namespace odb
       grew = true;
     }
 
-    // telphone
+    // telephone
     //
     if (t[1UL])
     {
-      i.telphone_value.capacity (i.telphone_size);
+      i.telephone_value.capacity (i.telephone_size);
       grew = true;
     }
 
@@ -669,13 +669,13 @@ namespace odb
     b[n].is_null = &i.name_null;
     n++;
 
-    // telphone
+    // telephone
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.telphone_value.data ();
-    b[n].capacity = i.telphone_value.capacity ();
-    b[n].size = &i.telphone_size;
-    b[n].is_null = &i.telphone_null;
+    b[n].buffer = i.telephone_value.data ();
+    b[n].capacity = i.telephone_value.capacity ();
+    b[n].size = &i.telephone_size;
+    b[n].is_null = &i.telephone_null;
     n++;
 
     // address
@@ -765,25 +765,25 @@ namespace odb
       grew = grew || (cap != i.name_value.capacity ());
     }
 
-    // telphone
+    // telephone
     //
     {
       ::std::string const& v =
-        o.telphone;
+        o.telephone;
 
       bool is_null (false);
       std::size_t size (0);
-      std::size_t cap (i.telphone_value.capacity ());
+      std::size_t cap (i.telephone_value.capacity ());
       pgsql::value_traits<
           ::std::string,
           pgsql::id_string >::set_image (
-        i.telphone_value,
+        i.telephone_value,
         size,
         is_null,
         v);
-      i.telphone_null = is_null;
-      i.telphone_size = size;
-      grew = grew || (cap != i.telphone_value.capacity ());
+      i.telephone_null = is_null;
+      i.telephone_size = size;
+      grew = grew || (cap != i.telephone_value.capacity ());
     }
 
     // address
@@ -932,19 +932,19 @@ namespace odb
         i.name_null);
     }
 
-    // telphone
+    // telephone
     //
     {
       ::std::string& v =
-        o.telphone;
+        o.telephone;
 
       pgsql::value_traits<
           ::std::string,
           pgsql::id_string >::set_value (
         v,
-        i.telphone_value,
-        i.telphone_size,
-        i.telphone_null);
+        i.telephone_value,
+        i.telephone_size,
+        i.telephone_null);
     }
 
     // address
@@ -1450,7 +1450,7 @@ namespace odb
   "SELECT "
   "\"cmall_user_recipients\".\"index\", "
   "\"cmall_user_recipients\".\"value_name\", "
-  "\"cmall_user_recipients\".\"value_telphone\", "
+  "\"cmall_user_recipients\".\"value_telephone\", "
   "\"cmall_user_recipients\".\"value_address\", "
   "\"cmall_user_recipients\".\"value_province\", "
   "\"cmall_user_recipients\".\"value_city\", "
@@ -1466,7 +1466,7 @@ namespace odb
   "(\"object_id\", "
   "\"index\", "
   "\"value_name\", "
-  "\"value_telphone\", "
+  "\"value_telephone\", "
   "\"value_address\", "
   "\"value_province\", "
   "\"value_city\", "
@@ -5288,7 +5288,7 @@ namespace odb
   "SELECT "
   "\"cmall_order_recipient\".\"index\", "
   "\"cmall_order_recipient\".\"value_name\", "
-  "\"cmall_order_recipient\".\"value_telphone\", "
+  "\"cmall_order_recipient\".\"value_telephone\", "
   "\"cmall_order_recipient\".\"value_address\", "
   "\"cmall_order_recipient\".\"value_province\", "
   "\"cmall_order_recipient\".\"value_city\", "
@@ -5304,7 +5304,7 @@ namespace odb
   "(\"object_id\", "
   "\"index\", "
   "\"value_name\", "
-  "\"value_telphone\", "
+  "\"value_telephone\", "
   "\"value_address\", "
   "\"value_province\", "
   "\"value_city\", "
@@ -7268,7 +7268,7 @@ namespace odb
                       "  \"object_id\" BIGINT NOT NULL,\n"
                       "  \"index\" BIGINT NOT NULL,\n"
                       "  \"value_name\" TEXT NOT NULL,\n"
-                      "  \"value_telphone\" TEXT NOT NULL,\n"
+                      "  \"value_telephone\" TEXT NOT NULL,\n"
                       "  \"value_address\" TEXT NOT NULL,\n"
                       "  \"value_province\" TEXT NULL,\n"
                       "  \"value_city\" TEXT NULL,\n"
@@ -7332,7 +7332,7 @@ namespace odb
                       "  \"object_id\" BIGINT NOT NULL,\n"
                       "  \"index\" BIGINT NOT NULL,\n"
                       "  \"value_name\" TEXT NOT NULL,\n"
-                      "  \"value_telphone\" TEXT NOT NULL,\n"
+                      "  \"value_telephone\" TEXT NOT NULL,\n"
                       "  \"value_address\" TEXT NOT NULL,\n"
                       "  \"value_province\" TEXT NULL,\n"
                       "  \"value_city\" TEXT NULL,\n"
@@ -7413,12 +7413,12 @@ namespace odb
         {
           db.execute ("ALTER TABLE \"cmall_user_recipients\"\n"
                       "  ADD COLUMN \"value_name\" TEXT NULL,\n"
-                      "  ADD COLUMN \"value_telphone\" TEXT NULL");
+                      "  ADD COLUMN \"value_telephone\" TEXT NULL");
           db.execute ("CREATE TABLE \"cmall_order_recipient\" (\n"
                       "  \"object_id\" BIGINT NOT NULL,\n"
                       "  \"index\" BIGINT NOT NULL,\n"
                       "  \"value_name\" TEXT NOT NULL,\n"
-                      "  \"value_telphone\" TEXT NOT NULL,\n"
+                      "  \"value_telephone\" TEXT NOT NULL,\n"
                       "  \"value_address\" TEXT NOT NULL,\n"
                       "  \"value_province\" TEXT NULL,\n"
                       "  \"value_city\" TEXT NULL,\n"
@@ -7457,7 +7457,7 @@ namespace odb
         {
           db.execute ("ALTER TABLE \"cmall_user_recipients\"\n"
                       "  ALTER COLUMN \"value_name\" SET NOT NULL,\n"
-                      "  ALTER COLUMN \"value_telphone\" SET NOT NULL");
+                      "  ALTER COLUMN \"value_telephone\" SET NOT NULL");
           db.execute ("UPDATE \"schema_version\"\n"
                       "  SET \"migration\" = FALSE\n"
                       "  WHERE \"name\" = ''");

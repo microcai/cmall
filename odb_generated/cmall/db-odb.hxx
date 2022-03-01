@@ -455,11 +455,11 @@ namespace odb
       std::size_t name_size;
       bool name_null;
 
-      // telphone
+      // telephone
       //
-      details::buffer telphone_value;
-      std::size_t telphone_size;
-      bool telphone_null;
+      details::buffer telephone_value;
+      std::size_t telephone_size;
+      bool telephone_null;
 
       // address
       //

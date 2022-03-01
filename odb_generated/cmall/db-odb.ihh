@@ -185,7 +185,7 @@ namespace odb
   {
     bool r (true);
     r = r && i.name_null;
-    r = r && i.telphone_null;
+    r = r && i.telephone_null;
     r = r && i.address_null;
     r = r && i.province_null;
     r = r && i.city_null;
@@ -205,7 +205,7 @@ namespace odb
     using namespace pgsql;
 
     i.name_null = true;
-    i.telphone_null = true;
+    i.telephone_null = true;
     i.address_null = true;
     i.province_null = true;
     i.city_null = true;
