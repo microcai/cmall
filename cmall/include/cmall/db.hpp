@@ -38,7 +38,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(1, 2, open)
+#pragma db model version(1, 3, open)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -159,6 +159,8 @@ struct cmall_product {
 	std::string currency_{"cny"}; // 币种
 
 	std::string description_; // 商品描述, rtl 内容
+
+	std::string detail_; // 商品详情
 
 #pragma db index
 	uint8_t state_; // 状态: 0-未上架, 1: 上架, 2: 下架

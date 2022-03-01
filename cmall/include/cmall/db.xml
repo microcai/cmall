@@ -1,8 +1,13 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
+  <changeset version="3"/>
+
   <changeset version="2">
     <alter-table name="cmall_user_recipients">
       <add-column name="value_name" type="TEXT" null="false"/>
       <add-column name="value_telephone" type="TEXT" null="false"/>
+    </alter-table>
+    <alter-table name="cmall_product">
+      <add-column name="detail" type="TEXT" null="false"/>
     </alter-table>
     <add-table name="cmall_order_recipient" kind="container">
       <column name="object_id" type="BIGINT" null="false"/>

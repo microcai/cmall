@@ -46,6 +46,7 @@ inline namespace conversion
 			{ "price", to_string(p.price_) },
 			{ "currency", p.currency_ },
 			{ "description", p.description_ },
+			{ "detail", p.detail_ },
 			{ "state", p.state_ },
 			{ "created_at", to_string(p.created_at_) },
 		};
