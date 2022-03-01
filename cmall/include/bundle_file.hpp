@@ -31,7 +31,7 @@ namespace{
 		{ ".css", "text/css" },
 		{ ".woff", "application/x-font-woff" },
 		{ ".png", "image/png" },
-		{ ".svg", "image/svg" }
+		{ ".svg", "image/svg+xml" }
 	};
 
 	struct exe_bundle_file
