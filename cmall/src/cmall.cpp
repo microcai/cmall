@@ -1,4 +1,4 @@
-﻿
+
 #include <boost/asio.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/experimental/promise.hpp>
@@ -792,7 +792,19 @@ namespace cmall
 			case req_method::user_modify_receipt_address:
 				break;
 			case req_method::user_erase_receipt_address:
-				break;
+			{
+				auto recipient_id_to_remove = params["recipient_id"].as_int64();
+				cmall_user& user_info = *(session_info.user_info);
+
+				bool is_db_op_ok = co_await m_database.async_update<cmall_user>(user_info.uid_,
+					[&](cmall_user value) {
+						if (recipient_id_to_remove >= 0 && recipient_id_to_remove < value.recipients.size())
+							value.recipients.erase(recipient_id_to_remove);
+						return value;
+					});
+				reply_message["result"] = is_db_op_ok;
+			}
+			break;
 			default:
 				throw "this should never be excuted";
 		}
