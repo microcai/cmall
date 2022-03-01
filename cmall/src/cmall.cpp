@@ -666,8 +666,6 @@ namespace cmall
 		boost::json::object reply_message;
 		services::client_session& session_info = *this_client.session_info;
 
-		boost::system::error_code ec;
-
 		switch (method)
 		{
 			case req_method::user_prelogin:
