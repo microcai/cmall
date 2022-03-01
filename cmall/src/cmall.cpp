@@ -7,6 +7,7 @@
 #include <boost/regex.hpp>
 #include <boost/scope_exit.hpp>
 
+#include "boost/json/value_from.hpp"
 #include "utils/async_connect.hpp"
 #include "utils/scoped_exit.hpp"
 #include "utils/url_parser.hpp"
@@ -529,7 +530,7 @@ namespace cmall
 			case req_method::user_logout:
 				co_return co_await handle_jsonrpc_user_api(connection_ptr, method.value(), params);
 				break;
-
+			case req_method::user_info:
 			case req_method::user_list_products:
 			case req_method::user_apply_merchant:
 			case req_method::user_list_receipt_address:
@@ -754,6 +755,14 @@ namespace cmall
 			case req_method::user_islogin:
 			{
 				reply_message["result"] = static_cast<bool>(session_info.user_info);
+			}
+			break;
+			case req_method::user_info:
+			{
+				auto uid = this_client.session_info->user_info->uid_;
+				cmall_user uinfo;
+				co_await m_database.async_load<cmall_user>(uid, uinfo);
+				reply_message["result"] = boost::json::value_from(uinfo);
 			}
 			break;
 			case req_method::user_list_products:
