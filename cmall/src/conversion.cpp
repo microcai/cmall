@@ -54,8 +54,7 @@ inline namespace conversion
 	void tag_invoke(const value_from_tag&, value& jv, const cmall_order& o)
 	{
 		jv = {
-			{ "id", o.id_ },
-			{ "oid", o.oid_ },
+			{ "orderid", o.oid_ },
 			{ "buyer", o.buyer_ },
 			{ "price", to_string(o.price_) },
 			{ "currency", o.currency_ },
@@ -64,6 +63,8 @@ inline namespace conversion
 			{ "payed_at", o.payed_at_.null() ? "" : to_string(o.payed_at_.get()) },
 			{ "close_at", o.close_at_.null() ? "" : to_string(o.close_at_.get()) },
 			{ "created_at", to_string(o.created_at_) },
+			{ "bought_goods", o.bought_goods },
+			{ "recipients", o.recipient },
 			{ "ext", o.ext_.null() ? "" : o.ext_.get() },
 		};
 	}
