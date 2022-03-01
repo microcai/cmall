@@ -177,7 +177,7 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 
 	std::string db_name;
 	std::string db_host;
-	std::string db_user;
+	std::string db_user = "postgres";
 	std::string db_passwd;
 	unsigned short db_port;
 

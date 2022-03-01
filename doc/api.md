@@ -2,6 +2,22 @@
 API 分成 6 组, 未特殊说明, api 都是以 jsonrpc 在同一个连接里调用.
 文档里 id 隐去不提.
 
+websocket 连上来以后, 首先要恢复 session , 发送一个
+
+```json
+{ "methond": "recover_session" , params : { "sessionid", "savedsessionid or null" } }
+```
+
+回
+
+```json
+{ result: {session_id: "dd2d4bbf581b4a04b0eff3f5bd05525b", isLogin: false} }
+```
+
+客户端要永久保存返回的 session_id, 以便连接断开的时候恢复session.
+
+因为登录状态是对 session 而言的, 而不是针对一个 tcp 连接.
+
 # 浏览组
 
 这个组里的 api 不需要授权, 可供游客使用.
@@ -27,22 +43,20 @@ API 分成 6 组, 未特殊说明, api 都是以 jsonrpc 在同一个连接里�
 			name : "定位书包",
 			pic: "picutureid", // 图片的 ID
 			price: "1000.00",
-			detial: "0/dingwei_shubao"
+			detail: "0/dingwei_shubao"
 		},
 		{
 			merchant: 0,
 			name : "小宝nas",
 			pic: "picutureid", // 图片的 ID
 			price: "4000.00",
-			detial: "0/nas"
+			detail: "0/nas"
 		}
 	]
 }
 ```
 
 ====
-
-
 
 
 # 购物车组
@@ -74,12 +88,8 @@ API 分成 6 组, 未特殊说明, api 都是以 jsonrpc 在同一个连接里�
 params
 
 ```json
-{ "type": "b", "phone": "12345678910", "code": "7894125" }
-or
-{ "type": "c", "phone": "12345678910", "code": "7894125" }
+{ method: "user_login", params : { "verify_code": "7894125" }}
 ```
-type表示作为B端或C端用户登录
-
 
 ## 快速登录[`user_login`]
 
