@@ -583,9 +583,25 @@ namespace odb
 
     bool grew (false);
 
-    // address
+    // name
     //
     if (t[0UL])
+    {
+      i.name_value.capacity (i.name_size);
+      grew = true;
+    }
+
+    // telphone
+    //
+    if (t[1UL])
+    {
+      i.telphone_value.capacity (i.telphone_size);
+      grew = true;
+    }
+
+    // address
+    //
+    if (t[2UL])
     {
       i.address_value.capacity (i.address_size);
       grew = true;
@@ -593,7 +609,7 @@ namespace odb
 
     // province
     //
-    if (t[1UL])
+    if (t[3UL])
     {
       i.province_value.capacity (i.province_size);
       grew = true;
@@ -601,7 +617,7 @@ namespace odb
 
     // city
     //
-    if (t[2UL])
+    if (t[4UL])
     {
       i.city_value.capacity (i.city_size);
       grew = true;
@@ -609,7 +625,7 @@ namespace odb
 
     // district
     //
-    if (t[3UL])
+    if (t[5UL])
     {
       i.district_value.capacity (i.district_size);
       grew = true;
@@ -617,7 +633,7 @@ namespace odb
 
     // specific_address
     //
-    if (t[4UL])
+    if (t[6UL])
     {
       i.specific_address_value.capacity (i.specific_address_size);
       grew = true;
@@ -625,7 +641,7 @@ namespace odb
 
     // as_default
     //
-    t[5UL] = 0;
+    t[7UL] = 0;
 
     return grew;
   }
@@ -643,6 +659,24 @@ namespace odb
 
     std::size_t n (0);
     ODB_POTENTIALLY_UNUSED (n);
+
+    // name
+    //
+    b[n].type = pgsql::bind::text;
+    b[n].buffer = i.name_value.data ();
+    b[n].capacity = i.name_value.capacity ();
+    b[n].size = &i.name_size;
+    b[n].is_null = &i.name_null;
+    n++;
+
+    // telphone
+    //
+    b[n].type = pgsql::bind::text;
+    b[n].buffer = i.telphone_value.data ();
+    b[n].capacity = i.telphone_value.capacity ();
+    b[n].size = &i.telphone_size;
+    b[n].is_null = &i.telphone_null;
+    n++;
 
     // address
     //
@@ -709,6 +743,48 @@ namespace odb
     using namespace pgsql;
 
     bool grew (false);
+
+    // name
+    //
+    {
+      ::std::string const& v =
+        o.name;
+
+      bool is_null (false);
+      std::size_t size (0);
+      std::size_t cap (i.name_value.capacity ());
+      pgsql::value_traits<
+          ::std::string,
+          pgsql::id_string >::set_image (
+        i.name_value,
+        size,
+        is_null,
+        v);
+      i.name_null = is_null;
+      i.name_size = size;
+      grew = grew || (cap != i.name_value.capacity ());
+    }
+
+    // telphone
+    //
+    {
+      ::std::string const& v =
+        o.telphone;
+
+      bool is_null (false);
+      std::size_t size (0);
+      std::size_t cap (i.telphone_value.capacity ());
+      pgsql::value_traits<
+          ::std::string,
+          pgsql::id_string >::set_image (
+        i.telphone_value,
+        size,
+        is_null,
+        v);
+      i.telphone_null = is_null;
+      i.telphone_size = size;
+      grew = grew || (cap != i.telphone_value.capacity ());
+    }
 
     // address
     //
@@ -840,6 +916,36 @@ namespace odb
     ODB_POTENTIALLY_UNUSED (o);
     ODB_POTENTIALLY_UNUSED (i);
     ODB_POTENTIALLY_UNUSED (db);
+
+    // name
+    //
+    {
+      ::std::string& v =
+        o.name;
+
+      pgsql::value_traits<
+          ::std::string,
+          pgsql::id_string >::set_value (
+        v,
+        i.name_value,
+        i.name_size,
+        i.name_null);
+    }
+
+    // telphone
+    //
+    {
+      ::std::string& v =
+        o.telphone;
+
+      pgsql::value_traits<
+          ::std::string,
+          pgsql::id_string >::set_value (
+        v,
+        i.telphone_value,
+        i.telphone_size,
+        i.telphone_null);
+    }
 
     // address
     //
@@ -1334,6 +1440,8 @@ namespace odb
     pgsql::text_oid,
     pgsql::text_oid,
     pgsql::text_oid,
+    pgsql::text_oid,
+    pgsql::text_oid,
     pgsql::bool_oid
   };
 
@@ -1341,6 +1449,8 @@ namespace odb
   select_statement[] =
   "SELECT "
   "\"cmall_user_recipients\".\"index\", "
+  "\"cmall_user_recipients\".\"value_name\", "
+  "\"cmall_user_recipients\".\"value_telphone\", "
   "\"cmall_user_recipients\".\"value_address\", "
   "\"cmall_user_recipients\".\"value_province\", "
   "\"cmall_user_recipients\".\"value_city\", "
@@ -1355,6 +1465,8 @@ namespace odb
   "INSERT INTO \"cmall_user_recipients\" "
   "(\"object_id\", "
   "\"index\", "
+  "\"value_name\", "
+  "\"value_telphone\", "
   "\"value_address\", "
   "\"value_province\", "
   "\"value_city\", "
@@ -1362,7 +1474,7 @@ namespace odb
   "\"value_specific_address\", "
   "\"value_as_default\") "
   "VALUES "
-  "($1, $2, $3, $4, $5, $6, $7, $8)";
+  "($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)";
 
   const char access::object_traits_impl< ::cmall_user, id_pgsql >::recipients_traits::
   delete_statement[] =
@@ -5127,6 +5239,7 @@ namespace odb
 
   struct access::object_traits_impl< ::cmall_order, id_pgsql >::extra_statement_cache_type
   {
+    pgsql::container_statements_impl< recipient_traits > recipient;
     pgsql::container_statements_impl< bought_goods_traits > bought_goods;
 
     extra_statement_cache_type (
@@ -5137,10 +5250,324 @@ namespace odb
       pgsql::binding&,
       pgsql::native_binding& idn,
       const unsigned int* idt)
-    : bought_goods (c, id, idn, idt)
+    : recipient (c, id, idn, idt),
+      bought_goods (c, id, idn, idt)
     {
     }
   };
+
+  // recipient
+  //
+
+  const char access::object_traits_impl< ::cmall_order, id_pgsql >::recipient_traits::
+  select_name[] = "select_cmall_order_recipient";
+
+  const char access::object_traits_impl< ::cmall_order, id_pgsql >::recipient_traits::
+  insert_name[] = "insert_cmall_order_recipient";
+
+  const char access::object_traits_impl< ::cmall_order, id_pgsql >::recipient_traits::
+  delete_name[] = "delete_cmall_order_recipient";
+
+  const unsigned int access::object_traits_impl< ::cmall_order, id_pgsql >::recipient_traits::
+  insert_types[] =
+  {
+    pgsql::int8_oid,
+    pgsql::int8_oid,
+    pgsql::text_oid,
+    pgsql::text_oid,
+    pgsql::text_oid,
+    pgsql::text_oid,
+    pgsql::text_oid,
+    pgsql::text_oid,
+    pgsql::text_oid,
+    pgsql::bool_oid
+  };
+
+  const char access::object_traits_impl< ::cmall_order, id_pgsql >::recipient_traits::
+  select_statement[] =
+  "SELECT "
+  "\"cmall_order_recipient\".\"index\", "
+  "\"cmall_order_recipient\".\"value_name\", "
+  "\"cmall_order_recipient\".\"value_telphone\", "
+  "\"cmall_order_recipient\".\"value_address\", "
+  "\"cmall_order_recipient\".\"value_province\", "
+  "\"cmall_order_recipient\".\"value_city\", "
+  "\"cmall_order_recipient\".\"value_district\", "
+  "\"cmall_order_recipient\".\"value_specific_address\", "
+  "\"cmall_order_recipient\".\"value_as_default\" "
+  "FROM \"cmall_order_recipient\" "
+  "WHERE \"cmall_order_recipient\".\"object_id\"=$1 ORDER BY \"cmall_order_recipient\".\"index\"";
+
+  const char access::object_traits_impl< ::cmall_order, id_pgsql >::recipient_traits::
+  insert_statement[] =
+  "INSERT INTO \"cmall_order_recipient\" "
+  "(\"object_id\", "
+  "\"index\", "
+  "\"value_name\", "
+  "\"value_telphone\", "
+  "\"value_address\", "
+  "\"value_province\", "
+  "\"value_city\", "
+  "\"value_district\", "
+  "\"value_specific_address\", "
+  "\"value_as_default\") "
+  "VALUES "
+  "($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)";
+
+  const char access::object_traits_impl< ::cmall_order, id_pgsql >::recipient_traits::
+  delete_statement[] =
+  "DELETE FROM \"cmall_order_recipient\" "
+  "WHERE \"object_id\"=$1";
+
+  void access::object_traits_impl< ::cmall_order, id_pgsql >::recipient_traits::
+  bind (pgsql::bind* b,
+        const pgsql::bind* id,
+        std::size_t id_size,
+        data_image_type& d)
+  {
+    using namespace pgsql;
+
+    statement_kind sk (statement_select);
+    ODB_POTENTIALLY_UNUSED (sk);
+
+    size_t n (0);
+
+    // object_id
+    //
+    if (id != 0)
+      std::memcpy (&b[n], id, id_size * sizeof (id[0]));
+    n += id_size;
+
+    // index
+    //
+    b[n].type = pgsql::bind::bigint;
+    b[n].buffer = &d.index_value;
+    b[n].is_null = &d.index_null;
+    n++;
+
+    // value
+    //
+    composite_value_traits< value_type, id_pgsql >::bind (
+      b + n, d.value_value, sk);
+  }
+
+  void access::object_traits_impl< ::cmall_order, id_pgsql >::recipient_traits::
+  grow (data_image_type& i,
+        bool* t)
+  {
+    bool grew (false);
+
+    // index
+    //
+    t[0UL] = 0;
+
+    // value
+    //
+    if (composite_value_traits< value_type, id_pgsql >::grow (
+          i.value_value, t + 1UL))
+      grew = true;
+
+    if (grew)
+      i.version++;
+  }
+
+  void access::object_traits_impl< ::cmall_order, id_pgsql >::recipient_traits::
+  init (data_image_type& i,
+        index_type* j,
+        const value_type& v)
+  {
+    using namespace pgsql;
+
+    statement_kind sk (statement_insert);
+    ODB_POTENTIALLY_UNUSED (sk);
+
+    bool grew (false);
+
+    // index
+    //
+    if (j != 0)
+    {
+      bool is_null (false);
+      pgsql::value_traits<
+          index_type,
+          pgsql::id_bigint >::set_image (
+        i.index_value, is_null, *j);
+      i.index_null = is_null;
+    }
+
+    // value
+    //
+    {
+      if (composite_value_traits< value_type, id_pgsql >::init (
+            i.value_value,
+            v,
+            sk))
+        grew = true;
+    }
+
+    if (grew)
+      i.version++;
+  }
+
+  void access::object_traits_impl< ::cmall_order, id_pgsql >::recipient_traits::
+  init (index_type& j,
+        value_type& v,
+        const data_image_type& i,
+        database* db)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+
+    // index
+    //
+    {
+      pgsql::value_traits<
+          index_type,
+          pgsql::id_bigint >::set_value (
+        j,
+        i.index_value,
+        i.index_null);
+    }
+
+    // value
+    //
+    {
+      composite_value_traits< value_type, id_pgsql >::init (
+        v,
+        i.value_value,
+        db);
+    }
+  }
+
+  void access::object_traits_impl< ::cmall_order, id_pgsql >::recipient_traits::
+  insert (index_type i, const value_type& v, void* d)
+  {
+    using namespace pgsql;
+
+    statements_type& sts (*static_cast< statements_type* > (d));
+    data_image_type& di (sts.data_image ());
+
+    init (di, &i, v);
+
+    if (sts.data_binding_test_version ())
+    {
+      const binding& id (sts.id_binding ());
+      bind (sts.data_bind (), id.bind, id.count, di);
+      sts.data_binding_update_version ();
+    }
+
+    if (!sts.insert_statement ().execute ())
+      throw object_already_persistent ();
+  }
+
+  bool access::object_traits_impl< ::cmall_order, id_pgsql >::recipient_traits::
+  select (index_type& i, value_type& v, void* d)
+  {
+    using namespace pgsql;
+    using pgsql::select_statement;
+
+    statements_type& sts (*static_cast< statements_type* > (d));
+    data_image_type& di (sts.data_image ());
+
+    init (i, v, di, &sts.connection ().database ());
+
+    select_statement& st (sts.select_statement ());
+    select_statement::result r (st.fetch ());
+
+    if (r == select_statement::truncated)
+    {
+      grow (di, sts.select_image_truncated ());
+
+      if (sts.data_binding_test_version ())
+      {
+        bind (sts.data_bind (), 0, sts.id_binding ().count, di);
+        sts.data_binding_update_version ();
+        st.refetch ();
+      }
+    }
+
+    return r != select_statement::no_data;
+  }
+
+  void access::object_traits_impl< ::cmall_order, id_pgsql >::recipient_traits::
+  delete_ (void* d)
+  {
+    using namespace pgsql;
+
+    statements_type& sts (*static_cast< statements_type* > (d));
+    sts.delete_statement ().execute ();
+  }
+
+  void access::object_traits_impl< ::cmall_order, id_pgsql >::recipient_traits::
+  persist (const container_type& c,
+           statements_type& sts)
+  {
+    using namespace pgsql;
+
+    functions_type& fs (sts.functions ());
+    fs.ordered_ = true;
+    container_traits_type::persist (c, fs);
+  }
+
+  void access::object_traits_impl< ::cmall_order, id_pgsql >::recipient_traits::
+  load (container_type& c,
+        statements_type& sts)
+  {
+    using namespace pgsql;
+    using pgsql::select_statement;
+
+    const binding& id (sts.id_binding ());
+
+    if (sts.data_binding_test_version ())
+    {
+      bind (sts.data_bind (), id.bind, id.count, sts.data_image ());
+      sts.data_binding_update_version ();
+    }
+
+    select_statement& st (sts.select_statement ());
+    st.execute ();
+    auto_result ar (st);
+    select_statement::result r (st.fetch ());
+
+    if (r == select_statement::truncated)
+    {
+      data_image_type& di (sts.data_image ());
+      grow (di, sts.select_image_truncated ());
+
+      if (sts.data_binding_test_version ())
+      {
+        bind (sts.data_bind (), 0, id.count, di);
+        sts.data_binding_update_version ();
+        st.refetch ();
+      }
+    }
+
+    bool more (r != select_statement::no_data);
+
+    functions_type& fs (sts.functions ());
+    fs.ordered_ = true;
+    container_traits_type::load (c, more, fs);
+  }
+
+  void access::object_traits_impl< ::cmall_order, id_pgsql >::recipient_traits::
+  update (const container_type& c,
+          statements_type& sts)
+  {
+    using namespace pgsql;
+
+    functions_type& fs (sts.functions ());
+    fs.ordered_ = true;
+    container_traits_type::update (c, fs);
+  }
+
+  void access::object_traits_impl< ::cmall_order, id_pgsql >::recipient_traits::
+  erase (statements_type& sts)
+  {
+    using namespace pgsql;
+
+    functions_type& fs (sts.functions ());
+    fs.ordered_ = true;
+    container_traits_type::erase (fs);
+  }
 
   // bought_goods
   //
@@ -6325,6 +6752,17 @@ namespace odb
 
     extra_statement_cache_type& esc (sts.extra_statement_cache ());
 
+    // recipient
+    //
+    {
+      ::std::vector< ::Recipient > const& v =
+        obj.recipient;
+
+      recipient_traits::persist (
+        v,
+        esc.recipient);
+    }
+
     // bought_goods
     //
     {
@@ -6398,6 +6836,17 @@ namespace odb
 
     extra_statement_cache_type& esc (sts.extra_statement_cache ());
 
+    // recipient
+    //
+    {
+      ::std::vector< ::Recipient > const& v =
+        obj.recipient;
+
+      recipient_traits::update (
+        v,
+        esc.recipient);
+    }
+
     // bought_goods
     //
     {
@@ -6437,6 +6886,13 @@ namespace odb
     }
 
     extra_statement_cache_type& esc (sts.extra_statement_cache ());
+
+    // recipient
+    //
+    {
+      recipient_traits::erase (
+        esc.recipient);
+    }
 
     // bought_goods
     //
@@ -6630,6 +7086,17 @@ namespace odb
 
     extra_statement_cache_type& esc (sts.extra_statement_cache ());
 
+    // recipient
+    //
+    {
+      ::std::vector< ::Recipient >& v =
+        obj.recipient;
+
+      recipient_traits::load (
+        v,
+        esc.recipient);
+    }
+
     // bought_goods
     //
     {
@@ -6745,6 +7212,7 @@ namespace odb
         case 2:
         {
           db.execute ("DROP TABLE IF EXISTS \"cmall_order_bought_goods\" CASCADE");
+          db.execute ("DROP TABLE IF EXISTS \"cmall_order_recipient\" CASCADE");
           db.execute ("DROP TABLE IF EXISTS \"cmall_order\" CASCADE");
           db.execute ("DROP TABLE IF EXISTS \"cmall_product\" CASCADE");
           db.execute ("DROP TABLE IF EXISTS \"cmall_merchant\" CASCADE");
@@ -6799,6 +7267,8 @@ namespace odb
           db.execute ("CREATE TABLE \"cmall_user_recipients\" (\n"
                       "  \"object_id\" BIGINT NOT NULL,\n"
                       "  \"index\" BIGINT NOT NULL,\n"
+                      "  \"value_name\" TEXT NOT NULL,\n"
+                      "  \"value_telphone\" TEXT NOT NULL,\n"
                       "  \"value_address\" TEXT NOT NULL,\n"
                       "  \"value_province\" TEXT NULL,\n"
                       "  \"value_city\" TEXT NULL,\n"
@@ -6858,6 +7328,25 @@ namespace odb
                       "  ON \"cmall_order\" (\"oid\")");
           db.execute ("CREATE INDEX \"cmall_order_buyer_i\"\n"
                       "  ON \"cmall_order\" (\"buyer\")");
+          db.execute ("CREATE TABLE \"cmall_order_recipient\" (\n"
+                      "  \"object_id\" BIGINT NOT NULL,\n"
+                      "  \"index\" BIGINT NOT NULL,\n"
+                      "  \"value_name\" TEXT NOT NULL,\n"
+                      "  \"value_telphone\" TEXT NOT NULL,\n"
+                      "  \"value_address\" TEXT NOT NULL,\n"
+                      "  \"value_province\" TEXT NULL,\n"
+                      "  \"value_city\" TEXT NULL,\n"
+                      "  \"value_district\" TEXT NULL,\n"
+                      "  \"value_specific_address\" TEXT NULL,\n"
+                      "  \"value_as_default\" BOOLEAN NOT NULL DEFAULT FALSE,\n"
+                      "  CONSTRAINT \"object_id_fk\"\n"
+                      "    FOREIGN KEY (\"object_id\")\n"
+                      "    REFERENCES \"cmall_order\" (\"id\")\n"
+                      "    ON DELETE CASCADE)");
+          db.execute ("CREATE INDEX \"cmall_order_recipient_object_id_i\"\n"
+                      "  ON \"cmall_order_recipient\" (\"object_id\")");
+          db.execute ("CREATE INDEX \"cmall_order_recipient_index_i\"\n"
+                      "  ON \"cmall_order_recipient\" (\"index\")");
           db.execute ("CREATE TABLE \"cmall_order_bought_goods\" (\n"
                       "  \"object_id\" BIGINT NOT NULL,\n"
                       "  \"index\" BIGINT NOT NULL,\n"
@@ -6885,7 +7374,7 @@ namespace odb
                       "  \"migration\" BOOLEAN NOT NULL)");
           db.execute ("INSERT INTO \"schema_version\" (\n"
                       "  \"name\", \"version\", \"migration\")\n"
-                      "  SELECT '', 1, FALSE\n"
+                      "  SELECT '', 2, FALSE\n"
                       "  WHERE NOT EXISTS (\n"
                       "    SELECT 1 FROM \"schema_version\" WHERE \"name\" = '')");
           return false;
@@ -6908,6 +7397,84 @@ namespace odb
     "",
     1ULL,
     0);
+
+  static bool
+  migrate_schema_2 (database& db, unsigned short pass, bool pre)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (pass);
+    ODB_POTENTIALLY_UNUSED (pre);
+
+    if (pre)
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          db.execute ("ALTER TABLE \"cmall_user_recipients\"\n"
+                      "  ADD COLUMN \"value_name\" TEXT NULL,\n"
+                      "  ADD COLUMN \"value_telphone\" TEXT NULL");
+          db.execute ("CREATE TABLE \"cmall_order_recipient\" (\n"
+                      "  \"object_id\" BIGINT NOT NULL,\n"
+                      "  \"index\" BIGINT NOT NULL,\n"
+                      "  \"value_name\" TEXT NOT NULL,\n"
+                      "  \"value_telphone\" TEXT NOT NULL,\n"
+                      "  \"value_address\" TEXT NOT NULL,\n"
+                      "  \"value_province\" TEXT NULL,\n"
+                      "  \"value_city\" TEXT NULL,\n"
+                      "  \"value_district\" TEXT NULL,\n"
+                      "  \"value_specific_address\" TEXT NULL,\n"
+                      "  \"value_as_default\" BOOLEAN NOT NULL DEFAULT FALSE)");
+          db.execute ("CREATE INDEX \"cmall_order_recipient_object_id_i\"\n"
+                      "  ON \"cmall_order_recipient\" (\"object_id\")");
+          db.execute ("CREATE INDEX \"cmall_order_recipient_index_i\"\n"
+                      "  ON \"cmall_order_recipient\" (\"index\")");
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("ALTER TABLE \"cmall_order_recipient\"\n"
+                      "  ADD CONSTRAINT \"object_id_fk\"\n"
+                      "    FOREIGN KEY (\"object_id\")\n"
+                      "    REFERENCES \"cmall_order\" (\"id\")\n"
+                      "    ON DELETE CASCADE");
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"version\" = 2, \"migration\" = TRUE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+    else
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("ALTER TABLE \"cmall_user_recipients\"\n"
+                      "  ALTER COLUMN \"value_name\" SET NOT NULL,\n"
+                      "  ALTER COLUMN \"value_telphone\" SET NOT NULL");
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"migration\" = FALSE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  static const schema_catalog_migrate_entry
+  migrate_schema_entry_2_ (
+    id_pgsql,
+    "",
+    2ULL,
+    &migrate_schema_2);
 }
 
 #include <odb/post.hxx>

@@ -31,7 +31,6 @@ namespace services
 		}
 	};
 
-
 	class verifycode
 	{
 	public:
@@ -50,7 +49,6 @@ namespace services
 		verifycode_impl& impl();
 
 		std::array<char, 512> obj_stor;
-
 
 
 	};

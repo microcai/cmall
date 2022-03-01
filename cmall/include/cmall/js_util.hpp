@@ -159,4 +159,15 @@ namespace jsutil
 		return j;
 	}
 
+	template<>
+	inline boost::json::value value_to_json(const Recipient& t)
+	{
+		boost::json::object j;
+
+		j.insert_or_assign("name", t.name );
+		j.insert_or_assign("address", t.address);
+		j.insert_or_assign("telphone", to_json(t.telphone) );
+
+		return j;
+	}
 }

@@ -18,6 +18,8 @@ std::string cmall::error::cmall_category::message(int ev) const
 			return (const char*) u8"jsonrpc 方法未知";
 		case session_needed:
 			return (const char*) u8"需要先获取session";
+		case invalid_verify_code:
+			return (const char*) u8"验证码错误";
 		case login_required:
 			return (const char*) u8"需要登录才能操作";
 		case merchant_user_required:
@@ -26,6 +28,8 @@ std::string cmall::error::cmall_category::message(int ev) const
 			return (const char*) u8"需要管理员登录才能操作";
 		case not_implemented:
 			return (const char*) u8"本功能还没实现";
+		case recipient_id_out_of_range:
+			return (const char*) u8"收件地址id错误";
 	}
 	return "error message";
 }

@@ -17,6 +17,7 @@ namespace cmall { namespace error{
 		merchant_user_required,
 		admin_user_required,
 		not_implemented,
+		recipient_id_out_of_range, 
 	};
 
 	class cmall_category : public boost::system::error_category

@@ -38,7 +38,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(1, 1, open)
+#pragma db model version(1, 2, open)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -75,6 +75,9 @@ struct cmall_config {
 #pragma db value
 struct Recipient
 {
+	std::string name;
+	std::string telphone;
+
 	std::string address;
 
 	odb::nullable<std::string> province;
@@ -219,6 +222,8 @@ struct cmall_order {
 	cpp_numeric currency_rate_; // 币种汇率
  #pragma db type("numeric") default("0")
 	cpp_numeric pay_amount_; // 支付数额
+
+	std::vector<Recipient> recipient;
 
 	uint8_t stage_; // 订单状态;
 	odb::nullable<boost::posix_time::ptime> payed_at_;

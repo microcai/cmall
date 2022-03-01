@@ -449,6 +449,18 @@ namespace odb
 
     struct image_type
     {
+      // name
+      //
+      details::buffer name_value;
+      std::size_t name_size;
+      bool name_null;
+
+      // telphone
+      //
+      details::buffer telphone_value;
+      std::size_t telphone_size;
+      bool telphone_null;
+
       // address
       //
       details::buffer address_value;
@@ -511,7 +523,7 @@ namespace odb
     set_null (image_type&,
               pgsql::statement_kind);
 
-    static const std::size_t column_count = 6UL;
+    static const std::size_t column_count = 8UL;
   };
 
   // cmall_user
@@ -849,7 +861,7 @@ namespace odb
       static const unsigned int insert_types[];
 
       static const std::size_t id_column_count = 1UL;
-      static const std::size_t data_column_count = 8UL;
+      static const std::size_t data_column_count = 10UL;
 
       static const bool versioned = false;
 
@@ -2148,6 +2160,95 @@ namespace odb
     };
 
     struct extra_statement_cache_type;
+
+    // recipient
+    //
+    struct recipient_traits
+    {
+      static const char select_name[];
+      static const char insert_name[];
+      static const char delete_name[];
+
+      static const unsigned int insert_types[];
+
+      static const std::size_t id_column_count = 1UL;
+      static const std::size_t data_column_count = 10UL;
+
+      static const bool versioned = false;
+
+      static const char insert_statement[];
+      static const char select_statement[];
+      static const char delete_statement[];
+
+      typedef ::std::vector< ::Recipient > container_type;
+      typedef
+      odb::access::container_traits<container_type>
+      container_traits_type;
+      typedef container_traits_type::index_type index_type;
+      typedef container_traits_type::value_type value_type;
+
+      typedef ordered_functions<index_type, value_type> functions_type;
+      typedef pgsql::container_statements< recipient_traits > statements_type;
+
+      struct data_image_type
+      {
+        // index
+        //
+        long long index_value;
+        bool index_null;
+
+        // value
+        //
+        composite_value_traits< value_type, id_pgsql >::image_type value_value;
+
+        std::size_t version;
+      };
+
+      static void
+      bind (pgsql::bind*,
+            const pgsql::bind* id,
+            std::size_t id_size,
+            data_image_type&);
+
+      static void
+      grow (data_image_type&,
+            bool*);
+
+      static void
+      init (data_image_type&,
+            index_type*,
+            const value_type&);
+
+      static void
+      init (index_type&,
+            value_type&,
+            const data_image_type&,
+            database*);
+
+      static void
+      insert (index_type, const value_type&, void*);
+
+      static bool
+      select (index_type&, value_type&, void*);
+
+      static void
+      delete_ (void*);
+
+      static void
+      persist (const container_type&,
+               statements_type&);
+
+      static void
+      load (container_type&,
+            statements_type&);
+
+      static void
+      update (const container_type&,
+              statements_type&);
+
+      static void
+      erase (statements_type&);
+    };
 
     // bought_goods
     //

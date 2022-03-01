@@ -554,11 +554,19 @@ namespace cmall
 				// 首先确保用户已登录.
 				co_await ensure_login();
 
-				auto goods_id = jsutil::json_accessor(params).get("goods_id", -1).as_int64();
-
 				// 重新载入 user_info, 以便获取正确的收件人地址信息.
 				co_await m_database.async_load<cmall_user>(
 					this_client.session_info->user_info->uid_, *this_client.session_info->user_info);
+				cmall_user& user_info = *(this_client.session_info->user_info);
+
+				auto goods_id = jsutil::json_accessor(params).get("goods_id", -1).as_int64();
+				auto recipient_id = jsutil::json_accessor(params).get("recipient_id", -1).as_int64();
+
+				if ( !(recipient_id >= 0 && recipient_id < user_info.recipients.size()))
+				{
+					 throw boost::system::system_error(boost::system::error_code(cmall::error::recipient_id_out_of_range));
+
+				}
 
 				cmall_product product_in_mall;
 				co_await m_database.async_load<cmall_product>(goods_id, product_in_mall);
@@ -569,17 +577,20 @@ namespace cmall
 
 				cmall_order new_order;
 
-				new_order.buyer_ = this_client.session_info->user_info->uid_;
+				new_order.buyer_ = user_info.uid_;
 				new_order.oid_	 = gen_uuid();
 				new_order.stage_ = order_unpay;
 				new_order.bought_goods.push_back(good_snap);
 				new_order.price_ = good_snap.price_;
+
+				new_order.recipient.push_back( user_info.recipients[recipient_id] );
 
 				co_await m_database.async_add(new_order);
 
 				reply_message["result"] = {
 					{ "orderid", new_order.oid_ },
 				};
+
 			}
 			break;
 			case req_method::order_status:
@@ -750,13 +761,30 @@ namespace cmall
 			case req_method::user_apply_merchant:
 				break;
 			case req_method::user_list_receipt_address:
-				break;
+			{
+	   			// 重新载入 user_info, 以便获取正确的收件人地址信息.
+				co_await m_database.async_load<cmall_user>(session_info.user_info->uid_, *(session_info.user_info));
+				cmall_user& user_info = *(session_info.user_info);
+				boost::json::array recipients_array;
+				for (int i = 0; i < user_info.recipients.size(); i++)
+				{
+					auto jsobj =  jsutil::to_json(user_info.recipients);
+					jsobj.as_object()["id"] = i;
+					recipients_array.push_back(jsobj);
+				}
+				reply_message["result"] = recipients_array;
+			}
+			break;
 			case req_method::user_add_receipt_address:
 			{
-				// TODO, 从 params 里拿新地址.
 				Recipient new_address;
 
-				cmall_user& user_info = *this_client.session_info->user_info;
+				// 这次这里获取不到就 throw 出去， 给客户端一点颜色 see see.
+				new_address.telphone = params["telphone"].as_string();
+				new_address.address =  params["address"].as_string();
+				new_address.name = params["name"].as_string();
+
+				cmall_user& user_info = *(session_info.user_info);
 				// 重新载入 user_info, 以便获取正确的收件人地址信息.
 				bool is_db_op_ok		= co_await m_database.async_update<cmall_user>(user_info.uid_,
 					   [&](cmall_user value)
