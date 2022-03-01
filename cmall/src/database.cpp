@@ -147,11 +147,15 @@ namespace cmall {
 		{
 			odb::transaction t(m_db->begin());
 			using query = odb::query<cmall_order>;
-			auto r(m_db->query<cmall_order>((query::buyer == uid && query::deleted_at.is_null()) + " order by " + query::created_at + " desc"));
+			auto r = m_db->query<cmall_order>(
+				(query::buyer == uid && query::deleted_at.is_null()) + " order by " + query::created_at + " desc"
+			);
 
 			for (auto i : r)
 				orders.push_back(i);
 			t.commit();
+
+			LOG_DBG << "load_all_user_orders(" << uid << ") retrived " << orders.size() << " orders";
 
 			return true;
 		});
