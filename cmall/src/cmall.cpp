@@ -804,7 +804,7 @@ namespace cmall
 	{
 		client_connection& this_client = *connection_ptr;
 		boost::json::object reply_message;
-		cmall_user& this_user = this_client.session_info->user_info;
+		cmall_user& this_user = *(this_client.session_info->user_info);
 
 		switch (method)
 		{
