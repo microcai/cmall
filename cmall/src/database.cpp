@@ -10,9 +10,7 @@ namespace cmall {
 		: m_config(cfg)
 		, thread_pool(cfg.pool_)
 	{
-		if (m_config.host_.empty() ||
-			m_config.dbname_.empty() ||
-			m_config.user_.empty())
+		if (m_config.dbname_.empty())
 		{
 			LOG_WARN << "Warning, Database not config!";
 			return;
