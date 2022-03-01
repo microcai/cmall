@@ -206,7 +206,7 @@ namespace cmall {
 	boost::asio::awaitable<bool> cmall_database::async_load_all_user_orders(std::vector<cmall_order>& orders, std::uint64_t uid)
 	{
 		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code, bool)>(
-			[&, this](auto&& handler) mutable
+			[&, uid, this](auto&& handler) mutable
 			{
 				boost::asio::post(thread_pool,
 				[&, this, handler = std::move(handler)]() mutable
