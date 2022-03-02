@@ -30,6 +30,9 @@ namespace services
 	class repo_products
 	{
 	public:
+
+		static bool init_bare_repo(boost::filesystem::path repo_path);
+
 		repo_products(boost::asio::io_context& io, boost::filesystem::path repo_path);
 		~repo_products();
 
