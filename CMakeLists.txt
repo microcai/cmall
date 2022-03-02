@@ -250,12 +250,6 @@ else()
 endif()
 include_directories(${OPENSSL_INCLUDE_DIR})
 
-set(MDBX_BUILD_TOOLS OFF)
-set(MDBX_BUILD_SHARED_LIBRARY OFF)
-set(MDBX_TXN_CHECKOWNER OFF) # 受 coroutine 影响, coroutine 会转移协程到不同线程执行.
-set(MDBX_ENV_CHECKPID OFF)
-add_subdirectory(third_party/libmdbx)
-
 set(BUILD_SHARED_LIBS OFF)
 set(BUILD_TESTS OFF)
 set(USE_NSEC OFF)
@@ -263,8 +257,13 @@ set(USE_HTTPS OFF)
 set(SONAME OFF)
 set(USE_NTLMCLIENT OFF)
 set(USE_ICONV OFF)
+add_subdirectory(third_party/libgit2 EXCLUDE_FROM_ALL)
 
-add_subdirectory(third_party/libgit2)
+set(MDBX_BUILD_TOOLS OFF)
+set(MDBX_BUILD_SHARED_LIBRARY OFF)
+set(MDBX_TXN_CHECKOWNER OFF) # 受 coroutine 影响, coroutine 会转移协程到不同线程执行.
+set(MDBX_ENV_CHECKPID OFF)
+add_subdirectory(third_party/libmdbx EXCLUDE_FROM_ALL)
 
 link_libraries(
 		Boost::thread
@@ -280,6 +279,7 @@ link_libraries(
 		libodb-pgsql
 		libodb-boost
 
+		git2
 		mdbx-static
 
 		${OPENSSL_LIBRARIES}

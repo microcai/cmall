@@ -8,48 +8,17 @@ endif()
 add_definitions(-DLOGGING_COMPRESS_LOGS)
 
 file(GLOB cmall_SRCS
-	include/cmall/async_connect.hpp
-	include/cmall/default_cert.hpp
-	include/cmall/io.hpp
-	include/cmall/logging.hpp
-	include/cmall/scoped_exit.hpp
-	include/cmall/time_clock.hpp
-	include/cmall/url_parser.hpp
-	include/cmall/version.hpp
-	include/cmall/db.hpp
-	include/cmall/db.xml
-	include/cmall/database.hpp
-	include/cmall/cmall.hpp
-	include/cmall/internal.hpp
-	include/cmall/js_util.hpp
-	include/cmall/misc.hpp
-	include/cmall/conversion.hpp
-	include/db_traits.hpp
-	include/io_context_pool.hpp
-	include/traits-pgsql.hpp
-	include/bundle_file.hpp
-	include/fmt_extra.hpp
-	include/magic_enum.hpp
-	include/persist_map.hpp
-	include/http_static_file_handle.hpp
-	include/services/verifycode.cpp
-	include/services/persist_session.hpp
-	include/services/payment_service.hpp
-	include/utils/timedmap.hpp
+	LIST_DIRECTORIES false
+	RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+	CONFIGURE_DEPENDS
 
-	src/error_code.cpp
-	src/default_cert.cpp
-	src/io_context_pool.cpp
-	src/main.cpp
-	src/cmall.cpp
-	src/database.cpp
-	src/internal.cpp
-	src/conversion.cpp
-	src/persist_map.cpp
-	src/http_static_file_handle.cpp
-	src/services/verifycode.cpp
-	src/services/persist_session.cpp
-	src/services/payment_service.cpp
+	include/cmall/*.hpp
+	include/*.hpp
+	include/utils/*.hpp
+
+	src/*.cpp
+	src/services/*.cpp
+
 )
 
 find_package(Embed REQUIRED)
