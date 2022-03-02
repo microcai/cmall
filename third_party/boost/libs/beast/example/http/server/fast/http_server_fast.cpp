@@ -120,10 +120,10 @@ private:
     boost::optional<http::response_serializer<http::string_body, http::basic_fields<alloc_t>>> string_serializer_;
 
     // The file-based response message.
-    boost::optional<http::response<http::file_body, http::basic_fields<alloc_t>>> file_response_;
+    boost::optional<http::response<http::string_body, http::basic_fields<alloc_t>>> file_response_;
 
     // The file-based response serializer.
-    boost::optional<http::response_serializer<http::file_body, http::basic_fields<alloc_t>>> file_serializer_;
+    boost::optional<http::response_serializer<http::string_body, http::basic_fields<alloc_t>>> file_serializer_;
 
     void accept()
     {
@@ -187,7 +187,7 @@ private:
         switch (req.method())
         {
         case http::verb::get:
-            send_file(req.target());
+            send_file(req.target(), req.keep_alive());
             break;
 
         default:
@@ -230,35 +230,35 @@ private:
             });
     }
 
-    void send_file(beast::string_view target)
+    void send_file(beast::string_view target, bool keep_alive)
     {
         // Request path must be absolute and not contain "..".
-        if (target.empty() || target[0] != '/' || target.find("..") != std::string::npos)
-        {
-            send_bad_response(
-                http::status::not_found,
-                "File not found\r\n");
-            return;
-        }
+        // if (target.empty() || target[0] != '/' || target.find("..") != std::string::npos)
+        // {
+        //     send_bad_response(
+        //         http::status::not_found,
+        //         "File not found\r\n");
+        //     return;
+        // }
 
-        std::string full_path = doc_root_;
-        full_path.append(
-            target.data(),
-            target.size());
+        // std::string full_path = doc_root_;
+        // full_path.append(
+        //     target.data(),
+        //     target.size());
 
-        http::file_body::value_type file;
-        beast::error_code ec;
-        file.open(
-            full_path.c_str(),
-            beast::file_mode::read,
-            ec);
-        if(ec)
-        {
-            send_bad_response(
-                http::status::not_found,
-                "File not found\r\n");
-            return;
-        }
+        // http::file_body::value_type file;
+        // beast::error_code ec;
+        // file.open(
+        //     full_path.c_str(),
+        //     beast::file_mode::read,
+        //     ec);
+        // if(ec)
+        // {
+        //     send_bad_response(
+        //         http::status::not_found,
+        //         "File not found\r\n");
+        //     return;
+        // }
 
         file_response_.emplace(
             std::piecewise_construct,
@@ -266,10 +266,10 @@ private:
             std::make_tuple(alloc_));
 
         file_response_->result(http::status::ok);
-        file_response_->keep_alive(false);
+        file_response_->keep_alive(keep_alive);
         file_response_->set(http::field::server, "Beast");
         file_response_->set(http::field::content_type, mime_type(std::string(target)));
-        file_response_->body() = std::move(file);
+        file_response_->body() = "hello, world";
         file_response_->prepare_payload();
 
         file_serializer_.emplace(*file_response_);
@@ -277,12 +277,15 @@ private:
         http::async_write(
             socket_,
             *file_serializer_,
-            [this](beast::error_code ec, std::size_t)
+            [this, keep_alive](beast::error_code ec, std::size_t)
             {
                 socket_.shutdown(tcp::socket::shutdown_send, ec);
                 file_serializer_.reset();
                 file_response_.reset();
-                accept();
+                if (keep_alive)
+                    read_request();
+                else
+                    accept();
             });
     }
 
@@ -312,7 +315,7 @@ int main(int argc, char* argv[])
     try
     {
         // Check command line arguments.
-        if (argc != 6)
+        if (argc != 5)
         {
             std::cerr << "Usage: http_server_fast <address> <port> <doc_root> <num_workers> {spin|block}\n";
             std::cerr << "  For IPv4, try:\n";
@@ -326,22 +329,42 @@ int main(int argc, char* argv[])
         unsigned short port = static_cast<unsigned short>(std::atoi(argv[2]));
         std::string doc_root = argv[3];
         int num_workers = std::atoi(argv[4]);
-        bool spin = (std::strcmp(argv[5], "spin") == 0);
 
-        net::io_context ioc{1};
-        tcp::acceptor acceptor{ioc, {address, port}};
+        net::io_context ioc1{1};
+        net::io_context ioc2{1};
+
+        tcp::acceptor acceptor1{ioc1};//, {address, port}};
+        tcp::acceptor acceptor2{ioc2};//, {address, port}};
+
+        boost::asio::socket_base::reuse_address option(true);
+        typedef boost::asio::detail::socket_option::boolean<SOL_SOCKET, SO_REUSEPORT> reuse_port;
+
+        acceptor1.open(address.is_v6() ? tcp::v6() : tcp::v4());
+        acceptor2.open(address.is_v6() ? tcp::v6() : tcp::v4());
+
+        acceptor1.set_option(option);
+        acceptor2.set_option(option);
+        acceptor1.set_option(reuse_port(true));
+        acceptor2.set_option(reuse_port(true));
+
+        acceptor1.bind({address, port});
+        acceptor2.bind({address, port});
+
+        acceptor1.listen(256);
+        acceptor2.listen(256);
 
         std::list<http_worker> workers;
         for (int i = 0; i < num_workers; ++i)
         {
-            workers.emplace_back(acceptor, doc_root);
+            workers.emplace_back(acceptor1, doc_root);
+            workers.back().start();
+            workers.emplace_back(acceptor2, doc_root);
             workers.back().start();
         }
 
-        if (spin)
-          for (;;) ioc.poll();
-        else
-          ioc.run();
+        auto ioc2_thread = std::thread([&](){ioc2.run();});
+        ioc1.run();
+        ioc2_thread.join();
     }
     catch (const std::exception& e)
     {
