@@ -29,7 +29,7 @@ static env::operate_parameters get_default_operate_parameters()
 
 	db_param.max_maps = 4;
 	db_param.reclaiming = env::reclaiming_options(MDBX_LIFORECLAIM);
-	db_param.max_readers = 5000;
+	db_param.max_readers = std::thread::hardware_concurrency() + 1; // no more than std::thread::hardware_concurrency() plus one background_task
 
 	return db_param;
 }
