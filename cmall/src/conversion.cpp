@@ -93,7 +93,7 @@ inline namespace conversion
 		if (!obj.contains("method") || !obj.at("method").is_string())
 			return {};
 
-		auto method	 = value_to<std::string>(obj.at("method")); // will throw if not found
+		auto method	 = value_to<std::string>(obj.at("method"));
 
 		jsonrpc_request_t req{ .method = method, .id = {}, .params = {} };
 		if (obj.contains("id"))
