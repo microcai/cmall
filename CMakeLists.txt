@@ -33,6 +33,7 @@ option(ENABLE_LLD "build using lld" OFF)
 option(ENABLE_MOLD "build using mold" OFF)
 option(ENABLE_COMPILER_RT "build using compiler-rt" OFF)
 option(USE_BUNDLED_ODB_FILE "build using pre generated odb file" OFF)
+option(ENABLE_IOURING "build with liburing" ON)
 
 find_program(MOLD_LINKER mold)
 find_program(LLD_LINKER lld)
@@ -158,7 +159,7 @@ add_definitions(-DUSE_STD_STRING_VIEW)
 
 find_package(IOUring)
 
-if (IOUring_FOUND)
+if (IOUring_FOUND AND ENABLE_IOURING)
 	message(STATUS "Linux using io_uring...")
 	add_definitions(-DBOOST_ASIO_HAS_IO_URING -DBOOST_ASIO_DISABLE_EPOLL)
 	link_libraries(${IOUring_LIBRARIES})
