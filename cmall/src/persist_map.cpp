@@ -36,9 +36,7 @@ static env::operate_parameters get_default_operate_parameters()
 
 struct persist_map_impl
 {
-	mutable boost::asio::io_context ioc;
-	std::shared_ptr<boost::asio::io_context::work> work;
-	std::vector<std::thread> runners;
+	mutable boost::asio::thread_pool runners;
 
 	env_managed mdbx_env;
 	map_handle mdbx_default_map;
@@ -47,10 +45,9 @@ struct persist_map_impl
 	boost::asio::cancellation_signal m_cancell_signal;
 
 	persist_map_impl(std::filesystem::path session_cache_file)
-		: work(std::make_shared<boost::asio::io_context::work>(ioc))
+		: runners(std::thread::hardware_concurrency())
 		, mdbx_env(session_cache_file, get_default_operate_parameters())
 	{
-		boost::asio::co_spawn(ioc, background_task(), boost::asio::bind_cancellation_slot(m_cancell_signal.slot(), boost::asio::detached));
 		txn_managed t = mdbx_env.start_write();
 		mdbx_default_map = t.create_map(NULL);
 		t.put(mdbx_default_map, mdbx::slice("_persistmap"), mdbx::slice("persistmap"), upsert);
@@ -60,19 +57,14 @@ struct persist_map_impl
 		_t += 86400;
 		t.put(mdbx_lifetime_map, mdbx::slice("_persistmap"), mdbx::slice(&_t, sizeof(_t)), upsert);
 		t.commit();
-
-		for (unsigned i = 0;  i < std::thread::hardware_concurrency(); i++)
-			runners.push_back(std::thread(boost::bind(&boost::asio::io_context::run, &ioc)));
+		boost::asio::co_spawn(runners, background_task(), boost::asio::bind_cancellation_slot(m_cancell_signal.slot(), boost::asio::detached));
 	}
 
 	~persist_map_impl()
 	{
-		work.reset();
-
 		m_cancell_signal.emit(boost::asio::cancellation_type::terminal);
 
-		for (auto & runner : runners)
-			runner.join();
+		runners.join();
 	}
 
 	static boost::asio::awaitable<bool> check_canceled()
@@ -151,7 +143,7 @@ struct persist_map_impl
 	boost::asio::awaitable<bool> has_key(std::string_view key) const
 	{
 		bool has_key_variable = false;
-		co_await boost::asio::co_spawn(ioc, [this, key, &has_key_variable]() mutable -> boost::asio::awaitable<void>
+		co_await boost::asio::co_spawn(runners, [this, key, &has_key_variable]() mutable -> boost::asio::awaitable<void>
 		{
 			try
 			{
@@ -173,7 +165,7 @@ struct persist_map_impl
 	{
 		std::string string_value;
 
-		co_await boost::asio::co_spawn(ioc, [this, key, &string_value]() mutable -> boost::asio::awaitable<void>
+		co_await boost::asio::co_spawn(runners, [this, key, &string_value]() mutable -> boost::asio::awaitable<void>
 		{
 			txn_managed t = mdbx_env.start_read();
 			mdbx::slice v = t.get(mdbx_default_map, mdbx::slice(key));
@@ -192,15 +184,14 @@ struct persist_map_impl
 		std::time(&_expire_time);
 		_expire_time += lifetime.count();
 
-		co_await boost::asio::co_spawn(ioc, [this, key, _expire_time, value = std::move(value)]() mutable -> boost::asio::awaitable<void>
+		co_await boost::asio::co_spawn(runners, [this, key, _expire_time, value = std::move(value)]() mutable -> boost::asio::awaitable<void>
 		{
 			txn_managed t = mdbx_env.start_write();
 			t.put(mdbx_default_map, mdbx::slice(key), mdbx::slice(value), upsert);
 			t.put(mdbx_lifetime_map, mdbx::slice(key), mdbx::slice(&_expire_time, sizeof _expire_time), upsert);
 			t.commit();
 
-			std::cerr << "commit ok?\n";
-
+			LOG_DBG << "new key puted to persist db: " << key;
 			co_return;
 		}, boost::asio::use_awaitable);
 
