@@ -328,6 +328,7 @@ namespace cmall
 					// 启动读写协程.
 					do_ws_read(connection_id, client_ptr) && do_ws_write(connection_id, client_ptr));
 				LOG_DBG << "handle_accepted_client, " << connection_id << ", connection exit.";
+				co_return;
 			}
 			else
 			{
@@ -374,6 +375,8 @@ namespace cmall
 				keep_alive = !req.need_eof();
 			}
 		} while (keep_alive && (!m_abort));
+
+		LOG_DBG << "handle_accepted_client: HTTP connection closed : " << connection_id;
 	}
 
 	// 成功给用户返回内容, 返回 200. 如果没找到商品, 不要向 client 写任何数据, 直接放回 404, 由调用方统一返回错误页面.
