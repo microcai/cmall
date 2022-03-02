@@ -98,7 +98,7 @@ namespace cmall
 		db_result load_user_by_phone(const ::std::string& phone, cmall_user& user);
 		db_result load_all_products(std::vector<cmall_product>& products);
 		db_result load_all_products_by_merchant(std::vector<cmall_product>& products, long merchant_id);
-		db_result load_all_user_orders(std::vector<cmall_order>& orders, std::uint64_t uid);
+		db_result load_all_user_orders(std::vector<cmall_order>& orders, std::uint64_t uid, int page, int page_size);
 		db_result load_order(cmall_order& order, std::string orderid);
 
 		template <typename T>
@@ -288,7 +288,7 @@ namespace cmall
 		boost::asio::awaitable<bool> async_load_all_products(std::vector<cmall_product>& products);
 		boost::asio::awaitable<bool> async_load_all_products_by_merchant(std::vector<cmall_product>& products, long merchant_id);
 
-		boost::asio::awaitable<bool> async_load_all_user_orders(std::vector<cmall_order>& orders, std::uint64_t uid);
+		boost::asio::awaitable<bool> async_load_all_user_orders(std::vector<cmall_order>& orders, std::uint64_t uid, int page, int page_size);
 		boost::asio::awaitable<bool> async_load_order(cmall_order& orders, std::string orderid);
 
 		template <typename T>

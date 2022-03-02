@@ -872,7 +872,10 @@ namespace cmall
 			case req_method::order_list:
 			{
 				std::vector<cmall_order> orders;
-				co_await m_database.async_load_all_user_orders(orders, this_user.uid_);
+				auto page = jsutil::json_accessor(params).get("page", 0).as_int64();
+				auto page_size = jsutil::json_accessor(params).get("page_size", 20).as_int64();
+
+				co_await m_database.async_load_all_user_orders(orders, this_user.uid_, page, page_size);
 
 				LOG_DBG << "order_list retrived, " << orders.size() << " items";
 				reply_message["result"] = boost::json::value_from(orders);
