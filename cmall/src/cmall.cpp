@@ -243,6 +243,8 @@ namespace cmall
 				{
 					remove_ws(connection_id);
 					LOG_DBG << "coro exit: handle_accepted_client( " << connection_id << "), alive connection: " << m_ws_streams.size();
+
+					client_ptr;
 				});
 		}
 

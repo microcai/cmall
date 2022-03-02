@@ -70,6 +70,9 @@ namespace cmall {
 
 		~client_connection()
 		{
+			boost::system::error_code ignore_ec;
+			auto& sock  = boost::beast::get_lowest_layer(tcp_stream).socket();
+			sock.close(ignore_ec);
 			LOG_DBG << (ws_client? "ws" : "http" ) <<  " client leave: " << connection_id_ << ", remote: " << remote_host_;
 		}
 
