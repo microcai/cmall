@@ -256,6 +256,16 @@ set(MDBX_TXN_CHECKOWNER OFF) # 受 coroutine 影响, coroutine 会转移协程�
 set(MDBX_ENV_CHECKPID OFF)
 add_subdirectory(third_party/libmdbx)
 
+set(BUILD_SHARED_LIBS OFF)
+set(BUILD_TESTS OFF)
+set(USE_NSEC OFF)
+set(USE_HTTPS OFF)
+set(SONAME OFF)
+set(USE_NTLMCLIENT OFF)
+set(USE_ICONV OFF)
+
+add_subdirectory(third_party/libgit2)
+
 link_libraries(
 		Boost::thread
 		Boost::date_time
