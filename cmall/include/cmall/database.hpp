@@ -49,22 +49,6 @@ namespace cmall
 
 	using extract_result_t = std::tuple<boost::system::error_code, bool, std::string>;
 
-	template <typename Handler>
-	void post_result(db_result v, Handler&& handler)
-	{
-		boost::system::error_code ec;
-		bool ok = false;
-		if (std::holds_alternative<bool>(v))
-		{
-			ok = std::get<0>(v);
-		}
-		else
-		{
-			ec = boost::asio::error::no_recovery;
-		}
-		auto excutor = boost::asio::get_associated_executor(handler);
-		boost::asio::post(excutor, [handler = std::move(handler), ec, ok]() mutable { handler(ec, ok); });
-	}
 
 	template <typename T>
 	concept SupportSoftDeletion = requires(T t)
@@ -79,6 +63,23 @@ namespace cmall
 
 	class cmall_database
 	{
+		template <typename Handler>
+		static void post_result(db_result v, Handler&& handler)
+		{
+			boost::system::error_code ec;
+			bool ok = false;
+			if (std::holds_alternative<bool>(v))
+			{
+				ok = std::get<0>(v);
+			}
+			else
+			{
+				ec = boost::asio::error::no_recovery;
+			}
+			auto excutor = boost::asio::get_associated_executor(handler);
+			boost::asio::post(excutor, [handler = std::move(handler), ec, ok]() mutable { handler(ec, ok); });
+		}
+
 		// c++11 noncopyable.
 		cmall_database(const cmall_database&) = delete;
 		cmall_database& operator=(const cmall_database&) = delete;
