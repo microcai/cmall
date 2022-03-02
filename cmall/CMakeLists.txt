@@ -29,7 +29,6 @@ file(GLOB cmall_SRCS
 	include/traits-pgsql.hpp
 	include/bundle_file.hpp
 	include/fmt_extra.hpp
-	include/jsonrpc.hpp
 	include/magic_enum.hpp
 	include/persist_map.hpp
 	include/http_static_file_handle.hpp
