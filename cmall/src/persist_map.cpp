@@ -5,6 +5,7 @@
 #include <thread>
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
+#include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/cancellation_signal.hpp>
 
@@ -18,6 +19,8 @@ using steady_timer = boost::asio::basic_waitable_timer<time_clock::steady_clock>
 
 #include "libmdbx/mdbx.h++"
 
+#include "utils/logging.hpp"
+
 using namespace mdbx;
 
 static env::operate_parameters get_default_operate_parameters()
@@ -26,13 +29,14 @@ static env::operate_parameters get_default_operate_parameters()
 
 	db_param.max_maps = 4;
 	db_param.reclaiming = env::reclaiming_options(MDBX_LIFORECLAIM);
+	db_param.max_readers = 5000;
 
 	return db_param;
 }
 
 struct persist_map_impl
 {
-	boost::asio::io_context ioc;
+	mutable boost::asio::io_context ioc;
 	std::shared_ptr<boost::asio::io_context::work> work;
 	std::vector<std::thread> runners;
 
@@ -83,7 +87,7 @@ struct persist_map_impl
 	{
 		co_await this_coro::coro_yield();
 
-		std::cerr << "background_task() running\n";
+		LOG_DBG << "background_task() running";
 		for (co_await check_canceled(); !co_await check_canceled(); co_await check_canceled())
 		{
 			try
@@ -95,7 +99,7 @@ struct persist_map_impl
 				// TODO clean outdated key.
 				txn_managed txn = mdbx_env.start_read();
 
-				std::cerr << "background_task() open_cursor\n";
+				LOG_DBG << "background_task() open_cursor";
 
 				cursor_managed c = txn.open_cursor(mdbx_lifetime_map);
 
@@ -103,7 +107,7 @@ struct persist_map_impl
 				{
 					cursor::move_result r = c.current();
 
-					std::cerr << "iterator key:" << r.key.as_string() << "\n";
+					LOG_DBG << "iterator key:" << r.key.as_string();
 
 					if (r)
 					{
@@ -115,7 +119,7 @@ struct persist_map_impl
 					}
 				}
 
-				std::cerr << "background_task() close cursor\n";
+				LOG_DBG << "background_task() close cursor";
 
 				c.close();
 				txn.commit();
@@ -126,14 +130,14 @@ struct persist_map_impl
 					txn.erase(mdbx_default_map, k);
 					txn.erase(mdbx_lifetime_map, k);
 
-					std::cerr << "drop key:" << k.as_string() << "\n";
+					LOG_DBG << "drop key:" << k.as_string();
 
 					txn.commit();
 				}
 			}
 			catch(std::exception& e)
 			{
-				std::cerr << "background_task() exception: " << e.what()  << "\n";
+				LOG_DBG << "background_task() exception: " << e.what();
 			}
 
 			co_await check_canceled();
@@ -146,24 +150,39 @@ struct persist_map_impl
 
 	boost::asio::awaitable<bool> has_key(std::string_view key) const
 	{
-		try
+		bool has_key_variable = false;
+		co_await boost::asio::co_spawn(ioc, [this, key, &has_key_variable]() mutable -> boost::asio::awaitable<void>
 		{
-			txn_managed t = mdbx_env.start_read();
-			t.get(mdbx_default_map, mdbx::slice(key));
-			t.commit();
-			co_return true;
-		}catch(std::exception&)
-		{
-			co_return false;
-		}
+			try
+			{
+				txn_managed t = mdbx_env.start_read();
+				t.get(mdbx_default_map, mdbx::slice(key));
+				t.commit();
+				has_key_variable = true;
+				co_return;
+			}catch(std::exception&e)
+			{
+			}
+
+		}, boost::asio::use_awaitable);
+
+		co_return has_key_variable;
 	}
 
 	boost::asio::awaitable<std::string> get(std::string_view key) const
 	{
-		txn_managed t = mdbx_env.start_read();
-		mdbx::slice v = t.get(mdbx_default_map, mdbx::slice(key));
-		auto string_value = v.as_string();
-		t.commit();
+		std::string string_value;
+
+		co_await boost::asio::co_spawn(ioc, [this, key, &string_value]() mutable -> boost::asio::awaitable<void>
+		{
+			txn_managed t = mdbx_env.start_read();
+			mdbx::slice v = t.get(mdbx_default_map, mdbx::slice(key));
+			string_value = v.as_string();
+			t.commit();
+			co_return;
+
+		}, boost::asio::use_awaitable);
+
 		co_return string_value;
 	}
 
