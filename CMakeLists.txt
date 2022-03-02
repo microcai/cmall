@@ -230,6 +230,7 @@ include_directories(third_party
 	${ODB_LIB_DIR}
 	${ODB_BOOST_LIB_DIR}
 	${ODB_PGSQL_LIB_DIR}
+	${CMAKE_CURRENT_SOURCE_DIR}/third_party/libgit2/include
 )
 
 add_subdirectory(third_party/libodb)
