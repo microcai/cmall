@@ -778,6 +778,10 @@ public:
 	{
 		return strcat_impl(v);
 	}
+	inline logger& operator<<(const std::string_view& v)
+	{
+		return strcat_impl(v);
+	}
 	inline logger& operator<<(const char* v)
 	{
 		return strcat_impl(v);
