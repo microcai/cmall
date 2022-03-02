@@ -34,6 +34,7 @@ file(GLOB cmall_SRCS
 	include/http_static_file_handle.hpp
 	include/services/verifycode.cpp
 	include/services/persist_session.hpp
+	include/utils/timedmap.hpp
 
 	src/error_code.cpp
 	src/default_cert.cpp
@@ -51,6 +52,8 @@ file(GLOB cmall_SRCS
 
 find_package(Embed REQUIRED)
 EMBED_TARGET(SITE site.zip)
+
+GOURP_FILES(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(cmall ${cmall_SRCS}
 	${ODB_GENERATED}

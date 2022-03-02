@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.8)
 cmake_policy(SET CMP0091 NEW) # for CMAKE_MSVC_RUNTIME_LIBRARY
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 project(cmall)
@@ -219,6 +219,8 @@ set(ODB_PGSQL_LIB_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libodb-pgsql)
 set(ODB_BOOST_LIB_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libodb-boost)
 set(ODB_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libodb)
 include(cmake/odb.cmake)
+
+include(cmake/FileGroup.cmake)
 
 include_directories(third_party
 	${ZLIB_INCLUDE_DIRS}
