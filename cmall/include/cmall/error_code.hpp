@@ -21,6 +21,7 @@ namespace cmall { namespace error{
 		duplicate_operation,
 		already_exist,
 		invalid_params,
+		order_not_found, 
 	};
 
 	class cmall_category : public boost::system::error_category

@@ -52,6 +52,7 @@ namespace cmall
 		, m_database(m_config.dbcfg_)
 		, session_cache_map(m_config.session_cache_file)
 		, telephone_verifier(m_io_context)
+		, payment_service(m_io_context)
 	{
 	}
 
@@ -879,9 +880,27 @@ namespace cmall
 			}break;
 			case req_method::order_get_pay_url:
 			{
+				auto orderid	  = jsutil::json_accessor(params).get_string("orderid");
+				auto payment = jsutil::json_accessor(params).get_string("payment");
+
+				// TODO, load order from database first,
+
+				cmall_order order_to_pay;
+
+				bool order_founded = co_await m_database.async_load_order(order_to_pay, orderid);
+
+				if (!order_founded ||  (order_to_pay.buyer_ != this_user.uid_))
+				{
+					// TODO
+					throw boost::system::system_error(boost::system::error_code(cmall::error::order_not_found));
+				}
+
 				// 对已经存在的订单, 获取支付连接.
-				// TODO, 支付连接只能获取一次? 还是可以多次获取?
-				reply_message["result"] = { {"type", "url"}, {"url", "chspay://to=xxxxx&value=1000&token=xxx" } };
+				services::payment_url payurl = co_await payment_service.get_payurl(orderid, 0, "", to_string(order_to_pay.price_), services::PAYMENT_CHSPAY);
+
+				// TODO, 把 payurl.valid_until 存起来， 下次用.
+
+				reply_message["result"] = { {"type", "url"}, {"url", payurl.uri } };
 			}
 			break;
 			default:

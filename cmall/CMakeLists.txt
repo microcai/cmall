@@ -34,6 +34,7 @@ file(GLOB cmall_SRCS
 	include/http_static_file_handle.hpp
 	include/services/verifycode.cpp
 	include/services/persist_session.hpp
+	include/services/payment_service.hpp
 	include/utils/timedmap.hpp
 
 	src/error_code.cpp
@@ -48,6 +49,7 @@ file(GLOB cmall_SRCS
 	src/http_static_file_handle.cpp
 	src/services/verifycode.cpp
 	src/services/persist_session.cpp
+	src/services/payment_service.cpp
 )
 
 find_package(Embed REQUIRED)

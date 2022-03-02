@@ -1,4 +1,4 @@
-//
+﻿//
 // Copyright (C) 2019 Jack.
 //
 // Author: jack
@@ -20,6 +20,7 @@
 #include "persist_map.hpp"
 #include "services/verifycode.hpp"
 #include "services/persist_session.hpp"
+#include "services/payment_service.hpp"
 
 namespace cmall {
 
@@ -194,6 +195,7 @@ namespace cmall {
 
 		services::persist_session session_cache_map;
 		services::verifycode telephone_verifier;
+		services::payment payment_service;
 
 		// ws 服务端相关.
 		std::vector<tcp::acceptor> m_ws_acceptors;
