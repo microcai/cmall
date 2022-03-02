@@ -71,6 +71,27 @@ namespace cmall
 		LOG_DBG << "cmall_service.stop()";
 	}
 
+	boost::asio::awaitable<bool> cmall_service::load_configs()
+	{
+		std::vector<cmall_merchant> all_merchant;
+		co_await m_database.async_load_all_merchant(all_merchant);
+
+		for (cmall_merchant& merchant : all_merchant)
+		{
+			if (services::repo_products::is_bare_repo(merchant.repo_path))
+			{
+				auto repo = std::make_shared<services::repo_products>(m_io_context, merchant.repo_path);
+				this->merchant_repos.emplace(merchant.uid_, repo);
+			}
+			else
+			{
+				LOG_ERR << "no bare git repos @(" << merchant.repo_path << ") for merchant <<" << merchant.name_;
+			}
+		}
+
+		co_return true;
+	}
+
 	boost::asio::awaitable<int> cmall_service::run_httpd()
 	{
 		// auto now	 = boost::posix_time::second_clock::local_time();

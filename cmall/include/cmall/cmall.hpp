@@ -155,6 +155,8 @@ namespace cmall {
 		~cmall_service();
 
 	public:
+		boost::asio::awaitable<bool> load_configs();
+
 		boost::asio::awaitable<int> run_httpd();
 
 		boost::asio::awaitable<void> stop();

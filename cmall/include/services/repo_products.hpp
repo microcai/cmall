@@ -33,6 +33,8 @@ namespace services
 
 		static bool init_bare_repo(boost::filesystem::path repo_path);
 
+		static bool is_bare_repo(boost::filesystem::path repo_path);
+
 		repo_products(boost::asio::io_context& io, boost::filesystem::path repo_path);
 		~repo_products();
 
