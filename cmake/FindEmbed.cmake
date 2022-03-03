@@ -60,8 +60,6 @@ struct Res ${Name}(void) {
 	else()
 		if(APPLE)
 			set(Section ".const_data")
-		else()
-			set(Section ".section .rodata")
 		endif()
 		set(CODE
 "${STRUCT}

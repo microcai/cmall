@@ -88,9 +88,11 @@ namespace utility
 
 		static boost::asio::awaitable<bool> check_canceled()
 		{
+			#ifdef __clang__
 			boost::asio::cancellation_state cs = co_await boost::asio::this_coro::cancellation_state;
 			if (cs.cancelled() != boost::asio::cancellation_type::none)
 				throw boost::system::system_error(boost::asio::error::operation_aborted);
+			#endif
 			co_return false;
 		}
 
@@ -109,9 +111,10 @@ namespace utility
 
 				auto last_to_erase = ordered_by_insert_time.upper_bound(pruge_time);
 
-				for (auto it = ordered_by_insert_time.begin(); it != last_to_erase; co_await check_canceled())
+				for (auto it = ordered_by_insert_time.begin(); it != last_to_erase; )
 				{
 					ordered_by_insert_time.erase(it++);
+					co_await check_canceled();
 				}
 
 				// last_to_erase.insert_time > purge_time
