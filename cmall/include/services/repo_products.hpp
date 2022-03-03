@@ -33,13 +33,13 @@ namespace services
 
 		static bool init_bare_repo(boost::filesystem::path repo_path);
 
-		static bool is_bare_repo(boost::filesystem::path repo_path);
+		static bool is_git_repo(boost::filesystem::path repo_path);
 
 		repo_products(boost::asio::io_context& io, boost::filesystem::path repo_path);
 		~repo_products();
 
 		// 扫描用户仓库, 返回找到的商品定义.
-		std::vector<product> get_products();
+		boost::asio::awaitable<std::vector<product>> get_products();
 
 
 

@@ -14,6 +14,113 @@ struct auto_init_libgit2 {
 
 static auto_init_libgit2 ensure_libgit2_initialized;
 
+gitpp::object::object(git_object* o)
+  : obj_(o)
+{
+}
+
+gitpp::object::object(const gitpp::object& o)
+{
+	git_object_dup(&obj_, (git_object*) o.obj_);
+}
+
+gitpp::object::object(gitpp::object&& o)
+	: obj_(o.obj_)
+{
+	o.obj_ = nullptr;
+}
+
+gitpp::object::~object()
+{
+	if (obj_)
+		git_object_free(obj_);
+}
+
+gitpp::tree::tree(git_tree* t)
+	: object((git_object*) t)
+{
+}
+
+const git_tree* gitpp::tree::native_handle() const
+{
+	return (const git_tree*) obj_;
+}
+
+git_tree* gitpp::tree::native_handle()
+{
+	return (git_tree*) obj_;
+}
+
+gitpp::tree::tree_iterator gitpp::tree::begin() const
+{
+	return tree_iterator(this, 0);
+}
+
+gitpp::tree::tree_iterator gitpp::tree::end() const
+{
+	return tree_iterator(this, git_tree_entrycount(native_handle()));
+}
+
+gitpp::tree::tree_iterator::tree_iterator(const tree* parent, int index)
+	: parent(parent)
+	, index(index)
+{
+}
+
+bool gitpp::tree::tree_iterator::operator==(const gitpp::tree::tree_iterator& other) const
+{
+	return (index == other.index && parent == other.parent);
+}
+
+bool gitpp::tree::tree_iterator::operator!=(const gitpp::tree::tree_iterator& other) const
+{
+	return ((index != other.index) || (parent != other.parent));
+}
+
+gitpp::tree::tree_iterator& gitpp::tree::tree_iterator::operator++()
+{
+	++ index;
+	return *this;
+}
+
+
+gitpp::tree_entry gitpp::tree::tree_iterator::operator*()
+{
+	return tree_entry(git_tree_entry_byindex(parent->native_handle(), index));
+}
+
+gitpp::tree_entry::tree_entry(const git_tree_entry* entry)
+  : entry(const_cast<git_tree_entry*>(entry)), owned(false)
+{
+
+}
+
+gitpp::tree_entry::tree_entry(git_tree_entry* entry)
+  : entry(entry), owned(true)
+{
+}
+
+gitpp::tree_entry::~tree_entry()
+{
+	if (owned && entry)
+		git_tree_entry_free(entry);
+}
+
+gitpp::oid gitpp::tree_entry::get_oid() const
+{
+	return oid(git_tree_entry_id(entry));
+}
+
+git_object_t gitpp::tree_entry::type() const
+{
+	return git_tree_entry_type(entry);
+}
+
+std::string gitpp::tree_entry::name() const
+{
+	return git_tree_entry_name(entry);
+}
+
 gitpp::repo::repo(git_repository* repo_) noexcept
 	: repo_(repo_)
 {
@@ -39,12 +146,12 @@ bool gitpp::repo::is_bare() const noexcept
 	return git_repository_is_bare(repo_);
 }
 
-bool gitpp::is_bare_repo(boost::filesystem::path dir)
+bool gitpp::is_git_repo(boost::filesystem::path dir)
 {
 	try
 	{
 		repo tmp(dir);
-		return tmp.is_bare();
+		return true;
 	}
 	catch (exception::not_repo&)
 	{}
@@ -59,7 +166,17 @@ gitpp::reference gitpp::repo::head() const
 	return reference(out_ref);
 }
 
-gitpp::tree gitpp::repo::get_tree(gitpp::oid tree_oid)
+gitpp::tree gitpp::repo::get_tree_by_commit(gitpp::oid commitid)
+{
+	git_tree* ctree = nullptr;
+	git_commit* commit;
+	git_commit_lookup(&commit, repo_, & commitid);
+	object a_commit( (git_object*) commit);
+	git_commit_tree(&ctree, commit);
+	return tree(ctree);
+}
+
+gitpp::tree gitpp::repo::get_tree_by_treeid(gitpp::oid tree_oid)
 {
 	git_tree* ctree = nullptr;
 	git_tree_lookup(&ctree, repo_, & tree_oid);

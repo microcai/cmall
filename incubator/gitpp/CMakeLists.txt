@@ -1,6 +1,9 @@
 
-
-add_library(gitpp STATIC src/gitpp.cpp)
+file(GLOB gitpp_sources
+	include/gitpp/*.hpp
+	src/*.cpp
+)
+add_library(gitpp STATIC ${gitpp_sources})
 
 target_include_directories(gitpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 

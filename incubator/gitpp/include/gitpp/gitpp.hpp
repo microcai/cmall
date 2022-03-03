@@ -78,15 +78,67 @@ namespace gitpp {
 		~buf();
 	};
 
-	class tree
+	class object
 	{
-		git_tree* tree_;
+	protected:
+		git_object* obj_;
 	public:
-		tree(git_tree*);
+		virtual ~object();
+
+		explicit object(git_object*);
+		object(const object&);
+		object(object&&);
+	};
+
+	class tree_entry
+	{
+		git_tree_entry * entry = nullptr;
+		bool owned = false;
+	public:
+		explicit tree_entry(const git_tree_entry*);
+		explicit tree_entry(git_tree_entry*);
+		~tree_entry();
+	public:
+		oid get_oid() const;
+
+		git_object_t type() const;
+
+		std::string name() const;
 
 	};
 
-	class repo
+	class tree : public object
+	{
+	public:
+		explicit tree(git_tree*);
+
+	public:
+		class tree_iterator
+		{
+			friend class tree;
+			const tree* parent;
+			int index;
+
+			tree_iterator(const tree* parent, int index);
+
+		public:
+			bool operator ==  (const tree_iterator & other) const;
+			bool operator !=  (const tree_iterator & other) const;
+
+			tree_iterator& operator++();
+
+			tree_entry operator*();
+		};
+
+		tree_iterator begin() const;
+		tree_iterator end() const;
+
+		const git_tree* native_handle() const;
+		git_tree* native_handle();
+
+	};
+
+	class repo : boost::noncopyable
 	{
 		git_repository* repo_;
 	public:
@@ -94,19 +146,20 @@ namespace gitpp {
 		repo(boost::filesystem::path repo_dir);                   // throws not_repo
 		~repo() noexcept;
 
-		reference head() const;
-
+	public:
 		git_repository* native_handle() { return repo_;}
 		const git_repository* native_handle() const { return repo_;}
 
-		tree get_tree(oid);
-
 	public:
+		reference head() const;
+		tree get_tree_by_commit(oid);
+		tree get_tree_by_treeid(oid);
+
 		bool is_bare() const noexcept;
 
 	};
 
-	bool is_bare_repo(boost::filesystem::path);
+	bool is_git_repo(boost::filesystem::path);
 	bool init_bare_repo(boost::filesystem::path repo_path);
 
 }

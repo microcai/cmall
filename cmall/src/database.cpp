@@ -191,7 +191,7 @@ namespace cmall {
 		return retry_database_op([&, this]() mutable
 		{
 			odb::transaction t(m_db->begin());
-			auto r = m_db->query<cmall_merchant>(odb::query<cmall_merchant>::deleted_at.is_not_null() );
+			auto r = m_db->query<cmall_merchant>(odb::query<cmall_merchant>::deleted_at.is_null() );
 
 			if (r.empty())
 			{

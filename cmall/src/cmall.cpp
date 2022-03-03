@@ -81,7 +81,7 @@ namespace cmall
 
 		for (cmall_merchant& merchant : all_merchant)
 		{
-			if (services::repo_products::is_bare_repo(merchant.repo_path))
+			if (services::repo_products::is_git_repo(merchant.repo_path))
 			{
 				auto repo = std::make_shared<services::repo_products>(m_io_context, merchant.repo_path);
 				this->merchant_repos.emplace(merchant.uid_, repo);
@@ -616,6 +616,14 @@ namespace cmall
 
 			case req_method::goods_list:
 			{
+				std::vector<services::product> all_products;
+				for (auto& [merchant_id, merchant_repo] : merchant_repos)
+				{
+					std::vector<services::product> this_merchant_all_products = co_await merchant_repo->get_products();
+
+					std::copy(this_merchant_all_products.begin(), this_merchant_all_products.end(), std::back_inserter(all_products));
+				}
+
 				// 列出 商品, 根据参数决定是首页还是商户
 				auto merchant = jsutil::json_accessor(params).get_string("merchant");
 				std::vector<cmall_product> products;
