@@ -418,9 +418,11 @@ namespace cmall
 			co_await connection_ptr->ws_client->ws_stream_.async_read(buffer, boost::asio::use_awaitable);
 
 			auto body = boost::beast::buffers_to_string(buffer.data());
-			auto jv	  = boost::json::parse(body, {}, { 64, false, false, true });
 
-			if (!jv.is_object())
+			boost::system::error_code ec;
+			auto jv	  = boost::json::parse(body, ec, {}, { 64, false, false, true });
+
+			if (ec || !jv.is_object())
 			{
 				// 这里直接　co_return, 连接会关闭. 因为用户发来的数据连 json 都不是.
 				// 对这种垃圾客户端，直接暴力断开不搭理.
@@ -430,14 +432,14 @@ namespace cmall
 			maybe_jsonrpc_request_t maybe_req = boost::json::value_to<maybe_jsonrpc_request_t>(jv);
 			if (!maybe_req.has_value())
 			{
+				// 格式不对.
 				boost::json::object reply_message;
-				reply_message["jsonrpc"] = "2.0";
-				reply_message["id"]		 = jv.at("id");
+				if (jv.as_object().contains("id"))
+					reply_message["id"]		 = jv.at("id");
 				reply_message["error"]	 = { { "code", -32600 }, { "message", "Invalid Request" } };
 				co_await websocket_write(connection_ptr, jsutil::json_to_string(reply_message));
 				continue;
 			}
-			// FIXME, 如果发的json格式不对，应该返回错误，　而不是粗暴的关闭连接.
 
 			auto req	= maybe_req.value();
 			auto method = req.method;
