@@ -49,18 +49,19 @@ namespace utility
 
 		map_t stor;
 
-		boost::asio::cancellation_signal cancell_signal;
+		std::shared_ptr<boost::asio::cancellation_signal> cancell_signal;
 
 	public:
 		template<typename Executor>
 		timedmap(Executor&& io, std::chrono::milliseconds lifetime)
+			: cancell_signal(std::make_shared<boost::asio::cancellation_signal>())
 		{
-			boost::asio::co_spawn(io, pruge_thread(lifetime), boost::asio::bind_cancellation_slot(cancell_signal.slot(), boost::asio::detached));
+			boost::asio::co_spawn(io, pruge_thread(lifetime), boost::asio::bind_cancellation_slot(cancell_signal->slot(), boost::asio::detached));
 		}
 
 		~timedmap()
 		{
-			cancell_signal.emit(boost::asio::cancellation_type::terminal);
+			cancell_signal->emit(boost::asio::cancellation_type::terminal);
 		}
 
 		std::optional<value_type> get(key_type key)
@@ -96,6 +97,7 @@ namespace utility
 
 		boost::asio::awaitable<void> pruge_thread(std::chrono::milliseconds lifetime)
 		{
+			auto cancell_signal_ = cancell_signal;
 			co_await this_coro::coro_yield();
 			while (!(co_await check_canceled()))
 			{
@@ -121,7 +123,7 @@ namespace utility
 				boost::asio::basic_waitable_timer<time_clock::steady_clock> timer(co_await boost::asio::this_coro::executor);
 				co_await check_canceled();
 				timer.expires_from_now(diff);
-				co_await timer.async_wait(boost::asio::bind_cancellation_slot(cancell_signal.slot(), boost::asio::use_awaitable));
+				co_await timer.async_wait(boost::asio::use_awaitable);
 
 			}
 			co_return;
