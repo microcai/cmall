@@ -3,7 +3,11 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/process.hpp>
+#include <chrono>
+#include <cstdlib>
 
+#include "boost/asio/use_awaitable.hpp"
+#include "boost/process/search_path.hpp"
 #include "services/payment_service.hpp"
 
 #include "utils/timedmap.hpp"
@@ -20,7 +24,29 @@ namespace services
 		boost::asio::awaitable<payment_url> get_payurl(std::string orderid, int nthTry, std::string order_title, std::string order_amount, PAYMENT_GATEWAY gateway)
 		{
 			payment_url ret;
-			ret.uri = "com.rncoldwallet://pay/HandleTransaction?to=1&value=2&tokenData=3";
+			using namespace boost::process;
+			if (gateway == PAYMENT_CHSPAY) 
+			{
+				async_pipe ap(io);
+				child cp(search_path("chstx"), "gen_pay_url", orderid, order_amount, std_out > ap);
+
+				std::string out;
+				out.resize(4096);
+
+				auto out_size = co_await boost::asio::async_read(ap, boost::asio::buffer(out), boost::asio::use_awaitable);
+				out.resize(out_size);
+
+				std::error_code stdec;
+				cp.wait_for(std::chrono::milliseconds(12), stdec);
+				if (!cp.running())
+					cp.join();
+				
+				int result = cp.exit_code();
+				if (result == EXIT_SUCCESS) 
+				{
+					ret.uri = out;
+				}
+			}
 			co_return ret;
 		}
 
