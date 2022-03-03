@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) the libgit2 contributors. All rights reserved.
  *
  * This file is part of libgit2, distributed under the GNU GPL v2 with
@@ -65,6 +65,7 @@
 # include <winsock2.h>
 # include <windows.h>
 # include <ws2tcpip.h>
+# include <wincrypt.h>
 # include "win32/msvc-compat.h"
 # include "win32/mingw-compat.h"
 # include "win32/w32_common.h"

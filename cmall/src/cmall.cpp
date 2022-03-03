@@ -182,12 +182,14 @@ namespace cmall
 					co_return false;
 				}
 
+#ifdef HAVE_REUSE_PORT
 				a.set_option(reuse_port(true), ec);
 				if (ec)
 				{
 					LOG_ERR << "WS server accept set option SO_REUSEPORT failed: " << ec.message();
 					co_return false;
 				}
+#endif
 
 				a.set_option(boost::asio::socket_base::reuse_address(true), ec);
 				if (ec)
@@ -790,7 +792,7 @@ namespace cmall
 			{
 				auto uid = session_info.user_info->uid_;
 				cmall_merchant m;
-				if (co_await m_database.async_load<cmall_merchant>(uid, m)) 
+				if (co_await m_database.async_load<cmall_merchant>(uid, m))
 				{
 					// already applied
 					throw boost::system::system_error(cmall::error::already_exist);
@@ -856,7 +858,7 @@ namespace cmall
 
 				bool is_db_op_ok = co_await m_database.async_update<cmall_user>(user_info.uid_,
 					[&](cmall_user value) {
-						if (recipient_id_to_remove >= 0 && recipient_id_to_remove < value.recipients.size())
+						if (recipient_id_to_remove >= 0 && recipient_id_to_remove < (int64_t)value.recipients.size())
 							value.recipients.erase(value.recipients.begin() + recipient_id_to_remove);
 						user_info = value;
 						return value;
@@ -890,7 +892,7 @@ namespace cmall
 				auto goods_id	  = jsutil::json_accessor(params).get("goods_id", -1).as_int64();
 				auto recipient_id = jsutil::json_accessor(params).get("recipient_id", -1).as_int64();
 
-				if (!(recipient_id >= 0 && recipient_id < user_info.recipients.size()))
+				if (!(recipient_id >= 0 && recipient_id < (int64_t)user_info.recipients.size()))
 				{
 					throw boost::system::system_error(
 						boost::system::error_code(cmall::error::recipient_id_out_of_range));
@@ -930,7 +932,7 @@ namespace cmall
 				auto page = jsutil::json_accessor(params).get("page", 0).as_int64();
 				auto page_size = jsutil::json_accessor(params).get("page_size", 20).as_int64();
 
-				co_await m_database.async_load_all_user_orders(orders, this_user.uid_, page, page_size);
+				co_await m_database.async_load_all_user_orders(orders, this_user.uid_, (int)page, (int)page_size);
 
 				LOG_DBG << "order_list retrived, " << orders.size() << " items";
 				reply_message["result"] = boost::json::value_from(orders);

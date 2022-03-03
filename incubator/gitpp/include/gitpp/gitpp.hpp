@@ -1,4 +1,4 @@
-
+﻿
 #pragma once
 
 #include <git2/types.h>
@@ -13,17 +13,17 @@ namespace gitpp {
 
 		struct git2_exception : public std::exception
 		{
-			virtual const char* what() const _NOEXCEPT { return "libgit2 exception";}
+			virtual const char* what() const noexcept { return "libgit2 exception";}
 		};
 
 		struct not_repo : public git2_exception
 		{
-	      virtual const char* what() const _NOEXCEPT { return "not a git repo";}
+			virtual const char* what() const noexcept { return "not a git repo"; }
 		};
 
 		struct resolve_failed : public git2_exception
 		{
-			virtual const char* what() const _NOEXCEPT { return "reference invalid";}
+			virtual const char* what() const noexcept { return "reference invalid"; }
 		};
 	}
 

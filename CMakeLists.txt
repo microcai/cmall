@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+﻿cmake_minimum_required(VERSION 3.8)
 cmake_policy(SET CMP0091 NEW) # for CMAKE_MSVC_RUNTIME_LIBRARY
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 project(cmall)
@@ -179,6 +179,7 @@ endif()
 if (WIN32 OR NOT ENABLE_SYSTEM_ZLIB)
 	add_subdirectory(third_party/zlib EXCLUDE_FROM_ALL)
 	set(ZLIB_LIBRARIES zlib)
+	set(ZLIB_LIBRARY zlib)
 	set(ZLIB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/zlib)
 
 	add_subdirectory(third_party/zlib/contrib EXCLUDE_FROM_ALL)

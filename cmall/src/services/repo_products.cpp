@@ -1,4 +1,4 @@
-
+﻿
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -53,7 +53,7 @@ namespace services
 
 		}
 
-		std::vector<product> get_products(boost::system::error_code& ec)
+		std::vector<product> get_products(boost::system::error_code&)
 		{
 			std::vector<product> ret;
 			gitpp::tree repo_tree = git_repo.get_tree_by_commit(git_repo.head().target());

@@ -152,7 +152,8 @@ struct persist_map_impl
 				t.commit();
 				has_key_variable = true;
 				co_return;
-			}catch(std::exception&e)
+			}
+			catch(std::exception&)
 			{
 			}
 

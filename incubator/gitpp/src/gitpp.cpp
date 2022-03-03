@@ -1,4 +1,4 @@
-
+﻿
 #include "gitpp/gitpp.hpp"
 
 #include <git2.h>
@@ -143,7 +143,7 @@ gitpp::repo::repo(git_repository* repo_) noexcept
 gitpp::repo::repo(boost::filesystem::path repo_dir)
 	: repo_(nullptr)
 {
-	if (0 != git_repository_open_ext(&repo_, repo_dir.c_str(), GIT_REPOSITORY_OPEN_NO_SEARCH, nullptr))
+	if (0 != git_repository_open_ext(&repo_, repo_dir.string().c_str(), GIT_REPOSITORY_OPEN_NO_SEARCH, nullptr))
 	{
 		throw exception::not_repo();
 	}
@@ -201,7 +201,7 @@ bool gitpp::init_bare_repo(boost::filesystem::path repo_path)
 {
 	git_repository * repo = nullptr;
 
-	int lg_ret = git_repository_init(&repo, repo_path.c_str(), true);
+	int lg_ret = git_repository_init(&repo, repo_path.string().c_str(), true);
 	git_repository_free(repo);
 
 	return lg_ret == 0;
