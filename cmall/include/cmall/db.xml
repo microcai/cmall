@@ -1,4 +1,13 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
+  <changeset version="5">
+    <alter-table name="cmall_order_bought_goods">
+      <add-column name="value_good_version_git" type="TEXT" null="false"/>
+      <drop-column name="value_currency"/>
+      <drop-column name="value_original_id"/>
+    </alter-table>
+    <drop-table name="cmall_product"/>
+  </changeset>
+
   <model version="4">
     <table name="cmall_config" kind="object">
       <column name="id" type="BIGINT" null="false"/>

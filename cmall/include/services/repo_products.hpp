@@ -26,6 +26,8 @@ namespace services
 		// 详情, markdown 或者 富文本.
 		std::string detailed;
 
+		std::string git_version;
+
 		std::uint64_t owner_;
 	};
 
@@ -44,7 +46,8 @@ namespace services
 		// 扫描用户仓库, 返回找到的商品定义.
 		boost::asio::awaitable<std::vector<product>> get_products();
 
-
+		// 从给定的 goods_id 找到商品定义.
+		boost::asio::awaitable<product> get_products(std::string goods_id);
 
 	private:
 		const repo_products_impl& impl() const;

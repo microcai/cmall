@@ -56,21 +56,6 @@ inline namespace conversion
 		};
 	}
 
-	void tag_invoke(const value_from_tag&, value& jv, const cmall_product& p)
-	{
-		jv = {
-			{ "id", p.id_ },
-			{ "owner", p.owner_ },
-			{ "name", p.name_ },
-			{ "price", to_string(p.price_) },
-			{ "currency", p.currency_ },
-			{ "description", p.description_ },
-			{ "detail", p.detail_ },
-			{ "state", p.state_ },
-			{ "created_at", ::to_string(p.created_at_) },
-		};
-	}
-
 	void tag_invoke(const value_from_tag&, value& jv, const cmall_order& o)
 	{
 		jv = {
@@ -95,9 +80,8 @@ inline namespace conversion
 			{ "owner", g.owner_ },
 			{ "name", g.name_ },
 			{ "price", ::to_string(g.price_) },
-			{ "currency", g.currency_ },
 			{ "description", g.description_ },
-			{ "original_id", g.original_id },
+			{ "git_version", g.good_version_git },
 		};
 	}
 

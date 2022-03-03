@@ -21,7 +21,6 @@ inline namespace conversion
 	// serialization
 	void tag_invoke(const value_from_tag&, value& jv, const cmall_user& u);
 	void tag_invoke(const value_from_tag&, value& jv, const Recipient& r);
-	void tag_invoke(const value_from_tag&, value& jv, const cmall_product& p);
 	void tag_invoke(const value_from_tag&, value& jv, const cmall_order& o);
 	void tag_invoke(const value_from_tag&, value& jv, const goods_snapshot& g);
 

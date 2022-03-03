@@ -45,6 +45,8 @@ namespace gitpp {
 		{
 			memcpy(&oid_, git_oid_, sizeof (oid_));
 		}
+
+		std::string as_sha1_string() const;
 	};
 
 	class reference

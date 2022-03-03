@@ -186,6 +186,14 @@ bool gitpp::is_git_repo(boost::filesystem::path dir)
 	return false;
 }
 
+std::string gitpp::oid::as_sha1_string() const
+{
+	std::string ret;
+	ret.resize(GIT_OID_HEXSZ);
+	git_oid_tostr(ret.data(), ret.size()+1, &oid_);
+	return ret;
+}
+
 gitpp::reference gitpp::repo::head() const
 {
 	git_reference* out_ref = nullptr;

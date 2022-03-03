@@ -39,7 +39,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(4, 4, open)
+#pragma db model version(4, 5, open)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -145,58 +145,14 @@ struct cmall_merchant
 	std::string repo_path;
 };
 
-// 商品表.
-#pragma db object
-struct cmall_product {
-#pragma db id auto
-	std::uint64_t id_;
-
-#pragma db index
-	uint64_t owner_; // 商品发布者.
-
-	std::string name_; // 商品名称.
-
-#pragma db type("numeric")
-	cpp_numeric price_;
-	std::string currency_{"cny"}; // 币种
-
-	std::string description_; // 商品描述, rtl 内容
-
-#pragma db default("")
-	std::string detail_; // 商品详情
-
-#pragma db index
-	uint8_t state_; // 状态: 0-未上架, 1: 上架, 2: 下架
-
-	boost::posix_time::ptime created_at_{ boost::posix_time::second_clock::local_time() };
-	boost::posix_time::ptime updated_at_{ boost::posix_time::second_clock::local_time() };
-	odb::nullable<boost::posix_time::ptime> deleted_at_;
-};
-
 #pragma db value
 struct goods_snapshot
 {
 	uint64_t owner_; // 商品发布者.
-
 	std::string name_; // 商品名称.
-
 	cpp_numeric price_;
-	std::string currency_{"cny"}; // 币种
-
-	std::string description_; // 商品描述, rtl 内容
-
-	std::uint64_t original_id;
-
-	goods_snapshot& operator = (const cmall_product& o)
-	{
-		owner_ = o.owner_;
-		name_ = o.name_;
-		price_ = o.price_;
-		currency_ = o.currency_;
-		description_ = o.description_;
-		original_id = o.id_;
-		return *this;
-	}
+	std::string description_; // 商品描述
+	std::string good_version_git;
 };
 
 enum order_status_t

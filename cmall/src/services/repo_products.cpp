@@ -10,6 +10,7 @@
 #include "gitpp/gitpp.hpp"
 
 #include "./comma_kv_grammer.hpp"
+#include "cmall/error_code.hpp"
 
 namespace services
 {
@@ -25,68 +26,118 @@ namespace services
 			// auto tree = git_repo.get_tree(git_head.target());
 		}
 
-		void extrace_product(const gitpp::tree& tree, std::vector<product>& appendee)
+		template<typename WalkHandler>
+		void treewalk(const gitpp::tree& tree, boost::filesystem::path parent_dir_in_git, WalkHandler walker)
 		{
 			for (const gitpp::tree_entry & tree_entry : tree)
 			{
 				switch (tree_entry.type())
 				{
 					case GIT_OBJECT_TREE:
-					std::cerr <<"recursive git repo:" << tree_entry.name() << std::endl;
-						extrace_product(git_repo.get_tree_by_treeid(tree_entry.get_oid()), appendee);
-					break;
+						treewalk(git_repo.get_tree_by_treeid(tree_entry.get_oid()), parent_dir_in_git / tree_entry.name(), walker);
+						break;
 					case GIT_OBJECT_BLOB:
 					{
-						std::cerr <<"traval git repo:" << tree_entry.name()<< std::endl;
-						boost::filesystem::path entry_filename(tree_entry.name());
-
-						if (entry_filename.has_extension() && entry_filename.extension() == ".md")
-						{
-							auto file_blob = git_repo.get_blob(tree_entry.get_oid());
-							std::string_view md = file_blob.get_content();
-
-							// 寻找 --- --- 
-							auto first_pos = md.find_first_of("---");
-							if (first_pos >= 0)
-							{
-								auto second_pos = md.find_first_of("---", first_pos + 4);
-
-								if (second_pos > first_pos + 4)
-								{
-									std::string md_str(md.begin() + first_pos, md.begin() + second_pos + 3);
-									goods_description result = parse_comma_kv(md_str).value();
-
-									product to_be_append;
-									to_be_append.product_id = entry_filename.stem().string();
-									to_be_append.product_title = result.title;
-									to_be_append.product_price = result.price;
-									to_be_append.product_description = result.description;
-									to_be_append.pics.push_back(result.picture);
-									to_be_append.detailed = md.substr(second_pos + 4);
-
-									appendee.push_back(to_be_append);
-								}
-							}
-						}
+						walker(tree_entry, parent_dir_in_git);
 					}
 					break;
 					default:
 					break;
 		 		}
-
 			}
+		}
 
+		product get_products(std::string goods_id, boost::system::error_code&)
+		{
+			std::vector<product> ret;
+			gitpp::oid commit_version = git_repo.head().target();
+			gitpp::tree repo_tree = git_repo.get_tree_by_commit(commit_version);
+
+			auto goods = repo_tree.by_path("goods");
+
+			if (!goods.empty())
+				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), boost::filesystem::path(""), [goods_id, &commit_version, &ret, this](const gitpp::tree_entry & tree_entry, boost::filesystem::path) mutable
+				{
+					boost::filesystem::path entry_filename(tree_entry.name());
+
+					if (entry_filename.stem().string() == goods_id && entry_filename.has_extension() && entry_filename.extension() == ".md")
+					{
+						auto file_blob = git_repo.get_blob(tree_entry.get_oid());
+						std::string_view md = file_blob.get_content();
+
+						// 寻找 --- ---
+						auto first_pos = md.find_first_of("---");
+						if (first_pos >= 0)
+						{
+							auto second_pos = md.find_first_of("---", first_pos + 4);
+
+							if (second_pos > first_pos + 4)
+							{
+								std::string md_str(md.begin() + first_pos, md.begin() + second_pos + 3);
+								goods_description result = parse_comma_kv(md_str).value();
+
+								product to_be_append;
+								to_be_append.product_id = entry_filename.stem().string();
+								to_be_append.product_title = result.title;
+								to_be_append.product_price = result.price;
+								to_be_append.product_description = result.description;
+								to_be_append.pics.push_back(result.picture);
+								to_be_append.detailed = md.substr(second_pos + 4);
+								to_be_append.git_version = commit_version.as_sha1_string();
+
+								ret.push_back(to_be_append);
+							}
+						}
+					}
+				});
+
+			if (ret.size() > 0)
+				return ret[0];
+			throw boost::system::system_error(cmall::error::goods_not_found);
 		}
 
 		std::vector<product> get_products(boost::system::error_code&)
 		{
 			std::vector<product> ret;
-			gitpp::tree repo_tree = git_repo.get_tree_by_commit(git_repo.head().target());
+			gitpp::oid commit_version = git_repo.head().target();
+			gitpp::tree repo_tree = git_repo.get_tree_by_commit(commit_version);
 
 			auto goods = repo_tree.by_path("goods");
 
 			if (!goods.empty())
-				extrace_product(git_repo.get_tree_by_treeid(goods.get_oid()), ret);
+				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), boost::filesystem::path(""), [&, this](const gitpp::tree_entry & tree_entry, boost::filesystem::path parent_dir_in_git)
+				{
+					boost::filesystem::path entry_filename(tree_entry.name());
+					if (entry_filename.has_extension() && entry_filename.extension() == ".md")
+					{
+						auto file_blob = git_repo.get_blob(tree_entry.get_oid());
+						std::string_view md = file_blob.get_content();
+
+						// 寻找 --- ---
+						auto first_pos = md.find_first_of("---");
+						if (first_pos >= 0)
+						{
+							auto second_pos = md.find_first_of("---", first_pos + 4);
+
+							if (second_pos > first_pos + 4)
+							{
+								std::string md_str(md.begin() + first_pos, md.begin() + second_pos + 3);
+								goods_description result = parse_comma_kv(md_str).value();
+
+								product to_be_append;
+								to_be_append.product_id = entry_filename.stem().string();
+								to_be_append.product_title = result.title;
+								to_be_append.product_price = result.price;
+								to_be_append.product_description = result.description;
+								to_be_append.pics.push_back(result.picture);
+								to_be_append.detailed = md.substr(second_pos + 4);
+								to_be_append.git_version = commit_version.as_sha1_string();
+
+								ret.push_back(to_be_append);
+							}
+						}
+					}
+				});
 
 			return ret;
 		}
@@ -102,13 +153,33 @@ namespace services
 		std::construct_at(reinterpret_cast<repo_products_impl*>(obj_stor.data()), io, repo_path);
 	}
 
+	// 从给定的 goods_id 找到商品定义.
+	boost::asio::awaitable<product> repo_products::get_products(std::string goods_id)
+	{
+		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
+			void(boost::system::error_code, product)>(
+			[this, goods_id](auto&& handler) mutable
+			{
+				auto excutor = boost::asio::get_associated_executor(handler, impl().io);
+				boost::asio::post(excutor,
+					[this, goods_id, handler = std::move(handler)]() mutable
+					{
+						boost::system::error_code ec;
+						auto ret = impl().get_products(goods_id, ec);
+						handler(ec, ret);
+					});
+			},
+			boost::asio::use_awaitable);
+	}
+
 	boost::asio::awaitable<std::vector<product>> repo_products::get_products()
 	{
 		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
 			void(boost::system::error_code, std::vector<product>)>(
 			[this](auto&& handler) mutable
 			{
-				boost::asio::post(impl().io,
+				auto excutor = boost::asio::get_associated_executor(handler, impl().io);
+				boost::asio::post(excutor,
 					[this, handler = std::move(handler)]() mutable
 					{
 						boost::system::error_code ec;
