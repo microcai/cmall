@@ -7,9 +7,9 @@
 #include "services/repo_products.hpp"
 #include "utils/logging.hpp"
 
-extern "C" {
+#include "gitpp/gitpp.hpp"
+
 #include <git2.h>
-}
 
 namespace services
 {
@@ -21,22 +21,20 @@ namespace services
 			git_repository_open_bare(&out, bare_dir);
 			return out;
 		}
+
 		repo_products_impl(boost::asio::io_context& io, boost::filesystem::path repo_path)
 			: io(io)
 			, repo_path(repo_path)
-			, git_repo(open_bare(repo_path.c_str()), &git_repository_free)
+			, git_repo(repo_path)
 		{
-			git_reference* headref = nullptr;
-			git_repository_head(&headref, git_repo.get());
-			git_tree* tree = nullptr;
-			git_tree_lookup(&tree, git_repo.get(), git_reference_target(headref));
-			repo_fs_tree.reset(tree, git_tree_free);
+			gitpp::reference git_head = git_repo.head();
+
+			// auto tree = git_repo.get_tree(git_head.target());
 		}
 
 		boost::asio::io_context& io;
 		boost::filesystem::path repo_path;
-		std::unique_ptr<git_repository, decltype(&git_repository_free)> git_repo;
-		std::shared_ptr<git_tree> repo_fs_tree;
+		gitpp::repo git_repo;
 	};
 
 	repo_products::repo_products(boost::asio::io_context& io, boost::filesystem::path repo_path)
@@ -64,15 +62,12 @@ namespace services
 
 	bool repo_products::init_bare_repo(boost::filesystem::path repo_path)
 	{
-		git_libgit2_init();
+		return gitpp::init_bare_repo(repo_path);
+	}
 
-		git_repository * repo = nullptr;
-
-		int lg_ret = git_repository_init(&repo, repo_path.c_str(), true);
-		git_repository_free(repo);
-		git_libgit2_shutdown();
-
-		return lg_ret == 0;
+	bool repo_products::is_bare_repo(boost::filesystem::path repo_path)
+	{
+		return gitpp::is_bare_repo(repo_path);
 	}
 
 }

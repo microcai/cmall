@@ -30,6 +30,9 @@ add_executable(cmall ${cmall_SRCS}
 	${ODB_GENERATED}
 	${EMBED_SITE_OUTPUTS}
 )
+
+target_link_libraries(cmall gitpp)
+
 target_include_directories(cmall PRIVATE
 	${CMAKE_BINARY_DIR}
 	${CMAKE_CURRENT_SOURCE_DIR}

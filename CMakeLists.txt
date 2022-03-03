@@ -280,7 +280,6 @@ link_libraries(
 		libodb-pgsql
 		libodb-boost
 
-		git2
 		mdbx-static
 
 		${OPENSSL_LIBRARIES}
@@ -307,6 +306,7 @@ if (WIN32)
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin/release)
 endif()
 
+add_subdirectory(incubator)
 add_subdirectory(cmall)
 
 configure_file(cmall.service.in cmall.service)
