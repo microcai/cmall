@@ -69,13 +69,16 @@ namespace gitpp {
 	{
 		git_buf buf_;
 
-		git_buf * operator & ()
+		git_buf * operator & () noexcept
 		{
 			return &buf_;
 		}
 
-		buf();
-		~buf();
+		operator std::string_view () noexcept;
+
+		explicit buf(git_buf*) noexcept;
+		buf() noexcept;
+		~buf() noexcept;
 	};
 
 	class object
@@ -88,6 +91,14 @@ namespace gitpp {
 		explicit object(git_object*);
 		object(const object&);
 		object(object&&);
+	};
+
+	class blob : public object
+	{
+	public:
+		explicit blob(git_blob*);
+
+		std::string_view get_content() const;
 	};
 
 	class tree_entry
@@ -107,7 +118,6 @@ namespace gitpp {
 		git_object_t type() const;
 
 		std::string name() const;
-
 	};
 
 	class tree : public object
@@ -159,6 +169,7 @@ namespace gitpp {
 		reference head() const;
 		tree get_tree_by_commit(oid);
 		tree get_tree_by_treeid(oid);
+		blob get_blob(oid) const;
 
 		bool is_bare() const noexcept;
 

@@ -36,6 +36,19 @@ gitpp::object::~object()
 		git_object_free(obj_);
 }
 
+gitpp::blob::blob(git_blob* b)
+	: object((git_object*) b)
+{
+}
+
+std::string_view gitpp::blob::get_content() const
+{
+	const char * content = (const char*) git_blob_rawcontent((git_blob*)obj_);
+	const int content_size = git_blob_rawsize((git_blob*)obj_);
+
+	return std::string_view(content, content_size);
+}
+
 gitpp::tree::tree(git_tree* t)
 	: object((git_object*) t)
 {
@@ -135,6 +148,7 @@ std::string gitpp::tree_entry::name() const
 	return git_tree_entry_name(entry);
 }
 
+
 gitpp::repo::repo(git_repository* repo_) noexcept
 	: repo_(repo_)
 {
@@ -195,6 +209,13 @@ gitpp::tree gitpp::repo::get_tree_by_treeid(gitpp::oid tree_oid)
 	git_tree* ctree = nullptr;
 	git_tree_lookup(&ctree, repo_, & tree_oid);
 	return tree(ctree);
+}
+
+gitpp::blob gitpp::repo::get_blob(gitpp::oid blob_id) const
+{
+	git_blob* cblob = nullptr;
+	git_blob_lookup(&cblob, repo_, & blob_id);
+	return blob(cblob);
 }
 
 bool gitpp::init_bare_repo(boost::filesystem::path repo_path)
@@ -261,12 +282,24 @@ gitpp::oid gitpp::reference::target() const
 	return resolve().target();
 }
 
-gitpp::buf::buf()
+gitpp::buf::buf(git_buf* b) noexcept
+{
+	memcpy(&buf_, b, sizeof buf_);
+}
+
+gitpp::buf::buf() noexcept
 {
 	memset(&buf_, 0, sizeof buf_);
 }
 
-gitpp::buf::~buf()
+gitpp::buf::~buf() noexcept
 {
 	git_buf_dispose(&buf_);
 }
+
+gitpp::buf::operator std::string_view() noexcept
+{
+	return std::string_view(buf_.ptr, buf_.size);
+}
+
+

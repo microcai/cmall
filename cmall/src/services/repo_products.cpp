@@ -9,6 +9,8 @@
 
 #include "gitpp/gitpp.hpp"
 
+#include "./comma_kv_grammer.hpp"
+
 namespace services
 {
 	struct repo_products_impl
@@ -30,17 +32,33 @@ namespace services
 				switch (tree_entry.type())
 				{
 					case GIT_OBJECT_TREE:
-					LOG_DBG <<"recursive git repo:" << tree_entry.name();
+					std::cerr <<"recursive git repo:" << tree_entry.name() << std::endl;
 						extrace_product(git_repo.get_tree_by_treeid(tree_entry.get_oid()), appendee);
 					break;
 					case GIT_OBJECT_BLOB:
 					{
-					LOG_DBG <<"traval git repo:" <<
-						tree_entry.name();
+						std::cerr <<"traval git repo:" << tree_entry.name()<< std::endl;
 						boost::filesystem::path entry_filename(tree_entry.name());
 
-						if (entry_filename.has_extension() && entry_filename.extension() == "md")
+						if (entry_filename.has_extension() && entry_filename.extension() == ".md")
 						{
+							auto file_blob = git_repo.get_blob(tree_entry.get_oid());
+							std::string_view md = file_blob.get_content();
+
+							// 寻找 --- --- 
+							auto first_pos = md.find_first_of("---");
+							if (first_pos >= 0)
+							{
+								auto second_pos = md.find_first_of("---", first_pos + 4);
+
+								if (second_pos > 4)
+								{
+									std::string md_str(md.begin() + first_pos, md.begin() + second_pos + 3);
+									goods_description result = parse_comma_kv(md_str).value();
+								}
+							}
+
+
 
 						}
 					}

@@ -10,14 +10,13 @@ add_definitions(-DLOGGING_COMPRESS_LOGS)
 file(GLOB cmall_SRCS
 	LIST_DIRECTORIES false
 	RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-	CONFIGURE_DEPENDS
 
 	include/cmall/*.hpp
 	include/*.hpp
 	include/utils/*.hpp
 
 	src/*.cpp
-	src/services/*.cpp
+	src/services/*
 
 )
 
