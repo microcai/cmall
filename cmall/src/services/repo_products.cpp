@@ -160,13 +160,13 @@ namespace services
 			void(boost::system::error_code, product)>(
 			[this, goods_id](auto&& handler) mutable
 			{
-				auto excutor = boost::asio::get_associated_executor(handler, impl().io);
-				boost::asio::post(excutor,
+				boost::asio::post(impl().io,
 					[this, goods_id, handler = std::move(handler)]() mutable
 					{
 						boost::system::error_code ec;
 						auto ret = impl().get_products(goods_id, ec);
-						handler(ec, ret);
+						auto excutor = boost::asio::get_associated_executor(handler, impl().io);
+						boost::asio::post(excutor, [handler = std::move(handler), ret, ec]() mutable { handler(ec, ret);});
 					});
 			},
 			boost::asio::use_awaitable);
@@ -178,13 +178,13 @@ namespace services
 			void(boost::system::error_code, std::vector<product>)>(
 			[this](auto&& handler) mutable
 			{
-				auto excutor = boost::asio::get_associated_executor(handler, impl().io);
-				boost::asio::post(excutor,
+				boost::asio::post(impl().io,
 					[this, handler = std::move(handler)]() mutable
 					{
 						boost::system::error_code ec;
 						auto ret = impl().get_products(ec);
-						handler(ec, ret);
+						auto excutor = boost::asio::get_associated_executor(handler, impl().io);
+						boost::asio::post(excutor, [handler = std::move(handler), ret, ec]() mutable { handler(ec, ret);});
 					});
 			},
 			boost::asio::use_awaitable);

@@ -93,35 +93,6 @@ namespace odb
     ODB_POTENTIALLY_UNUSED (e);
   }
 
-  // cmall_product
-  //
-
-  inline
-  access::object_traits< ::cmall_product >::id_type
-  access::object_traits< ::cmall_product >::
-  id (const object_type& o)
-  {
-    return o.id_;
-  }
-
-  inline
-  void access::object_traits< ::cmall_product >::
-  callback (database& db, object_type& x, callback_event e)
-  {
-    ODB_POTENTIALLY_UNUSED (db);
-    ODB_POTENTIALLY_UNUSED (x);
-    ODB_POTENTIALLY_UNUSED (e);
-  }
-
-  inline
-  void access::object_traits< ::cmall_product >::
-  callback (database& db, const object_type& x, callback_event e)
-  {
-    ODB_POTENTIALLY_UNUSED (db);
-    ODB_POTENTIALLY_UNUSED (x);
-    ODB_POTENTIALLY_UNUSED (e);
-  }
-
   // cmall_order
   //
 
@@ -248,28 +219,6 @@ namespace odb
     ODB_POTENTIALLY_UNUSED (obj);
   }
 
-  // cmall_product
-  //
-
-  inline
-  void access::object_traits_impl< ::cmall_product, id_pgsql >::
-  erase (database& db, const object_type& obj)
-  {
-    callback (db, obj, callback_event::pre_erase);
-    erase (db, id (obj));
-    callback (db, obj, callback_event::post_erase);
-  }
-
-  inline
-  void access::object_traits_impl< ::cmall_product, id_pgsql >::
-  load_ (statements_type& sts,
-         object_type& obj,
-         bool)
-  {
-    ODB_POTENTIALLY_UNUSED (sts);
-    ODB_POTENTIALLY_UNUSED (obj);
-  }
-
   // goods_snapshot
   //
 
@@ -281,9 +230,8 @@ namespace odb
     r = r && i.owner_null;
     r = r && i.name_null;
     r = r && i.price_null;
-    r = r && i.currency_null;
     r = r && i.description_null;
-    r = r && i.original_id_null;
+    r = r && i.good_version_git_null;
     return r;
   }
 
@@ -299,9 +247,8 @@ namespace odb
     i.owner_null = true;
     i.name_null = true;
     i.price_null = true;
-    i.currency_null = true;
     i.description_null = true;
-    i.original_id_null = true;
+    i.good_version_git_null = true;
   }
 
   // cmall_order

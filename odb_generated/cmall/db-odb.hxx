@@ -159,49 +159,7 @@ namespace odb
 
     typedef ::uint64_t id_type;
 
-    static const bool auto_id = true;
-
-    static const bool abstract = false;
-
-    static id_type
-    id (const object_type&);
-
-    typedef
-    no_op_pointer_cache_traits<pointer_type>
-    pointer_cache_traits;
-
-    typedef
-    no_op_reference_cache_traits<object_type>
-    reference_cache_traits;
-
-    static void
-    callback (database&, object_type&, callback_event);
-
-    static void
-    callback (database&, const object_type&, callback_event);
-  };
-
-  // cmall_product
-  //
-  template <>
-  struct class_traits< ::cmall_product >
-  {
-    static const class_kind kind = class_object;
-  };
-
-  template <>
-  class access::object_traits< ::cmall_product >
-  {
-    public:
-    typedef ::cmall_product object_type;
-    typedef ::boost::shared_ptr< ::cmall_product > pointer_type;
-    typedef odb::pointer_traits<pointer_type> pointer_traits;
-
-    static const bool polymorphic = false;
-
-    typedef ::uint64_t id_type;
-
-    static const bool auto_id = true;
+    static const bool auto_id = false;
 
     static const bool abstract = false;
 
@@ -1151,6 +1109,18 @@ namespace odb
     deleted_at_type_;
 
     static const deleted_at_type_ deleted_at;
+
+    // repo_path
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::std::string,
+        pgsql::id_string >::query_type,
+      pgsql::id_string >
+    repo_path_type_;
+
+    static const repo_path_type_ repo_path;
   };
 
   template <typename A>
@@ -1192,6 +1162,11 @@ namespace odb
   const typename query_columns< ::cmall_merchant, id_pgsql, A >::deleted_at_type_
   query_columns< ::cmall_merchant, id_pgsql, A >::
   deleted_at (A::table_name, "\"deleted_at\"", 0);
+
+  template <typename A>
+  const typename query_columns< ::cmall_merchant, id_pgsql, A >::repo_path_type_
+  query_columns< ::cmall_merchant, id_pgsql, A >::
+  repo_path (A::table_name, "\"repo_path\"", 0);
 
   template <typename A>
   struct pointer_query_columns< ::cmall_merchant, id_pgsql, A >:
@@ -1256,15 +1231,18 @@ namespace odb
       long long deleted_at_value;
       bool deleted_at_null;
 
+      // repo_path
+      //
+      details::buffer repo_path_value;
+      std::size_t repo_path_size;
+      bool repo_path_null;
+
       std::size_t version;
     };
 
     struct extra_statement_cache_type;
 
     using object_traits<object_type>::id;
-
-    static id_type
-    id (const id_image_type&);
 
     static id_type
     id (const image_type&);
@@ -1298,7 +1276,7 @@ namespace odb
 
     typedef pgsql::query_base query_base_type;
 
-    static const std::size_t column_count = 8UL;
+    static const std::size_t column_count = 9UL;
     static const std::size_t id_column_count = 1UL;
     static const std::size_t inverse_column_count = 0UL;
     static const std::size_t readonly_column_count = 0UL;
@@ -1319,7 +1297,7 @@ namespace odb
     static const char table_name[];
 
     static void
-    persist (database&, object_type&);
+    persist (database&, const object_type&);
 
     static pointer_type
     find (database&, const id_type&);
@@ -1373,397 +1351,6 @@ namespace odb
   {
   };
 
-  // cmall_product
-  //
-  template <typename A>
-  struct query_columns< ::cmall_product, id_pgsql, A >
-  {
-    // id
-    //
-    typedef
-    pgsql::query_column<
-      pgsql::value_traits<
-        ::uint64_t,
-        pgsql::id_bigint >::query_type,
-      pgsql::id_bigint >
-    id_type_;
-
-    static const id_type_ id;
-
-    // owner
-    //
-    typedef
-    pgsql::query_column<
-      pgsql::value_traits<
-        ::uint64_t,
-        pgsql::id_bigint >::query_type,
-      pgsql::id_bigint >
-    owner_type_;
-
-    static const owner_type_ owner;
-
-    // name
-    //
-    typedef
-    pgsql::query_column<
-      pgsql::value_traits<
-        ::std::string,
-        pgsql::id_string >::query_type,
-      pgsql::id_string >
-    name_type_;
-
-    static const name_type_ name;
-
-    // price
-    //
-    typedef
-    pgsql::query_column<
-      pgsql::value_traits<
-        ::cpp_numeric,
-        pgsql::id_string >::query_type,
-      pgsql::id_string >
-    price_type_;
-
-    static const price_type_ price;
-
-    // currency
-    //
-    typedef
-    pgsql::query_column<
-      pgsql::value_traits<
-        ::std::string,
-        pgsql::id_string >::query_type,
-      pgsql::id_string >
-    currency_type_;
-
-    static const currency_type_ currency;
-
-    // description
-    //
-    typedef
-    pgsql::query_column<
-      pgsql::value_traits<
-        ::std::string,
-        pgsql::id_string >::query_type,
-      pgsql::id_string >
-    description_type_;
-
-    static const description_type_ description;
-
-    // detail
-    //
-    typedef
-    pgsql::query_column<
-      pgsql::value_traits<
-        ::std::string,
-        pgsql::id_string >::query_type,
-      pgsql::id_string >
-    detail_type_;
-
-    static const detail_type_ detail;
-
-    // state
-    //
-    typedef
-    pgsql::query_column<
-      pgsql::value_traits<
-        ::uint8_t,
-        pgsql::id_smallint >::query_type,
-      pgsql::id_smallint >
-    state_type_;
-
-    static const state_type_ state;
-
-    // created_at
-    //
-    typedef
-    pgsql::query_column<
-      pgsql::value_traits<
-        ::boost::posix_time::ptime,
-        pgsql::id_timestamp >::query_type,
-      pgsql::id_timestamp >
-    created_at_type_;
-
-    static const created_at_type_ created_at;
-
-    // updated_at
-    //
-    typedef
-    pgsql::query_column<
-      pgsql::value_traits<
-        ::boost::posix_time::ptime,
-        pgsql::id_timestamp >::query_type,
-      pgsql::id_timestamp >
-    updated_at_type_;
-
-    static const updated_at_type_ updated_at;
-
-    // deleted_at
-    //
-    typedef
-    pgsql::query_column<
-      pgsql::value_traits<
-        ::boost::posix_time::ptime,
-        pgsql::id_timestamp >::query_type,
-      pgsql::id_timestamp >
-    deleted_at_type_;
-
-    static const deleted_at_type_ deleted_at;
-  };
-
-  template <typename A>
-  const typename query_columns< ::cmall_product, id_pgsql, A >::id_type_
-  query_columns< ::cmall_product, id_pgsql, A >::
-  id (A::table_name, "\"id\"", 0);
-
-  template <typename A>
-  const typename query_columns< ::cmall_product, id_pgsql, A >::owner_type_
-  query_columns< ::cmall_product, id_pgsql, A >::
-  owner (A::table_name, "\"owner\"", 0);
-
-  template <typename A>
-  const typename query_columns< ::cmall_product, id_pgsql, A >::name_type_
-  query_columns< ::cmall_product, id_pgsql, A >::
-  name (A::table_name, "\"name\"", 0);
-
-  template <typename A>
-  const typename query_columns< ::cmall_product, id_pgsql, A >::price_type_
-  query_columns< ::cmall_product, id_pgsql, A >::
-  price (A::table_name, "\"price\"", "(?)::numeric");
-
-  template <typename A>
-  const typename query_columns< ::cmall_product, id_pgsql, A >::currency_type_
-  query_columns< ::cmall_product, id_pgsql, A >::
-  currency (A::table_name, "\"currency\"", 0);
-
-  template <typename A>
-  const typename query_columns< ::cmall_product, id_pgsql, A >::description_type_
-  query_columns< ::cmall_product, id_pgsql, A >::
-  description (A::table_name, "\"description\"", 0);
-
-  template <typename A>
-  const typename query_columns< ::cmall_product, id_pgsql, A >::detail_type_
-  query_columns< ::cmall_product, id_pgsql, A >::
-  detail (A::table_name, "\"detail\"", 0);
-
-  template <typename A>
-  const typename query_columns< ::cmall_product, id_pgsql, A >::state_type_
-  query_columns< ::cmall_product, id_pgsql, A >::
-  state (A::table_name, "\"state\"", 0);
-
-  template <typename A>
-  const typename query_columns< ::cmall_product, id_pgsql, A >::created_at_type_
-  query_columns< ::cmall_product, id_pgsql, A >::
-  created_at (A::table_name, "\"created_at\"", 0);
-
-  template <typename A>
-  const typename query_columns< ::cmall_product, id_pgsql, A >::updated_at_type_
-  query_columns< ::cmall_product, id_pgsql, A >::
-  updated_at (A::table_name, "\"updated_at\"", 0);
-
-  template <typename A>
-  const typename query_columns< ::cmall_product, id_pgsql, A >::deleted_at_type_
-  query_columns< ::cmall_product, id_pgsql, A >::
-  deleted_at (A::table_name, "\"deleted_at\"", 0);
-
-  template <typename A>
-  struct pointer_query_columns< ::cmall_product, id_pgsql, A >:
-    query_columns< ::cmall_product, id_pgsql, A >
-  {
-  };
-
-  template <>
-  class access::object_traits_impl< ::cmall_product, id_pgsql >:
-    public access::object_traits< ::cmall_product >
-  {
-    public:
-    struct id_image_type
-    {
-      long long id_value;
-      bool id_null;
-
-      std::size_t version;
-    };
-
-    struct image_type
-    {
-      // id_
-      //
-      long long id_value;
-      bool id_null;
-
-      // owner_
-      //
-      long long owner_value;
-      bool owner_null;
-
-      // name_
-      //
-      details::buffer name_value;
-      std::size_t name_size;
-      bool name_null;
-
-      // price_
-      //
-      details::buffer price_value;
-      std::size_t price_size;
-      bool price_null;
-
-      // currency_
-      //
-      details::buffer currency_value;
-      std::size_t currency_size;
-      bool currency_null;
-
-      // description_
-      //
-      details::buffer description_value;
-      std::size_t description_size;
-      bool description_null;
-
-      // detail_
-      //
-      details::buffer detail_value;
-      std::size_t detail_size;
-      bool detail_null;
-
-      // state_
-      //
-      short state_value;
-      bool state_null;
-
-      // created_at_
-      //
-      long long created_at_value;
-      bool created_at_null;
-
-      // updated_at_
-      //
-      long long updated_at_value;
-      bool updated_at_null;
-
-      // deleted_at_
-      //
-      long long deleted_at_value;
-      bool deleted_at_null;
-
-      std::size_t version;
-    };
-
-    struct extra_statement_cache_type;
-
-    using object_traits<object_type>::id;
-
-    static id_type
-    id (const id_image_type&);
-
-    static id_type
-    id (const image_type&);
-
-    static bool
-    grow (image_type&,
-          bool*);
-
-    static void
-    bind (pgsql::bind*,
-          image_type&,
-          pgsql::statement_kind);
-
-    static void
-    bind (pgsql::bind*, id_image_type&);
-
-    static bool
-    init (image_type&,
-          const object_type&,
-          pgsql::statement_kind);
-
-    static void
-    init (object_type&,
-          const image_type&,
-          database*);
-
-    static void
-    init (id_image_type&, const id_type&);
-
-    typedef pgsql::object_statements<object_type> statements_type;
-
-    typedef pgsql::query_base query_base_type;
-
-    static const std::size_t column_count = 11UL;
-    static const std::size_t id_column_count = 1UL;
-    static const std::size_t inverse_column_count = 0UL;
-    static const std::size_t readonly_column_count = 0UL;
-    static const std::size_t managed_optimistic_column_count = 0UL;
-
-    static const std::size_t separate_load_column_count = 0UL;
-    static const std::size_t separate_update_column_count = 0UL;
-
-    static const bool versioned = false;
-
-    static const char persist_statement[];
-    static const char find_statement[];
-    static const char update_statement[];
-    static const char erase_statement[];
-    static const char query_statement[];
-    static const char erase_query_statement[];
-
-    static const char table_name[];
-
-    static void
-    persist (database&, object_type&);
-
-    static pointer_type
-    find (database&, const id_type&);
-
-    static bool
-    find (database&, const id_type&, object_type&);
-
-    static bool
-    reload (database&, object_type&);
-
-    static void
-    update (database&, const object_type&);
-
-    static void
-    erase (database&, const id_type&);
-
-    static void
-    erase (database&, const object_type&);
-
-    static result<object_type>
-    query (database&, const query_base_type&);
-
-    static unsigned long long
-    erase_query (database&, const query_base_type&);
-
-    static const char persist_statement_name[];
-    static const char find_statement_name[];
-    static const char update_statement_name[];
-    static const char erase_statement_name[];
-    static const char query_statement_name[];
-    static const char erase_query_statement_name[];
-
-    static const unsigned int persist_statement_types[];
-    static const unsigned int find_statement_types[];
-    static const unsigned int update_statement_types[];
-
-    public:
-    static bool
-    find_ (statements_type&,
-           const id_type*);
-
-    static void
-    load_ (statements_type&,
-           object_type&,
-           bool reload);
-  };
-
-  template <>
-  class access::object_traits_impl< ::cmall_product, id_common >:
-    public access::object_traits_impl< ::cmall_product, id_pgsql >
-  {
-  };
-
   // goods_snapshot
   //
   template <>
@@ -1791,22 +1378,17 @@ namespace odb
       std::size_t price_size;
       bool price_null;
 
-      // currency_
-      //
-      details::buffer currency_value;
-      std::size_t currency_size;
-      bool currency_null;
-
       // description_
       //
       details::buffer description_value;
       std::size_t description_size;
       bool description_null;
 
-      // original_id
+      // good_version_git
       //
-      long long original_id_value;
-      bool original_id_null;
+      details::buffer good_version_git_value;
+      std::size_t good_version_git_size;
+      bool good_version_git_null;
     };
 
     static bool
@@ -1835,7 +1417,7 @@ namespace odb
     set_null (image_type&,
               pgsql::statement_kind);
 
-    static const std::size_t column_count = 6UL;
+    static const std::size_t column_count = 5UL;
   };
 
   // cmall_order
@@ -2284,7 +1866,7 @@ namespace odb
       static const unsigned int insert_types[];
 
       static const std::size_t id_column_count = 1UL;
-      static const std::size_t data_column_count = 8UL;
+      static const std::size_t data_column_count = 7UL;
 
       static const bool versioned = false;
 
@@ -2479,8 +2061,6 @@ namespace odb
   // cmall_user
   //
   // cmall_merchant
-  //
-  // cmall_product
   //
   // cmall_order
   //

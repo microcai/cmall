@@ -2813,13 +2813,15 @@ namespace odb
   const unsigned int access::object_traits_impl< ::cmall_merchant, id_pgsql >::
   persist_statement_types[] =
   {
+    pgsql::int8_oid,
     pgsql::text_oid,
     pgsql::bool_oid,
     pgsql::int2_oid,
     pgsql::text_oid,
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
-    pgsql::timestamp_oid
+    pgsql::timestamp_oid,
+    pgsql::text_oid
   };
 
   const unsigned int access::object_traits_impl< ::cmall_merchant, id_pgsql >::
@@ -2838,6 +2840,7 @@ namespace odb
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
+    pgsql::text_oid,
     pgsql::int8_oid
   };
 
@@ -2854,26 +2857,6 @@ namespace odb
     {
     }
   };
-
-  access::object_traits_impl< ::cmall_merchant, id_pgsql >::id_type
-  access::object_traits_impl< ::cmall_merchant, id_pgsql >::
-  id (const id_image_type& i)
-  {
-    pgsql::database* db (0);
-    ODB_POTENTIALLY_UNUSED (db);
-
-    id_type id;
-    {
-      pgsql::value_traits<
-          ::uint64_t,
-          pgsql::id_bigint >::set_value (
-        id,
-        i.id_value,
-        i.id_null);
-    }
-
-    return id;
-  }
 
   access::object_traits_impl< ::cmall_merchant, id_pgsql >::id_type
   access::object_traits_impl< ::cmall_merchant, id_pgsql >::
@@ -2944,6 +2927,14 @@ namespace odb
     //
     t[7UL] = 0;
 
+    // repo_path
+    //
+    if (t[8UL])
+    {
+      i.repo_path_value.capacity (i.repo_path_size);
+      grew = true;
+    }
+
     return grew;
   }
 
@@ -2960,7 +2951,7 @@ namespace odb
 
     // uid_
     //
-    if (sk != statement_insert && sk != statement_update)
+    if (sk != statement_update)
     {
       b[n].type = pgsql::bind::bigint;
       b[n].buffer = &i.uid_value;
@@ -3020,6 +3011,15 @@ namespace odb
     b[n].buffer = &i.deleted_at_value;
     b[n].is_null = &i.deleted_at_null;
     n++;
+
+    // repo_path
+    //
+    b[n].type = pgsql::bind::text;
+    b[n].buffer = i.repo_path_value.data ();
+    b[n].capacity = i.repo_path_value.capacity ();
+    b[n].size = &i.repo_path_size;
+    b[n].is_null = &i.repo_path_null;
+    n++;
   }
 
   void access::object_traits_impl< ::cmall_merchant, id_pgsql >::
@@ -3043,6 +3043,21 @@ namespace odb
     using namespace pgsql;
 
     bool grew (false);
+
+    // uid_
+    //
+    if (sk == statement_insert)
+    {
+      ::uint64_t const& v =
+        o.uid_;
+
+      bool is_null (false);
+      pgsql::value_traits<
+          ::uint64_t,
+          pgsql::id_bigint >::set_image (
+        i.uid_value, is_null, v);
+      i.uid_null = is_null;
+    }
 
     // name_
     //
@@ -3154,6 +3169,27 @@ namespace odb
           pgsql::id_timestamp >::set_image (
         i.deleted_at_value, is_null, v);
       i.deleted_at_null = is_null;
+    }
+
+    // repo_path
+    //
+    {
+      ::std::string const& v =
+        o.repo_path;
+
+      bool is_null (false);
+      std::size_t size (0);
+      std::size_t cap (i.repo_path_value.capacity ());
+      pgsql::value_traits<
+          ::std::string,
+          pgsql::id_string >::set_image (
+        i.repo_path_value,
+        size,
+        is_null,
+        v);
+      i.repo_path_null = is_null;
+      i.repo_path_size = size;
+      grew = grew || (cap != i.repo_path_value.capacity ());
     }
 
     return grew;
@@ -3281,6 +3317,21 @@ namespace odb
         i.deleted_at_value,
         i.deleted_at_null);
     }
+
+    // repo_path
+    //
+    {
+      ::std::string& v =
+        o.repo_path;
+
+      pgsql::value_traits<
+          ::std::string,
+          pgsql::id_string >::set_value (
+        v,
+        i.repo_path_value,
+        i.repo_path_size,
+        i.repo_path_null);
+    }
   }
 
   void access::object_traits_impl< ::cmall_merchant, id_pgsql >::
@@ -3305,10 +3356,10 @@ namespace odb
   "\"desc\", "
   "\"created_at\", "
   "\"updated_at\", "
-  "\"deleted_at\") "
+  "\"deleted_at\", "
+  "\"repo_path\") "
   "VALUES "
-  "(DEFAULT, $1, $2, $3, $4, $5, $6, $7) "
-  "RETURNING \"uid\"";
+  "($1, $2, $3, $4, $5, $6, $7, $8, $9)";
 
   const char access::object_traits_impl< ::cmall_merchant, id_pgsql >::find_statement[] =
   "SELECT "
@@ -3319,7 +3370,8 @@ namespace odb
   "\"cmall_merchant\".\"desc\", "
   "\"cmall_merchant\".\"created_at\", "
   "\"cmall_merchant\".\"updated_at\", "
-  "\"cmall_merchant\".\"deleted_at\" "
+  "\"cmall_merchant\".\"deleted_at\", "
+  "\"cmall_merchant\".\"repo_path\" "
   "FROM \"cmall_merchant\" "
   "WHERE \"cmall_merchant\".\"uid\"=$1";
 
@@ -3332,8 +3384,9 @@ namespace odb
   "\"desc\"=$4, "
   "\"created_at\"=$5, "
   "\"updated_at\"=$6, "
-  "\"deleted_at\"=$7 "
-  "WHERE \"uid\"=$8";
+  "\"deleted_at\"=$7, "
+  "\"repo_path\"=$8 "
+  "WHERE \"uid\"=$9";
 
   const char access::object_traits_impl< ::cmall_merchant, id_pgsql >::erase_statement[] =
   "DELETE FROM \"cmall_merchant\" "
@@ -3348,7 +3401,8 @@ namespace odb
   "\"cmall_merchant\".\"desc\", "
   "\"cmall_merchant\".\"created_at\", "
   "\"cmall_merchant\".\"updated_at\", "
-  "\"cmall_merchant\".\"deleted_at\" "
+  "\"cmall_merchant\".\"deleted_at\", "
+  "\"cmall_merchant\".\"repo_path\" "
   "FROM \"cmall_merchant\"";
 
   const char access::object_traits_impl< ::cmall_merchant, id_pgsql >::erase_query_statement[] =
@@ -3358,7 +3412,7 @@ namespace odb
   "\"cmall_merchant\"";
 
   void access::object_traits_impl< ::cmall_merchant, id_pgsql >::
-  persist (database& db, object_type& obj)
+  persist (database& db, const object_type& obj)
   {
     ODB_POTENTIALLY_UNUSED (db);
 
@@ -3370,7 +3424,7 @@ namespace odb
       conn.statement_cache ().find_object<object_type> ());
 
     callback (db,
-              static_cast<const object_type&> (obj),
+              obj,
               callback_event::pre_persist);
 
     image_type& im (sts.image ());
@@ -3387,25 +3441,12 @@ namespace odb
       imb.version++;
     }
 
-    {
-      id_image_type& i (sts.id_image ());
-      binding& b (sts.id_image_binding ());
-      if (i.version != sts.id_image_version () || b.version == 0)
-      {
-        bind (b.bind, i);
-        sts.id_image_version (i.version);
-        b.version++;
-      }
-    }
-
     insert_statement& st (sts.persist_statement ());
     if (!st.execute ())
       throw object_already_persistent ();
 
-    obj.uid_ = id (sts.id_image ());
-
     callback (db,
-              static_cast<const object_type&> (obj),
+              obj,
               callback_event::post_persist);
   }
 
@@ -3749,1143 +3790,6 @@ namespace odb
     return st.execute ();
   }
 
-  // cmall_product
-  //
-
-  const char access::object_traits_impl< ::cmall_product, id_pgsql >::
-  persist_statement_name[] = "persist_cmall_product";
-
-  const char access::object_traits_impl< ::cmall_product, id_pgsql >::
-  find_statement_name[] = "find_cmall_product";
-
-  const char access::object_traits_impl< ::cmall_product, id_pgsql >::
-  update_statement_name[] = "update_cmall_product";
-
-  const char access::object_traits_impl< ::cmall_product, id_pgsql >::
-  erase_statement_name[] = "erase_cmall_product";
-
-  const char access::object_traits_impl< ::cmall_product, id_pgsql >::
-  query_statement_name[] = "query_cmall_product";
-
-  const char access::object_traits_impl< ::cmall_product, id_pgsql >::
-  erase_query_statement_name[] = "erase_query_cmall_product";
-
-  const unsigned int access::object_traits_impl< ::cmall_product, id_pgsql >::
-  persist_statement_types[] =
-  {
-    pgsql::int8_oid,
-    pgsql::text_oid,
-    pgsql::text_oid,
-    pgsql::text_oid,
-    pgsql::text_oid,
-    pgsql::text_oid,
-    pgsql::int2_oid,
-    pgsql::timestamp_oid,
-    pgsql::timestamp_oid,
-    pgsql::timestamp_oid
-  };
-
-  const unsigned int access::object_traits_impl< ::cmall_product, id_pgsql >::
-  find_statement_types[] =
-  {
-    pgsql::int8_oid
-  };
-
-  const unsigned int access::object_traits_impl< ::cmall_product, id_pgsql >::
-  update_statement_types[] =
-  {
-    pgsql::int8_oid,
-    pgsql::text_oid,
-    pgsql::text_oid,
-    pgsql::text_oid,
-    pgsql::text_oid,
-    pgsql::text_oid,
-    pgsql::int2_oid,
-    pgsql::timestamp_oid,
-    pgsql::timestamp_oid,
-    pgsql::timestamp_oid,
-    pgsql::int8_oid
-  };
-
-  struct access::object_traits_impl< ::cmall_product, id_pgsql >::extra_statement_cache_type
-  {
-    extra_statement_cache_type (
-      pgsql::connection&,
-      image_type&,
-      id_image_type&,
-      pgsql::binding&,
-      pgsql::binding&,
-      pgsql::native_binding&,
-      const unsigned int*)
-    {
-    }
-  };
-
-  access::object_traits_impl< ::cmall_product, id_pgsql >::id_type
-  access::object_traits_impl< ::cmall_product, id_pgsql >::
-  id (const id_image_type& i)
-  {
-    pgsql::database* db (0);
-    ODB_POTENTIALLY_UNUSED (db);
-
-    id_type id;
-    {
-      pgsql::value_traits<
-          ::uint64_t,
-          pgsql::id_bigint >::set_value (
-        id,
-        i.id_value,
-        i.id_null);
-    }
-
-    return id;
-  }
-
-  access::object_traits_impl< ::cmall_product, id_pgsql >::id_type
-  access::object_traits_impl< ::cmall_product, id_pgsql >::
-  id (const image_type& i)
-  {
-    pgsql::database* db (0);
-    ODB_POTENTIALLY_UNUSED (db);
-
-    id_type id;
-    {
-      pgsql::value_traits<
-          ::uint64_t,
-          pgsql::id_bigint >::set_value (
-        id,
-        i.id_value,
-        i.id_null);
-    }
-
-    return id;
-  }
-
-  bool access::object_traits_impl< ::cmall_product, id_pgsql >::
-  grow (image_type& i,
-        bool* t)
-  {
-    ODB_POTENTIALLY_UNUSED (i);
-    ODB_POTENTIALLY_UNUSED (t);
-
-    bool grew (false);
-
-    // id_
-    //
-    t[0UL] = 0;
-
-    // owner_
-    //
-    t[1UL] = 0;
-
-    // name_
-    //
-    if (t[2UL])
-    {
-      i.name_value.capacity (i.name_size);
-      grew = true;
-    }
-
-    // price_
-    //
-    if (t[3UL])
-    {
-      i.price_value.capacity (i.price_size);
-      grew = true;
-    }
-
-    // currency_
-    //
-    if (t[4UL])
-    {
-      i.currency_value.capacity (i.currency_size);
-      grew = true;
-    }
-
-    // description_
-    //
-    if (t[5UL])
-    {
-      i.description_value.capacity (i.description_size);
-      grew = true;
-    }
-
-    // detail_
-    //
-    if (t[6UL])
-    {
-      i.detail_value.capacity (i.detail_size);
-      grew = true;
-    }
-
-    // state_
-    //
-    t[7UL] = 0;
-
-    // created_at_
-    //
-    t[8UL] = 0;
-
-    // updated_at_
-    //
-    t[9UL] = 0;
-
-    // deleted_at_
-    //
-    t[10UL] = 0;
-
-    return grew;
-  }
-
-  void access::object_traits_impl< ::cmall_product, id_pgsql >::
-  bind (pgsql::bind* b,
-        image_type& i,
-        pgsql::statement_kind sk)
-  {
-    ODB_POTENTIALLY_UNUSED (sk);
-
-    using namespace pgsql;
-
-    std::size_t n (0);
-
-    // id_
-    //
-    if (sk != statement_insert && sk != statement_update)
-    {
-      b[n].type = pgsql::bind::bigint;
-      b[n].buffer = &i.id_value;
-      b[n].is_null = &i.id_null;
-      n++;
-    }
-
-    // owner_
-    //
-    b[n].type = pgsql::bind::bigint;
-    b[n].buffer = &i.owner_value;
-    b[n].is_null = &i.owner_null;
-    n++;
-
-    // name_
-    //
-    b[n].type = pgsql::bind::text;
-    b[n].buffer = i.name_value.data ();
-    b[n].capacity = i.name_value.capacity ();
-    b[n].size = &i.name_size;
-    b[n].is_null = &i.name_null;
-    n++;
-
-    // price_
-    //
-    b[n].type = pgsql::bind::text;
-    b[n].buffer = i.price_value.data ();
-    b[n].capacity = i.price_value.capacity ();
-    b[n].size = &i.price_size;
-    b[n].is_null = &i.price_null;
-    n++;
-
-    // currency_
-    //
-    b[n].type = pgsql::bind::text;
-    b[n].buffer = i.currency_value.data ();
-    b[n].capacity = i.currency_value.capacity ();
-    b[n].size = &i.currency_size;
-    b[n].is_null = &i.currency_null;
-    n++;
-
-    // description_
-    //
-    b[n].type = pgsql::bind::text;
-    b[n].buffer = i.description_value.data ();
-    b[n].capacity = i.description_value.capacity ();
-    b[n].size = &i.description_size;
-    b[n].is_null = &i.description_null;
-    n++;
-
-    // detail_
-    //
-    b[n].type = pgsql::bind::text;
-    b[n].buffer = i.detail_value.data ();
-    b[n].capacity = i.detail_value.capacity ();
-    b[n].size = &i.detail_size;
-    b[n].is_null = &i.detail_null;
-    n++;
-
-    // state_
-    //
-    b[n].type = pgsql::bind::smallint;
-    b[n].buffer = &i.state_value;
-    b[n].is_null = &i.state_null;
-    n++;
-
-    // created_at_
-    //
-    b[n].type = pgsql::bind::timestamp;
-    b[n].buffer = &i.created_at_value;
-    b[n].is_null = &i.created_at_null;
-    n++;
-
-    // updated_at_
-    //
-    b[n].type = pgsql::bind::timestamp;
-    b[n].buffer = &i.updated_at_value;
-    b[n].is_null = &i.updated_at_null;
-    n++;
-
-    // deleted_at_
-    //
-    b[n].type = pgsql::bind::timestamp;
-    b[n].buffer = &i.deleted_at_value;
-    b[n].is_null = &i.deleted_at_null;
-    n++;
-  }
-
-  void access::object_traits_impl< ::cmall_product, id_pgsql >::
-  bind (pgsql::bind* b, id_image_type& i)
-  {
-    std::size_t n (0);
-    b[n].type = pgsql::bind::bigint;
-    b[n].buffer = &i.id_value;
-    b[n].is_null = &i.id_null;
-  }
-
-  bool access::object_traits_impl< ::cmall_product, id_pgsql >::
-  init (image_type& i,
-        const object_type& o,
-        pgsql::statement_kind sk)
-  {
-    ODB_POTENTIALLY_UNUSED (i);
-    ODB_POTENTIALLY_UNUSED (o);
-    ODB_POTENTIALLY_UNUSED (sk);
-
-    using namespace pgsql;
-
-    bool grew (false);
-
-    // owner_
-    //
-    {
-      ::uint64_t const& v =
-        o.owner_;
-
-      bool is_null (false);
-      pgsql::value_traits<
-          ::uint64_t,
-          pgsql::id_bigint >::set_image (
-        i.owner_value, is_null, v);
-      i.owner_null = is_null;
-    }
-
-    // name_
-    //
-    {
-      ::std::string const& v =
-        o.name_;
-
-      bool is_null (false);
-      std::size_t size (0);
-      std::size_t cap (i.name_value.capacity ());
-      pgsql::value_traits<
-          ::std::string,
-          pgsql::id_string >::set_image (
-        i.name_value,
-        size,
-        is_null,
-        v);
-      i.name_null = is_null;
-      i.name_size = size;
-      grew = grew || (cap != i.name_value.capacity ());
-    }
-
-    // price_
-    //
-    {
-      ::cpp_numeric const& v =
-        o.price_;
-
-      bool is_null (false);
-      std::size_t size (0);
-      std::size_t cap (i.price_value.capacity ());
-      pgsql::value_traits<
-          ::cpp_numeric,
-          pgsql::id_string >::set_image (
-        i.price_value,
-        size,
-        is_null,
-        v);
-      i.price_null = is_null;
-      i.price_size = size;
-      grew = grew || (cap != i.price_value.capacity ());
-    }
-
-    // currency_
-    //
-    {
-      ::std::string const& v =
-        o.currency_;
-
-      bool is_null (false);
-      std::size_t size (0);
-      std::size_t cap (i.currency_value.capacity ());
-      pgsql::value_traits<
-          ::std::string,
-          pgsql::id_string >::set_image (
-        i.currency_value,
-        size,
-        is_null,
-        v);
-      i.currency_null = is_null;
-      i.currency_size = size;
-      grew = grew || (cap != i.currency_value.capacity ());
-    }
-
-    // description_
-    //
-    {
-      ::std::string const& v =
-        o.description_;
-
-      bool is_null (false);
-      std::size_t size (0);
-      std::size_t cap (i.description_value.capacity ());
-      pgsql::value_traits<
-          ::std::string,
-          pgsql::id_string >::set_image (
-        i.description_value,
-        size,
-        is_null,
-        v);
-      i.description_null = is_null;
-      i.description_size = size;
-      grew = grew || (cap != i.description_value.capacity ());
-    }
-
-    // detail_
-    //
-    {
-      ::std::string const& v =
-        o.detail_;
-
-      bool is_null (false);
-      std::size_t size (0);
-      std::size_t cap (i.detail_value.capacity ());
-      pgsql::value_traits<
-          ::std::string,
-          pgsql::id_string >::set_image (
-        i.detail_value,
-        size,
-        is_null,
-        v);
-      i.detail_null = is_null;
-      i.detail_size = size;
-      grew = grew || (cap != i.detail_value.capacity ());
-    }
-
-    // state_
-    //
-    {
-      ::uint8_t const& v =
-        o.state_;
-
-      bool is_null (false);
-      pgsql::value_traits<
-          ::uint8_t,
-          pgsql::id_smallint >::set_image (
-        i.state_value, is_null, v);
-      i.state_null = is_null;
-    }
-
-    // created_at_
-    //
-    {
-      ::boost::posix_time::ptime const& v =
-        o.created_at_;
-
-      bool is_null (true);
-      pgsql::value_traits<
-          ::boost::posix_time::ptime,
-          pgsql::id_timestamp >::set_image (
-        i.created_at_value, is_null, v);
-      i.created_at_null = is_null;
-    }
-
-    // updated_at_
-    //
-    {
-      ::boost::posix_time::ptime const& v =
-        o.updated_at_;
-
-      bool is_null (true);
-      pgsql::value_traits<
-          ::boost::posix_time::ptime,
-          pgsql::id_timestamp >::set_image (
-        i.updated_at_value, is_null, v);
-      i.updated_at_null = is_null;
-    }
-
-    // deleted_at_
-    //
-    {
-      ::odb::nullable< ::boost::posix_time::ptime > const& v =
-        o.deleted_at_;
-
-      bool is_null (true);
-      pgsql::value_traits<
-          ::odb::nullable< ::boost::posix_time::ptime >,
-          pgsql::id_timestamp >::set_image (
-        i.deleted_at_value, is_null, v);
-      i.deleted_at_null = is_null;
-    }
-
-    return grew;
-  }
-
-  void access::object_traits_impl< ::cmall_product, id_pgsql >::
-  init (object_type& o,
-        const image_type& i,
-        database* db)
-  {
-    ODB_POTENTIALLY_UNUSED (o);
-    ODB_POTENTIALLY_UNUSED (i);
-    ODB_POTENTIALLY_UNUSED (db);
-
-    // id_
-    //
-    {
-      ::uint64_t& v =
-        o.id_;
-
-      pgsql::value_traits<
-          ::uint64_t,
-          pgsql::id_bigint >::set_value (
-        v,
-        i.id_value,
-        i.id_null);
-    }
-
-    // owner_
-    //
-    {
-      ::uint64_t& v =
-        o.owner_;
-
-      pgsql::value_traits<
-          ::uint64_t,
-          pgsql::id_bigint >::set_value (
-        v,
-        i.owner_value,
-        i.owner_null);
-    }
-
-    // name_
-    //
-    {
-      ::std::string& v =
-        o.name_;
-
-      pgsql::value_traits<
-          ::std::string,
-          pgsql::id_string >::set_value (
-        v,
-        i.name_value,
-        i.name_size,
-        i.name_null);
-    }
-
-    // price_
-    //
-    {
-      ::cpp_numeric& v =
-        o.price_;
-
-      pgsql::value_traits<
-          ::cpp_numeric,
-          pgsql::id_string >::set_value (
-        v,
-        i.price_value,
-        i.price_size,
-        i.price_null);
-    }
-
-    // currency_
-    //
-    {
-      ::std::string& v =
-        o.currency_;
-
-      pgsql::value_traits<
-          ::std::string,
-          pgsql::id_string >::set_value (
-        v,
-        i.currency_value,
-        i.currency_size,
-        i.currency_null);
-    }
-
-    // description_
-    //
-    {
-      ::std::string& v =
-        o.description_;
-
-      pgsql::value_traits<
-          ::std::string,
-          pgsql::id_string >::set_value (
-        v,
-        i.description_value,
-        i.description_size,
-        i.description_null);
-    }
-
-    // detail_
-    //
-    {
-      ::std::string& v =
-        o.detail_;
-
-      pgsql::value_traits<
-          ::std::string,
-          pgsql::id_string >::set_value (
-        v,
-        i.detail_value,
-        i.detail_size,
-        i.detail_null);
-    }
-
-    // state_
-    //
-    {
-      ::uint8_t& v =
-        o.state_;
-
-      pgsql::value_traits<
-          ::uint8_t,
-          pgsql::id_smallint >::set_value (
-        v,
-        i.state_value,
-        i.state_null);
-    }
-
-    // created_at_
-    //
-    {
-      ::boost::posix_time::ptime& v =
-        o.created_at_;
-
-      pgsql::value_traits<
-          ::boost::posix_time::ptime,
-          pgsql::id_timestamp >::set_value (
-        v,
-        i.created_at_value,
-        i.created_at_null);
-    }
-
-    // updated_at_
-    //
-    {
-      ::boost::posix_time::ptime& v =
-        o.updated_at_;
-
-      pgsql::value_traits<
-          ::boost::posix_time::ptime,
-          pgsql::id_timestamp >::set_value (
-        v,
-        i.updated_at_value,
-        i.updated_at_null);
-    }
-
-    // deleted_at_
-    //
-    {
-      ::odb::nullable< ::boost::posix_time::ptime >& v =
-        o.deleted_at_;
-
-      pgsql::value_traits<
-          ::odb::nullable< ::boost::posix_time::ptime >,
-          pgsql::id_timestamp >::set_value (
-        v,
-        i.deleted_at_value,
-        i.deleted_at_null);
-    }
-  }
-
-  void access::object_traits_impl< ::cmall_product, id_pgsql >::
-  init (id_image_type& i, const id_type& id)
-  {
-    {
-      bool is_null (false);
-      pgsql::value_traits<
-          ::uint64_t,
-          pgsql::id_bigint >::set_image (
-        i.id_value, is_null, id);
-      i.id_null = is_null;
-    }
-  }
-
-  const char access::object_traits_impl< ::cmall_product, id_pgsql >::persist_statement[] =
-  "INSERT INTO \"cmall_product\" "
-  "(\"id\", "
-  "\"owner\", "
-  "\"name\", "
-  "\"price\", "
-  "\"currency\", "
-  "\"description\", "
-  "\"detail\", "
-  "\"state\", "
-  "\"created_at\", "
-  "\"updated_at\", "
-  "\"deleted_at\") "
-  "VALUES "
-  "(DEFAULT, $1, $2, $3::numeric, $4, $5, $6, $7, $8, $9, $10) "
-  "RETURNING \"id\"";
-
-  const char access::object_traits_impl< ::cmall_product, id_pgsql >::find_statement[] =
-  "SELECT "
-  "\"cmall_product\".\"id\", "
-  "\"cmall_product\".\"owner\", "
-  "\"cmall_product\".\"name\", "
-  "\"cmall_product\".\"price\"::TEXT, "
-  "\"cmall_product\".\"currency\", "
-  "\"cmall_product\".\"description\", "
-  "\"cmall_product\".\"detail\", "
-  "\"cmall_product\".\"state\", "
-  "\"cmall_product\".\"created_at\", "
-  "\"cmall_product\".\"updated_at\", "
-  "\"cmall_product\".\"deleted_at\" "
-  "FROM \"cmall_product\" "
-  "WHERE \"cmall_product\".\"id\"=$1";
-
-  const char access::object_traits_impl< ::cmall_product, id_pgsql >::update_statement[] =
-  "UPDATE \"cmall_product\" "
-  "SET "
-  "\"owner\"=$1, "
-  "\"name\"=$2, "
-  "\"price\"=$3::numeric, "
-  "\"currency\"=$4, "
-  "\"description\"=$5, "
-  "\"detail\"=$6, "
-  "\"state\"=$7, "
-  "\"created_at\"=$8, "
-  "\"updated_at\"=$9, "
-  "\"deleted_at\"=$10 "
-  "WHERE \"id\"=$11";
-
-  const char access::object_traits_impl< ::cmall_product, id_pgsql >::erase_statement[] =
-  "DELETE FROM \"cmall_product\" "
-  "WHERE \"id\"=$1";
-
-  const char access::object_traits_impl< ::cmall_product, id_pgsql >::query_statement[] =
-  "SELECT "
-  "\"cmall_product\".\"id\", "
-  "\"cmall_product\".\"owner\", "
-  "\"cmall_product\".\"name\", "
-  "\"cmall_product\".\"price\"::TEXT, "
-  "\"cmall_product\".\"currency\", "
-  "\"cmall_product\".\"description\", "
-  "\"cmall_product\".\"detail\", "
-  "\"cmall_product\".\"state\", "
-  "\"cmall_product\".\"created_at\", "
-  "\"cmall_product\".\"updated_at\", "
-  "\"cmall_product\".\"deleted_at\" "
-  "FROM \"cmall_product\"";
-
-  const char access::object_traits_impl< ::cmall_product, id_pgsql >::erase_query_statement[] =
-  "DELETE FROM \"cmall_product\"";
-
-  const char access::object_traits_impl< ::cmall_product, id_pgsql >::table_name[] =
-  "\"cmall_product\"";
-
-  void access::object_traits_impl< ::cmall_product, id_pgsql >::
-  persist (database& db, object_type& obj)
-  {
-    ODB_POTENTIALLY_UNUSED (db);
-
-    using namespace pgsql;
-
-    pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
-    statements_type& sts (
-      conn.statement_cache ().find_object<object_type> ());
-
-    callback (db,
-              static_cast<const object_type&> (obj),
-              callback_event::pre_persist);
-
-    image_type& im (sts.image ());
-    binding& imb (sts.insert_image_binding ());
-
-    if (init (im, obj, statement_insert))
-      im.version++;
-
-    if (im.version != sts.insert_image_version () ||
-        imb.version == 0)
-    {
-      bind (imb.bind, im, statement_insert);
-      sts.insert_image_version (im.version);
-      imb.version++;
-    }
-
-    {
-      id_image_type& i (sts.id_image ());
-      binding& b (sts.id_image_binding ());
-      if (i.version != sts.id_image_version () || b.version == 0)
-      {
-        bind (b.bind, i);
-        sts.id_image_version (i.version);
-        b.version++;
-      }
-    }
-
-    insert_statement& st (sts.persist_statement ());
-    if (!st.execute ())
-      throw object_already_persistent ();
-
-    obj.id_ = id (sts.id_image ());
-
-    callback (db,
-              static_cast<const object_type&> (obj),
-              callback_event::post_persist);
-  }
-
-  void access::object_traits_impl< ::cmall_product, id_pgsql >::
-  update (database& db, const object_type& obj)
-  {
-    ODB_POTENTIALLY_UNUSED (db);
-
-    using namespace pgsql;
-    using pgsql::update_statement;
-
-    callback (db, obj, callback_event::pre_update);
-
-    pgsql::transaction& tr (pgsql::transaction::current ());
-    pgsql::connection& conn (tr.connection ());
-    statements_type& sts (
-      conn.statement_cache ().find_object<object_type> ());
-
-    id_image_type& idi (sts.id_image ());
-    init (idi, id (obj));
-
-    image_type& im (sts.image ());
-    if (init (im, obj, statement_update))
-      im.version++;
-
-    bool u (false);
-    binding& imb (sts.update_image_binding ());
-    if (im.version != sts.update_image_version () ||
-        imb.version == 0)
-    {
-      bind (imb.bind, im, statement_update);
-      sts.update_image_version (im.version);
-      imb.version++;
-      u = true;
-    }
-
-    binding& idb (sts.id_image_binding ());
-    if (idi.version != sts.update_id_image_version () ||
-        idb.version == 0)
-    {
-      if (idi.version != sts.id_image_version () ||
-          idb.version == 0)
-      {
-        bind (idb.bind, idi);
-        sts.id_image_version (idi.version);
-        idb.version++;
-      }
-
-      sts.update_id_image_version (idi.version);
-
-      if (!u)
-        imb.version++;
-    }
-
-    update_statement& st (sts.update_statement ());
-    if (st.execute () == 0)
-      throw object_not_persistent ();
-
-    callback (db, obj, callback_event::post_update);
-    pointer_cache_traits::update (db, obj);
-  }
-
-  void access::object_traits_impl< ::cmall_product, id_pgsql >::
-  erase (database& db, const id_type& id)
-  {
-    using namespace pgsql;
-
-    ODB_POTENTIALLY_UNUSED (db);
-
-    pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
-    statements_type& sts (
-      conn.statement_cache ().find_object<object_type> ());
-
-    id_image_type& i (sts.id_image ());
-    init (i, id);
-
-    binding& idb (sts.id_image_binding ());
-    if (i.version != sts.id_image_version () || idb.version == 0)
-    {
-      bind (idb.bind, i);
-      sts.id_image_version (i.version);
-      idb.version++;
-    }
-
-    if (sts.erase_statement ().execute () != 1)
-      throw object_not_persistent ();
-
-    pointer_cache_traits::erase (db, id);
-  }
-
-  access::object_traits_impl< ::cmall_product, id_pgsql >::pointer_type
-  access::object_traits_impl< ::cmall_product, id_pgsql >::
-  find (database& db, const id_type& id)
-  {
-    using namespace pgsql;
-
-    {
-      pointer_type p (pointer_cache_traits::find (db, id));
-
-      if (!pointer_traits::null_ptr (p))
-        return p;
-    }
-
-    pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
-    statements_type& sts (
-      conn.statement_cache ().find_object<object_type> ());
-
-    statements_type::auto_lock l (sts);
-
-    if (l.locked ())
-    {
-      if (!find_ (sts, &id))
-        return pointer_type ();
-    }
-
-    pointer_type p (
-      access::object_factory<object_type, pointer_type>::create ());
-    pointer_traits::guard pg (p);
-
-    pointer_cache_traits::insert_guard ig (
-      pointer_cache_traits::insert (db, id, p));
-
-    object_type& obj (pointer_traits::get_ref (p));
-
-    if (l.locked ())
-    {
-      select_statement& st (sts.find_statement ());
-      ODB_POTENTIALLY_UNUSED (st);
-
-      callback (db, obj, callback_event::pre_load);
-      init (obj, sts.image (), &db);
-      load_ (sts, obj, false);
-      sts.load_delayed (0);
-      l.unlock ();
-      callback (db, obj, callback_event::post_load);
-      pointer_cache_traits::load (ig.position ());
-    }
-    else
-      sts.delay_load (id, obj, ig.position ());
-
-    ig.release ();
-    pg.release ();
-    return p;
-  }
-
-  bool access::object_traits_impl< ::cmall_product, id_pgsql >::
-  find (database& db, const id_type& id, object_type& obj)
-  {
-    using namespace pgsql;
-
-    pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
-    statements_type& sts (
-      conn.statement_cache ().find_object<object_type> ());
-
-    statements_type::auto_lock l (sts);
-    assert (l.locked ()) /* Must be a top-level call. */;
-
-    if (!find_ (sts, &id))
-      return false;
-
-    select_statement& st (sts.find_statement ());
-    ODB_POTENTIALLY_UNUSED (st);
-
-    reference_cache_traits::position_type pos (
-      reference_cache_traits::insert (db, id, obj));
-    reference_cache_traits::insert_guard ig (pos);
-
-    callback (db, obj, callback_event::pre_load);
-    init (obj, sts.image (), &db);
-    load_ (sts, obj, false);
-    sts.load_delayed (0);
-    l.unlock ();
-    callback (db, obj, callback_event::post_load);
-    reference_cache_traits::load (pos);
-    ig.release ();
-    return true;
-  }
-
-  bool access::object_traits_impl< ::cmall_product, id_pgsql >::
-  reload (database& db, object_type& obj)
-  {
-    using namespace pgsql;
-
-    pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
-    statements_type& sts (
-      conn.statement_cache ().find_object<object_type> ());
-
-    statements_type::auto_lock l (sts);
-    assert (l.locked ()) /* Must be a top-level call. */;
-
-    const id_type& id (object_traits_impl::id (obj));
-    if (!find_ (sts, &id))
-      return false;
-
-    select_statement& st (sts.find_statement ());
-    ODB_POTENTIALLY_UNUSED (st);
-
-    callback (db, obj, callback_event::pre_load);
-    init (obj, sts.image (), &db);
-    load_ (sts, obj, true);
-    sts.load_delayed (0);
-    l.unlock ();
-    callback (db, obj, callback_event::post_load);
-    return true;
-  }
-
-  bool access::object_traits_impl< ::cmall_product, id_pgsql >::
-  find_ (statements_type& sts,
-         const id_type* id)
-  {
-    using namespace pgsql;
-
-    id_image_type& i (sts.id_image ());
-    init (i, *id);
-
-    binding& idb (sts.id_image_binding ());
-    if (i.version != sts.id_image_version () || idb.version == 0)
-    {
-      bind (idb.bind, i);
-      sts.id_image_version (i.version);
-      idb.version++;
-    }
-
-    image_type& im (sts.image ());
-    binding& imb (sts.select_image_binding ());
-
-    if (im.version != sts.select_image_version () ||
-        imb.version == 0)
-    {
-      bind (imb.bind, im, statement_select);
-      sts.select_image_version (im.version);
-      imb.version++;
-    }
-
-    select_statement& st (sts.find_statement ());
-
-    st.execute ();
-    auto_result ar (st);
-    select_statement::result r (st.fetch ());
-
-    if (r == select_statement::truncated)
-    {
-      if (grow (im, sts.select_image_truncated ()))
-        im.version++;
-
-      if (im.version != sts.select_image_version ())
-      {
-        bind (imb.bind, im, statement_select);
-        sts.select_image_version (im.version);
-        imb.version++;
-        st.refetch ();
-      }
-    }
-
-    return r != select_statement::no_data;
-  }
-
-  result< access::object_traits_impl< ::cmall_product, id_pgsql >::object_type >
-  access::object_traits_impl< ::cmall_product, id_pgsql >::
-  query (database&, const query_base_type& q)
-  {
-    using namespace pgsql;
-    using odb::details::shared;
-    using odb::details::shared_ptr;
-
-    pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
-
-    statements_type& sts (
-      conn.statement_cache ().find_object<object_type> ());
-
-    image_type& im (sts.image ());
-    binding& imb (sts.select_image_binding ());
-
-    if (im.version != sts.select_image_version () ||
-        imb.version == 0)
-    {
-      bind (imb.bind, im, statement_select);
-      sts.select_image_version (im.version);
-      imb.version++;
-    }
-
-    std::string text (query_statement);
-    if (!q.empty ())
-    {
-      text += " ";
-      text += q.clause ();
-    }
-
-    q.init_parameters ();
-    shared_ptr<select_statement> st (
-      new (shared) select_statement (
-        sts.connection (),
-        query_statement_name,
-        text,
-        false,
-        true,
-        q.parameter_types (),
-        q.parameter_count (),
-        q.parameters_binding (),
-        imb));
-
-    st->execute ();
-    st->deallocate ();
-
-    shared_ptr< odb::object_result_impl<object_type> > r (
-      new (shared) pgsql::object_result_impl<object_type> (
-        q, st, sts, 0));
-
-    return result<object_type> (r);
-  }
-
-  unsigned long long access::object_traits_impl< ::cmall_product, id_pgsql >::
-  erase_query (database&, const query_base_type& q)
-  {
-    using namespace pgsql;
-
-    pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
-
-    std::string text (erase_query_statement);
-    if (!q.empty ())
-    {
-      text += ' ';
-      text += q.clause ();
-    }
-
-    q.init_parameters ();
-    delete_statement st (
-      conn,
-      erase_query_statement_name,
-      text,
-      q.parameter_types (),
-      q.parameter_count (),
-      q.parameters_binding ());
-
-    return st.execute ();
-  }
-
   // goods_snapshot
   //
 
@@ -4918,25 +3822,21 @@ namespace odb
       grew = true;
     }
 
-    // currency_
-    //
-    if (t[3UL])
-    {
-      i.currency_value.capacity (i.currency_size);
-      grew = true;
-    }
-
     // description_
     //
-    if (t[4UL])
+    if (t[3UL])
     {
       i.description_value.capacity (i.description_size);
       grew = true;
     }
 
-    // original_id
+    // good_version_git
     //
-    t[5UL] = 0;
+    if (t[4UL])
+    {
+      i.good_version_git_value.capacity (i.good_version_git_size);
+      grew = true;
+    }
 
     return grew;
   }
@@ -4980,15 +3880,6 @@ namespace odb
     b[n].is_null = &i.price_null;
     n++;
 
-    // currency_
-    //
-    b[n].type = pgsql::bind::text;
-    b[n].buffer = i.currency_value.data ();
-    b[n].capacity = i.currency_value.capacity ();
-    b[n].size = &i.currency_size;
-    b[n].is_null = &i.currency_null;
-    n++;
-
     // description_
     //
     b[n].type = pgsql::bind::text;
@@ -4998,11 +3889,13 @@ namespace odb
     b[n].is_null = &i.description_null;
     n++;
 
-    // original_id
+    // good_version_git
     //
-    b[n].type = pgsql::bind::bigint;
-    b[n].buffer = &i.original_id_value;
-    b[n].is_null = &i.original_id_null;
+    b[n].type = pgsql::bind::text;
+    b[n].buffer = i.good_version_git_value.data ();
+    b[n].capacity = i.good_version_git_value.capacity ();
+    b[n].size = &i.good_version_git_size;
+    b[n].is_null = &i.good_version_git_null;
     n++;
   }
 
@@ -5075,27 +3968,6 @@ namespace odb
       grew = grew || (cap != i.price_value.capacity ());
     }
 
-    // currency_
-    //
-    {
-      ::std::string const& v =
-        o.currency_;
-
-      bool is_null (false);
-      std::size_t size (0);
-      std::size_t cap (i.currency_value.capacity ());
-      pgsql::value_traits<
-          ::std::string,
-          pgsql::id_string >::set_image (
-        i.currency_value,
-        size,
-        is_null,
-        v);
-      i.currency_null = is_null;
-      i.currency_size = size;
-      grew = grew || (cap != i.currency_value.capacity ());
-    }
-
     // description_
     //
     {
@@ -5117,18 +3989,25 @@ namespace odb
       grew = grew || (cap != i.description_value.capacity ());
     }
 
-    // original_id
+    // good_version_git
     //
     {
-      ::uint64_t const& v =
-        o.original_id;
+      ::std::string const& v =
+        o.good_version_git;
 
       bool is_null (false);
+      std::size_t size (0);
+      std::size_t cap (i.good_version_git_value.capacity ());
       pgsql::value_traits<
-          ::uint64_t,
-          pgsql::id_bigint >::set_image (
-        i.original_id_value, is_null, v);
-      i.original_id_null = is_null;
+          ::std::string,
+          pgsql::id_string >::set_image (
+        i.good_version_git_value,
+        size,
+        is_null,
+        v);
+      i.good_version_git_null = is_null;
+      i.good_version_git_size = size;
+      grew = grew || (cap != i.good_version_git_value.capacity ());
     }
 
     return grew;
@@ -5187,21 +4066,6 @@ namespace odb
         i.price_null);
     }
 
-    // currency_
-    //
-    {
-      ::std::string& v =
-        o.currency_;
-
-      pgsql::value_traits<
-          ::std::string,
-          pgsql::id_string >::set_value (
-        v,
-        i.currency_value,
-        i.currency_size,
-        i.currency_null);
-    }
-
     // description_
     //
     {
@@ -5217,18 +4081,19 @@ namespace odb
         i.description_null);
     }
 
-    // original_id
+    // good_version_git
     //
     {
-      ::uint64_t& v =
-        o.original_id;
+      ::std::string& v =
+        o.good_version_git;
 
       pgsql::value_traits<
-          ::uint64_t,
-          pgsql::id_bigint >::set_value (
+          ::std::string,
+          pgsql::id_string >::set_value (
         v,
-        i.original_id_value,
-        i.original_id_null);
+        i.good_version_git_value,
+        i.good_version_git_size,
+        i.good_version_git_null);
     }
   }
 
@@ -5649,8 +4514,7 @@ namespace odb
     pgsql::text_oid,
     pgsql::text_oid,
     pgsql::text_oid,
-    pgsql::text_oid,
-    pgsql::int8_oid
+    pgsql::text_oid
   };
 
   const char access::object_traits_impl< ::cmall_order, id_pgsql >::bought_goods_traits::
@@ -5660,9 +4524,8 @@ namespace odb
   "\"cmall_order_bought_goods\".\"value_owner\", "
   "\"cmall_order_bought_goods\".\"value_name\", "
   "\"cmall_order_bought_goods\".\"value_price\"::TEXT, "
-  "\"cmall_order_bought_goods\".\"value_currency\", "
   "\"cmall_order_bought_goods\".\"value_description\", "
-  "\"cmall_order_bought_goods\".\"value_original_id\" "
+  "\"cmall_order_bought_goods\".\"value_good_version_git\" "
   "FROM \"cmall_order_bought_goods\" "
   "WHERE \"cmall_order_bought_goods\".\"object_id\"=$1 ORDER BY \"cmall_order_bought_goods\".\"index\"";
 
@@ -5674,11 +4537,10 @@ namespace odb
   "\"value_owner\", "
   "\"value_name\", "
   "\"value_price\", "
-  "\"value_currency\", "
   "\"value_description\", "
-  "\"value_original_id\") "
+  "\"value_good_version_git\") "
   "VALUES "
-  "($1, $2, $3, $4, $5::numeric, $6, $7, $8)";
+  "($1, $2, $3, $4, $5::numeric, $6, $7)";
 
   const char access::object_traits_impl< ::cmall_order, id_pgsql >::bought_goods_traits::
   delete_statement[] =
@@ -7273,7 +6135,6 @@ namespace odb
           db.execute ("DROP TABLE IF EXISTS \"cmall_order_bought_goods\" CASCADE");
           db.execute ("DROP TABLE IF EXISTS \"cmall_order_recipient\" CASCADE");
           db.execute ("DROP TABLE IF EXISTS \"cmall_order\" CASCADE");
-          db.execute ("DROP TABLE IF EXISTS \"cmall_product\" CASCADE");
           db.execute ("DROP TABLE IF EXISTS \"cmall_merchant\" CASCADE");
           db.execute ("DROP TABLE IF EXISTS \"cmall_user_recipients\" CASCADE");
           db.execute ("DROP TABLE IF EXISTS \"cmall_user_used_phones\" CASCADE");
@@ -7343,32 +6204,17 @@ namespace odb
           db.execute ("CREATE INDEX \"cmall_user_recipients_index_i\"\n"
                       "  ON \"cmall_user_recipients\" (\"index\")");
           db.execute ("CREATE TABLE \"cmall_merchant\" (\n"
-                      "  \"uid\" BIGSERIAL NOT NULL PRIMARY KEY,\n"
+                      "  \"uid\" BIGINT NOT NULL PRIMARY KEY,\n"
                       "  \"name\" TEXT NOT NULL,\n"
                       "  \"verified\" BOOLEAN NOT NULL,\n"
                       "  \"state\" SMALLINT NOT NULL,\n"
                       "  \"desc\" TEXT NULL,\n"
                       "  \"created_at\" TIMESTAMP NULL,\n"
                       "  \"updated_at\" TIMESTAMP NULL,\n"
-                      "  \"deleted_at\" TIMESTAMP NULL)");
+                      "  \"deleted_at\" TIMESTAMP NULL,\n"
+                      "  \"repo_path\" TEXT NOT NULL)");
           db.execute ("CREATE INDEX \"cmall_merchant_name_i\"\n"
                       "  ON \"cmall_merchant\" (\"name\")");
-          db.execute ("CREATE TABLE \"cmall_product\" (\n"
-                      "  \"id\" BIGSERIAL NOT NULL PRIMARY KEY,\n"
-                      "  \"owner\" BIGINT NOT NULL,\n"
-                      "  \"name\" TEXT NOT NULL,\n"
-                      "  \"price\" numeric NOT NULL,\n"
-                      "  \"currency\" TEXT NOT NULL,\n"
-                      "  \"description\" TEXT NOT NULL,\n"
-                      "  \"detail\" TEXT NOT NULL,\n"
-                      "  \"state\" SMALLINT NOT NULL,\n"
-                      "  \"created_at\" TIMESTAMP NULL,\n"
-                      "  \"updated_at\" TIMESTAMP NULL,\n"
-                      "  \"deleted_at\" TIMESTAMP NULL)");
-          db.execute ("CREATE INDEX \"cmall_product_owner_i\"\n"
-                      "  ON \"cmall_product\" (\"owner\")");
-          db.execute ("CREATE INDEX \"cmall_product_state_i\"\n"
-                      "  ON \"cmall_product\" (\"state\")");
           db.execute ("CREATE TABLE \"cmall_order\" (\n"
                       "  \"id\" BIGSERIAL NOT NULL PRIMARY KEY,\n"
                       "  \"oid\" TEXT NOT NULL,\n"
@@ -7413,9 +6259,8 @@ namespace odb
                       "  \"value_owner\" BIGINT NOT NULL,\n"
                       "  \"value_name\" TEXT NOT NULL,\n"
                       "  \"value_price\" NUMERIC NOT NULL,\n"
-                      "  \"value_currency\" TEXT NOT NULL,\n"
                       "  \"value_description\" TEXT NOT NULL,\n"
-                      "  \"value_original_id\" BIGINT NOT NULL,\n"
+                      "  \"value_good_version_git\" TEXT NOT NULL,\n"
                       "  CONSTRAINT \"object_id_fk\"\n"
                       "    FOREIGN KEY (\"object_id\")\n"
                       "    REFERENCES \"cmall_order\" (\"id\")\n"
@@ -7434,7 +6279,7 @@ namespace odb
                       "  \"migration\" BOOLEAN NOT NULL)");
           db.execute ("INSERT INTO \"schema_version\" (\n"
                       "  \"name\", \"version\", \"migration\")\n"
-                      "  SELECT '', 3, FALSE\n"
+                      "  SELECT '', 5, FALSE\n"
                       "  WHERE NOT EXISTS (\n"
                       "    SELECT 1 FROM \"schema_version\" WHERE \"name\" = '')");
           return false;
@@ -7452,14 +6297,14 @@ namespace odb
     &create_schema);
 
   static const schema_catalog_migrate_entry
-  migrate_schema_entry_1_ (
+  migrate_schema_entry_4_ (
     id_pgsql,
     "",
-    1ULL,
+    4ULL,
     0);
 
   static bool
-  migrate_schema_2 (database& db, unsigned short pass, bool pre)
+  migrate_schema_5 (database& db, unsigned short pass, bool pre)
   {
     ODB_POTENTIALLY_UNUSED (db);
     ODB_POTENTIALLY_UNUSED (pass);
@@ -7471,37 +6316,14 @@ namespace odb
       {
         case 1:
         {
-          db.execute ("ALTER TABLE \"cmall_user_recipients\"\n"
-                      "  ADD COLUMN \"value_name\" TEXT NULL,\n"
-                      "  ADD COLUMN \"value_telephone\" TEXT NULL");
-          db.execute ("ALTER TABLE \"cmall_product\"\n"
-                      "  ADD COLUMN \"detail\" TEXT NULL");
-          db.execute ("CREATE TABLE \"cmall_order_recipient\" (\n"
-                      "  \"object_id\" BIGINT NOT NULL,\n"
-                      "  \"index\" BIGINT NOT NULL,\n"
-                      "  \"value_name\" TEXT NOT NULL,\n"
-                      "  \"value_telephone\" TEXT NOT NULL,\n"
-                      "  \"value_address\" TEXT NOT NULL,\n"
-                      "  \"value_province\" TEXT NULL,\n"
-                      "  \"value_city\" TEXT NULL,\n"
-                      "  \"value_district\" TEXT NULL,\n"
-                      "  \"value_specific_address\" TEXT NULL,\n"
-                      "  \"value_as_default\" BOOLEAN NOT NULL DEFAULT FALSE)");
-          db.execute ("CREATE INDEX \"cmall_order_recipient_object_id_i\"\n"
-                      "  ON \"cmall_order_recipient\" (\"object_id\")");
-          db.execute ("CREATE INDEX \"cmall_order_recipient_index_i\"\n"
-                      "  ON \"cmall_order_recipient\" (\"index\")");
+          db.execute ("ALTER TABLE \"cmall_order_bought_goods\"\n"
+                      "  ADD COLUMN \"value_good_version_git\" TEXT NULL");
           return true;
         }
         case 2:
         {
-          db.execute ("ALTER TABLE \"cmall_order_recipient\"\n"
-                      "  ADD CONSTRAINT \"object_id_fk\"\n"
-                      "    FOREIGN KEY (\"object_id\")\n"
-                      "    REFERENCES \"cmall_order\" (\"id\")\n"
-                      "    ON DELETE CASCADE");
           db.execute ("UPDATE \"schema_version\"\n"
-                      "  SET \"version\" = 2, \"migration\" = TRUE\n"
+                      "  SET \"version\" = 5, \"migration\" = TRUE\n"
                       "  WHERE \"name\" = ''");
           return false;
         }
@@ -7517,11 +6339,11 @@ namespace odb
         }
         case 2:
         {
-          db.execute ("ALTER TABLE \"cmall_product\"\n"
-                      "  ALTER COLUMN \"detail\" SET NOT NULL");
-          db.execute ("ALTER TABLE \"cmall_user_recipients\"\n"
-                      "  ALTER COLUMN \"value_name\" SET NOT NULL,\n"
-                      "  ALTER COLUMN \"value_telephone\" SET NOT NULL");
+          db.execute ("DROP TABLE \"cmall_product\"");
+          db.execute ("ALTER TABLE \"cmall_order_bought_goods\"\n"
+                      "  ALTER COLUMN \"value_good_version_git\" SET NOT NULL,\n"
+                      "  DROP COLUMN \"value_currency\",\n"
+                      "  DROP COLUMN \"value_original_id\"");
           db.execute ("UPDATE \"schema_version\"\n"
                       "  SET \"migration\" = FALSE\n"
                       "  WHERE \"name\" = ''");
@@ -7534,63 +6356,11 @@ namespace odb
   }
 
   static const schema_catalog_migrate_entry
-  migrate_schema_entry_2_ (
+  migrate_schema_entry_5_ (
     id_pgsql,
     "",
-    2ULL,
-    &migrate_schema_2);
-
-  static bool
-  migrate_schema_3 (database& db, unsigned short pass, bool pre)
-  {
-    ODB_POTENTIALLY_UNUSED (db);
-    ODB_POTENTIALLY_UNUSED (pass);
-    ODB_POTENTIALLY_UNUSED (pre);
-
-    if (pre)
-    {
-      switch (pass)
-      {
-        case 1:
-        {
-          return true;
-        }
-        case 2:
-        {
-          db.execute ("UPDATE \"schema_version\"\n"
-                      "  SET \"version\" = 3, \"migration\" = TRUE\n"
-                      "  WHERE \"name\" = ''");
-          return false;
-        }
-      }
-    }
-    else
-    {
-      switch (pass)
-      {
-        case 1:
-        {
-          return true;
-        }
-        case 2:
-        {
-          db.execute ("UPDATE \"schema_version\"\n"
-                      "  SET \"migration\" = FALSE\n"
-                      "  WHERE \"name\" = ''");
-          return false;
-        }
-      }
-    }
-
-    return false;
-  }
-
-  static const schema_catalog_migrate_entry
-  migrate_schema_entry_3_ (
-    id_pgsql,
-    "",
-    3ULL,
-    &migrate_schema_3);
+    5ULL,
+    &migrate_schema_5);
 }
 
 #include <odb/post.hxx>
