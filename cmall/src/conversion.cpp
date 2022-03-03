@@ -1,6 +1,24 @@
 
-#include "cmall/conversion.hpp"
+#include <boost/json.hpp>
+
+#include "cmall/internal.hpp"
 #include "cmall/misc.hpp"
+#include <services/repo_products.hpp>
+
+#include "cmall/conversion.hpp"
+
+void services::tag_invoke(const boost::json::value_from_tag&, boost::json::value& jv, const services::product& p)
+{
+	jv = {
+		{ "id", p.product_id },
+		{ "owner", p.owner_ },
+		{ "name", p.product_title },
+		{ "price", p.product_price },
+		{ "description", p.product_description },
+		{ "detail", p.detailed },
+	};
+}
+
 
 inline namespace conversion
 {
@@ -20,7 +38,7 @@ inline namespace conversion
 			{ "verified", u.verified_ },
 			{ "state", u.state_ },
 			{ "desc", u.desc_.null() ? "" : u.desc_.get() },
-			{ "created_at", to_string(u.created_at_) },
+			{ "created_at", ::to_string(u.created_at_) },
 		};
 	}
 
@@ -49,7 +67,7 @@ inline namespace conversion
 			{ "description", p.description_ },
 			{ "detail", p.detail_ },
 			{ "state", p.state_ },
-			{ "created_at", to_string(p.created_at_) },
+			{ "created_at", ::to_string(p.created_at_) },
 		};
 	}
 
@@ -58,13 +76,13 @@ inline namespace conversion
 		jv = {
 			{ "orderid", o.oid_ },
 			{ "buyer", o.buyer_ },
-			{ "price", to_string(o.price_) },
+			{ "price", ::to_string(o.price_) },
 			{ "currency", o.currency_ },
-			{ "pay_amount", to_string(o.pay_amount_) },
+			{ "pay_amount", ::to_string(o.pay_amount_) },
 			{ "stage", o.stage_ },
-			{ "payed_at", o.payed_at_.null() ? "" : to_string(o.payed_at_.get()) },
-			{ "close_at", o.close_at_.null() ? "" : to_string(o.close_at_.get()) },
-			{ "created_at", to_string(o.created_at_) },
+			{ "payed_at", o.payed_at_.null() ? "" : ::to_string(o.payed_at_.get()) },
+			{ "close_at", o.close_at_.null() ? "" : ::to_string(o.close_at_.get()) },
+			{ "created_at", ::to_string(o.created_at_) },
 			{ "bought_goods", o.bought_goods },
 			{ "recipients", o.recipient },
 			{ "ext", o.ext_.null() ? "" : o.ext_.get() },
@@ -76,7 +94,7 @@ inline namespace conversion
 		jv = {
 			{ "owner", g.owner_ },
 			{ "name", g.name_ },
-			{ "price", to_string(g.price_) },
+			{ "price", ::to_string(g.price_) },
 			{ "currency", g.currency_ },
 			{ "description", g.description_ },
 			{ "original_id", g.original_id },

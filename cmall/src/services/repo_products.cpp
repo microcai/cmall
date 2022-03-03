@@ -51,15 +51,22 @@ namespace services
 							{
 								auto second_pos = md.find_first_of("---", first_pos + 4);
 
-								if (second_pos > 4)
+								if (second_pos > first_pos + 4)
 								{
 									std::string md_str(md.begin() + first_pos, md.begin() + second_pos + 3);
 									goods_description result = parse_comma_kv(md_str).value();
+
+									product to_be_append;
+									to_be_append.product_id = entry_filename.stem().string();
+									to_be_append.product_title = result.title;
+									to_be_append.product_price = result.price;
+									to_be_append.product_description = result.description;
+									to_be_append.pics.push_back(result.picture);
+									to_be_append.detailed = md.substr(second_pos + 4);
+
+									appendee.push_back(to_be_append);
 								}
 							}
-
-
-
 						}
 					}
 					break;

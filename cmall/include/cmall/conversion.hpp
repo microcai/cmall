@@ -3,12 +3,21 @@
 
 #include <boost/json.hpp>
 #include <optional>
+#include <vector>
+
 #include "cmall/db-odb.hxx"
 #include "cmall/db.hpp"
+
+namespace services{
+	struct product;
+	void tag_invoke(const boost::json::value_from_tag&, boost::json::value& jv, const product& p);
+}
 
 inline namespace conversion
 {
 	using namespace boost::json;
+	using namespace services;
+
 	// serialization
 	void tag_invoke(const value_from_tag&, value& jv, const cmall_user& u);
 	void tag_invoke(const value_from_tag&, value& jv, const Recipient& r);

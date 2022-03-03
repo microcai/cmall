@@ -19,6 +19,7 @@
 #pragma clang diagnostic ignored "-Wunused-parameter"
 #endif
 
+#include <boost/date_time.hpp>
 #include <boost/date_time/posix_time/ptime.hpp>
 #include <boost/multiprecision/cpp_dec_float.hpp>
 #include <boost/multiprecision/cpp_int.hpp>

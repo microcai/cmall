@@ -2,6 +2,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
 
@@ -20,11 +21,13 @@ namespace services
 		// 产品简述.
 		std::string product_description;
 
+		std::string product_price;
+
 		// 详情, markdown 或者 富文本.
 		std::string detailed;
+
+		std::uint64_t owner_;
 	};
-
-
 
 	struct repo_products_impl;
 	class repo_products

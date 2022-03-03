@@ -37,7 +37,10 @@
 #include "cmall/js_util.hpp"
 #include "magic_enum.hpp"
 
+#include "services/repo_products.hpp"
+
 #include "cmall/conversion.hpp"
+
 #ifdef __linux__
 # define HAVE_REUSE_PORT 1
 #endif
@@ -619,48 +622,35 @@ namespace cmall
 			case req_method::goods_list:
 			{
 				std::vector<services::product> all_products;
-				for (auto& [merchant_id, merchant_repo] : merchant_repos)
-				{
-					std::vector<services::product> this_merchant_all_products = co_await merchant_repo->get_products();
-
-					std::copy(this_merchant_all_products.begin(), this_merchant_all_products.end(), std::back_inserter(all_products));
-				}
 
 				// 列出 商品, 根据参数决定是首页还是商户
 				auto merchant = jsutil::json_accessor(params).get_string("merchant");
-				std::vector<cmall_product> products;
 
 				if (merchant == "")
 				{
-					// FIXME, 目前商品少, 这个调用就把全站的商品都返回了吧.
-
-					if (co_await m_database.async_load_all_products(products))
+					for (auto& [merchant_id, merchant_repo] : merchant_repos)
 					{
+						std::vector<services::product> products = co_await merchant_repo->get_products();
+
+						for (auto& p:products)
+							p.owner_ = merchant_id;
+
+						std::copy(products.begin(), products.end(), std::back_inserter(all_products));
 					}
 
-					// 列举首页商品.
-
-					// 首页商品由管理员设置
-
-					// TODO
-					// m_database.async_load_front_page_goods();
-
-					// 格式化.
-
-					//
 				}
 				else
 				{
 					auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
 
-					if (co_await m_database.async_load_all_products_by_merchant(
-							products, static_cast<long>(merchant_id)))
-					{
-					}
-					// 列出商户的上架商品.
+					std::vector<services::product> products = co_await merchant_repos[merchant_id]->get_products();
+					for (auto& p:products)
+						p.owner_ = merchant_id;
+
+					std::copy(products.begin(), products.end(), std::back_inserter(all_products));
 				}
 
-				reply_message["result"] = boost::json::value_from(products);
+				reply_message["result"] = boost::json::value_from(all_products);
 			}
 			break;
 			case req_method::goods_detail:
