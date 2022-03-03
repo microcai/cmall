@@ -60,6 +60,8 @@ struct Res ${Name}(void) {
 	else()
 		if(APPLE)
 			set(Section ".const_data")
+		elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" )
+			set(Section ".section .data")
 		endif()
 		set(CODE
 "${STRUCT}
