@@ -38,6 +38,9 @@
 #include "magic_enum.hpp"
 
 #include "cmall/conversion.hpp"
+#ifdef __linux__
+# define HAVE_REUSE_PORT 1
+#endif
 
 namespace cmall
 {
@@ -151,7 +154,9 @@ namespace cmall
 	boost::asio::awaitable<bool> cmall_service::init_ws_acceptors()
 	{
 		boost::system::error_code ec;
-
+#ifdef HAVE_REUSE_PORT
+		typedef boost::asio::detail::socket_option::boolean<SOL_SOCKET, SO_REUSEPORT> reuse_port;
+#endif
 		for (const auto& wsd : m_config.ws_listens_)
 		{
 			tcp::endpoint endp;
@@ -163,51 +168,66 @@ namespace cmall
 				co_return false;
 			}
 
-			tcp::acceptor a{ m_io_context };
-
-			a.open(endp.protocol(), ec);
-			if (ec)
+#ifdef HAVE_REUSE_PORT
+			for (int io_index = 0; io_index < m_io_context_pool.pool_size(); io_index++)
 			{
-				LOG_ERR << "WS server open accept error: " << ec.message();
-				co_return false;
-			}
-
-			a.set_option(boost::asio::socket_base::reuse_address(true), ec);
-			if (ec)
-			{
-				LOG_ERR << "WS server accept set option failed: " << ec.message();
-				co_return false;
-			}
-
-#if __linux__
-			if (ipv6only)
-			{
-				int on = 1;
-				if (::setsockopt(a.native_handle(), IPPROTO_IPV6, IPV6_V6ONLY, (char*)&on, sizeof(on)) == -1)
+				tcp::acceptor a{ m_io_context_pool.get_io_context(io_index) };
+#else
+				tcp::acceptor a{ m_io_context };
+#endif
+				a.open(endp.protocol(), ec);
+				if (ec)
 				{
-					LOG_ERR << "WS server setsockopt IPV6_V6ONLY";
+					LOG_ERR << "WS server open accept error: " << ec.message();
 					co_return false;
 				}
+
+				a.set_option(reuse_port(true), ec);
+				if (ec)
+				{
+					LOG_ERR << "WS server accept set option SO_REUSEPORT failed: " << ec.message();
+					co_return false;
+				}
+
+				a.set_option(boost::asio::socket_base::reuse_address(true), ec);
+				if (ec)
+				{
+					LOG_ERR << "WS server accept set option failed: " << ec.message();
+					co_return false;
+				}
+
+	#if __linux__
+				if (ipv6only)
+				{
+					int on = 1;
+					if (::setsockopt(a.native_handle(), IPPROTO_IPV6, IPV6_V6ONLY, (char*)&on, sizeof(on)) == -1)
+					{
+						LOG_ERR << "WS server setsockopt IPV6_V6ONLY";
+						co_return false;
+					}
+				}
+	#else
+				boost::ignore_unused(ipv6only);
+	#endif
+				a.bind(endp, ec);
+				if (ec)
+				{
+					LOG_ERR << "WS server bind failed: " << ec.message() << ", address: " << endp.address().to_string()
+							<< ", port: " << endp.port();
+					co_return false;
+				}
+
+				a.listen(boost::asio::socket_base::max_listen_connections, ec);
+				if (ec)
+				{
+					LOG_ERR << "WS server listen failed: " << ec.message();
+					co_return false;
+				}
+
+				m_ws_acceptors.emplace_back(std::move(a));
+#ifdef HAVE_REUSE_PORT
 			}
-#else
-			boost::ignore_unused(ipv6only);
 #endif
-			a.bind(endp, ec);
-			if (ec)
-			{
-				LOG_ERR << "WS server bind failed: " << ec.message() << ", address: " << endp.address().to_string()
-						<< ", port: " << endp.port();
-				co_return false;
-			}
-
-			a.listen(boost::asio::socket_base::max_listen_connections, ec);
-			if (ec)
-			{
-				LOG_ERR << "WS server listen failed: " << ec.message();
-				co_return false;
-			}
-
-			m_ws_acceptors.emplace_back(std::move(a));
 		}
 
 		co_return true;
@@ -217,9 +237,13 @@ namespace cmall
 	{
 		while (!m_abort)
 		{
-
 			boost::system::error_code error;
+
+#ifdef HAVE_REUSE_PORT
+			tcp::socket socket(a.get_executor());
+#else
 			tcp::socket socket(m_io_context_pool.get_io_context());
+#endif
 			co_await a.async_accept(socket, boost::asio::redirect_error(boost::asio::use_awaitable, error));
 
 			if (error)
