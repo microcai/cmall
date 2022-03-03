@@ -51,6 +51,15 @@ git_tree* gitpp::tree::native_handle()
 	return (git_tree*) obj_;
 }
 
+gitpp::tree_entry gitpp::tree::by_path(std::string path) const
+{
+	git_tree_entry* entry2 = nullptr;
+	git_tree_entry_bypath(&entry2, native_handle(), path.c_str());
+	gitpp::tree_entry sub_tree_entry(entry2);
+	return sub_tree_entry;
+}
+
+
 gitpp::tree::tree_iterator gitpp::tree::begin() const
 {
 	return tree_iterator(this, 0);
@@ -104,6 +113,11 @@ gitpp::tree_entry::~tree_entry()
 {
 	if (owned && entry)
 		git_tree_entry_free(entry);
+}
+
+bool gitpp::tree_entry::empty() const
+{
+	return entry == nullptr;
 }
 
 gitpp::oid gitpp::tree_entry::get_oid() const

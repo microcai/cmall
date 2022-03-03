@@ -98,6 +98,9 @@ namespace gitpp {
 		explicit tree_entry(const git_tree_entry*);
 		explicit tree_entry(git_tree_entry*);
 		~tree_entry();
+
+		bool empty() const;
+
 	public:
 		oid get_oid() const;
 
@@ -135,6 +138,8 @@ namespace gitpp {
 
 		const git_tree* native_handle() const;
 		git_tree* native_handle();
+
+		tree_entry by_path(std::string path) const;
 
 	};
 

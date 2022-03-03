@@ -37,6 +37,12 @@ namespace services
 					{
 					LOG_DBG <<"traval git repo:" <<
 						tree_entry.name();
+						boost::filesystem::path entry_filename(tree_entry.name());
+
+						if (entry_filename.has_extension() && entry_filename.extension() == "md")
+						{
+
+						}
 					}
 					break;
 					default:
@@ -52,8 +58,10 @@ namespace services
 			std::vector<product> ret;
 			gitpp::tree repo_tree = git_repo.get_tree_by_commit(git_repo.head().target());
 
-			extrace_product(repo_tree, ret);
+			auto goods = repo_tree.by_path("goods");
 
+			if (!goods.empty())
+				extrace_product(git_repo.get_tree_by_treeid(goods.get_oid()), ret);
 
 			return ret;
 		}
