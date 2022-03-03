@@ -30,10 +30,12 @@ namespace services
 				switch (tree_entry.type())
 				{
 					case GIT_OBJECT_TREE:
+					LOG_DBG <<"recursive git repo:" << tree_entry.name();
 						extrace_product(git_repo.get_tree_by_treeid(tree_entry.get_oid()), appendee);
 					break;
 					case GIT_OBJECT_BLOB:
 					{
+					LOG_DBG <<"traval git repo:" <<
 						tree_entry.name();
 					}
 					break;
