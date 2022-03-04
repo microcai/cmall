@@ -123,7 +123,7 @@ struct comma_kv_grammer : qi::grammar<Iterator, goods_description()>
 	qi::rule<Iterator, std::string()> title_line, price_line, description_line, picture_line;
 };
 
-std::optional<goods_description> parse_goods_metadata(const std::string& document)
+static inline std::optional<goods_description> parse_goods_metadata(const std::string& document) noexcept
 {
 	goods_description ast;
 
