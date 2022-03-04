@@ -15,6 +15,7 @@
 #include "utils/async_connect.hpp"
 #include "utils/scoped_exit.hpp"
 #include "utils/url_parser.hpp"
+#include "utils/http_misc_helper.hpp"
 
 #include "cmall/cmall.hpp"
 #include "cmall/database.hpp"
@@ -392,6 +393,24 @@ namespace cmall
 
 				if (target.starts_with("/repos"))
 				{
+					boost::match_results<boost::string_view::const_iterator> w;
+					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/(.+)")))
+					{
+						std::string merhcant = w[1].str();
+						std::string remains = w[2].str();
+
+						int status_code = co_await render_git_repo_files(connection_id, merhcant, remains, client_ptr->tcp_stream, req);
+
+						if (status_code != 200)
+						{
+							co_await http_simple_error_page("ERRORED", status_code, req.version());
+						}
+					}
+					else
+					{
+						co_await http_simple_error_page("ERRORED", 403, req.version());
+					}
+					continue;
 
 				}
 
@@ -434,6 +453,33 @@ namespace cmall
 
 		LOG_DBG << "handle_accepted_client: HTTP connection closed : " << connection_id;
 	}
+
+	// 从 git 仓库获取文件，没找到返回 0
+	boost::asio::awaitable<int> cmall_service::render_git_repo_files(size_t connection_id, std::string merchant, std::string path_in_repo, boost::beast::tcp_stream& client, boost::beast::http::request<boost::beast::http::string_body>  req)
+	{
+		auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
+
+		boost::beast::http::response<boost::beast::http::string_body> res{ boost::beast::http::status::ok, req.version() };
+		res.set(boost::beast::http::field::server, "cmall/libgit2/1.0");
+		res.set(boost::beast::http::field::expires, http::make_http_last_modified(std::time(0) + 60));
+//		res.set(boost::beast::http::field::last_modified, http::make_http_last_modified(http::target_file_modifined_time));
+		res.set(boost::beast::http::field::content_type, http::mime_map[boost::filesystem::path(path_in_repo).extension().string()]);
+		res.keep_alive(req.keep_alive());
+
+		boost::system::error_code ec;
+		res.body() = co_await merchant_repos[merchant_id]->get_file_content(path_in_repo, ec);
+
+		if (ec)
+		{
+			co_return 404;
+		}
+
+		boost::beast::http::response_serializer<boost::beast::http::string_body, boost::beast::http::fields> sr{ res };
+
+		co_await boost::beast::http::async_write(client, sr, boost::asio::use_awaitable);
+		co_return 200;
+	}
+
 
 	// 成功给用户返回内容, 返回 200. 如果没找到商品, 不要向 client 写任何数据, 直接放回 404, 由调用方统一返回错误页面.
 	boost::asio::awaitable<int> cmall_service::render_goods_detail_content(size_t connection_id, std::string merchant,

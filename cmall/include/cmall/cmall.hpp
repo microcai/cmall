@@ -166,7 +166,7 @@ namespace cmall {
 		boost::asio::awaitable<void> listen_loop(tcp::acceptor& a);
 		boost::asio::awaitable<void> handle_accepted_client(size_t connection_id, client_connection_ptr);
 
-		boost::asio::awaitable<void> render_git_repo_files(size_t connection_id, boost::beast::http::request<boost::beast::http::string_body>& req, boost::beast::tcp_stream& client);
+		boost::asio::awaitable<int> render_git_repo_files(size_t connection_id, std::string merchant, std::string path_in_repo, boost::beast::tcp_stream& client, boost::beast::http::request<boost::beast::http::string_body>);
 		boost::asio::awaitable<int> render_goods_detail_content(size_t connection_id, std::string merchant, std::string goods_id, boost::beast::tcp_stream& client, int httpver);
 		boost::asio::awaitable<void> do_ws_read(size_t connection_id, client_connection_ptr);
 		boost::asio::awaitable<void> do_ws_write(size_t connection_id, client_connection_ptr);

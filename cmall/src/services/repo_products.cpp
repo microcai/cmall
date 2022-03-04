@@ -38,7 +38,8 @@ namespace services
 						break;
 					case GIT_OBJECT_BLOB:
 					{
-						walker(tree_entry, parent_dir_in_git);
+						if (walker(tree_entry, parent_dir_in_git))
+							break;
 					}
 					break;
 					default:
@@ -47,7 +48,7 @@ namespace services
 			}
 		}
 
-		static product to_product(std::string_view markdown_content)
+		static product to_product(std::string_view markdown_content, boost::system::error_code& ec)
 		{
 			// 寻找 --- ---
 			auto first_pos = markdown_content.find("---\n");
@@ -71,10 +72,36 @@ namespace services
 					}
 				}
 			}
-			throw boost::system::error_code(boost::asio::error::not_found);
+			ec = boost::asio::error::not_found;
+			return product{};
 		}
 
-		product get_products(std::string goods_id, boost::system::error_code&)
+		std::string get_file_content(boost::filesystem::path look_for_file, boost::system::error_code& ec)
+		{
+			std::string ret;
+			gitpp::oid commit_version = git_repo.head().target();
+			gitpp::tree repo_tree = git_repo.get_tree_by_commit(commit_version);
+
+			auto goods = repo_tree.by_path("goods");
+
+			if (!goods.empty())
+				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), boost::filesystem::path(""), [&look_for_file, &ret, this](const gitpp::tree_entry & tree_entry, boost::filesystem::path parent_path) mutable
+				{
+					boost::filesystem::path entry_filename(parent_path / tree_entry.name());
+
+					if (entry_filename == look_for_file)
+					{
+						auto file_blob = git_repo.get_blob(tree_entry.get_oid());
+						ret = file_blob.get_content();
+						return true;
+					}
+					return false;
+				});
+
+			return ret;
+		}
+
+		product get_products(std::string goods_id, boost::system::error_code& ec)
 		{
 			std::vector<product> ret;
 			gitpp::oid commit_version = git_repo.head().target();
@@ -83,7 +110,7 @@ namespace services
 			auto goods = repo_tree.by_path("goods");
 
 			if (!goods.empty())
-				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), boost::filesystem::path(""), [goods_id, &commit_version, &ret, this](const gitpp::tree_entry & tree_entry, boost::filesystem::path) mutable
+				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), boost::filesystem::path(""), [goods_id, &commit_version, &ret, &ec, this](const gitpp::tree_entry & tree_entry, boost::filesystem::path) mutable
 				{
 					boost::filesystem::path entry_filename(tree_entry.name());
 
@@ -92,21 +119,27 @@ namespace services
 						auto file_blob = git_repo.get_blob(tree_entry.get_oid());
 						std::string_view md = file_blob.get_content();
 
-						product to_be_append = to_product(md);
+						product to_be_append = to_product(md, ec);
+						if (ec)
+							return false;
 						to_be_append.git_version = commit_version.as_sha1_string();
 						to_be_append.product_id = entry_filename.stem().string();
 
 						ret.push_back(to_be_append);
+						return true;
 					}
+					return false;
 				});
 
 			if (ret.size() > 0)
 				return ret[0];
-			throw boost::system::system_error(cmall::error::goods_not_found);
+			ec = cmall::error::goods_not_found;
+			return product{};
 		}
 
-		std::vector<product> get_products(boost::system::error_code&)
+		std::vector<product> get_products(boost::system::error_code& ec)
 		{
+			ec = cmall::error::goods_not_found;
 			std::vector<product> ret;
 			gitpp::oid commit_version = git_repo.head().target();
 			gitpp::tree repo_tree = git_repo.get_tree_by_commit(commit_version);
@@ -122,12 +155,16 @@ namespace services
 						auto file_blob = git_repo.get_blob(tree_entry.get_oid());
 						std::string_view md = file_blob.get_content();
 
-						product to_be_append = to_product(md);
-						to_be_append.git_version = commit_version.as_sha1_string();
-						to_be_append.product_id = entry_filename.stem().string();
-
-						ret.push_back(to_be_append);
+						product to_be_append = to_product(md, ec);
+						if (!ec)
+						{
+							to_be_append.git_version = commit_version.as_sha1_string();
+							to_be_append.product_id = entry_filename.stem().string();
+							ec = boost::system::error_code{};
+							ret.push_back(to_be_append);
+						}
 					}
+					return false;
 				});
 
 			return ret;
@@ -142,6 +179,23 @@ namespace services
 	{
 		static_assert(sizeof(obj_stor) >= sizeof(repo_products_impl));
 		std::construct_at(reinterpret_cast<repo_products_impl*>(obj_stor.data()), io, repo_path);
+	}
+
+	boost::asio::awaitable<std::string> repo_products::get_file_content(boost::filesystem::path path, boost::system::error_code& ec)
+	{
+		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
+			void(boost::system::error_code, std::string)>(
+			[this, path, &ec](auto&& handler) mutable
+			{
+				boost::asio::post(impl().io,
+					[this, &ec, path, handler = std::move(handler)]() mutable
+					{
+						auto ret = impl().get_file_content(path, ec);
+						auto excutor = boost::asio::get_associated_executor(handler, impl().io);
+						boost::asio::post(excutor, [handler = std::move(handler), ret]() mutable { handler(boost::system::error_code(), ret);});
+					});
+			},
+			boost::asio::use_awaitable);
 	}
 
 	// 从给定的 goods_id 找到商品定义.
