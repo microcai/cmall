@@ -87,7 +87,7 @@ namespace cmall
 		{
 			if (services::repo_products::is_git_repo(merchant.repo_path))
 			{
-				auto repo = std::make_shared<services::repo_products>(m_io_context, merchant.repo_path);
+				auto repo = std::make_shared<services::repo_products>(m_io_context, merchant.uid_, merchant.repo_path);
 				this->merchant_repos.emplace(merchant.uid_, repo);
 			}
 			else
@@ -687,10 +687,6 @@ namespace cmall
 					for (auto& [merchant_id, merchant_repo] : merchant_repos)
 					{
 						std::vector<services::product> products = co_await merchant_repo->get_products();
-
-						for (auto& p:products)
-							p.owner_ = merchant_id;
-
 						std::copy(products.begin(), products.end(), std::back_inserter(all_products));
 					}
 
@@ -701,9 +697,6 @@ namespace cmall
 					if (merchant_repos.contains(merchant_id))
 					{
 						std::vector<services::product> products = co_await merchant_repos[merchant_id]->get_products();
-						for (auto& p:products)
-							p.owner_ = merchant_id;
-
 						std::copy(products.begin(), products.end(), std::back_inserter(all_products));
 					}
 				}

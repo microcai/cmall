@@ -28,7 +28,7 @@ namespace services
 
 		std::string git_version;
 
-		std::uint64_t owner_;
+		std::uint64_t merchant_id;
 	};
 
 	struct repo_products_impl;
@@ -40,7 +40,7 @@ namespace services
 
 		static bool is_git_repo(boost::filesystem::path repo_path);
 
-		repo_products(boost::asio::io_context& io, boost::filesystem::path repo_path);
+		repo_products(boost::asio::io_context& io, std::uint64_t merchant_id, boost::filesystem::path repo_path);
 		~repo_products();
 
 		boost::asio::awaitable<std::string> get_file_content(boost::filesystem::path path, boost::system::error_code& ec);
