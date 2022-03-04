@@ -62,7 +62,6 @@ inline namespace conversion
 			{ "orderid", o.oid_ },
 			{ "buyer", o.buyer_ },
 			{ "price", ::to_string(o.price_) },
-			{ "currency", o.currency_ },
 			{ "pay_amount", ::to_string(o.pay_amount_) },
 			{ "stage", o.stage_ },
 			{ "payed_at", o.payed_at_.null() ? "" : ::to_string(o.payed_at_.get()) },
