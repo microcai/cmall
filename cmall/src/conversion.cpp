@@ -76,7 +76,8 @@ inline namespace conversion
 	void tag_invoke(const value_from_tag&, value& jv, const goods_snapshot& g)
 	{
 		jv = {
-			{ "owner", g.owner_ },
+			{ "merchant_id", g.merchant_id },
+			{ "goods_id", g.goods_id },
 			{ "name", g.name_ },
 			{ "price", ::to_string(g.price_) },
 			{ "description", g.description_ },

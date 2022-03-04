@@ -39,7 +39,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(5, 6, open)
+#pragma db model version(5, 7, open)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -148,7 +148,8 @@ struct cmall_merchant
 #pragma db value
 struct goods_snapshot
 {
-	uint64_t owner_; // 商品发布者.
+	uint64_t merchant_id; // 商品发布者.
+	std::string goods_id;
 	std::string name_; // 商品名称.
 	cpp_numeric price_;
 	std::string description_; // 商品描述

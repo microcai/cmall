@@ -916,7 +916,8 @@ namespace cmall
 					good_snap.description_ = product_in_mall.product_description;
 					good_snap.good_version_git = product_in_mall.git_version;
 					good_snap.name_ = product_in_mall.product_title;
-					good_snap.owner_ = merchant_id_of_goods;
+					good_snap.merchant_id = merchant_id_of_goods;
+					good_snap.goods_id = product_in_mall.product_id;
 					good_snap.price_ = cpp_numeric(product_in_mall.product_price);
 					new_order.bought_goods.push_back(good_snap);
 
