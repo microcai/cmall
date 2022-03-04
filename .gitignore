@@ -273,3 +273,4 @@ llvm/
 .cache/
 
 doc/
+build-release/
