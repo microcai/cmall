@@ -4,6 +4,7 @@
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/process.hpp>
 
+#include "boost/system/detail/error_code.hpp"
 #include "services/repo_products.hpp"
 #include "utils/logging.hpp"
 
@@ -194,14 +195,14 @@ namespace services
 	}
 
 	// 从给定的 goods_id 找到商品定义.
-	boost::asio::awaitable<product> repo_products::get_products(std::string goods_id)
+	boost::asio::awaitable<product> repo_products::get_products(std::string goods_id, boost::system::error_code& ec)
 	{
 		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
 			void(boost::system::error_code, product)>(
-			[this, goods_id](auto&& handler) mutable
+			[this, goods_id, &ec](auto&& handler) mutable
 			{
 				boost::asio::post(impl().io,
-					[this, goods_id, handler = std::move(handler)]() mutable
+					[this, goods_id, handler = std::move(handler), &ec]() mutable
 					{
 						boost::system::error_code ec;
 						auto ret = impl().get_products(goods_id, ec);

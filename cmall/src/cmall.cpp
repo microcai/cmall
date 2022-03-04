@@ -713,10 +713,21 @@ namespace cmall
 			break;
 			case req_method::goods_detail:
 			{
-				// 获取商品信息, 注意这个不是商品描述, 而是商品 标题, 价格, 和缩略图. 用在商品列表页面.
+				auto merchant_id = jsutil::json_accessor(params).get("merchant_id", -1).as_int64();
+				auto goods_id = jsutil::json_accessor(params).get_string("goods_id");
 
-				// TODO
-				// NOTE: 商品的描述, 使用 GET 操作, 以便这种大段的富文本描述信息能被 CDN 缓存．
+				if (!merchant_repos.contains(merchant_id))
+					throw boost::system::system_error(cmall::error::invalid_params);
+				if (goods_id.empty())
+					throw boost::system::system_error(cmall::error::invalid_params);
+
+
+				boost::system::error_code ec;
+				auto product = co_await merchant_repos[merchant_id]->get_products(goods_id, ec);
+				if (ec)
+					throw boost::system::system_error(cmall::error::goods_not_found);
+				// 获取商品信息, 注意这个不是商品描述, 而是商品 标题, 价格, 和缩略图. 用在商品列表页面.
+				reply_message["result"] = boost::json::value_from(product);
 			}
 			break;
 			case req_method::merchant_product_list:
@@ -955,14 +966,16 @@ namespace cmall
 
 				cpp_numeric total_price = 0;
 
-
 				for (boost::json::value goods_v :  goods_array_ref)
 				{
 					boost::json::object goods_ref = goods_v.as_object();
 					auto merchant_id_of_goods = goods_ref["merchant_id"].as_int64();
 					auto goods_id_of_goods = jsutil::json_as_string(goods_ref["goods_id"].as_string(), "");
 
-					services::product product_in_mall = co_await merchant_repos[merchant_id_of_goods]->get_products(goods_id_of_goods);
+					boost::system::error_code ec;
+					services::product product_in_mall = co_await merchant_repos[merchant_id_of_goods]->get_products(goods_id_of_goods, ec);
+					if (ec) // 商品不存在
+						continue;
 
 					goods_snapshot good_snap;
 
@@ -1044,7 +1057,7 @@ namespace cmall
 		{
 			case req_method::cart_add: // 添加到购物车.
 			{
-				auto merchant_id = jsutil::json_accessor(params).get("merchant_id", -1).as_uint64();
+				auto merchant_id = jsutil::json_accessor(params).get("merchant_id", -1).as_int64();
 				auto goods_id = jsutil::json_accessor(params).get_string("goods_id");
 				if (merchant_id < 0 || goods_id.empty())
 					throw boost::system::error_code(cmall::error::invalid_params);
@@ -1061,8 +1074,8 @@ namespace cmall
 			break;
 			case req_method::cart_mod: // 修改数量.
 			{
-				auto item_id = jsutil::json_accessor(params).get("item_id", -1).as_uint64();
-				auto count = jsutil::json_accessor(params).get("count", 0).as_uint64();
+				auto item_id = jsutil::json_accessor(params).get("item_id", -1).as_int64();
+				auto count = jsutil::json_accessor(params).get("count", 0).as_int64();
 				if (item_id < 0 || count <= 0)
 					throw boost::system::error_code(cmall::error::invalid_params);
 
@@ -1086,7 +1099,7 @@ namespace cmall
 			break;
 			case req_method::cart_del: // 从购物车删除.
 			{
-				auto item_id = jsutil::json_accessor(params).get("item_id", -1).as_uint64();
+				auto item_id = jsutil::json_accessor(params).get("item_id", -1).as_int64();
 				if (item_id < 0)
 					throw boost::system::error_code(cmall::error::invalid_params);
 

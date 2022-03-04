@@ -49,7 +49,7 @@ namespace services
 		boost::asio::awaitable<std::vector<product>> get_products();
 
 		// 从给定的 goods_id 找到商品定义.
-		boost::asio::awaitable<product> get_products(std::string goods_id);
+		boost::asio::awaitable<product> get_products(std::string goods_id, boost::system::error_code& ec);
 
 	private:
 		const repo_products_impl& impl() const;
