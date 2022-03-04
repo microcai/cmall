@@ -135,7 +135,6 @@ namespace services
 
 		std::vector<product> get_products(boost::system::error_code& ec)
 		{
-			ec = cmall::error::goods_not_found;
 			std::vector<product> ret;
 			gitpp::oid commit_version = git_repo.head().target();
 			gitpp::tree repo_tree = git_repo.get_tree_by_commit(commit_version);
