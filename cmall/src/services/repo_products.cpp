@@ -66,14 +66,14 @@ namespace services
 						std::string_view md = file_blob.get_content();
 
 						// 寻找 --- ---
-						auto first_pos = md.find_first_of("---");
+						auto first_pos = md.find_first_of("---\n");
 						if (first_pos >= 0)
 						{
-							auto second_pos = md.find_first_of("---", first_pos + 4);
+							auto second_pos = md.find_first_of("---\n", first_pos + 4);
 
 							if (second_pos > first_pos + 4)
 							{
-								std::string md_str(md.begin() + first_pos, md.begin() + second_pos + 3);
+								std::string md_str(md.begin() + first_pos, md.begin() + second_pos + 4);
 								goods_description result = parse_comma_kv(md_str).value();
 
 								product to_be_append;
@@ -114,10 +114,10 @@ namespace services
 						std::string_view md = file_blob.get_content();
 
 						// 寻找 --- ---
-						auto first_pos = md.find_first_of("---");
+						auto first_pos = md.find("---\n");
 						if (first_pos >= 0)
 						{
-							auto second_pos = md.find_first_of("---", first_pos + 4);
+							auto second_pos = md.find("---\n", first_pos + 4);
 
 							if (second_pos > first_pos + 4)
 							{

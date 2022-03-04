@@ -41,14 +41,14 @@ struct comma_kv_grammer : qi::grammar<Iterator, comma_kv()>
 		comma_kvs = document_sperator >> +newline >> lines [ at_c<0>(qi::_val) = qi::_1 ] >> +newline >> document_sperator >> -rest_garbage;
 		newline = qi::lit('\r') | qi::lit('\n');
 
-		lines =  pair_line >> *( +newline >> pair_line);
-		pair_line  =  key [ at_c<0>(qi::_val) = qi::_1 ] >> ':' >> *qi::lit(' ') >> value [ at_c<1>(qi::_val) = qi::_1 ];
-		key = qi::lexeme[ +(qi::char_ - ':' - '-' - ' ') ];
-		value = qi::lexeme[ +(qi::char_ - '\n' - '\r') ];
+		lines =  pair_line >> *( pair_line);
+		pair_line  =  key [ at_c<0>(qi::_val) = qi::_1 ] >> ':' >> *qi::lit(' ') >> value [ at_c<1>(qi::_val) = qi::_1 ] >> +newline;
+		key = qi::lexeme[ +(qi::unicode::char_ - ':' - '-' - ' ') ];
+		value = qi::lexeme[ +(qi::unicode::char_ - '\n') ];
 
 		document_sperator = qi::lit("---");
 
-		rest_garbage = *(qi::char_);
+		rest_garbage = *(qi::unicode::char_);
 	};
 
 	qi::rule<Iterator, comma_kv()> comma_kvs;

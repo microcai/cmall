@@ -390,6 +390,11 @@ namespace cmall
 					continue;
 				}
 
+				if (target.starts_with("/repos"))
+				{
+
+				}
+
 				// 这个 /goods/${merchant}/${goods_id} 获取 富文本的商品描述.
 				if (target.starts_with("/goods"))
 				{
