@@ -459,6 +459,10 @@ namespace cmall
 	{
 		auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
 
+		if (!merchant_repos.contains(merchant_id))
+			co_return 404;
+
+
 		boost::beast::http::response<boost::beast::http::string_body> res{ boost::beast::http::status::ok, req.version() };
 		res.set(boost::beast::http::field::server, "cmall/libgit2/1.0");
 		res.set(boost::beast::http::field::expires, http::make_http_last_modified(std::time(0) + 60));
@@ -693,12 +697,14 @@ namespace cmall
 				else
 				{
 					auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
+					if (merchant_repos.contains(merchant_id))
+					{
+						std::vector<services::product> products = co_await merchant_repos[merchant_id]->get_products();
+						for (auto& p:products)
+							p.owner_ = merchant_id;
 
-					std::vector<services::product> products = co_await merchant_repos[merchant_id]->get_products();
-					for (auto& p:products)
-						p.owner_ = merchant_id;
-
-					std::copy(products.begin(), products.end(), std::back_inserter(all_products));
+						std::copy(products.begin(), products.end(), std::back_inserter(all_products));
+					}
 				}
 
 				reply_message["result"] = boost::json::value_from(all_products);

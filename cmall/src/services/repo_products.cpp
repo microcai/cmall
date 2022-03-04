@@ -82,21 +82,17 @@ namespace services
 			gitpp::oid commit_version = git_repo.head().target();
 			gitpp::tree repo_tree = git_repo.get_tree_by_commit(commit_version);
 
-			auto goods = repo_tree.by_path("goods");
+			auto look_for_file_entry = repo_tree.by_path(look_for_file.string());
 
-			if (!goods.empty())
-				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), boost::filesystem::path(""), [&look_for_file, &ret, this](const gitpp::tree_entry & tree_entry, boost::filesystem::path parent_path) mutable
-				{
-					boost::filesystem::path entry_filename(parent_path / tree_entry.name());
+			ec = boost::asio::error::not_found;
 
-					if (entry_filename == look_for_file)
-					{
-						auto file_blob = git_repo.get_blob(tree_entry.get_oid());
-						ret = file_blob.get_content();
-						return true;
-					}
-					return false;
-				});
+			if (!look_for_file_entry.empty())
+			{
+				auto file_blob = git_repo.get_blob(look_for_file_entry.get_oid());
+				ret = file_blob.get_content();
+				ec = boost::system::error_code{};
+				return ret;
+			}
 
 			return ret;
 		}
