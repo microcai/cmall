@@ -659,10 +659,11 @@ namespace cmall
 				break;
 
 			case req_method::cart_add:
-				break;
+			case req_method::cart_mod:
 			case req_method::cart_del:
-				break;
 			case req_method::cart_list:
+				co_await ensure_login();
+				co_return co_await handle_jsonrpc_cart_api(connection_ptr, method.value(), params);
 				break;
 			case req_method::order_create_cart:
 			case req_method::order_create_direct:
@@ -1032,6 +1033,93 @@ namespace cmall
 		co_return reply_message;
 	}
 
+	boost::asio::awaitable<boost::json::object> cmall_service::handle_jsonrpc_cart_api(client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
+	{
+		client_connection& this_client = *connection_ptr;
+		boost::json::object reply_message;
+		services::client_session& session_info = *this_client.session_info;
+		cmall_user& this_user = *(session_info.user_info);
+
+		switch (method) 
+		{
+			case req_method::cart_add: // 添加到购物车.
+			{
+				auto merchant_id = jsutil::json_accessor(params).get("merchant_id", -1).as_uint64();
+				auto goods_id = jsutil::json_accessor(params).get_string("goods_id");
+				if (merchant_id < 0 || goods_id.empty())
+					throw boost::system::error_code(cmall::error::invalid_params);
+
+				cmall_cart item;
+				item.uid_ = this_user.uid_;
+				item.merchant_id_ = merchant_id;
+				item.goods_id_ = goods_id;
+				item.count_ = 1;
+
+				co_await m_database.async_add(item);
+				reply_message["result"] = true;
+			}
+			break;
+			case req_method::cart_mod: // 修改数量.
+			{
+				auto item_id = jsutil::json_accessor(params).get("item_id", -1).as_uint64();
+				auto count = jsutil::json_accessor(params).get("count", 0).as_uint64();
+				if (item_id < 0 || count <= 0)
+					throw boost::system::error_code(cmall::error::invalid_params);
+
+				cmall_cart item;
+				bool ok = co_await m_database.async_load(item_id, item);
+				if (!ok) 
+				{
+					throw boost::system::error_code(cmall::error::cart_goods_not_found);
+				}
+				if (item.uid_ != this_user.uid_)
+				{
+					throw boost::system::error_code(cmall::error::invalid_params);
+				}
+				
+				co_await m_database.async_update<cmall_cart>(item_id, [count](cmall_cart old) mutable {
+					old.count_ = count;
+					return std::move(old);
+				});
+				reply_message["result"] = true;
+			}
+			break;
+			case req_method::cart_del: // 从购物车删除.
+			{
+				auto item_id = jsutil::json_accessor(params).get("item_id", -1).as_uint64();
+				if (item_id < 0)
+					throw boost::system::error_code(cmall::error::invalid_params);
+
+				cmall_cart item;
+				bool ok = co_await m_database.async_load(item_id, item);
+				if (!ok) 
+				{
+					throw boost::system::error_code(cmall::error::cart_goods_not_found);
+				}
+				if (item.uid_ != this_user.uid_)
+				{
+					throw boost::system::error_code(cmall::error::invalid_params);
+				}
+				
+				co_await m_database.async_hard_remove<cmall_cart>(item_id);
+				reply_message["result"] = true;
+			}
+			break;
+			case req_method::cart_list: // 查看购物车列表.
+			{
+				std::vector<cmall_cart> items;
+				auto page = jsutil::json_accessor(params).get("page", 0).as_int64();
+				auto page_size = jsutil::json_accessor(params).get("page_size", 20).as_int64();
+
+				co_await m_database.async_load_all_user_cart(items, this_user.uid_, (int)page, (int)page_size);
+				reply_message["result"] = boost::json::value_from(items);
+			}
+			break;
+			default:
+				throw "this should never be executed";
+		}
+		co_return reply_message;
+	}
 
 	boost::asio::awaitable<void> cmall_service::do_ws_write(size_t connection_id, client_connection_ptr connection_ptr)
 	{

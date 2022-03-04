@@ -112,6 +112,7 @@ namespace cmall {
 		user_erase_receipt_address,
 
 		cart_add,
+		cart_mod,
 		cart_del,
 		cart_list,
 
@@ -185,6 +186,7 @@ namespace cmall {
 
 		boost::asio::awaitable<boost::json::object> handle_jsonrpc_user_api(client_connection_ptr, const req_method method, boost::json::object params);
 		boost::asio::awaitable<boost::json::object> handle_jsonrpc_order_api(client_connection_ptr, const req_method method, boost::json::object params);
+		boost::asio::awaitable<boost::json::object> handle_jsonrpc_cart_api(client_connection_ptr, const req_method method, boost::json::object params);
 
 	private:
 		boost::asio::awaitable<std::shared_ptr<ws_stream>> connect(size_t index = 0);

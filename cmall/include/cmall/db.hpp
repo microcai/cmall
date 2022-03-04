@@ -39,7 +39,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(5, 7, open)
+#pragma db model version(5, 8, open)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -197,4 +197,24 @@ struct cmall_order {
 	boost::posix_time::ptime created_at_{ boost::posix_time::second_clock::local_time() };
 	boost::posix_time::ptime updated_at_{ boost::posix_time::second_clock::local_time() };
 	odb::nullable<boost::posix_time::ptime> deleted_at_;
+};
+
+// 购物车.
+#pragma db object
+struct cmall_cart
+{
+#pragma db id auto
+	std::uint64_t id_;
+
+#pragma db index
+	std::uint64_t uid_;
+
+	std::uint64_t merchant_id_;
+
+	std::string goods_id_;
+
+	std::uint64_t count_;
+
+	boost::posix_time::ptime created_at_{ boost::posix_time::second_clock::local_time() };
+	boost::posix_time::ptime updated_at_{ boost::posix_time::second_clock::local_time() };
 };

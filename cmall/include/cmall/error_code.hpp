@@ -23,6 +23,7 @@ namespace cmall { namespace error{
 		invalid_params,
 		order_not_found, 
 		goods_not_found,
+		cart_goods_not_found,
 	};
 
 	class cmall_category : public boost::system::error_category

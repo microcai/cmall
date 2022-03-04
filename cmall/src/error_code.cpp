@@ -36,6 +36,8 @@ std::string cmall::error::cmall_category::message(int ev) const
 			return (const char*) u8"记录已存在";
 		case invalid_params:
 			return (const char*) u8"参数错误";
+		case cart_goods_not_found:
+			return (const char*) u8"购物车商品未找到";
 	}
 	return "error message";
 }

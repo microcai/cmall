@@ -23,6 +23,7 @@ inline namespace conversion
 	void tag_invoke(const value_from_tag&, value& jv, const Recipient& r);
 	void tag_invoke(const value_from_tag&, value& jv, const cmall_order& o);
 	void tag_invoke(const value_from_tag&, value& jv, const goods_snapshot& g);
+	void tag_invoke(const value_from_tag&, value& jv, const cmall_cart& g);
 
 	struct jsonrpc_request_t
 	{

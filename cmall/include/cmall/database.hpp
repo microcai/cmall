@@ -100,6 +100,7 @@ namespace cmall
 		db_result load_order(cmall_order& order, std::string orderid);
 
 		db_result load_all_merchant(std::vector<cmall_merchant>& merchants);
+		db_result load_all_user_cart(std::vector<cmall_cart>& items, std::uint64_t uid, int page, int page_size);
 
 		template <typename T>
 		db_result get(std::uint64_t id, T& ret)
@@ -288,6 +289,7 @@ namespace cmall
 		boost::asio::awaitable<bool> async_load_all_user_orders(std::vector<cmall_order>& orders, std::uint64_t uid, int page, int page_size);
 		boost::asio::awaitable<bool> async_load_order(cmall_order& orders, std::string orderid);
 		boost::asio::awaitable<bool> async_load_all_merchant(std::vector<cmall_merchant>&);
+		boost::asio::awaitable<bool> async_load_all_user_cart(std::vector<cmall_cart>& items, std::uint64_t uid, int page, int page_size);
 
 		template <typename T>
 		boost::asio::awaitable<bool> async_load(std::uint64_t id, T& value)

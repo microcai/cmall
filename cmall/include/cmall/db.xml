@@ -1,10 +1,25 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
-  <changeset version="7">
+  <changeset version="8">
     <alter-table name="cmall_order_bought_goods">
       <add-column name="value_merchant_id" type="BIGINT" null="false"/>
       <add-column name="value_goods_id" type="TEXT" null="false"/>
       <drop-column name="value_owner"/>
     </alter-table>
+    <add-table name="cmall_cart" kind="object">
+      <column name="id" type="BIGINT" null="false"/>
+      <column name="uid" type="BIGINT" null="false"/>
+      <column name="merchant_id" type="BIGINT" null="false"/>
+      <column name="goods_id" type="TEXT" null="false"/>
+      <column name="count" type="BIGINT" null="false"/>
+      <column name="created_at" type="TIMESTAMP" null="true"/>
+      <column name="updated_at" type="TIMESTAMP" null="true"/>
+      <primary-key auto="true">
+        <column name="id"/>
+      </primary-key>
+      <index name="cmall_cart_uid_i">
+        <column name="uid"/>
+      </index>
+    </add-table>
   </changeset>
 
   <changeset version="6">

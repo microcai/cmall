@@ -86,6 +86,18 @@ inline namespace conversion
 		};
 	}
 
+	void tag_invoke(const value_from_tag&, value& jv, const cmall_cart& c)
+	{
+		jv = {
+			{ "id", c.id_ },
+			{ "uid", c.uid_ },
+			{ "merchant_id", c.merchant_id_ },
+			{ "goods_id", c.goods_id_ },
+			{ "count", c.count_ },
+			{ "created_at", to_string(c.created_at_) },
+		};
+	}
+
 	maybe_jsonrpc_request_t tag_invoke(const value_to_tag<maybe_jsonrpc_request_t>&, const value& jv)
 	{
 		if (!jv.is_object())
