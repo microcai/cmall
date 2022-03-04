@@ -898,8 +898,9 @@ namespace cmall
 				cpp_numeric total_price = 0;
 
 
-				for (boost::json::object goods_ref :  goods_array_ref)
+				for (boost::json::value goods_v :  goods_array_ref)
 				{
+					boost::json::object goods_ref = goods_v.as_object();
 					auto merchant_id_of_goods = goods_ref["merchant_id"].as_int64();
 					auto goods_id_of_goods = jsutil::json_as_string(goods_ref["goods_id"].as_string(), "");
 
