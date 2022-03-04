@@ -50,6 +50,31 @@ namespace services
 			co_return ret;
 		}
 
+		boost::asio::awaitable<bool> query_pay(std::string orderid, PAYMENT_GATEWAY gateway)
+		{
+			using namespace boost::process;
+			if (gateway == PAYMENT_CHSPAY)
+			{
+				async_pipe ap(io);
+				child cp(search_path("chstx"), "query_pay", orderid, std_out > ap);
+
+				std::string out;
+				out.resize(4096);
+
+				auto out_size = co_await boost::asio::async_read(ap, boost::asio::buffer(out), boost::asio::use_awaitable);
+				out.resize(out_size);
+
+				std::error_code stdec;
+				cp.wait_for(std::chrono::milliseconds(12), stdec);
+				if (!cp.running())
+					cp.join();
+				
+				int result = cp.exit_code();
+				co_return result == EXIT_SUCCESS;
+			}
+			co_return false;
+		}
+
 		boost::asio::io_context& io;
 	};
 
@@ -57,6 +82,11 @@ namespace services
 	boost::asio::awaitable<payment_url> payment::get_payurl(std::string orderid, int nthTry, std::string order_title, std::string order_amount, PAYMENT_GATEWAY gateway)
 	{
 		return impl().get_payurl(orderid, nthTry, order_title, order_amount, gateway);
+	}
+
+	boost::asio::awaitable<bool> payment::query_pay(std::string orderid, PAYMENT_GATEWAY gateway)
+	{
+		return impl().query_pay(orderid, gateway);
 	}
 
 	payment::payment(boost::asio::io_context& io)
