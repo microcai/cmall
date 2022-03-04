@@ -1092,7 +1092,7 @@ namespace cmall
 				
 				co_await m_database.async_update<cmall_cart>(item_id, [count](cmall_cart old) mutable {
 					old.count_ = count;
-					return std::move(old);
+					return old;
 				});
 				reply_message["result"] = true;
 			}
