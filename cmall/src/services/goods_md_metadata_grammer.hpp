@@ -46,7 +46,7 @@ public:
 struct goods_description {
 	std::string title;
 	std::string price;
-	std::string picture;
+	magic_vector<std::string> picture;
 	std::string description;
 
 	magic_vector<KV> rest_meta;
@@ -79,8 +79,8 @@ BOOST_FUSION_ADAPT_STRUCT(
 	goods_description,
 	(std::string, title)
 	(std::string, price)
-	(std::string, picture)
 	(std::string, description)
+	(magic_vector<std::string>, picture)
 	(magic_vector<KV>, rest_meta)
 )
 
@@ -96,7 +96,7 @@ struct goods_description_grammer : qi::grammar<Iterator, goods_description()>
 
 		lines = line [ qi::_val = qi::_1 ] >> *( line [ qi::_val = qi::_1 ] );
 
-		line = title_line  [ at_c<0>(qi::_val) = qi::_1 ] | price_line  [ at_c<1>(qi::_val) = qi::_1 ] | description_line  [ at_c<3>(qi::_val) = qi::_1 ] | picture_line [ at_c<2>(qi::_val) = qi::_1 ] | pair_line [ at_c<4>(qi::_val) += qi::_1 ];
+		line = title_line  [ at_c<0>(qi::_val) = qi::_1 ] | price_line  [ at_c<1>(qi::_val) = qi::_1 ] | description_line  [ at_c<2>(qi::_val) = qi::_1 ] | picture_line [ at_c<3>(qi::_val) += qi::_1 ] | pair_line [ at_c<4>(qi::_val) += qi::_1 ];
 
 		document_sperator = qi::lit("---") >> newline;
 

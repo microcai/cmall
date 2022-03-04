@@ -93,7 +93,8 @@ namespace services
 						founded.product_title = result->title;
 						founded.product_price = result->price;
 						founded.product_description = result->description;
-						founded.pics.push_back(correct_url(result->picture));
+						for (auto pic_url : result->picture)
+							founded.pics.push_back(correct_url(pic_url));
 						founded.detailed = md::markdown_transpile(markdown_content.substr(second_pos + 4), std::bind(&repo_products_impl::correct_url, this, std::placeholders::_1));
 						founded.merchant_id = merchant_id;
 						return founded;
