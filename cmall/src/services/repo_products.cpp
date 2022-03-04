@@ -47,6 +47,33 @@ namespace services
 			}
 		}
 
+		static product to_product(std::string_view markdown_content)
+		{
+			// 寻找 --- ---
+			auto first_pos = markdown_content.find("---\n");
+			if (first_pos >= 0)
+			{
+				auto second_pos = markdown_content.find("---\n", first_pos + 4);
+
+				if (second_pos > first_pos + 4)
+				{
+					std::string md_str(markdown_content.begin() + first_pos, markdown_content.begin() + second_pos + 4);
+					auto result = parse_comma_kv(md_str);
+					if (result)
+					{
+						product founded;
+						founded.product_title = result->title;
+						founded.product_price = result->price;
+						founded.product_description = result->description;
+						founded.pics.push_back(result->picture);
+						founded.detailed = markdown_content.substr(second_pos + 4);
+						return founded;
+					}
+				}
+			}
+			throw boost::system::error_code(boost::asio::error::not_found);
+		}
+
 		product get_products(std::string goods_id, boost::system::error_code&)
 		{
 			std::vector<product> ret;
@@ -65,29 +92,11 @@ namespace services
 						auto file_blob = git_repo.get_blob(tree_entry.get_oid());
 						std::string_view md = file_blob.get_content();
 
-						// 寻找 --- ---
-						auto first_pos = md.find("---\n");
-						if (first_pos >= 0)
-						{
-							auto second_pos = md.find("---\n", first_pos + 4);
+						product to_be_append = to_product(md);
+						to_be_append.git_version = commit_version.as_sha1_string();
+						to_be_append.product_id = entry_filename.stem().string();
 
-							if (second_pos > first_pos + 4)
-							{
-								std::string md_str(md.begin() + first_pos, md.begin() + second_pos + 4);
-								goods_description result = parse_comma_kv(md_str).value();
-
-								product to_be_append;
-								to_be_append.product_id = entry_filename.stem().string();
-								to_be_append.product_title = result.title;
-								to_be_append.product_price = result.price;
-								to_be_append.product_description = result.description;
-								to_be_append.pics.push_back(result.picture);
-								to_be_append.detailed = md.substr(second_pos + 4);
-								to_be_append.git_version = commit_version.as_sha1_string();
-
-								ret.push_back(to_be_append);
-							}
-						}
+						ret.push_back(to_be_append);
 					}
 				});
 
@@ -113,29 +122,11 @@ namespace services
 						auto file_blob = git_repo.get_blob(tree_entry.get_oid());
 						std::string_view md = file_blob.get_content();
 
-						// 寻找 --- ---
-						auto first_pos = md.find("---\n");
-						if (first_pos >= 0)
-						{
-							auto second_pos = md.find("---\n", first_pos + 4);
+						product to_be_append = to_product(md);
+						to_be_append.git_version = commit_version.as_sha1_string();
+						to_be_append.product_id = entry_filename.stem().string();
 
-							if (second_pos > first_pos + 4)
-							{
-								std::string md_str(md.begin() + first_pos, md.begin() + second_pos + 4);
-								goods_description result = parse_comma_kv(md_str).value();
-
-								product to_be_append;
-								to_be_append.product_id = entry_filename.stem().string();
-								to_be_append.product_title = result.title;
-								to_be_append.product_price = result.price;
-								to_be_append.product_description = result.description;
-								to_be_append.pics.push_back(result.picture);
-								to_be_append.detailed = md.substr(second_pos + 4);
-								to_be_append.git_version = commit_version.as_sha1_string();
-
-								ret.push_back(to_be_append);
-							}
-						}
+						ret.push_back(to_be_append);
 					}
 				});
 
