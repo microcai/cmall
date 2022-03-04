@@ -879,10 +879,7 @@ namespace cmall
 				co_await m_database.async_load<cmall_user>(this_user.uid_, *this_client.session_info->user_info);
 				cmall_user& user_info = *(this_client.session_info->user_info);
 
-				boost::json::object goods_ref	  = jsutil::json_accessor(params).get("goods", boost::json::object{}).as_object();
-
-				auto merchant_id_of_goods = goods_ref["merchant_id"].as_int64();
-				auto goods_id_of_goods = jsutil::json_as_string(goods_ref["goods_id"].as_string(), "");
+				boost::json::array goods_array_ref	  = jsutil::json_accessor(params).get("goods", boost::json::array{}).as_array();
 
 				auto recipient_id = jsutil::json_accessor(params).get("recipient_id", -1).as_int64();
 
@@ -892,25 +889,35 @@ namespace cmall
 						boost::system::error_code(cmall::error::recipient_id_out_of_range));
 				}
 
-				services::product product_in_mall = co_await merchant_repos[merchant_id_of_goods]->get_products(goods_id_of_goods);
-
-				goods_snapshot good_snap;
-
-				good_snap.description_ = product_in_mall.product_description;
-				good_snap.good_version_git = product_in_mall.git_version;
-				good_snap.name_ = product_in_mall.product_title;
-				good_snap.owner_ = merchant_id_of_goods;
-				good_snap.price_ = cpp_numeric(product_in_mall.product_price);
-
 				cmall_order new_order;
-
+				new_order.recipient.push_back(user_info.recipients[recipient_id]);
 				new_order.buyer_ = user_info.uid_;
 				new_order.oid_	 = gen_uuid();
 				new_order.stage_ = order_unpay;
-				new_order.bought_goods.push_back(good_snap);
-				new_order.price_ = good_snap.price_;
 
-				new_order.recipient.push_back(user_info.recipients[recipient_id]);
+				cpp_numeric total_price = 0;
+
+
+				for (boost::json::object goods_ref :  goods_array_ref)
+				{
+					auto merchant_id_of_goods = goods_ref["merchant_id"].as_int64();
+					auto goods_id_of_goods = jsutil::json_as_string(goods_ref["goods_id"].as_string(), "");
+
+					services::product product_in_mall = co_await merchant_repos[merchant_id_of_goods]->get_products(goods_id_of_goods);
+
+					goods_snapshot good_snap;
+
+					good_snap.description_ = product_in_mall.product_description;
+					good_snap.good_version_git = product_in_mall.git_version;
+					good_snap.name_ = product_in_mall.product_title;
+					good_snap.owner_ = merchant_id_of_goods;
+					good_snap.price_ = cpp_numeric(product_in_mall.product_price);
+					new_order.bought_goods.push_back(good_snap);
+
+					total_price += good_snap.price_;
+				}
+
+				new_order.price_ = total_price;
 
 				co_await m_database.async_add(new_order);
 
