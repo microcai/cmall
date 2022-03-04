@@ -1,14 +1,11 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
-  <changeset version="5">
-    <alter-table name="cmall_order_bought_goods">
-      <add-column name="value_good_version_git" type="TEXT" null="false"/>
-      <drop-column name="value_currency"/>
-      <drop-column name="value_original_id"/>
+  <changeset version="6">
+    <alter-table name="cmall_order">
+      <drop-column name="currency"/>
     </alter-table>
-    <drop-table name="cmall_product"/>
   </changeset>
 
-  <model version="4">
+  <model version="5">
     <table name="cmall_config" kind="object">
       <column name="id" type="BIGINT" null="false"/>
       <primary-key auto="true">
@@ -93,28 +90,6 @@
         <column name="name"/>
       </index>
     </table>
-    <table name="cmall_product" kind="object">
-      <column name="id" type="BIGINT" null="false"/>
-      <column name="owner" type="BIGINT" null="false"/>
-      <column name="name" type="TEXT" null="false"/>
-      <column name="price" type="numeric" null="false"/>
-      <column name="currency" type="TEXT" null="false"/>
-      <column name="description" type="TEXT" null="false"/>
-      <column name="detail" type="TEXT" null="false" default="''"/>
-      <column name="state" type="SMALLINT" null="false"/>
-      <column name="created_at" type="TIMESTAMP" null="true"/>
-      <column name="updated_at" type="TIMESTAMP" null="true"/>
-      <column name="deleted_at" type="TIMESTAMP" null="true"/>
-      <primary-key auto="true">
-        <column name="id"/>
-      </primary-key>
-      <index name="cmall_product_owner_i">
-        <column name="owner"/>
-      </index>
-      <index name="cmall_product_state_i">
-        <column name="state"/>
-      </index>
-    </table>
     <table name="cmall_order" kind="object">
       <column name="id" type="BIGINT" null="false"/>
       <column name="oid" type="TEXT" null="false"/>
@@ -170,9 +145,8 @@
       <column name="value_owner" type="BIGINT" null="false"/>
       <column name="value_name" type="TEXT" null="false"/>
       <column name="value_price" type="NUMERIC" null="false"/>
-      <column name="value_currency" type="TEXT" null="false"/>
       <column name="value_description" type="TEXT" null="false"/>
-      <column name="value_original_id" type="BIGINT" null="false"/>
+      <column name="value_good_version_git" type="TEXT" null="false"/>
       <foreign-key name="object_id_fk" on-delete="CASCADE">
         <column name="object_id"/>
         <references table="cmall_order">

@@ -420,8 +420,9 @@ namespace cmall
 					std::this_thread::sleep_for(5s);
 					continue;
 				}
-				catch (const std::exception&)
+				catch (const std::exception& e)
 				{
+					LOG_ERR << "db operation error:" << e.what();
 					return std::current_exception();
 				}
 			}

@@ -882,7 +882,7 @@ namespace cmall
 				boost::json::object goods_ref	  = jsutil::json_accessor(params).get("goods", boost::json::object{}).as_object();
 
 				auto merchant_id_of_goods = goods_ref["merchant_id"].as_int64();
-				auto goods_id_of_goods = jsutil::json_as_string(goods_ref["good_id"].as_string(), "");
+				auto goods_id_of_goods = jsutil::json_as_string(goods_ref["goods_id"].as_string(), "");
 
 				auto recipient_id = jsutil::json_accessor(params).get("recipient_id", -1).as_int64();
 
