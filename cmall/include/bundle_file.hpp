@@ -1,4 +1,4 @@
-﻿
+
 #pragma once
 
 #include <map>
@@ -7,15 +7,6 @@
 #include <cctype>
 
 #include "minizip/unzip.h"
-
-#ifdef _MSC_VER
-
-template<typename T>
-auto strcasecmp(T a, T b) {
-	return lstrcmpiA(a, b);
-}
-
-#endif
 
 struct Res {
 	const char *data;
