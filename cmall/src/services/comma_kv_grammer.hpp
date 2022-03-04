@@ -57,19 +57,6 @@ struct comma_kv_grammer : qi::grammar<Iterator, comma_kv()>
 		newline = qi::lit("\r\n") | qi::lit('\n');
 
 		space = qi::lit(" ")|qi::lit("\t");
-
-		BOOST_SPIRIT_DEBUG_NODE(document);
-
-
-		BOOST_SPIRIT_DEBUG_NODE(document_sperator);
-		BOOST_SPIRIT_DEBUG_NODE(newline);
-		BOOST_SPIRIT_DEBUG_NODE(space);
-		BOOST_SPIRIT_DEBUG_NODE(lines);
-		BOOST_SPIRIT_DEBUG_NODE(line);
-		BOOST_SPIRIT_DEBUG_NODE(pair);
-		BOOST_SPIRIT_DEBUG_NODE(key);
-		BOOST_SPIRIT_DEBUG_NODE(value);
-
 	};
 
 	qi::rule<Iterator, comma_kv()> document;
