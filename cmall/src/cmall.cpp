@@ -394,7 +394,7 @@ namespace cmall
 				if (target.starts_with("/repos"))
 				{
 					boost::match_results<boost::string_view::const_iterator> w;
-					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/(.+)")))
+					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/(images/.+)")))
 					{
 						std::string merhcant = w[1].str();
 						std::string remains = w[2].str();

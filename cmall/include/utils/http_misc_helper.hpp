@@ -25,7 +25,10 @@ namespace http{
 		{ ".css", "text/css" },
 		{ ".woff", "application/x-font-woff" },
 		{ ".png", "image/png" },
-		{ ".svg", "image/svg+xml" }
+		{ ".svg", "image/svg+xml" },
+		{ ".md", "text/markdown" },
+		{ ".jpg", "image/jpeg" },
+		{ ".jpeg", "image/jpeg" }		
 	};
 
 	inline static time_t dos2unixtime(unsigned long dostime)
