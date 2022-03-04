@@ -1,5 +1,7 @@
 
 #pragma once
+#include <string>
+#include <vector>
 #define BOOST_SPIRIT_UNICODE 1 
 //#define BOOST_SPIRIT_DEBUG 1
 //#define BOOST_SPIRIT_DEBUG_OUT std::cerr
@@ -83,9 +85,9 @@ BOOST_FUSION_ADAPT_STRUCT(
 )
 
 template <typename Iterator>
-struct comma_kv_grammer : qi::grammar<Iterator, goods_description()>
+struct goods_description_grammer : qi::grammar<Iterator, goods_description()>
 {
-	comma_kv_grammer() : comma_kv_grammer::base_type(document)
+	goods_description_grammer() : goods_description_grammer::base_type(document)
 	{
 		using qi::debug;
 		using namespace boost::phoenix;
@@ -127,7 +129,7 @@ static inline std::optional<goods_description> parse_goods_metadata(const std::s
 {
 	goods_description ast;
 
-	comma_kv_grammer<decltype(document.begin())> gramer;
+	goods_description_grammer<decltype(document.begin())> gramer;
 
 	auto first = document.begin();
 
