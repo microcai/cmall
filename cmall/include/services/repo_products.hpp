@@ -50,6 +50,7 @@ namespace services
 
 		// 从给定的 goods_id 找到商品定义.
 		boost::asio::awaitable<product> get_products(std::string goods_id, boost::system::error_code& ec);
+		boost::asio::awaitable<product> get_products(std::string goods_id);
 
 	private:
 		const repo_products_impl& impl() const;

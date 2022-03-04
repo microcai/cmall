@@ -1,4 +1,4 @@
-﻿
+
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -195,6 +195,25 @@ namespace services
 	}
 
 	// 从给定的 goods_id 找到商品定义.
+	boost::asio::awaitable<product> repo_products::get_products(std::string goods_id)
+	{
+		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
+			void(boost::system::error_code, product)>(
+				[this, goods_id](auto&& handler) mutable
+				{
+					boost::asio::post(impl().io,
+					[this, goods_id, handler = std::move(handler)]() mutable
+					{
+						boost::system::error_code ec;
+						auto ret = impl().get_products(goods_id, ec);
+						auto excutor = boost::asio::get_associated_executor(handler, impl().io);
+						boost::asio::post(excutor, [handler = std::move(handler), ret, ec]() mutable { handler(ec, ret); });
+					});
+				},
+				boost::asio::use_awaitable);
+	}
+
+	// 从给定的 goods_id 找到商品定义.
 	boost::asio::awaitable<product> repo_products::get_products(std::string goods_id, boost::system::error_code& ec)
 	{
 		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
@@ -204,10 +223,9 @@ namespace services
 				boost::asio::post(impl().io,
 					[this, goods_id, handler = std::move(handler), &ec]() mutable
 					{
-						boost::system::error_code ec;
 						auto ret = impl().get_products(goods_id, ec);
 						auto excutor = boost::asio::get_associated_executor(handler, impl().io);
-						boost::asio::post(excutor, [handler = std::move(handler), ret, ec]() mutable { handler(ec, ret);});
+						boost::asio::post(excutor, [handler = std::move(handler), ret]() mutable { handler(boost::system::error_code(), ret); });
 					});
 			},
 			boost::asio::use_awaitable);
