@@ -1,7 +1,10 @@
 
 #pragma once
-#define BOOST_SPIRIT_UNICODE 1
+#define BOOST_SPIRIT_UNICODE 1 
+//#define BOOST_SPIRIT_DEBUG 1
+//#define BOOST_SPIRIT_DEBUG_OUT std::cerr
 
+#include <iostream>
 #include <boost/config/warning_disable.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix.hpp>
@@ -34,31 +37,48 @@ BOOST_FUSION_ADAPT_STRUCT(
 template <typename Iterator>
 struct comma_kv_grammer : qi::grammar<Iterator, comma_kv()>
 {
-	comma_kv_grammer() : comma_kv_grammer::base_type(comma_kvs)
+	comma_kv_grammer() : comma_kv_grammer::base_type(document)
 	{
+		using qi::debug;
 		using namespace boost::phoenix;
 
-		comma_kvs = document_sperator >> +newline >> lines [ at_c<0>(qi::_val) = qi::_1 ] >> +newline >> document_sperator >> -rest_garbage;
-		newline = qi::lit('\r') | qi::lit('\n');
+		document = document_sperator >> lines [ at_c<0>(qi::_val) = qi::_1 ] >> document_sperator;
 
-		lines =  pair_line >> *( pair_line);
-		pair_line  =  key [ at_c<0>(qi::_val) = qi::_1 ] >> ':' >> *qi::lit(' ') >> value [ at_c<1>(qi::_val) = qi::_1 ] >> +newline;
-		key = qi::lexeme[ +(qi::unicode::char_ - ':' - '-' - ' ') ];
-		value = qi::lexeme[ +(qi::unicode::char_ - '\n') ];
+		lines = line >> *( line );
+		line = -pair >> newline;
 
-		document_sperator = qi::lit("---");
+		document_sperator = qi::lit("---") >> newline;
 
-		rest_garbage = *(qi::unicode::char_);
+		pair = key [ at_c<0>(qi::_val) = qi::_1 ] >> ':' >> *space >> value [ at_c<1>(qi::_val) = qi::_1 ];
+
+		key = qi::lexeme[ +(qi::char_ - ':' - '-' - ' ') ];
+		value = qi::lexeme[ +(qi::char_ - '\n') ];
+
+		newline = qi::lit("\r\n") | qi::lit('\n');
+
+		space = qi::lit(" ")|qi::lit("\t");
+
+		BOOST_SPIRIT_DEBUG_NODE(document);
+
+
+		BOOST_SPIRIT_DEBUG_NODE(document_sperator);
+		BOOST_SPIRIT_DEBUG_NODE(newline);
+		BOOST_SPIRIT_DEBUG_NODE(space);
+		BOOST_SPIRIT_DEBUG_NODE(lines);
+		BOOST_SPIRIT_DEBUG_NODE(line);
+		BOOST_SPIRIT_DEBUG_NODE(pair);
+		BOOST_SPIRIT_DEBUG_NODE(key);
+		BOOST_SPIRIT_DEBUG_NODE(value);
+
 	};
 
-	qi::rule<Iterator, comma_kv()> comma_kvs;
+	qi::rule<Iterator, comma_kv()> document;
 
-	qi::rule<Iterator> document_sperator, newline;
+	qi::rule<Iterator> document_sperator, newline, space;
 
 	qi::rule<Iterator, std::vector<KV>()> lines;
-	qi::rule<Iterator, KV()> pair_line;
+	qi::rule<Iterator, KV()> pair, line;
 	qi::rule<Iterator, std::string()> key, value;
-	qi::rule<Iterator> rest_garbage;
 };
 
 struct goods_description {
@@ -90,6 +110,8 @@ std::optional<goods_description> parse_comma_kv(const std::string& document)
 	comma_kv_grammer<decltype(document.begin())> gramer;
 
 	auto first = document.begin();
+
+	std::cerr << "parse:" << document;
 
 	bool r = boost::spirit::qi::parse(first, document.end(), gramer, ast);
 

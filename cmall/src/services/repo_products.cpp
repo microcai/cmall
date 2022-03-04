@@ -121,7 +121,7 @@ namespace services
 
 							if (second_pos > first_pos + 4)
 							{
-								std::string md_str(md.begin() + first_pos, md.begin() + second_pos + 3);
+								std::string md_str(md.begin() + first_pos, md.begin() + second_pos + 4);
 								goods_description result = parse_comma_kv(md_str).value();
 
 								product to_be_append;
