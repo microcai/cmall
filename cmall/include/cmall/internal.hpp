@@ -44,7 +44,6 @@
 #include <boost/asio/dispatch.hpp>
 #include <boost/asio/defer.hpp>
 #include <boost/asio/connect.hpp>
-#include <boost/asio/spawn.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/asio/read.hpp>

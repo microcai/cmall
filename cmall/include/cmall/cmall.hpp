@@ -12,7 +12,6 @@
 
 #include <boost/asio/experimental/concurrent_channel.hpp>
 #include <boost/asio/experimental/channel.hpp>
-#include <boost/asio/spawn.hpp>
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>
 
