@@ -10,8 +10,8 @@
 void services::tag_invoke(const boost::json::value_from_tag&, boost::json::value& jv, const services::product& p)
 {
 	jv = {
-		{ "id", p.product_id },
-		{ "merchant", p.owner_ },
+		{ "goods_id", p.product_id },
+		{ "merchant_id", p.owner_ },
 		{ "name", p.product_title },
 		{ "price", p.product_price },
 		{ "description", p.product_description },
