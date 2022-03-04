@@ -10,7 +10,7 @@
 
 #include "gitpp/gitpp.hpp"
 
-#include "./comma_kv_grammer.hpp"
+#include "./goods_md_metadata_grammer.hpp"
 #include "cmall/error_code.hpp"
 
 namespace services
@@ -60,7 +60,7 @@ namespace services
 				if (second_pos > first_pos + 4)
 				{
 					std::string md_str(markdown_content.begin() + first_pos, markdown_content.begin() + second_pos + 4);
-					auto result = parse_comma_kv(md_str);
+					auto result = parse_goods_metadata(md_str);
 					if (result)
 					{
 						product founded;
