@@ -88,8 +88,7 @@ inline namespace conversion
 	void tag_invoke(const value_from_tag&, value& jv, const cmall_cart& c)
 	{
 		jv = {
-			{ "id", c.id_ },
-			{ "uid", c.uid_ },
+			{ "item_id", c.id_ },
 			{ "merchant_id", c.merchant_id_ },
 			{ "goods_id", c.goods_id_ },
 			{ "count", c.count_ },
