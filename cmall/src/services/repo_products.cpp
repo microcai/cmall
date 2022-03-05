@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <tuple>
 
 #include "boost/regex/v5/regex.hpp"
 #include "boost/regex/v5/regex_match.hpp"
@@ -77,32 +78,47 @@ namespace services
 			return original_url;
 		}
 
-		product to_product(std::string_view markdown_content, boost::system::error_code& ec)
+		std::tuple<std::string_view, std::string_view> split_markdown(std::string_view md, boost::system::error_code& ec)
 		{
 			// 寻找 --- ---
-			auto first_pos = markdown_content.find("---\n");
+			auto first_pos = md.find("---\n");
 			if (first_pos >= 0)
 			{
-				auto second_pos = markdown_content.find("---\n", first_pos + 4);
+				auto second_pos = md.find("---\n", first_pos + 4);
 
-				if (second_pos > first_pos + 4)
-				{
-					std::string md_str(markdown_content.begin() + first_pos, markdown_content.begin() + second_pos + 4);
-					auto result = parse_goods_metadata(md_str);
-					if (result)
-					{
-						product founded;
-						founded.product_title = result->title;
-						founded.product_price = result->price;
-						founded.product_description = result->description;
-						for (auto pic_url : result->picture)
-							founded.pics.push_back(correct_url(pic_url));
-						founded.detailed = md::markdown_transpile(markdown_content.substr(second_pos + 4), std::bind(&repo_products_impl::correct_url, this, std::placeholders::_1));
-						founded.merchant_id = merchant_id;
-						return founded;
-					}
+				if (second_pos > first_pos + 4){
+					std::string_view metadata = md.substr(first_pos, second_pos - first_pos + 4);
+					std::string_view main_body = md.substr(second_pos + 4);
+					return std::make_tuple(metadata, main_body);
 				}
 			}
+
+			ec = boost::asio::error::not_found;
+			return std::make_tuple(std::string_view(), std::string_view());
+		}
+
+		product to_product(std::string_view markdown_content, boost::system::error_code& ec)
+		{
+			auto [meta, body] = split_markdown(markdown_content, ec);
+
+			if (ec)
+				return product{};
+
+			auto result = parse_goods_metadata(std::string(meta));
+
+			if (result)
+			{
+				product founded;
+				founded.product_title = result->title;
+				founded.product_price = result->price;
+				founded.product_description = result->description;
+				for (auto pic_url : result->picture)
+					founded.pics.push_back(correct_url(pic_url));
+				founded.detailed = md::markdown_transpile(body, std::bind(&repo_products_impl::correct_url, this, std::placeholders::_1));
+				founded.merchant_id = merchant_id;
+				return founded;
+			}
+
 			ec = boost::asio::error::not_found;
 			return product{};
 		}
@@ -196,6 +212,40 @@ namespace services
 			return ret;
 		}
 
+		std::string get_product_detail(std::string goods_id, boost::system::error_code& ec)
+		{
+			ec = cmall::error::goods_not_found;
+			std::string ret;
+			gitpp::oid commit_version = git_repo.head().target();
+			gitpp::tree repo_tree = git_repo.get_tree_by_commit(commit_version);
+
+			auto goods = repo_tree.by_path("goods");
+
+			if (!goods.empty())
+				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), boost::filesystem::path(""), [goods_id, &ret, &ec, this](const gitpp::tree_entry & tree_entry, boost::filesystem::path) mutable -> bool
+				{
+					boost::filesystem::path entry_filename(tree_entry.name());
+
+					if (entry_filename.stem().string() == goods_id && entry_filename.has_extension() && entry_filename.extension() == ".md")
+					{
+						auto file_blob = git_repo.get_blob(tree_entry.get_oid());
+						std::string_view md = file_blob.get_content();
+
+						auto [meta, body] = split_markdown(md, ec);
+
+						if (ec)
+							return false;
+
+						ret = md::markdown_transpile(body, std::bind(&repo_products_impl::correct_url, this, std::placeholders::_1));
+						return true;
+					}
+					return false;
+				});
+
+			return ret;
+		}
+
+
 		boost::asio::io_context& io;
 		boost::filesystem::path repo_path;
 		gitpp::repo git_repo;
@@ -280,6 +330,41 @@ namespace services
 			boost::asio::use_awaitable);
 	}
 
+	boost::asio::awaitable<std::string> repo_products::get_product_detail(std::string goods_id)
+	{
+		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
+			void(boost::system::error_code, std::string)>(
+				[this, goods_id](auto&& handler) mutable
+				{
+					boost::asio::post(impl().io,
+					[this, goods_id, handler = std::move(handler)]() mutable
+					{
+						boost::system::error_code ec;
+						auto ret = impl().get_product_detail(goods_id, ec);
+						auto excutor = boost::asio::get_associated_executor(handler, impl().io);
+						boost::asio::post(excutor, [handler = std::move(handler), ret, ec]() mutable { handler(ec, ret); });
+					});
+				},
+				boost::asio::use_awaitable);
+	}
+
+	boost::asio::awaitable<std::string> repo_products::get_product_detail(std::string goods_id, boost::system::error_code& ec)
+	{
+		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
+			void(boost::system::error_code, std::string)>(
+			[this, goods_id, &ec](auto&& handler) mutable
+			{
+				boost::asio::post(impl().io,
+					[this, goods_id, handler = std::move(handler), &ec]() mutable
+					{
+						auto ret = impl().get_product_detail(goods_id, ec);
+						auto excutor = boost::asio::get_associated_executor(handler, impl().io);
+						boost::asio::post(excutor, [handler = std::move(handler), ret]() mutable { handler(boost::system::error_code(), ret); });
+					});
+			},
+			boost::asio::use_awaitable);
+
+	}
 
 	repo_products::~repo_products()
 	{

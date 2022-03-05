@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include "boost/system/detail/error_code.hpp"
 #include <memory>
 #include <string>
 #include <boost/asio.hpp>
@@ -53,6 +54,7 @@ namespace services
 		boost::asio::awaitable<product> get_product(std::string goods_id);
 
 		boost::asio::awaitable<std::string> get_product_detail(std::string goods_id);
+		boost::asio::awaitable<std::string> get_product_detail(std::string goods_id, boost::system::error_code& ec);
 
 	private:
 		const repo_products_impl& impl() const;
