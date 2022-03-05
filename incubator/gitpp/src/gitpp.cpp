@@ -1,4 +1,4 @@
-﻿
+
 #include "gitpp/gitpp.hpp"
 
 #include <git2.h>
@@ -126,6 +126,18 @@ gitpp::tree_entry::~tree_entry()
 {
 	if (owned && entry)
 		git_tree_entry_free(entry);
+}
+
+gitpp::tree_entry::tree_entry(tree_entry&& other)
+	: owned(other.owned), entry(other.entry)
+{
+	other.owned = false;
+}
+
+gitpp::tree_entry::tree_entry(const tree_entry& other)
+	: entry(other.entry)
+{
+	owned = false;
 }
 
 bool gitpp::tree_entry::empty() const

@@ -1,4 +1,4 @@
-﻿
+
 #pragma once
 
 #include <git2/types.h>
@@ -111,6 +111,9 @@ namespace gitpp {
 		explicit tree_entry(const git_tree_entry*);
 		explicit tree_entry(git_tree_entry*);
 		~tree_entry();
+
+		tree_entry(const tree_entry& other);
+		tree_entry(tree_entry&& other);
 
 		bool empty() const;
 
