@@ -2,6 +2,9 @@
 #include <boost/asio.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/experimental/promise.hpp>
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/awaitable.hpp>
+
 #include <boost/date_time.hpp>
 #include <boost/json.hpp>
 #include <boost/regex.hpp>
