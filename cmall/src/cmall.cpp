@@ -490,7 +490,7 @@ namespace cmall
 			std::string product_detail = co_await merchant_repos[merchant_id]->get_product_detail(goods_id);
 		
 			auto ec = co_await httpd::send_string_response_body(client, product_detail, http::make_http_last_modified(std::time(0) + 60),
-						"text/markdown", http_ver, keepalive);
+						"text/markdown; charset=utf-8", http_ver, keepalive);
 			if (ec)
 				throw boost::system::system_error(ec);
 			co_return 200;
