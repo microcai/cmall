@@ -89,6 +89,7 @@ namespace services
 				if (second_pos > first_pos + 4){
 					std::string_view metadata = md.substr(first_pos, second_pos - first_pos + 4);
 					std::string_view main_body = md.substr(second_pos + 4);
+					ec = boost::system::error_code();
 					return std::make_tuple(metadata, main_body);
 				}
 			}
