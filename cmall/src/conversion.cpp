@@ -16,7 +16,6 @@ void services::tag_invoke(const boost::json::value_from_tag&, boost::json::value
 		{ "price", p.product_price },
 		{ "description", p.product_description },
 		{ "pictures",  p.pics},
-		{ "detail", p.detailed },
 	};
 }
 

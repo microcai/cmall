@@ -24,9 +24,6 @@ namespace services
 
 		std::string product_price;
 
-		// 详情, markdown 或者 富文本.
-		std::string detailed;
-
 		std::string git_version;
 
 		std::uint64_t merchant_id;
