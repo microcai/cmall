@@ -18,6 +18,8 @@ boost::asio::awaitable<boost::system::error_code> httpd::send_string_response_bo
     boost::system::error_code ec;
     res.body() = res_body;
 
+    res.prepare_payload();
+
     boost::beast::http::response_serializer<boost::beast::http::string_body, boost::beast::http::fields> sr{ res };
 
     co_await boost::beast::http::async_write(client, sr, boost::asio::redirect_error(boost::asio::use_awaitable, ec));
