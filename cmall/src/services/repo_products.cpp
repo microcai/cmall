@@ -105,7 +105,7 @@ namespace services
 			if (ec)
 				return product{};
 
-			auto result = parse_goods_metadata(std::string(meta));
+			auto result = parse_goods_metadata(meta);
 
 			if (result)
 			{

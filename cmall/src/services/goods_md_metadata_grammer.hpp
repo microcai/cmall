@@ -2,6 +2,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <iostream>
@@ -121,11 +122,11 @@ struct goods_description_grammer : qi::grammar<Iterator, goods_description()>
 	qi::rule<Iterator, std::string()> title_line, price_line, description_line, picture_line;
 };
 
-inline std::optional<goods_description> parse_goods_metadata(const std::string& document) noexcept
+inline std::optional<goods_description> parse_goods_metadata(const std::string_view& document) noexcept
 {
 	goods_description ast;
 
-	goods_description_grammer<decltype(document.begin())> gramer;
+	goods_description_grammer<std::string_view::const_iterator> gramer;
 
 	auto first = document.begin();
 
