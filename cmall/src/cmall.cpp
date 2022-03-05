@@ -6,11 +6,13 @@
 #include <boost/json.hpp>
 #include <boost/regex.hpp>
 #include <boost/scope_exit.hpp>
+#include <string>
 #include <vector>
 
 #include "boost/json/value_from.hpp"
 #include "boost/system/detail/error_code.hpp"
 #include "boost/system/system_error.hpp"
+#include "boost/throw_exception.hpp"
 #include "cmall/error_code.hpp"
 #include "utils/async_connect.hpp"
 #include "utils/scoped_exit.hpp"
@@ -41,6 +43,8 @@
 #include "services/repo_products.hpp"
 
 #include "cmall/conversion.hpp"
+
+#include "httpd/httpd.hpp"
 
 #ifdef __linux__
 # define HAVE_REUSE_PORT 1
@@ -462,33 +466,30 @@ namespace cmall
 		if (!merchant_repos.contains(merchant_id))
 			co_return 404;
 
-
-		boost::beast::http::response<boost::beast::http::string_body> res{ boost::beast::http::status::ok, req.version() };
-		res.set(boost::beast::http::field::server, "cmall/libgit2/1.0");
-		res.set(boost::beast::http::field::expires, http::make_http_last_modified(std::time(0) + 60));
-//		res.set(boost::beast::http::field::last_modified, http::make_http_last_modified(http::target_file_modifined_time));
-		res.set(boost::beast::http::field::content_type, http::mime_map[boost::filesystem::path(path_in_repo).extension().string()]);
-		res.keep_alive(req.keep_alive());
-
 		boost::system::error_code ec;
-		res.body() = co_await merchant_repos[merchant_id]->get_file_content(path_in_repo, ec);
-
+		auto res_body = co_await merchant_repos[merchant_id]->get_file_content(path_in_repo, ec);
 		if (ec)
 		{
 			co_return 404;
 		}
 
-		boost::beast::http::response_serializer<boost::beast::http::string_body, boost::beast::http::fields> sr{ res };
-
-		co_await boost::beast::http::async_write(client, sr, boost::asio::use_awaitable);
+		ec = co_await httpd::send_string_response_body(client, res_body, http::make_http_last_modified(std::time(0) + 60),
+					http::mime_map[boost::filesystem::path(path_in_repo).extension().string()], req.version(), req.keep_alive());
+		if (ec)
+			throw boost::system::system_error(ec);
 		co_return 200;
 	}
-
 
 	// 成功给用户返回内容, 返回 200. 如果没找到商品, 不要向 client 写任何数据, 直接放回 404, 由调用方统一返回错误页面.
 	boost::asio::awaitable<int> cmall_service::render_goods_detail_content(size_t connection_id, std::string merchant,
 		std::string goods_id, boost::beast::tcp_stream& client, int http_ver)
 	{
+		auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
+		if (merchant_repos.contains(merchant_id))
+		{
+			std::string product_detail = co_await merchant_repos[merchant_id]->get_product_detail(goods_id);
+		}
+
 		// TODO
 
 		co_return 404;
@@ -716,7 +717,7 @@ namespace cmall
 
 
 				boost::system::error_code ec;
-				auto product = co_await merchant_repos[merchant_id]->get_products(goods_id, ec);
+				auto product = co_await merchant_repos[merchant_id]->get_product(goods_id, ec);
 				if (ec)
 					throw boost::system::system_error(cmall::error::goods_not_found);
 				// 获取商品信息, 注意这个不是商品描述, 而是商品 标题, 价格, 和缩略图. 用在商品列表页面.
@@ -966,7 +967,7 @@ namespace cmall
 					auto goods_id_of_goods = jsutil::json_as_string(goods_ref["goods_id"].as_string(), "");
 
 					boost::system::error_code ec;
-					services::product product_in_mall = co_await merchant_repos[merchant_id_of_goods]->get_products(goods_id_of_goods, ec);
+					services::product product_in_mall = co_await merchant_repos[merchant_id_of_goods]->get_product(goods_id_of_goods, ec);
 					if (ec) // 商品不存在
 						continue;
 

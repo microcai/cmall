@@ -31,7 +31,7 @@ add_executable(cmall ${cmall_SRCS}
 	${EMBED_SITE_OUTPUTS}
 )
 
-target_link_libraries(cmall gitpp)
+target_link_libraries(cmall gitpp httpd)
 
 target_include_directories(cmall PRIVATE
 	${CMAKE_BINARY_DIR}
