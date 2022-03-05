@@ -1,10 +1,8 @@
 
 #pragma once
+
 #include <string>
 #include <vector>
-#define BOOST_SPIRIT_UNICODE 1 
-//#define BOOST_SPIRIT_DEBUG 1
-//#define BOOST_SPIRIT_DEBUG_OUT std::cerr
 
 #include <iostream>
 #include <boost/config/warning_disable.hpp>
@@ -100,23 +98,21 @@ struct goods_description_grammer : qi::grammar<Iterator, goods_description()>
 
 		document_sperator = qi::lit("---") >> newline;
 
-		title_line = qi::lit("title") >> * space >> ':' >> *space >> value [ qi::_val = qi::_1 ] >> newline;
-		price_line = qi::lit("price") >> * space >> ':' >> *space >> value [ qi::_val = qi::_1 ] >> newline;
-		description_line = qi::lit("description") >> * space >> ':' >> *space >> value [ qi::_val = qi::_1 ] >> newline;
-		picture_line = qi::lit("picture") >> * space >> ':' >> *space >> value [ qi::_val = qi::_1 ] >> newline;
+		title_line = qi::lit("title") >> * qi::space >> ':' >> *qi::space >> value [ qi::_val = qi::_1 ] >> newline;
+		price_line = qi::lit("price") >> * qi::space >> ':' >> *qi::space >> value [ qi::_val = qi::_1 ] >> newline;
+		description_line = qi::lit("description") >> * qi::space >> ':' >> *qi::space >> value [ qi::_val = qi::_1 ] >> newline;
+		picture_line = qi::lit("picture") >> * qi::space >> ':' >> *qi::space >> value [ qi::_val = qi::_1 ] >> newline;
 
-		pair_line = key [ at_c<0>(qi::_val) = qi::_1 ] >> ':' >> *space >> value [ at_c<1>(qi::_val) = qi::_1 ] >> newline;
+		pair_line = key [ at_c<0>(qi::_val) = qi::_1 ] >> ':' >> *qi::space >> value [ at_c<1>(qi::_val) = qi::_1 ] >> newline;
 		key = qi::lexeme[ +(qi::char_ - ':' - '-' - ' ') ];
 		value = qi::lexeme[ +(qi::char_ - '\n') ];
 
 		newline = qi::lit("\r\n") | qi::lit('\n');
-
-		space = qi::lit(" ")|qi::lit("\t");
 	};
 
 	qi::rule<Iterator, goods_description()> document;
 
-	qi::rule<Iterator> document_sperator, newline, space;
+	qi::rule<Iterator> document_sperator, newline;
 
 	qi::rule<Iterator, goods_description()> lines, line;
 	qi::rule<Iterator, KV()> pair_line;
@@ -125,7 +121,7 @@ struct goods_description_grammer : qi::grammar<Iterator, goods_description()>
 	qi::rule<Iterator, std::string()> title_line, price_line, description_line, picture_line;
 };
 
-static inline std::optional<goods_description> parse_goods_metadata(const std::string& document) noexcept
+inline std::optional<goods_description> parse_goods_metadata(const std::string& document) noexcept
 {
 	goods_description ast;
 
