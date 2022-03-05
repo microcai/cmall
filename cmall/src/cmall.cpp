@@ -428,7 +428,7 @@ namespace cmall
 						std::string goods_id = w[2].str();
 
 						int status_code = co_await render_goods_detail_content(
-							connection_id, merhcant, goods_id, client_ptr->tcp_stream, req.version());
+							connection_id, merhcant, goods_id, client_ptr->tcp_stream, req.version(), req.keep_alive());
 
 						if (status_code != 200)
 						{
@@ -482,16 +482,19 @@ namespace cmall
 
 	// 成功给用户返回内容, 返回 200. 如果没找到商品, 不要向 client 写任何数据, 直接放回 404, 由调用方统一返回错误页面.
 	boost::asio::awaitable<int> cmall_service::render_goods_detail_content(size_t connection_id, std::string merchant,
-		std::string goods_id, boost::beast::tcp_stream& client, int http_ver)
+		std::string goods_id, boost::beast::tcp_stream& client, int http_ver, bool keepalive)
 	{
 		auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
 		if (merchant_repos.contains(merchant_id))
 		{
 			std::string product_detail = co_await merchant_repos[merchant_id]->get_product_detail(goods_id);
+		
+			auto ec = co_await httpd::send_string_response_body(client, product_detail, http::make_http_last_modified(std::time(0) + 60),
+						"text/markdown", http_ver, keepalive);
+			if (ec)
+				throw boost::system::system_error(ec);
+			co_return 200;
 		}
-
-		// TODO
-
 		co_return 404;
 	}
 
