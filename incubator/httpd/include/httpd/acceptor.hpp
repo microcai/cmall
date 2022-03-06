@@ -311,7 +311,7 @@ private:
             {
                 LOG_ERR << "slot not connected";
             }
-		while (ec.cancelled() == boost::asio::cancellation_type::none )
+		while (cs.cancelled() == boost::asio::cancellation_type::none )
         {
             boost::system::error_code error;
             boost::asio::ip::tcp::socket client_socket(get_socket_executor());
