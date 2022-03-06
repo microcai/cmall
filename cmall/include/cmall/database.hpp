@@ -270,7 +270,7 @@ namespace cmall
 		template <typename T>
 		boost::asio::awaitable<bool> async_add(T& value)
 		{
-			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+			co_return co_await boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
 			{
 				co_return add<T>(value);
 			}, boost::asio::use_awaitable);
@@ -279,7 +279,7 @@ namespace cmall
 		template<typename T>
 		boost::asio::awaitable<bool> async_update(T& value)
 		{
-			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+			co_return co_await boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
 			{
 				co_return update<T>(value);
 			}, boost::asio::use_awaitable);
@@ -288,7 +288,7 @@ namespace cmall
 		template<typename T, typename UPDATER>
 		boost::asio::awaitable<bool> async_update(const typename odb::object_traits<T>::id_type id, UPDATER && updater)
 		{
-			return boost::asio::co_spawn(thread_pool, [&, id, this]()mutable -> boost::asio::awaitable<bool>
+			co_return co_await boost::asio::co_spawn(thread_pool, [&, id, this]()mutable -> boost::asio::awaitable<bool>
 			{
 				co_return update<T>(id, std::forward<UPDATER>(updater));
 			}, boost::asio::use_awaitable);
@@ -297,7 +297,7 @@ namespace cmall
 		template<typename T>
 		boost::asio::awaitable<bool> async_hard_remove(std::uint64_t id)
 		{
-			return boost::asio::co_spawn(thread_pool, [id, this]()mutable -> boost::asio::awaitable<bool>
+			co_return co_await boost::asio::co_spawn(thread_pool, [id, this]()mutable -> boost::asio::awaitable<bool>
 			{
 				co_return hard_remove<T>(id);
 			}, boost::asio::use_awaitable);
@@ -306,7 +306,7 @@ namespace cmall
 		template<SupportSoftDeletion T>
 		boost::asio::awaitable<bool> async_soft_remove(std::uint64_t id)
 		{
-			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+			co_return co_await boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
 			{
 				co_return soft_remove<T>(id);
 			}, boost::asio::use_awaitable);
@@ -315,7 +315,7 @@ namespace cmall
 		template<SupportSoftDeletion T>
 		boost::asio::awaitable<bool> async_soft_remove(T& value)
 		{
-			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+			co_return co_await boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
 			{
 				co_return soft_remove<T>(value);
 			}, boost::asio::use_awaitable);

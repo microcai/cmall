@@ -441,7 +441,8 @@ namespace cmall
 					// 每个请求都单开线程处理, 因此客户端收到的应答是乱序的,
 					// 这就是 jsonrpc 里 id 字段的重要意义.
 					// 将 id 字段原原本本的还回去, 客户端就可以根据 返回的 id 找到原来发的请求
-					replay_message.insert_or_assign("id", jv.at("id"));
+					if (jv.as_object().contains("id"))
+						replay_message.insert_or_assign("id", jv.at("id"));
 					co_await websocket_write(connection_ptr, jsutil::json_to_string(replay_message));
 				},
 				boost::asio::detached);
