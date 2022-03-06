@@ -1,4 +1,4 @@
-
+﻿
 #include <boost/asio.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/experimental/promise.hpp>
@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "boost/asio/post.hpp"
+#include "boost/asio/redirect_error.hpp"
 #include "boost/asio/use_awaitable.hpp"
 #include "boost/beast/core/tcp_stream.hpp"
 #include "boost/json/value_from.hpp"
@@ -108,41 +109,32 @@ namespace cmall
 		co_return true;
 	}
 
-	boost::asio::awaitable<int> cmall_service::run_httpd()
+	boost::asio::awaitable<void> cmall_service::run_httpd()
 	{
 		// 初始化ws acceptors.
 		co_await init_ws_acceptors();
 
 		constexpr int concurrent_accepter = 20;
 
-		try
-		{
-			std::vector<boost::asio::experimental::promise<void(std::exception_ptr)>> ws_runners;
+		std::vector<boost::asio::experimental::promise<void(std::exception_ptr)>> ws_runners;
 
-			for (auto & a : m_ws_acceptors)
-			{
-				ws_runners.emplace_back(
-					boost::asio::co_spawn(a.get_executor(), a.run_accept_loop(concurrent_accepter,
-						[](std::size_t connection_id, std::string remote_host, boost::beast::tcp_stream&& tcp_stream) mutable -> boost::asio::awaitable<client_connection_ptr>
-						{
-							co_return std::make_shared<client_connection>(std::move(tcp_stream), connection_id, remote_host);
-						},
-						[this](auto connection_id, client_connection_ptr client) mutable -> boost::asio::awaitable<void>{
-							return handle_accepted_client(connection_id, client);
-						})
-					, boost::asio::experimental::use_promise)
-				);
-			}
-
-			for (auto&& ws_runner : ws_runners)
-				co_await ws_runner.async_wait(boost::asio::use_awaitable);
-		}
-		catch (boost::system::system_error& e)
+		for (auto & a : m_ws_acceptors)
 		{
-			LOG_ERR << "run_httpd errored: " << e.code().message();
-			throw;
+			ws_runners.emplace_back(
+				boost::asio::co_spawn(a.get_executor(), a.run_accept_loop(concurrent_accepter,
+					[](std::size_t connection_id, std::string remote_host, boost::beast::tcp_stream&& tcp_stream) mutable -> boost::asio::awaitable<client_connection_ptr>
+					{
+						co_return std::make_shared<client_connection>(std::move(tcp_stream), connection_id, remote_host);
+					},
+					[this](auto connection_id, client_connection_ptr client) mutable -> boost::asio::awaitable<void>{
+						return handle_accepted_client(connection_id, client);
+					})
+				, boost::asio::experimental::use_promise)
+			);
 		}
-		co_return 0;
+
+		for (auto&& ws_runner : ws_runners)
+			co_await ws_runner.async_wait(boost::asio::use_awaitable);
 	}
 
 	boost::asio::awaitable<bool> cmall_service::init_ws_acceptors()

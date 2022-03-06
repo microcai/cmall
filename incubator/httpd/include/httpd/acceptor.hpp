@@ -2,7 +2,10 @@
 #pragma once
 
 
+#include "boost/asio/cancellation_signal.hpp"
+#include "boost/asio/error.hpp"
 #include <iostream>
+#include <mutex>
 #if __has_include("utils/logging.hpp")
 #include "utils/logging.hpp"
 #define HTTPD_ENABLE_LOGGING 1
@@ -63,20 +66,24 @@ template<typename AcceptedClientClass, typename Execotor = boost::asio::any_io_e
 class acceptor
 {
     template<typename ClientCreator, typename ClientRunner, typename CompletionHandler>
-    struct delegated_operators
+    struct delegated_operators : boost::noncopyable
     {
+        boost::asio::cancellation_signal cancel_signal;
         CompletionHandler handler;
         ClientCreator creator;
         ClientRunner runner;
 		bool invoked = false;
+
 		void complete(boost::system::error_code ec)
         {
-            std::cerr << "delegated_operators complete called \n";
             if (!invoked)
             {
 				invoked = true;
                 auto executor = boost::asio::get_associated_executor(handler);
                 boost::asio::post(executor, [ec, handler = std::move(this->handler)]() mutable { handler(ec); });
+#ifdef HTTPD_ENABLE_LOGGING
+                LOG_DBG << "delegated_operators complete called";
+#endif
             }
         }
 
@@ -91,7 +98,7 @@ class acceptor
         }
 
         delegated_operators(CompletionHandler&& handler, ClientCreator&& creator, ClientRunner&& runner)
-            : handler(std::forward<CompletionHandler>(handler))
+            : handler(std::move(handler))
             , creator(std::forward<ClientCreator>(creator))
             , runner(std::forward<ClientRunner>(runner))
         {}
@@ -230,24 +237,25 @@ public:
 
         return boost::asio::async_initiate<CompletionToken, void(boost::system::error_code)>([this, creator = std::forward<ClientClassCreator>(creator), number_of_concurrent_acceptor, runner = std::forward<ClientRunner>(runner)](auto&& handler) mutable
         {
-            auto cs = boost::asio::get_associated_cancellation_slot(handler);
-            auto creator_waiter = std::make_shared<delegated_operators<ClientClassCreator, ClientRunner, std::decay_t<decltype(handler)>>>
+            typedef delegated_operators<ClientClassCreator, ClientRunner, std::decay_t<decltype(handler)>> delegated_operators_t;
+            boost::asio::cancellation_slot cs = boost::asio::get_associated_cancellation_slot(handler);
+            auto creator_waiter = std::make_shared<delegated_operators_t>
                 (std::move(handler), std::forward<ClientClassCreator>(creator), std::forward<ClientRunner>(runner));
+            if (cs.is_connected())
+            {
+                cs.assign([creator_waiter = std::weak_ptr<delegated_operators_t>(creator_waiter)](boost::asio::cancellation_type_t t) mutable {
+                    if (creator_waiter.lock())
+                            creator_waiter.lock()->cancel_signal.emit(t);
+                });
+            }
             for(int i =0; i < number_of_concurrent_acceptor; i++)
             {
-                boost::asio::co_spawn(get_executor(), accept_loop(creator_waiter), boost::asio::bind_cancellation_slot(cs, [creator_waiter](std::exception_ptr p)
+                boost::asio::co_spawn(get_executor(), accept_loop(creator_waiter), [this, creator_waiter](std::exception_ptr p)
                 {
-                    boost::system::error_code ec;
-                    try
-                    {
-                        if (p)
-                            std::rethrow_exception(p);
-                    }catch(boost::system::system_error& e){
-                        ec = e.code();
-                    }
-
-                    creator_waiter->complete(ec);
-                }));
+                    if (creator_waiter->invoked)
+                        return;
+                    creator_waiter->complete(boost::asio::error::operation_aborted);
+                });
             }
         }, token);
     }
@@ -257,25 +265,26 @@ public:
     {
         return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code)>([this, creator = std::forward<ClientClassCreator>(creator), number_of_concurrent_acceptor, runner = std::forward<ClientRunner>(runner)](auto&& handler) mutable
         {
-            auto cs = boost::asio::get_associated_cancellation_slot(handler);
-            auto creator_waiter = std::make_shared<delegated_operators<ClientClassCreator, ClientRunner, std::decay_t<decltype(handler)>>>
+            typedef delegated_operators<ClientClassCreator, ClientRunner, std::decay_t<decltype(handler)>> delegated_operators_t;
+            boost::asio::cancellation_slot cs = boost::asio::get_associated_cancellation_slot(handler);
+            auto creator_waiter = std::make_shared<delegated_operators_t>
                 (std::move(handler), std::forward<ClientClassCreator>(creator), std::forward<ClientRunner>(runner));
+            if (cs.is_connected())
+            {
+                cs.assign([creator_waiter = std::weak_ptr<delegated_operators_t>(creator_waiter)](boost::asio::cancellation_type_t t) mutable {
+                    if (creator_waiter.lock())
+                            creator_waiter.lock()->cancel_signal.emit(t);
+                });
+            }
             for(int i =0; i < number_of_concurrent_acceptor; i++)
             {
                 std::cerr << "launch acceptor\n";
-                boost::asio::co_spawn(get_executor(), accept_loop(creator_waiter), boost::asio::bind_cancellation_slot(cs, [creator_waiter](std::exception_ptr p)
+                boost::asio::co_spawn(get_executor(), accept_loop(creator_waiter), [creator_waiter](std::exception_ptr p)
                 {
-                    boost::system::error_code ec;
-                    try
-                    {
-                        if (p)
-                            std::rethrow_exception(p);
-                    }catch(boost::system::system_error& e){
-                        ec = e.code();
-                    }
-
-                    creator_waiter->complete(ec);
-                }));
+                    if (creator_waiter->invoked)
+                        return;
+                    creator_waiter->complete(boost::asio::error::operation_aborted);
+                });
             }
         }, boost::asio::use_awaitable);
     }
@@ -306,17 +315,12 @@ private:
     template<typename A, typename  B, typename C>
     boost::asio::awaitable<void> accept_loop(std::shared_ptr<delegated_operators<A, B, C>> delegated_operator)
     {
-        boost::asio::cancellation_state cs = (co_await boost::asio::this_coro::cancellation_state);
-        if (!cs.slot().is_connected())
-            {
-                LOG_ERR << "slot not connected";
-            }
-		while (cs.cancelled() == boost::asio::cancellation_type::none )
+		while (true)
         {
             boost::system::error_code error;
             boost::asio::ip::tcp::socket client_socket(get_socket_executor());
 
-            co_await accept_socket.async_accept(client_socket, boost::asio::use_awaitable);
+            co_await accept_socket.async_accept(client_socket, boost::asio::bind_cancellation_slot(delegated_operator->cancel_signal.slot(), boost::asio::use_awaitable));
 
             client_socket.set_option(boost::asio::socket_base::keep_alive(true), error);
             boost::beast::tcp_stream stream(std::move(client_socket));

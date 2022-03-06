@@ -101,10 +101,6 @@ namespace multiprecision = boost::multiprecision;
 #pragma clang diagnostic pop
 #endif
 
-#ifndef ENABLE_LOGGER
-#define ENABLE_LOGGER
-#endif
-
 #pragma warning(push)
 #pragma warning(disable: 4244 4127 4702)
 

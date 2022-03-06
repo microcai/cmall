@@ -351,17 +351,18 @@ namespace aux {
 		return writer_instance;
 	}
 
-	inline std::tuple<std::string, struct tm*> time_to_string(int64_t time)
+	inline std::tuple<std::string, struct tm> time_to_string(int64_t time)
 	{
 		std::string ret;
 		std::time_t rawtime = time / 1000;
-		struct tm* ptm = std::localtime(&rawtime);
-		if (!ptm)
-			return { ret, ptm };
+
+		struct tm ptm;
+		localtime_r(&rawtime, &ptm);
+
 		char buffer[1024];
 		std::sprintf(buffer, "%04d-%02d-%02d %02d:%02d:%02d.%03d",
-			ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday,
-			ptm->tm_hour, ptm->tm_min, ptm->tm_sec, (int)(time % 1000));
+			ptm.tm_year + 1900, ptm.tm_mon + 1, ptm.tm_mday,
+			ptm.tm_hour, ptm.tm_min, ptm.tm_sec, (int)(time % 1000));
 		ret = buffer;
 		return { ret, ptm };
 	}
@@ -424,12 +425,12 @@ public:
 
 			if constexpr (LOG_MAXFILE_SIZE <= 0) {
 				auto logfile = fmt::format("{:04d}{:02d}{:02d}-{:02d}.log",
-					ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday, ptm->tm_hour);
+					ptm.tm_year + 1900, ptm.tm_mon + 1, ptm.tm_mday, ptm.tm_hour);
 				filename = logpath / logfile;
 			} else {
-				auto utc_time = std::mktime(ptm);
+				auto utc_time = std::mktime(&ptm);
 				auto logfile = fmt::format("{:04d}{:02d}{:02d}-{}.log",
-					ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday, utc_time);
+					ptm.tm_year + 1900, ptm.tm_mon + 1, ptm.tm_mday, utc_time);
 				filename = logpath / logfile;
 			}
 

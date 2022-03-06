@@ -313,6 +313,8 @@ if (WIN32)
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin/release)
 endif()
 
+add_definitions(-DENABLE_LOGGER)
+
 add_subdirectory(incubator)
 add_subdirectory(cmall)
 
