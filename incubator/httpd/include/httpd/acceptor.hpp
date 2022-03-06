@@ -89,7 +89,7 @@ class acceptor
             }
         }
 
-        auto get_executor()
+        auto& get_executor()
         {
             return get_executor_();
         }
