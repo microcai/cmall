@@ -66,15 +66,14 @@ class acceptor
     struct delegated_operators
     {
         CompletionHandler handler;
+        int number;
         ClientCreator creator;
         ClientRunner runner;
-		bool invoked = false;
-		void complete(boost::system::error_code ec)
+        void complete(boost::system::error_code ec)
         {
-            std::cerr << "delegated_operators complete called \n";
-            if (!invoked)
+            std::cerr << "delegated_operators complete called on number= " << number << "\n";
+            if (0 == --number)
             {
-				invoked = true;
                 auto executor = boost::asio::get_associated_executor(handler);
                 boost::asio::post(executor, [ec, handler = std::move(this->handler)]() mutable { handler(ec); });
             }
@@ -90,8 +89,9 @@ class acceptor
             return runner(connection_id, client);
         }
 
-        delegated_operators(CompletionHandler&& handler, ClientCreator&& creator, ClientRunner&& runner)
+        delegated_operators(CompletionHandler&& handler, int number, ClientCreator&& creator, ClientRunner&& runner)
             : handler(std::forward<CompletionHandler>(handler))
+            , number(number)
             , creator(std::forward<ClientCreator>(creator))
             , runner(std::forward<ClientRunner>(runner))
         {}
@@ -232,7 +232,7 @@ public:
         {
             auto cs = boost::asio::get_associated_cancellation_slot(handler);
             auto creator_waiter = std::make_shared<delegated_operators<ClientClassCreator, ClientRunner, std::decay_t<decltype(handler)>>>
-                (std::move(handler), std::forward<ClientClassCreator>(creator), std::forward<ClientRunner>(runner));
+                (std::move(handler), number_of_concurrent_acceptor, std::forward<ClientClassCreator>(creator), std::forward<ClientRunner>(runner));
             for(int i =0; i < number_of_concurrent_acceptor; i++)
             {
                 boost::asio::co_spawn(get_executor(), accept_loop(creator_waiter), boost::asio::bind_cancellation_slot(cs, [creator_waiter](std::exception_ptr p)
@@ -259,7 +259,7 @@ public:
         {
             auto cs = boost::asio::get_associated_cancellation_slot(handler);
             auto creator_waiter = std::make_shared<delegated_operators<ClientClassCreator, ClientRunner, std::decay_t<decltype(handler)>>>
-                (std::move(handler), std::forward<ClientClassCreator>(creator), std::forward<ClientRunner>(runner));
+                (std::move(handler), number_of_concurrent_acceptor, std::forward<ClientClassCreator>(creator), std::forward<ClientRunner>(runner));
             for(int i =0; i < number_of_concurrent_acceptor; i++)
             {
                 std::cerr << "launch acceptor\n";
@@ -311,7 +311,7 @@ private:
             {
                 LOG_ERR << "slot not connected";
             }
-		while (true)// (co_await boost::asio::this_coro::cancellation_state).cancelled() == boost::asio::cancellation_type::none )
+		while (ec.cancelled() == boost::asio::cancellation_type::none )
         {
             boost::system::error_code error;
             boost::asio::ip::tcp::socket client_socket(get_socket_executor());
