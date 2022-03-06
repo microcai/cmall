@@ -509,8 +509,11 @@ namespace cmall
 
 				if (this_client.session_info->user_info)
 				{
-					co_await m_database.async_load<cmall_user>(
-						this_client.session_info->user_info->uid_, *(this_client.session_info->user_info));
+					if (co_await m_database.async_load<cmall_user>(
+						this_client.session_info->user_info->uid_, *(this_client.session_info->user_info)))
+					{
+						this_client.session_info->user_info = {};
+					}
 				}
 
 				reply_message["result"] = { { "session_id", this_client.session_info->session_id },

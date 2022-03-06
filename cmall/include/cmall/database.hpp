@@ -35,6 +35,7 @@
 #include "cmall/error_code.hpp"
 #include "cmall/internal.hpp"
 #include "odb/forward.hxx"
+#include "odb/traits.hxx"
 #include "utils/logging.hpp"
 
 namespace cmall
@@ -90,19 +91,9 @@ namespace cmall
 			return retry_database_op(
 				[&, this]() mutable
 				{
-					bool ok = true;
 					odb::transaction t(m_db->begin());
 					t.tracer(odb::stderr_full_tracer);
-					auto record = m_db->load<T>(id);
-					if (!record)
-					{
-						ok = false;
-					}
-					else
-					{
-						ret = *record;
-						ok	= true;
-					}
+					bool ok = m_db->find<T>(id, ret);
 					t.commit();
 					return ok;
 				});
@@ -230,16 +221,12 @@ namespace cmall
 					bool ret = false;
 					auto now = boost::posix_time::second_clock::local_time();
 					odb::transaction t(m_db->begin());
-					auto record = m_db->load<T>(id);
-					if (!record)
-					{
-						ret = false;
-					}
-					else
+					T record;
+					ret = m_db->find<T>(id, record);
+					if (ret)
 					{
 						record->deleted_at_ = now;
-						m_db->update<T>(*record);
-						ret = true;
+						m_db->update<T>(record);
 					}
 					t.commit();
 					return ret;
