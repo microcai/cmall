@@ -257,7 +257,7 @@ namespace services
 
 	boost::asio::awaitable<std::string> repo_products::get_file_content(boost::filesystem::path path, boost::system::error_code& ec)
 	{
-		co_return co_await boost::asio::co_spawn(thread_pool, [path, &ec, this]() mutable -> boost::asio::awaitable<std::string> {
+		return boost::asio::co_spawn(thread_pool, [path, &ec, this]() mutable -> boost::asio::awaitable<std::string> {
 			co_return impl().get_file_content(path, ec);
 		}, boost::asio::use_awaitable);
 	}
@@ -265,7 +265,7 @@ namespace services
 	// 从给定的 goods_id 找到商品定义.
 	boost::asio::awaitable<product> repo_products::get_product(std::string goods_id)
 	{
-		co_return co_await boost::asio::co_spawn(thread_pool, [goods_id, this]() mutable -> boost::asio::awaitable<product> {
+		return boost::asio::co_spawn(thread_pool, [goods_id, this]() mutable -> boost::asio::awaitable<product> {
 			boost::system::error_code ec;
 			auto ret = impl().get_product(goods_id, ec);
 			if (ec)
@@ -277,14 +277,14 @@ namespace services
 	// 从给定的 goods_id 找到商品定义.
 	boost::asio::awaitable<product> repo_products::get_product(std::string goods_id, boost::system::error_code& ec)
 	{
-		co_return co_await boost::asio::co_spawn(thread_pool, [goods_id, &ec, this]() mutable -> boost::asio::awaitable<product> {
+		return boost::asio::co_spawn(thread_pool, [goods_id, &ec, this]() mutable -> boost::asio::awaitable<product> {
 			co_return impl().get_product(goods_id, ec);
 		}, boost::asio::use_awaitable);
 	}
 
 	boost::asio::awaitable<std::vector<product>> repo_products::get_products()
 	{
-		co_return co_await boost::asio::co_spawn(thread_pool, [this]() mutable -> boost::asio::awaitable<std::vector<product>> {
+		return boost::asio::co_spawn(thread_pool, [this]() mutable -> boost::asio::awaitable<std::vector<product>> {
 			boost::system::error_code ec;
 			auto ret = impl().get_products(ec);
 			if (ec)
@@ -295,7 +295,7 @@ namespace services
 
 	boost::asio::awaitable<std::string> repo_products::get_product_detail(std::string goods_id)
 	{
-		co_return co_await boost::asio::co_spawn(thread_pool, [goods_id, this]() mutable -> boost::asio::awaitable<std::string> {
+		return boost::asio::co_spawn(thread_pool, [goods_id, this]() mutable -> boost::asio::awaitable<std::string> {
 			boost::system::error_code ec;
 			auto ret = impl().get_product_detail(goods_id, ec);
 			if (ec)
@@ -306,7 +306,7 @@ namespace services
 
 	boost::asio::awaitable<std::string> repo_products::get_product_detail(std::string goods_id, boost::system::error_code& ec)
 	{
-		co_return co_await boost::asio::co_spawn(thread_pool, [goods_id, &ec, this]() mutable -> boost::asio::awaitable<std::string> {
+		return boost::asio::co_spawn(thread_pool, [goods_id, &ec, this]() mutable -> boost::asio::awaitable<std::string> {
 			co_return impl().get_product_detail(goods_id, ec);
 		}, boost::asio::use_awaitable);
 	}
