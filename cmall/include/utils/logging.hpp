@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (C) 2019 Jack.
 //
 // Author: jack
@@ -357,8 +357,11 @@ namespace aux {
 		std::time_t rawtime = time / 1000;
 
 		struct tm ptm;
+#ifdef _MSC_VER
+		ptm = *std::localtime(&rawtime);
+#else
 		localtime_r(&rawtime, &ptm);
-
+#endif
 		char buffer[1024];
 		std::sprintf(buffer, "%04d-%02d-%02d %02d:%02d:%02d.%03d",
 			ptm.tm_year + 1900, ptm.tm_mon + 1, ptm.tm_mday,
