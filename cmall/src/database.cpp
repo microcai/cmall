@@ -193,10 +193,9 @@ namespace cmall {
 		});
 	}
 
-
-	boost::asio::awaitable<bool> cmall_database::async_load_user_by_phone(const std::string& phone, cmall_user& value)
+	boost::asio::awaitable<bool> cmall_database::async_load_user_by_phone(std::string phone, cmall_user& value)
 	{
-		co_return co_await boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+		return boost::asio::co_spawn(thread_pool, [=, &value, this]()mutable -> boost::asio::awaitable<bool>
 		{
 			co_return load_user_by_phone(phone, value);
 		}, boost::asio::use_awaitable);
@@ -204,7 +203,7 @@ namespace cmall {
 
 	boost::asio::awaitable<bool> cmall_database::async_load_all_user_orders(std::vector<cmall_order>& orders, std::uint64_t uid, int page, int page_size)
 	{
-		co_return co_await boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+		return boost::asio::co_spawn(thread_pool, [=, &orders, this]()mutable -> boost::asio::awaitable<bool>
 		{
 			co_return load_all_user_orders(orders, uid, page, page_size);
 		}, boost::asio::use_awaitable);
@@ -212,7 +211,7 @@ namespace cmall {
 
 	boost::asio::awaitable<bool> cmall_database::async_load_order(cmall_order& order, std::string orderid)
 	{
-		co_return co_await boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+		return boost::asio::co_spawn(thread_pool, [&order, orderid, this]()mutable -> boost::asio::awaitable<bool>
 		{
 			co_return load_order(order, orderid);
 		}, boost::asio::use_awaitable);
@@ -220,7 +219,7 @@ namespace cmall {
 
 	boost::asio::awaitable<bool> cmall_database::async_load_all_merchant(std::vector<cmall_merchant>& merchants)
 	{
-		co_return co_await boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+		return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
 		{
 			co_return load_all_merchant(merchants);
 		}, boost::asio::use_awaitable);
@@ -228,7 +227,7 @@ namespace cmall {
 
 	boost::asio::awaitable<bool> cmall_database::async_load_all_user_cart(std::vector<cmall_cart>& items, std::uint64_t uid, int page, int page_size)
 	{
-		co_return co_await boost::asio::co_spawn(thread_pool, [&, uid, page, page_size, this]()mutable -> boost::asio::awaitable<bool>
+		return boost::asio::co_spawn(thread_pool, [=, &items, this]()mutable -> boost::asio::awaitable<bool>
 		{
 			co_return load_all_user_cart(items, uid, page, page_size);
 		}, boost::asio::use_awaitable);

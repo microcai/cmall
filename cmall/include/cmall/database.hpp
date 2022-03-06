@@ -16,6 +16,7 @@
 #include <odb/pgsql/database.hxx>
 #include <odb/pgsql/traits.hxx>
 #include <tuple>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -252,7 +253,7 @@ namespace cmall
 		}
 
 	public:
-		boost::asio::awaitable<bool> async_load_user_by_phone(const std::string& phone, cmall_user& value);
+		boost::asio::awaitable<bool> async_load_user_by_phone(std::string phone, cmall_user& value);
 		boost::asio::awaitable<bool> async_load_all_user_orders(std::vector<cmall_order>& orders, std::uint64_t uid, int page, int page_size);
 		boost::asio::awaitable<bool> async_load_order(cmall_order& orders, std::string orderid);
 		boost::asio::awaitable<bool> async_load_all_merchant(std::vector<cmall_merchant>&);
@@ -261,7 +262,7 @@ namespace cmall
 		template <typename T>
 		boost::asio::awaitable<bool> async_load(std::uint64_t id, T& value)
 		{
-			return boost::asio::co_spawn(thread_pool, [id, this]()mutable -> boost::asio::awaitable<bool>
+			return boost::asio::co_spawn(thread_pool, [id, &value, this]()mutable -> boost::asio::awaitable<bool>
 			{
 				co_return get<T>(id, value);
 			}, boost::asio::use_awaitable);
@@ -270,7 +271,7 @@ namespace cmall
 		template <typename T>
 		boost::asio::awaitable<bool> async_add(T& value)
 		{
-			co_return co_await boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
 			{
 				co_return add<T>(value);
 			}, boost::asio::use_awaitable);
@@ -279,7 +280,7 @@ namespace cmall
 		template<typename T>
 		boost::asio::awaitable<bool> async_update(T& value)
 		{
-			co_return co_await boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
 			{
 				co_return update<T>(value);
 			}, boost::asio::use_awaitable);
@@ -288,7 +289,7 @@ namespace cmall
 		template<typename T, typename UPDATER>
 		boost::asio::awaitable<bool> async_update(const typename odb::object_traits<T>::id_type id, UPDATER && updater)
 		{
-			co_return co_await boost::asio::co_spawn(thread_pool, [&, id, this]()mutable -> boost::asio::awaitable<bool>
+			return boost::asio::co_spawn(thread_pool, [id, updater = std::forward<UPDATER>(updater), this]()mutable -> boost::asio::awaitable<bool>
 			{
 				co_return update<T>(id, std::forward<UPDATER>(updater));
 			}, boost::asio::use_awaitable);
@@ -297,7 +298,7 @@ namespace cmall
 		template<typename T>
 		boost::asio::awaitable<bool> async_hard_remove(std::uint64_t id)
 		{
-			co_return co_await boost::asio::co_spawn(thread_pool, [id, this]()mutable -> boost::asio::awaitable<bool>
+			return boost::asio::co_spawn(thread_pool, [id, this]()mutable -> boost::asio::awaitable<bool>
 			{
 				co_return hard_remove<T>(id);
 			}, boost::asio::use_awaitable);
@@ -306,7 +307,7 @@ namespace cmall
 		template<SupportSoftDeletion T>
 		boost::asio::awaitable<bool> async_soft_remove(std::uint64_t id)
 		{
-			co_return co_await boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+			return boost::asio::co_spawn(thread_pool, [id, this]()mutable -> boost::asio::awaitable<bool>
 			{
 				co_return soft_remove<T>(id);
 			}, boost::asio::use_awaitable);
@@ -315,7 +316,7 @@ namespace cmall
 		template<SupportSoftDeletion T>
 		boost::asio::awaitable<bool> async_soft_remove(T& value)
 		{
-			co_return co_await boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
 			{
 				co_return soft_remove<T>(value);
 			}, boost::asio::use_awaitable);
