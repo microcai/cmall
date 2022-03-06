@@ -28,9 +28,11 @@
 #include "boost/date_time/posix_time/posix_time_types.hpp"
 #include "boost/date_time/posix_time/ptime.hpp"
 #include "boost/system/detail/error_code.hpp"
+#include "boost/system/system_error.hpp"
 #include "cmall/db-odb.hxx"
 
 #include "cmall/db.hpp"
+#include "cmall/error_code.hpp"
 #include "cmall/internal.hpp"
 #include "utils/logging.hpp"
 
@@ -84,9 +86,6 @@ namespace cmall
 		template <typename T>
 		bool get(std::uint64_t id, T& ret)
 		{
-			if (!m_db)
-				return false;
-
 			return retry_database_op(
 				[&, this]() mutable
 				{
@@ -335,7 +334,7 @@ namespace cmall
 
 	private:
 		template <typename T>
-		bool retry_database_op(T&& t) noexcept
+		bool retry_database_op(T&& t)
 		{
 			using namespace std::chrono_literals;
 			std::exception_ptr eptr;
@@ -354,11 +353,11 @@ namespace cmall
 				catch (const std::exception& e)
 				{
 					LOG_ERR << "db operation error:" << e.what();
-					throw;
+					throw boost::system::system_error(cmall::error::internal_server_error);
 				}
 			}
 			if (eptr)
-				std::rethrow_exception(eptr);
+				throw boost::system::system_error(cmall::error::internal_server_error);
 
 			return false;
 		}
