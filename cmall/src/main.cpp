@@ -255,7 +255,8 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 
 	// 处理中止信号.
 	co_await(
-		xsrv.run_httpd() || terminator_signal.async_wait(boost::asio::use_awaitable)
+		terminator_signal.async_wait(boost::asio::use_awaitable) ||
+		xsrv.run_httpd()
 	);
 
 	terminator_signal.clear();

@@ -14,13 +14,17 @@
 #include <boost/asio/experimental/channel.hpp>
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>
+#include <vector>
 
 #include "cmall/error_code.hpp"
+#include "cmall/misc.hpp"
 #include "persist_map.hpp"
 #include "services/verifycode.hpp"
 #include "services/persist_session.hpp"
 #include "services/payment_service.hpp"
 #include "services/repo_products.hpp"
+
+#include "httpd/acceptor.hpp"
 
 namespace cmall {
 
@@ -61,13 +65,17 @@ namespace cmall {
 	struct client_connection
 	{
 		boost::beast::tcp_stream tcp_stream;
-		boost::asio::any_io_executor m_io;
 		int64_t connection_id_;
 		std::string remote_host_;
 
 		std::optional<websocket_connection> ws_client;
 
 		std::shared_ptr<services::client_session> session_info;
+
+		auto get_executor()
+		{
+			return tcp_stream.get_executor();
+		}
 
 		~client_connection()
 		{
@@ -86,7 +94,6 @@ namespace cmall {
 
 		client_connection(boost::beast::tcp_stream&& ws, int64_t connection_id, const std::string& remote_host)
 			: tcp_stream(std::move(ws))
-			, m_io(tcp_stream.get_executor())
 			, connection_id_(connection_id)
 			, remote_host_(remote_host)
 		{
@@ -164,7 +171,6 @@ namespace cmall {
 	private:
 		boost::asio::awaitable<bool> init_ws_acceptors();
 
-		boost::asio::awaitable<void> listen_loop(tcp::acceptor& a);
 		boost::asio::awaitable<void> handle_accepted_client(size_t connection_id, client_connection_ptr);
 
 		boost::asio::awaitable<int> render_git_repo_files(size_t connection_id, std::string merchant, std::string path_in_repo, boost::beast::tcp_stream& client, boost::beast::http::request<boost::beast::http::string_body>);
@@ -172,24 +178,15 @@ namespace cmall {
 		boost::asio::awaitable<void> do_ws_read(size_t connection_id, client_connection_ptr);
 		boost::asio::awaitable<void> do_ws_write(size_t connection_id, client_connection_ptr);
 
-		client_connection_ptr add_ws(size_t connection_id, const std::string& remote_host, boost::beast::tcp_stream&& tcp_stream);
-		void remove_ws(size_t connection_id);
 		boost::asio::awaitable<void> close_all_ws();
 
 		boost::asio::awaitable<void> websocket_write(client_connection_ptr connection_ptr, std::string message);
-
-		boost::asio::awaitable<void> notify_message_to_all_client(std::string message);
-
-		boost::asio::awaitable<void> mitigate_chaindb();
 
 		boost::asio::awaitable<boost::json::object> handle_jsonrpc_call(client_connection_ptr, const std::string& method, boost::json::object params);
 
 		boost::asio::awaitable<boost::json::object> handle_jsonrpc_user_api(client_connection_ptr, const req_method method, boost::json::object params);
 		boost::asio::awaitable<boost::json::object> handle_jsonrpc_order_api(client_connection_ptr, const req_method method, boost::json::object params);
 		boost::asio::awaitable<boost::json::object> handle_jsonrpc_cart_api(client_connection_ptr, const req_method method, boost::json::object params);
-
-	private:
-		boost::asio::awaitable<std::shared_ptr<ws_stream>> connect(size_t index = 0);
 
 	private:
 		io_context_pool& m_io_context_pool;
@@ -205,10 +202,7 @@ namespace cmall {
 		std::map<std::uint64_t, std::shared_ptr<services::repo_products>> merchant_repos;
 
 		// ws 服务端相关.
-		std::vector<tcp::acceptor> m_ws_acceptors;
-		std::mutex m_ws_mux;
-		std::unordered_map<size_t, client_connection_ptr> m_ws_streams;
-
+		std::vector<httpd::acceptor<client_connection_ptr>> m_ws_acceptors;
 		std::atomic_bool m_abort{false};
 	};
 }

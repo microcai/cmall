@@ -9,14 +9,20 @@
 #include <boost/json.hpp>
 #include <boost/regex.hpp>
 #include <boost/scope_exit.hpp>
+#include <mutex>
+#include <shared_mutex>
 #include <string>
 #include <vector>
 
+#include "boost/asio/post.hpp"
+#include "boost/asio/use_awaitable.hpp"
+#include "boost/beast/core/tcp_stream.hpp"
 #include "boost/json/value_from.hpp"
 #include "boost/system/detail/error_code.hpp"
 #include "boost/system/system_error.hpp"
 #include "boost/throw_exception.hpp"
 #include "cmall/error_code.hpp"
+#include "httpd/acceptor.hpp"
 #include "utils/async_connect.hpp"
 #include "utils/scoped_exit.hpp"
 #include "utils/url_parser.hpp"
@@ -48,10 +54,6 @@
 #include "cmall/conversion.hpp"
 
 #include "httpd/httpd.hpp"
-
-#ifdef __linux__
-# define HAVE_REUSE_PORT 1
-#endif
 
 namespace cmall
 {
@@ -108,32 +110,6 @@ namespace cmall
 
 	boost::asio::awaitable<int> cmall_service::run_httpd()
 	{
-		// auto now	 = boost::posix_time::second_clock::local_time();
-		// cmall_user u =
-		//{
-		//	.uid_		  = 16,
-		//	.name_		  = (const char *)u8"起名好难",
-		//	.active_phone = "1723424",
-		//	.recipients	  = {},
-		//	.verified_	  = true,
-		//	.state_		  = 1,
-		//	.created_at_  = now,
-		//	.updated_at_  = now,
-		// };
-		// std::vector<Recipient> r;
-		// for (auto i = 0; i < 5; i++) {
-		//	Recipient it;
-		//	it.address = "address " + std::to_string(i);
-		//	it.province = "province " + std::to_string(i);
-
-		//	r.emplace_back(std::move(it));
-		//}
-		// u.recipients		 = r;
-
-		// auto jv = boost::json::value_from(u);
-		// std::string json_str = boost::json::serialize(jv);
-		// LOG_INFO << "json_str: " << json_str;
-
 		// 初始化ws acceptors.
 		co_await init_ws_acceptors();
 
@@ -142,13 +118,20 @@ namespace cmall
 		try
 		{
 			std::vector<boost::asio::experimental::promise<void(std::exception_ptr)>> ws_runners;
-			for (auto& a : m_ws_acceptors)
+
+			for (auto & a : m_ws_acceptors)
 			{
-				for (int i = 0; i < concurrent_accepter; i++)
-				{
-					ws_runners.emplace_back(boost::asio::co_spawn(
-						a.get_executor(), listen_loop(a), boost::asio::experimental::use_promise));
-				}
+				ws_runners.emplace_back(
+					boost::asio::co_spawn(a.get_executor(), a.run_accept_loop(concurrent_accepter,
+						[](std::size_t connection_id, std::string remote_host, boost::beast::tcp_stream&& tcp_stream) mutable -> boost::asio::awaitable<client_connection_ptr>
+						{
+							co_return std::make_shared<client_connection>(std::move(tcp_stream), connection_id, remote_host);
+						},
+						[this](auto connection_id, client_connection_ptr client) mutable -> boost::asio::awaitable<void>{
+							return handle_accepted_client(connection_id, client);
+						})
+					, boost::asio::experimental::use_promise)
+				);
 			}
 
 			for (auto&& ws_runner : ws_runners)
@@ -165,147 +148,32 @@ namespace cmall
 	boost::asio::awaitable<bool> cmall_service::init_ws_acceptors()
 	{
 		boost::system::error_code ec;
-#ifdef HAVE_REUSE_PORT
-		typedef boost::asio::detail::socket_option::boolean<SOL_SOCKET, SO_REUSEPORT> reuse_port;
-#endif
+
 		for (const auto& wsd : m_config.ws_listens_)
 		{
-			tcp::endpoint endp;
-
-			bool ipv6only = make_listen_endpoint(wsd, endp, ec);
-			if (ec)
+			if constexpr ( httpd::has_so_reuseport() )
 			{
-				LOG_ERR << "WS server listen error: " << wsd << ", ec: " << ec.message();
-				co_return false;
-			}
-
-#ifdef HAVE_REUSE_PORT
-			for (int io_index = 0; io_index < m_io_context_pool.pool_size(); io_index++)
-			{
-				tcp::acceptor a{ m_io_context_pool.get_io_context(io_index) };
-#else
-				tcp::acceptor a{ m_io_context };
-#endif
-				a.open(endp.protocol(), ec);
-				if (ec)
+				for (int io_index = 0; io_index < m_io_context_pool.pool_size(); io_index++)
 				{
-					LOG_ERR << "WS server open accept error: " << ec.message();
-					co_return false;
-				}
-
-#ifdef HAVE_REUSE_PORT
-				a.set_option(reuse_port(true), ec);
-				if (ec)
-				{
-					LOG_ERR << "WS server accept set option SO_REUSEPORT failed: " << ec.message();
-					co_return false;
-				}
-#endif
-
-				a.set_option(boost::asio::socket_base::reuse_address(true), ec);
-				if (ec)
-				{
-					LOG_ERR << "WS server accept set option failed: " << ec.message();
-					co_return false;
-				}
-
-	#if __linux__
-				if (ipv6only)
-				{
-					int on = 1;
-					if (::setsockopt(a.native_handle(), IPPROTO_IPV6, IPV6_V6ONLY, (char*)&on, sizeof(on)) == -1)
+					m_ws_acceptors.emplace_back(m_io_context_pool.get_io_context(io_index));
+					m_ws_acceptors.back().listen(wsd, ec);
+					if (ec)
 					{
-						LOG_ERR << "WS server setsockopt IPV6_V6ONLY";
 						co_return false;
 					}
 				}
-	#else
-				boost::ignore_unused(ipv6only);
-	#endif
-				a.bind(endp, ec);
-				if (ec)
-				{
-					LOG_ERR << "WS server bind failed: " << ec.message() << ", address: " << endp.address().to_string()
-							<< ", port: " << endp.port();
-					co_return false;
-				}
-
-				a.listen(boost::asio::socket_base::max_listen_connections, ec);
-				if (ec)
-				{
-					LOG_ERR << "WS server listen failed: " << ec.message();
-					co_return false;
-				}
-
-				m_ws_acceptors.emplace_back(std::move(a));
-#ifdef HAVE_REUSE_PORT
 			}
-#endif
+			else
+			{
+				m_ws_acceptors.emplace_back(m_io_context);
+				if (ec)
+				{
+					co_return false;
+				}
+			}
 		}
 
 		co_return true;
-	}
-
-	boost::asio::awaitable<void> cmall_service::listen_loop(tcp::acceptor& a)
-	{
-		while (!m_abort)
-		{
-			boost::system::error_code error;
-
-#ifdef HAVE_REUSE_PORT
-			tcp::socket socket(a.get_executor());
-#else
-			tcp::socket socket(m_io_context_pool.get_io_context());
-#endif
-			co_await a.async_accept(socket, boost::asio::redirect_error(boost::asio::use_awaitable, error));
-
-			if (error)
-			{
-				LOG_ERR << "WS server, async_accept: " << error.message();
-
-				if (error == boost::asio::error::operation_aborted || error == boost::asio::error::bad_descriptor)
-				{
-					co_return;
-				}
-
-				if (!a.is_open())
-					co_return;
-				continue;
-			}
-
-			boost::asio::socket_base::keep_alive option(true);
-			socket.set_option(option, error);
-
-			boost::beast::tcp_stream stream(std::move(socket));
-
-			static std::atomic_size_t id{ 0 };
-			size_t connection_id = id++;
-			std::string remote_host;
-			auto endp = stream.socket().remote_endpoint(error);
-			if (!error)
-			{
-				if (endp.address().is_v6())
-				{
-					remote_host = "[" + endp.address().to_string() + "]:" + std::to_string(endp.port());
-				}
-				else
-				{
-					remote_host = endp.address().to_string() + ":" + std::to_string(endp.port());
-				}
-			}
-
-			auto client_ptr = add_ws(connection_id, remote_host, std::move(stream));
-
-			boost::asio::co_spawn(socket.get_executor(),
-				handle_accepted_client(connection_id, client_ptr),
-				[this, connection_id, client_ptr](std::exception_ptr)
-				{
-					remove_ws(connection_id);
-					LOG_DBG << "coro exit: handle_accepted_client( " << connection_id << "), alive connection: " << m_ws_streams.size();
-				});
-		}
-
-		LOG_DBG << "httpd accept loop exit...";
 	}
 
 	boost::asio::awaitable<void> cmall_service::handle_accepted_client(
@@ -491,7 +359,7 @@ namespace cmall
 		if (merchant_repos.contains(merchant_id))
 		{
 			std::string product_detail = co_await merchant_repos[merchant_id]->get_product_detail(goods_id);
-		
+
 			auto ec = co_await httpd::send_string_response_body(client, product_detail, http::make_http_last_modified(std::time(0) + 60),
 						"text/markdown; charset=utf-8", http_ver, keepalive);
 			if (ec)
@@ -550,7 +418,7 @@ namespace cmall
 
 			// 每个请求都单开线程处理
 			boost::asio::co_spawn(
-				connection_ptr->m_io,
+				connection_ptr->get_executor(),
 				[this, connection_ptr, method, params, jv]() -> boost::asio::awaitable<void>
 				{
 					boost::json::object replay_message;
@@ -1053,7 +921,7 @@ namespace cmall
 		services::client_session& session_info = *this_client.session_info;
 		cmall_user& this_user = *(session_info.user_info);
 
-		switch (method) 
+		switch (method)
 		{
 			case req_method::cart_add: // 添加到购物车.
 			{
@@ -1081,7 +949,7 @@ namespace cmall
 
 				cmall_cart item;
 				bool ok = co_await m_database.async_load(item_id, item);
-				if (!ok) 
+				if (!ok)
 				{
 					throw boost::system::error_code(cmall::error::cart_goods_not_found);
 				}
@@ -1089,7 +957,7 @@ namespace cmall
 				{
 					throw boost::system::error_code(cmall::error::invalid_params);
 				}
-				
+
 				co_await m_database.async_update<cmall_cart>(item_id, [count](cmall_cart old) mutable {
 					old.count_ = count;
 					return old;
@@ -1105,7 +973,7 @@ namespace cmall
 
 				cmall_cart item;
 				bool ok = co_await m_database.async_load(item_id, item);
-				if (!ok) 
+				if (!ok)
 				{
 					throw boost::system::error_code(cmall::error::cart_goods_not_found);
 				}
@@ -1113,7 +981,7 @@ namespace cmall
 				{
 					throw boost::system::error_code(cmall::error::invalid_params);
 				}
-				
+
 				co_await m_database.async_hard_remove<cmall_cart>(item_id);
 				reply_message["result"] = true;
 			}
@@ -1171,103 +1039,19 @@ namespace cmall
 			}
 	}
 
-	client_connection_ptr cmall_service::add_ws(
-		size_t connection_id, const std::string& remote_host, boost::beast::tcp_stream&& tcp_stream)
-	{
-		std::lock_guard<std::mutex> lock(m_ws_mux);
-		client_connection_ptr connection_ptr
-			= std::make_shared<client_connection>(std::move(tcp_stream), connection_id, remote_host);
-		m_ws_streams.insert(std::make_pair(connection_id, connection_ptr));
-		return connection_ptr;
-	}
-
-	void cmall_service::remove_ws(size_t connection_id)
-	{
-		std::lock_guard<std::mutex> lock(m_ws_mux);
-		m_ws_streams.erase(connection_id);
-	}
-
 	boost::asio::awaitable<void> cmall_service::close_all_ws()
 	{
-		{
-			std::lock_guard<std::mutex> lock(m_ws_mux);
-			for (auto& ws : m_ws_streams)
-			{
-				auto& conn_ptr = ws.second;
-				conn_ptr->close();
-			}
-		}
-
-		while (m_ws_streams.size())
-		{
-			timer t(m_io_context.get_executor());
-			t.expires_from_now(std::chrono::milliseconds(20));
-			co_await t.async_wait(boost::asio::use_awaitable);
-		}
+		for (auto& a: m_ws_acceptors)
+			co_await a.clean_shutdown();
 	}
 
 	boost::asio::awaitable<void> cmall_service::websocket_write(
 		client_connection_ptr connection_ptr, std::string message)
 	{
 		if (connection_ptr->ws_client)
-			boost::asio::post(connection_ptr->tcp_stream.get_executor(),
-				[connection_ptr, message = std::move(message)]() mutable
-				{ connection_ptr->ws_client->message_channel.try_send(boost::system::error_code(), message); });
+			co_await boost::asio::co_spawn(connection_ptr->tcp_stream.get_executor(),
+				[connection_ptr, message = std::move(message)]() mutable -> boost::asio::awaitable<void>
+				{ connection_ptr->ws_client->message_channel.try_send(boost::system::error_code(), message); co_return; }, boost::asio::use_awaitable);
 		co_return;
 	}
-
-	boost::asio::awaitable<void> cmall_service::notify_message_to_all_client(std::string message)
-	{
-		std::lock_guard<std::mutex> lock(m_ws_mux);
-		for (auto& ws : m_ws_streams)
-		{
-			auto& conn_ptr = ws.second;
-			if (!conn_ptr)
-				continue;
-			co_await websocket_write(conn_ptr, message);
-		}
-	}
-
-	boost::asio::awaitable<void> cmall_service::mitigate_chaindb() { co_return; }
-
-	boost::asio::awaitable<std::shared_ptr<ws_stream>> cmall_service::connect(size_t index)
-	{
-		std::shared_ptr<ws_stream> wsp = std::make_shared<ws_stream>(co_await boost::asio::this_coro::executor);
-		tcp::socket& sock			   = boost::beast::get_lowest_layer(*wsp).socket();
-
-		tcp::resolver resolver{ m_io_context };
-
-		if (m_config.upstreams_.empty())
-			co_return std::shared_ptr<ws_stream>{};
-
-		if (index >= m_config.upstreams_.size())
-			co_return std::shared_ptr<ws_stream>{};
-
-		// 连接上游服务器.
-		for (; index < m_config.upstreams_.size(); index++)
-		{
-			auto& upstream = m_config.upstreams_[index];
-			util::uri parser;
-
-			if (!parser.parse(upstream))
-				co_return std::shared_ptr<ws_stream>{};
-
-			auto const results = co_await resolver.async_resolve(
-				std::string(parser.host()), std::string(parser.port()), boost::asio::use_awaitable);
-			co_await asio_util::async_connect(sock, results, boost::asio::use_awaitable);
-
-			std::string origin = "all";
-			auto decorator	   = [origin](boost::beast::websocket::request_type& m)
-			{ m.insert(boost::beast::http::field::origin, origin); };
-
-			wsp->set_option(boost::beast::websocket::stream_base::decorator(decorator));
-			co_await wsp->async_handshake(
-				std::string(parser.host()), parser.path().empty() ? "/" : parser.path(), boost::asio::use_awaitable);
-			if (true)
-				break;
-		}
-
-		co_return wsp;
-	}
-
 }

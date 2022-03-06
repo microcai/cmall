@@ -13,6 +13,8 @@
 #include <boost/asio/co_spawn.hpp>
 
 #include <boost/timer/timer.hpp>
+#include <mutex>
+#include <shared_mutex>
 
 #include "time_clock.hpp"
 #include "coroyield.hpp"
@@ -51,6 +53,8 @@ namespace utility
 
 		std::shared_ptr<boost::asio::cancellation_signal> cancell_signal;
 
+		std::shared_mutex mtx;
+
 	public:
 		template<typename Executor>
 		timedmap(Executor&& io, std::chrono::milliseconds lifetime)
@@ -66,6 +70,8 @@ namespace utility
 
 		std::optional<value_type> get(key_type key)
 		{
+			std::shared_lock<std::shared_mutex> readlock(mtx);
+
 			auto it = this->stor.template get<tag_key>().find(key);
 
 			if (it!= this->stor.template get<tag_key>().end())
@@ -75,6 +81,8 @@ namespace utility
 
 		void put(key_type k, value_type v)
 		{
+			std::unique_lock<std::shared_mutex> writelock(mtx);
+
 			auto& ordered_by_key = this->stor.template get<tag_key>();
 
 			container_item_type cv;
@@ -114,7 +122,6 @@ namespace utility
 				for (auto it = ordered_by_insert_time.begin(); it != last_to_erase; )
 				{
 					ordered_by_insert_time.erase(it++);
-					co_await check_canceled();
 				}
 
 				// last_to_erase.insert_time > purge_time

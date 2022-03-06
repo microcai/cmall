@@ -35,12 +35,6 @@ using boost::multiprecision::cpp_dec_float_100;
 
 template<class ... T> inline constexpr bool always_false = false;
 
-bool make_listen_endpoint(const std::string& address, tcp::endpoint& endp, boost::system::error_code& ec);
-bool check_address_and_tolower(std::string& address);
-bool check_block_number(std::string blocknumber);
-
-std::optional<std::string> from_contract_hexstring(const std::string& hexstring_length, std::string hexstring);
-
 boost::posix_time::ptime make_localtime(std::string_view time) noexcept;
 
 template<class Iterator>
