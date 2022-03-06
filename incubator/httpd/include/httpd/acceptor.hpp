@@ -43,18 +43,18 @@ namespace httpd {
 
 constexpr bool has_so_reuseport()
 {
-    #ifdef __linux__
-        return true;
-    #else
-        return false
-    #endif
+#ifdef __linux__
+	return true;
+#else
+	return false;
+#endif
 }
 
 namespace socket_options {
 #ifdef SO_REUSEPORT
 typedef boost::asio::detail::socket_option::boolean<SOL_SOCKET, SO_REUSEPORT> reuse_port;
 #endif
-#ifdef __linux__
+#ifdef IPV6_V6ONLY
 typedef boost::asio::detail::socket_option::boolean<IPPROTO_IPV6, IPV6_V6ONLY> ipv6_only;
 #endif
 }
@@ -165,7 +165,7 @@ public:
 #endif
             return;
         }
-
+#ifdef SO_REUSEPORT
         if constexpr (has_so_reuseport())
         {
             accept_socket.set_option(socket_options::reuse_port(true), ec);
@@ -177,7 +177,7 @@ public:
                 return;
             }
         }
-
+#endif
         accept_socket.set_option(boost::asio::socket_base::reuse_address(true), ec);
         if (ec)
         {
@@ -311,7 +311,7 @@ private:
             {
                 LOG_ERR << "slot not connected";
             }
-        while( (co_await boost::asio::this_coro::cancellation_state).cancelled() == boost::asio::cancellation_type::none )
+		while (true)// (co_await boost::asio::this_coro::cancellation_state).cancelled() == boost::asio::cancellation_type::none )
         {
             boost::system::error_code error;
             boost::asio::ip::tcp::socket client_socket(get_socket_executor());

@@ -1,4 +1,4 @@
-﻿
+
 #include <boost/asio.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/experimental/promise.hpp>
@@ -166,6 +166,7 @@ namespace cmall
 			else
 			{
 				m_ws_acceptors.emplace_back(m_io_context);
+				m_ws_acceptors.back().listen(wsd, ec);
 				if (ec)
 				{
 					co_return false;
