@@ -65,13 +65,15 @@ typedef boost::asio::detail::socket_option::boolean<IPPROTO_IPV6, IPV6_V6ONLY> i
 template<typename AcceptedClientClass, typename Execotor = boost::asio::any_io_executor>
 class acceptor
 {
-    template<typename ClientCreator, typename ClientRunner, typename CompletionHandler>
+    template<typename GetExecutor, typename ClientCreator, typename ClientRunner, typename CompletionHandler>
     struct delegated_operators : boost::noncopyable
     {
         boost::asio::cancellation_signal cancel_signal;
         CompletionHandler handler;
         ClientCreator creator;
         ClientRunner runner;
+        GetExecutor get_executor_;
+
 		bool invoked = false;
 
 		void complete(boost::system::error_code ec)
@@ -87,6 +89,11 @@ class acceptor
             }
         }
 
+        auto get_executor()
+        {
+            return get_executor_();
+        }
+
         auto make_client(std::size_t connection_id, std::string remote_addr, boost::beast::tcp_stream&& accepted_socket)
         {
             return creator(connection_id, remote_addr, std::move(accepted_socket));
@@ -97,10 +104,11 @@ class acceptor
             return runner(connection_id, client);
         }
 
-        delegated_operators(CompletionHandler&& handler, ClientCreator&& creator, ClientRunner&& runner)
+        delegated_operators(CompletionHandler&& handler, ClientCreator&& creator, ClientRunner&& runner, GetExecutor&& get_executor_)
             : handler(std::move(handler))
             , creator(std::forward<ClientCreator>(creator))
             , runner(std::forward<ClientRunner>(runner))
+            , get_executor_(std::forward<GetExecutor>(get_executor_))
         {}
     };
 
@@ -132,11 +140,6 @@ public:
     }
 
     auto get_executor()
-    {
-        return accept_socket.get_executor();
-    }
-
-    auto get_socket_executor()
     {
         return accept_socket.get_executor();
     }
@@ -229,64 +232,39 @@ public:
         }
     }
 
-
-    template<typename ClientClassCreator, typename ClientRunner, typename CompletionToken>
-    auto run_accept_loop(int number_of_concurrent_acceptor, ClientClassCreator&& creator, ClientRunner&& runner, CompletionToken && token)
+    template<typename ClientClassCreator, typename ClientRunner, typename GetExecutor>
+    boost::asio::awaitable<void> run_accept_loop(int number_of_concurrent_acceptor, ClientClassCreator&& creator, ClientRunner&& runner, GetExecutor&& get_executor_)
     {
-        accepting = true;
-
-        return boost::asio::async_initiate<CompletionToken, void(boost::system::error_code)>([this, creator = std::forward<ClientClassCreator>(creator), number_of_concurrent_acceptor, runner = std::forward<ClientRunner>(runner)](auto&& handler) mutable
-        {
-            typedef delegated_operators<ClientClassCreator, ClientRunner, std::decay_t<decltype(handler)>> delegated_operators_t;
-            boost::asio::cancellation_slot cs = boost::asio::get_associated_cancellation_slot(handler);
-            auto creator_waiter = std::make_shared<delegated_operators_t>
-                (std::move(handler), std::forward<ClientClassCreator>(creator), std::forward<ClientRunner>(runner));
-            if (cs.is_connected())
+        return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code)>(
+            [this, number_of_concurrent_acceptor
+                , creator = std::forward<ClientClassCreator>(creator)
+                , runner = std::forward<ClientRunner>(runner)
+                , get_executor_ = std::forward<GetExecutor>(get_executor_)](auto&& handler) mutable
             {
-                cs.assign([creator_waiter = std::weak_ptr<delegated_operators_t>(creator_waiter)](boost::asio::cancellation_type_t t) mutable {
-                    if (creator_waiter.lock())
-                            creator_waiter.lock()->cancel_signal.emit(t);
-                });
-            }
-            for(int i =0; i < number_of_concurrent_acceptor; i++)
-            {
-                boost::asio::co_spawn(get_executor(), accept_loop(creator_waiter), [this, creator_waiter](std::exception_ptr p)
+                typedef delegated_operators<GetExecutor, ClientClassCreator, ClientRunner, std::decay_t<decltype(handler)>> delegated_operators_t;
+                boost::asio::cancellation_slot cs = boost::asio::get_associated_cancellation_slot(handler);
+                auto creator_waiter = std::make_shared<delegated_operators_t>
+                    (std::move(handler), std::forward<ClientClassCreator>(creator), std::forward<ClientRunner>(runner), std::forward<GetExecutor>(get_executor_));
+                if (cs.is_connected())
                 {
-                    if (creator_waiter->invoked)
-                        return;
-                    creator_waiter->complete(boost::asio::error::operation_aborted);
-                });
-            }
-        }, token);
-    }
-
-    template<typename ClientClassCreator, typename ClientRunner>
-    boost::asio::awaitable<void> run_accept_loop(int number_of_concurrent_acceptor, ClientClassCreator&& creator, ClientRunner&& runner)
-    {
-        return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code)>([this, creator = std::forward<ClientClassCreator>(creator), number_of_concurrent_acceptor, runner = std::forward<ClientRunner>(runner)](auto&& handler) mutable
-        {
-            typedef delegated_operators<ClientClassCreator, ClientRunner, std::decay_t<decltype(handler)>> delegated_operators_t;
-            boost::asio::cancellation_slot cs = boost::asio::get_associated_cancellation_slot(handler);
-            auto creator_waiter = std::make_shared<delegated_operators_t>
-                (std::move(handler), std::forward<ClientClassCreator>(creator), std::forward<ClientRunner>(runner));
-            if (cs.is_connected())
-            {
-                cs.assign([creator_waiter = std::weak_ptr<delegated_operators_t>(creator_waiter)](boost::asio::cancellation_type_t t) mutable {
-                    if (creator_waiter.lock())
-                            creator_waiter.lock()->cancel_signal.emit(t);
-                });
-            }
-            for(int i =0; i < number_of_concurrent_acceptor; i++)
-            {
-                std::cerr << "launch acceptor\n";
-                boost::asio::co_spawn(get_executor(), accept_loop(creator_waiter), [creator_waiter](std::exception_ptr p)
+                    cs.assign([creator_waiter = std::weak_ptr<delegated_operators_t>(creator_waiter)](boost::asio::cancellation_type_t t) mutable {
+                        if (creator_waiter.lock())
+                                creator_waiter.lock()->cancel_signal.emit(t);
+                    });
+                }
+                for(int i =0; i < number_of_concurrent_acceptor; i++)
                 {
-                    if (creator_waiter->invoked)
-                        return;
-                    creator_waiter->complete(boost::asio::error::operation_aborted);
-                });
+                    std::cerr << "launch acceptor\n";
+                    boost::asio::co_spawn(this->get_executor(), accept_loop(creator_waiter), [creator_waiter](std::exception_ptr p)
+                    {
+                        if (creator_waiter->invoked)
+                            return;
+                        creator_waiter->complete(boost::asio::error::operation_aborted);
+                    });
+                }
             }
-        }, boost::asio::use_awaitable);
+            , boost::asio::use_awaitable
+        );
     }
 
     boost::asio::awaitable<void> clean_shutdown()
@@ -312,14 +290,17 @@ public:
     }
 
 private:
-    template<typename A, typename  B, typename C>
-    boost::asio::awaitable<void> accept_loop(std::shared_ptr<delegated_operators<A, B, C>> delegated_operator)
+    template<typename A, typename  B, typename C, typename D>
+    boost::asio::awaitable<void> accept_loop(std::shared_ptr<delegated_operators<A, B, C, D>> delegated_operator)
     {
 		while (true)
         {
             boost::system::error_code error;
-            boost::asio::ip::tcp::socket client_socket(get_socket_executor());
-
+#ifdef SO_REUSEPORT
+            boost::asio::ip::tcp::socket client_socket(get_executor());
+#else
+            boost::asio::ip::tcp::socket client_socket(delegated_operator->get_executor());
+#endif
             co_await accept_socket.async_accept(client_socket, boost::asio::bind_cancellation_slot(delegated_operator->cancel_signal.slot(), boost::asio::use_awaitable));
 
             client_socket.set_option(boost::asio::socket_base::keep_alive(true), error);

@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 
+#include "boost/asio/io_context.hpp"
 #include "boost/asio/post.hpp"
 #include "boost/asio/redirect_error.hpp"
 #include "boost/asio/use_awaitable.hpp"
@@ -121,15 +122,22 @@ namespace cmall
 		for (auto & a : m_ws_acceptors)
 		{
 			ws_runners.emplace_back(
-				boost::asio::co_spawn(a.get_executor(), a.run_accept_loop(concurrent_accepter,
-					[](std::size_t connection_id, std::string remote_host, boost::beast::tcp_stream&& tcp_stream) mutable -> boost::asio::awaitable<client_connection_ptr>
-					{
-						co_return std::make_shared<client_connection>(std::move(tcp_stream), connection_id, remote_host);
-					},
-					[this](auto connection_id, client_connection_ptr client) mutable -> boost::asio::awaitable<void>{
-						return handle_accepted_client(connection_id, client);
-					})
-				, boost::asio::experimental::use_promise)
+				boost::asio::co_spawn(
+					a.get_executor(),
+					a.run_accept_loop(
+						concurrent_accepter,
+						[](std::size_t connection_id, std::string remote_host, boost::beast::tcp_stream&& tcp_stream) mutable -> boost::asio::awaitable<client_connection_ptr>
+						{
+							co_return std::make_shared<client_connection>(std::move(tcp_stream), connection_id, remote_host);
+						},
+						[this](auto connection_id, client_connection_ptr client) mutable -> boost::asio::awaitable<void>{
+							return handle_accepted_client(connection_id, client);
+						}, [this]() mutable -> boost::asio::io_context& {
+							return m_io_context_pool.get_io_context();
+						}
+					),
+					boost::asio::experimental::use_promise
+				)
 			);
 		}
 
