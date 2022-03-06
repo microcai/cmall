@@ -114,18 +114,20 @@ namespace utility
 				auto now		= time_clock::steady_clock::now();
 
 				auto pruge_time = now - lifetime;
-
-				auto & ordered_by_insert_time = stor.template get<tag_insert_time>();
-
-				auto last_to_erase = ordered_by_insert_time.upper_bound(pruge_time);
-
-				for (auto it = ordered_by_insert_time.begin(); it != last_to_erase; )
+				std::chrono::milliseconds diff = std::chrono::milliseconds(30000);
 				{
-					ordered_by_insert_time.erase(it++);
-				}
+					std::unique_lock<std::shared_mutex> writelock(mtx);
 
-				// last_to_erase.insert_time > purge_time
-				auto diff = (*last_to_erase).insert_time - pruge_time;
+					auto & ordered_by_insert_time = stor.template get<tag_insert_time>();
+
+					auto last_to_erase = ordered_by_insert_time.upper_bound(pruge_time);
+
+					for (auto it = ordered_by_insert_time.begin(); it != last_to_erase; )
+					{
+						diff = it->insert_time - pruge_time;
+						ordered_by_insert_time.erase(it++);
+					}
+				}
 
 				boost::asio::basic_waitable_timer<time_clock::steady_clock> timer(co_await boost::asio::this_coro::executor);
 				co_await check_canceled();
