@@ -34,6 +34,7 @@
 #include "cmall/db.hpp"
 #include "cmall/error_code.hpp"
 #include "cmall/internal.hpp"
+#include "odb/forward.hxx"
 #include "utils/logging.hpp"
 
 namespace cmall
@@ -91,6 +92,7 @@ namespace cmall
 				{
 					bool ok = true;
 					odb::transaction t(m_db->begin());
+					t.tracer(odb::stderr_full_tracer);
 					auto record = m_db->load<T>(id);
 					if (!record)
 					{
