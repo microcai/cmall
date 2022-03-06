@@ -38,7 +38,7 @@
 #include <utility>
 
 #include "detail/parser.hpp"
-
+#include "detail/time_clock.hpp"
 
 // 每线程一个 accept 的 多 socket accept 模式 适配器.
 
@@ -268,23 +268,20 @@ public:
 
     boost::asio::awaitable<void> clean_shutdown()
     {
-		// {
-		// 	for (auto& wsmap : m_ws_streams)
-		// 	{
-		// 		for (auto & ws: wsmap)
-		// 		{
-		// 			auto& conn_ptr = ws.second;
-		// 			conn_ptr->close();
-		// 		}
-		// 	}
-		// }
 
-		// while (m_ws_streams.size())
-		// {
-		// 	timer t(m_io_context.get_executor());
-		// 	t.expires_from_now(std::chrono::milliseconds(20));
-		// 	co_await t.async_wait(boost::asio::use_awaitable);
-		// }
+        for (auto & ws: all_client)
+        {
+            auto& conn_ptr = ws.second;
+            conn_ptr->close();
+        }
+
+		while (all_client.size())
+		{
+            using timer = boost::asio::basic_waitable_timer<time_clock::steady_clock>;
+			timer t(get_executor());
+			t.expires_from_now(std::chrono::milliseconds(20));
+			co_await t.async_wait(boost::asio::use_awaitable);
+		}
         co_return ;
     }
 
