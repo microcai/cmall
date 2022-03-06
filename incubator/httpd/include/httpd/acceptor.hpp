@@ -254,8 +254,7 @@ public:
                 }
                 for(int i =0; i < number_of_concurrent_acceptor; i++)
                 {
-                    std::cerr << "launch acceptor\n";
-                    boost::asio::co_spawn(this->get_executor(), accept_loop(creator_waiter), [creator_waiter](std::exception_ptr p)
+                    boost::asio::co_spawn(this->get_executor(), accept_loop(*creator_waiter), [creator_waiter](std::exception_ptr p)
                     {
                         if (creator_waiter->invoked)
                             return;
@@ -291,7 +290,7 @@ public:
 
 private:
     template<typename A, typename  B, typename C, typename D>
-    boost::asio::awaitable<void> accept_loop(std::shared_ptr<delegated_operators<A, B, C, D>> delegated_operator)
+    boost::asio::awaitable<void> accept_loop(delegated_operators<A, B, C, D>& delegated_operator)
     {
 		while (true)
         {
@@ -299,9 +298,9 @@ private:
 #ifdef SO_REUSEPORT
             boost::asio::ip::tcp::socket client_socket(get_executor());
 #else
-            boost::asio::ip::tcp::socket client_socket(delegated_operator->get_executor());
+            boost::asio::ip::tcp::socket client_socket(delegated_operator.get_executor());
 #endif
-            co_await accept_socket.async_accept(client_socket, boost::asio::bind_cancellation_slot(delegated_operator->cancel_signal.slot(), boost::asio::use_awaitable));
+            co_await accept_socket.async_accept(client_socket, boost::asio::bind_cancellation_slot(delegated_operator.cancel_signal.slot(), boost::asio::use_awaitable));
 
             client_socket.set_option(boost::asio::socket_base::keep_alive(true), error);
             boost::beast::tcp_stream stream(std::move(client_socket));
@@ -322,12 +321,12 @@ private:
                 }
             }
 
-            auto client_ptr = co_await delegated_operator->make_client(connection_id, remote_host, std::move(stream));
+            auto client_ptr = co_await delegated_operator.make_client(connection_id, remote_host, std::move(stream));
 
             all_client.emplace(connection_id, client_ptr);
 
             boost::asio::co_spawn(client_ptr->get_executor(),
-                delegated_operator->start_runner(connection_id, client_ptr),
+                delegated_operator.start_runner(connection_id, client_ptr),
                 [this, connection_id, client_ptr](std::exception_ptr)
                 {
                     all_client.erase(connection_id);
