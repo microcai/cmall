@@ -23,6 +23,7 @@
 
 #include "boost/asio/async_result.hpp"
 #include "boost/asio/awaitable.hpp"
+#include "boost/asio/co_spawn.hpp"
 #include "boost/asio/use_awaitable.hpp"
 #include "boost/date_time/posix_time/posix_time_types.hpp"
 #include "boost/date_time/posix_time/ptime.hpp"
@@ -45,11 +46,6 @@ namespace cmall
 		int pool_{ 20 };
 	};
 
-	using db_result = std::variant<bool, std::exception_ptr>;
-
-	using extract_result_t = std::tuple<boost::system::error_code, bool, std::string>;
-
-
 	template <typename T>
 	concept SupportSoftDeletion = requires(T t)
 	{
@@ -63,23 +59,6 @@ namespace cmall
 
 	class cmall_database
 	{
-		template <typename Handler>
-		static void post_result(db_result v, Handler&& handler)
-		{
-			boost::system::error_code ec;
-			bool ok = false;
-			if (std::holds_alternative<bool>(v))
-			{
-				ok = std::get<0>(v);
-			}
-			else
-			{
-				ec = boost::asio::error::no_recovery;
-			}
-			auto excutor = boost::asio::get_associated_executor(handler);
-			boost::asio::post(excutor, [handler = std::move(handler), ec, ok]() mutable { handler(ec, ok); });
-		}
-
 		// c++11 noncopyable.
 		cmall_database(const cmall_database&) = delete;
 		cmall_database& operator=(const cmall_database&) = delete;
@@ -91,19 +70,19 @@ namespace cmall
 	public:
 		void shutdown();
 
-		db_result load_config(cmall_config& config);
-		db_result add_config(cmall_config& config);
-		db_result update_config(const cmall_config& config);
+		bool load_config(cmall_config& config);
+		bool add_config(cmall_config& config);
+		bool update_config(const cmall_config& config);
 
-		db_result load_user_by_phone(const ::std::string& phone, cmall_user& user);
-		db_result load_all_user_orders(std::vector<cmall_order>& orders, std::uint64_t uid, int page, int page_size);
-		db_result load_order(cmall_order& order, std::string orderid);
+		bool load_user_by_phone(const ::std::string& phone, cmall_user& user);
+		bool load_all_user_orders(std::vector<cmall_order>& orders, std::uint64_t uid, int page, int page_size);
+		bool load_order(cmall_order& order, std::string orderid);
 
-		db_result load_all_merchant(std::vector<cmall_merchant>& merchants);
-		db_result load_all_user_cart(std::vector<cmall_cart>& items, std::uint64_t uid, int page, int page_size);
+		bool load_all_merchant(std::vector<cmall_merchant>& merchants);
+		bool load_all_user_cart(std::vector<cmall_cart>& items, std::uint64_t uid, int page, int page_size);
 
 		template <typename T>
-		db_result get(std::uint64_t id, T& ret)
+		bool get(std::uint64_t id, T& ret)
 		{
 			if (!m_db)
 				return false;
@@ -129,7 +108,7 @@ namespace cmall
 		}
 
 		template <typename T>
-		db_result add(T& value)
+		bool add(T& value)
 		{
 			if (!m_db)
 				return false;
@@ -145,7 +124,7 @@ namespace cmall
 		}
 
 		template <typename T> requires SupportUpdateAt<T>
-		db_result update(T& value)
+		bool update(T& value)
 		{
 			if (!m_db)
 				return false;
@@ -164,7 +143,7 @@ namespace cmall
 		}
 
 		template <typename T, typename UPDATER> requires SupportUpdateAt<T>
-		db_result update(const typename odb::object_traits<T>::id_type id, UPDATER&& updater)
+		bool update(const typename odb::object_traits<T>::id_type id, UPDATER&& updater)
 		{
 			if (!m_db)
 				return false;
@@ -186,7 +165,7 @@ namespace cmall
 		}
 
 		template <typename T>
-		db_result update(T& value)
+		bool update(T& value)
 		{
 			if (!m_db)
 				return false;
@@ -203,7 +182,7 @@ namespace cmall
 		}
 
 		template <typename T, typename UPDATER> requires (!SupportUpdateAt<T>)
-		db_result update(const typename odb::object_traits<T>::id_type id, UPDATER&& updater)
+		bool update(const typename odb::object_traits<T>::id_type id, UPDATER&& updater)
 		{
 			if (!m_db)
 				return false;
@@ -223,7 +202,7 @@ namespace cmall
 		}
 
 		template <typename T>
-		db_result hard_remove(std::uint64_t id)
+		bool hard_remove(std::uint64_t id)
 		{
 			if (!m_db)
 				return false;
@@ -239,7 +218,7 @@ namespace cmall
 		}
 
 		template <typename T> requires SupportSoftDeletion<T>
-		db_result soft_remove(std::uint64_t id)
+		bool soft_remove(std::uint64_t id)
 		{
 			if (!m_db)
 				return false;
@@ -267,7 +246,7 @@ namespace cmall
 		}
 
 		template <typename T> requires SupportSoftDeletion<T>
-		db_result soft_remove(T& value)
+		bool soft_remove(T& value)
 		{
 			if (!m_db)
 				return false;
@@ -294,120 +273,70 @@ namespace cmall
 		template <typename T>
 		boost::asio::awaitable<bool> async_load(std::uint64_t id, T& value)
 		{
-			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
-				void(boost::system::error_code, bool)>(
-				[id, &value, this](auto&& handler) mutable
-				{
-					boost::asio::post(thread_pool,
-						[id, &value, this, handler = std::move(handler)]() mutable
-						{
-							auto ret = get<T>(id, value);
-							post_result(ret, std::move(handler));
-						});
-				},
-				boost::asio::use_awaitable);
+			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+			{
+				co_return get<T>(id, value);
+			}, boost::asio::use_awaitable);
 		}
 
 		template <typename T>
 		boost::asio::awaitable<bool> async_add(T& value)
 		{
-			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
-				void(boost::system::error_code, bool)>(
-				[this, &value](auto&& handler) mutable 
-				{
-					boost::asio::post(thread_pool, [handler = std::move(handler), this, &value]() mutable {
-						auto ret = add<T>(value);
-						post_result(ret, std::move(handler));
-					});
-				},
-				boost::asio::use_awaitable);
+			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+			{
+				co_return add<T>(value);
+			}, boost::asio::use_awaitable);
 		}
 
 		template<typename T>
 		boost::asio::awaitable<bool> async_update(T& value)
 		{
-			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
-				void(boost::system::error_code, bool)>(
-				[this, &value](auto&& handler) mutable 
-				{
-					boost::asio::post(thread_pool, [handler = std::move(handler), this, &value]() mutable {
-						auto ret = update<T>(value);
-						post_result(ret, std::move(handler));
-					});
-				},
-				boost::asio::use_awaitable);
+			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+			{
+				co_return update<T>(value);
+			}, boost::asio::use_awaitable);
 		}
 
 		template<typename T, typename UPDATER>
 		boost::asio::awaitable<bool> async_update(const typename odb::object_traits<T>::id_type id, UPDATER && updater)
 		{
-			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
-				void(boost::system::error_code, bool)>(
-				[this, id, updater = std::forward<UPDATER>(updater)](auto&& handler) mutable
-				{
-					boost::asio::post(thread_pool, [handler = std::move(handler), this, id, updater = std::forward<UPDATER>(updater)]() mutable {
-						auto ret = update<T>(id, std::forward<UPDATER>(updater));
-						post_result(ret, std::move(handler));
-					});
-				},
-				boost::asio::use_awaitable);
+			return boost::asio::co_spawn(thread_pool, [&, id, this]()mutable -> boost::asio::awaitable<bool>
+			{
+				co_return update<T>(id, std::forward<UPDATER>(updater));
+			}, boost::asio::use_awaitable);
 		}
 
 		template<typename T>
 		boost::asio::awaitable<bool> async_hard_remove(std::uint64_t id)
 		{
-			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
-				void(boost::system::error_code, bool)>(
-				[this, id](auto&& handler) mutable 
-				{
-					boost::asio::post(thread_pool, [handler = std::move(handler), this, id]() mutable {
-						auto ret = hard_remove<T>(id);
-						post_result(ret, std::move(handler));
-					});
-				},
-				boost::asio::use_awaitable);
+			return boost::asio::co_spawn(thread_pool, [id, this]()mutable -> boost::asio::awaitable<bool>
+			{
+				co_return hard_remove<T>(id);
+			}, boost::asio::use_awaitable);
 		}
 
 		template<SupportSoftDeletion T>
 		boost::asio::awaitable<bool> async_soft_remove(std::uint64_t id)
 		{
-			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
-				void(boost::system::error_code, bool)>(
-				[this, id](auto&& handler) mutable 
-				{
-					boost::asio::post(thread_pool, [handler = std::move(handler), this, id]() mutable {
-						auto ret = soft_remove<T>(id);
-						post_result(ret, std::move(handler));
-					});
-				},
-				boost::asio::use_awaitable);
+			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+			{
+				co_return soft_remove<T>(id);
+			}, boost::asio::use_awaitable);
 		}
 
 		template<SupportSoftDeletion T>
 		boost::asio::awaitable<bool> async_soft_remove(T& value)
 		{
-			return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
-				void(boost::system::error_code, bool)>(
-				[this, &value](auto&& handler) mutable 
-				{
-					boost::asio::post(thread_pool, [handler = std::move(handler), this, &value]() mutable {
-						auto ret = soft_remove<T>(value);
-						post_result(ret, std::move(handler));
-					});
-				},
-				boost::asio::use_awaitable);
+			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+			{
+				co_return soft_remove<T>(value);
+			}, boost::asio::use_awaitable);
 		}
-
 
 	private:
 		template <typename T>
-		db_result retry_database_op(T&& t) noexcept
+		bool retry_database_op(T&& t) noexcept
 		{
-			if (!m_db)
-			{
-				return std::make_exception_ptr(std::bad_function_call{});
-			}
-
 			using namespace std::chrono_literals;
 			std::exception_ptr eptr;
 			for (int retry_count(0); retry_count < db_max_retries; retry_count++)
@@ -425,11 +354,13 @@ namespace cmall
 				catch (const std::exception& e)
 				{
 					LOG_ERR << "db operation error:" << e.what();
-					return std::current_exception();
+					throw;
 				}
 			}
+			if (eptr)
+				std::rethrow_exception(eptr);
 
-			return eptr;
+			return false;
 		}
 
 	private:

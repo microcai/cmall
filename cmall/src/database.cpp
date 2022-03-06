@@ -46,7 +46,7 @@ namespace cmall {
 		m_db.reset();
 	}
 
-	db_result cmall_database::load_config(cmall_config& config)
+	bool cmall_database::load_config(cmall_config& config)
 	{
 		return retry_database_op([&, this]() mutable
 		{
@@ -65,11 +65,8 @@ namespace cmall {
 		});
 	}
 
-	db_result cmall_database::add_config(cmall_config& config)
+	bool cmall_database::add_config(cmall_config& config)
 	{
-		if (!m_db)
-			return false;
-
 		return retry_database_op([&, this]() mutable
 		{
 			odb::transaction t(m_db->begin());
@@ -79,7 +76,7 @@ namespace cmall {
 		});
 	}
 
-	db_result cmall_database::update_config(const cmall_config& config)
+	bool cmall_database::update_config(const cmall_config& config)
 	{
 		return retry_database_op([&, this]() mutable
 		{
@@ -90,7 +87,7 @@ namespace cmall {
 		});
 	}
 
-	db_result cmall_database::load_user_by_phone(const std::string& phone, cmall_user& user)
+	bool cmall_database::load_user_by_phone(const std::string& phone, cmall_user& user)
 	{
 		return retry_database_op([&, this]() mutable
 		{
@@ -110,7 +107,7 @@ namespace cmall {
 		});
 	}
 
-	db_result cmall_database::load_all_user_orders(std::vector<cmall_order>& orders, std::uint64_t uid, int page, int page_size)
+	bool cmall_database::load_all_user_orders(std::vector<cmall_order>& orders, std::uint64_t uid, int page, int page_size)
 	{
 		return retry_database_op([&, this]() mutable
 		{
@@ -130,7 +127,7 @@ namespace cmall {
 		});
 	}
 
-	db_result cmall_database::load_all_user_cart(std::vector<cmall_cart>& items, std::uint64_t uid, int page, int page_size)
+	bool cmall_database::load_all_user_cart(std::vector<cmall_cart>& items, std::uint64_t uid, int page, int page_size)
 	{
 		return retry_database_op([&, this]() mutable
 		{
@@ -150,7 +147,7 @@ namespace cmall {
 		});
 	}
 
-	db_result cmall_database::load_order(cmall_order& order, std::string orderid)
+	bool cmall_database::load_order(cmall_order& order, std::string orderid)
 	{
 		return retry_database_op([&, this]() mutable
 		{
@@ -175,7 +172,7 @@ namespace cmall {
 		});
 	}
 
-	db_result cmall_database::load_all_merchant(std::vector<cmall_merchant>& merchants)
+	bool cmall_database::load_all_merchant(std::vector<cmall_merchant>& merchants)
 	{
 		return retry_database_op([&, this]() mutable
 		{
@@ -199,71 +196,41 @@ namespace cmall {
 
 	boost::asio::awaitable<bool> cmall_database::async_load_user_by_phone(const std::string& phone, cmall_user& value)
 	{
-		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code, bool)>(
-			[&, this](auto&& handler) mutable
-			{
-				boost::asio::post(thread_pool,
-				[&, this, handler = std::move(handler)]() mutable
-				{
-					auto ret = load_user_by_phone(phone, value);
-					post_result(ret, std::move(handler));
-				});
-			}, boost::asio::use_awaitable);
+		return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+		{
+			co_return load_user_by_phone(phone, value);
+		}, boost::asio::use_awaitable);
 	}
 
 	boost::asio::awaitable<bool> cmall_database::async_load_all_user_orders(std::vector<cmall_order>& orders, std::uint64_t uid, int page, int page_size)
 	{
-		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code, bool)>(
-			[&, uid, page, page_size, this](auto&& handler) mutable
-			{
-				boost::asio::post(thread_pool,
-				[&, this, handler = std::move(handler)]() mutable
-				{
-					auto ret = load_all_user_orders(orders, uid, page, page_size);
-					post_result(ret, std::move(handler));
-				});
-			}, boost::asio::use_awaitable);
+		return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+		{
+			co_return load_all_user_orders(orders, uid, page, page_size);
+		}, boost::asio::use_awaitable);
 	}
 
 	boost::asio::awaitable<bool> cmall_database::async_load_order(cmall_order& order, std::string orderid)
 	{
-		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code, bool)>(
-			[&, orderid, this](auto&& handler) mutable
-			{
-				boost::asio::post(thread_pool,
-				[&, this, handler = std::move(handler)]() mutable
-				{
-					auto ret = load_order(order, orderid);
-					post_result(ret, std::move(handler));
-				});
-			}, boost::asio::use_awaitable);
+		return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+		{
+			co_return load_order(order, orderid);
+		}, boost::asio::use_awaitable);
 	}
 
 	boost::asio::awaitable<bool> cmall_database::async_load_all_merchant(std::vector<cmall_merchant>& merchants)
 	{
-		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code, bool)>(
-			[&, this](auto&& handler) mutable
-			{
-				boost::asio::post(thread_pool,
-				[&, this, handler = std::move(handler)]() mutable
-				{
-					auto ret = load_all_merchant(merchants);
-					post_result(ret, std::move(handler));
-				});
-			}, boost::asio::use_awaitable);
+		return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+		{
+			co_return load_all_merchant(merchants);
+		}, boost::asio::use_awaitable);
 	}
 
 	boost::asio::awaitable<bool> cmall_database::async_load_all_user_cart(std::vector<cmall_cart>& items, std::uint64_t uid, int page, int page_size)
 	{
-		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code, bool)>(
-			[&, uid, page, page_size, this](auto&& handler) mutable
-			{
-				boost::asio::post(thread_pool,
-				[&, this, handler = std::move(handler)]() mutable
-				{
-					auto ret = load_all_user_cart(items, uid, page, page_size);
-					post_result(ret, std::move(handler));
-				});
-			}, boost::asio::use_awaitable);
+		return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+		{
+			co_return load_all_user_cart(items, uid, page, page_size);
+		}, boost::asio::use_awaitable);
 	}
 }
