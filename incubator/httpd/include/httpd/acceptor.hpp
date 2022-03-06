@@ -231,7 +231,7 @@ public:
         return boost::asio::async_initiate<CompletionToken, void(boost::system::error_code)>([this, creator = std::forward<ClientClassCreator>(creator), number_of_concurrent_acceptor, runner = std::forward<ClientRunner>(runner)](auto&& handler) mutable
         {
             auto cs = boost::asio::get_associated_cancellation_slot(handler);
-            auto creator_waiter = std::make_shared<delegated_operators<ClientClassCreator, ClientRunner, decltype(handler)>>
+            auto creator_waiter = std::make_shared<delegated_operators<ClientClassCreator, ClientRunner, std::decay_t<decltype(handler)>>>
                 (std::move(handler), std::forward<ClientClassCreator>(creator), std::forward<ClientRunner>(runner));
             for(int i =0; i < number_of_concurrent_acceptor; i++)
             {
@@ -258,7 +258,7 @@ public:
         return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code)>([this, creator = std::forward<ClientClassCreator>(creator), number_of_concurrent_acceptor, runner = std::forward<ClientRunner>(runner)](auto&& handler) mutable
         {
             auto cs = boost::asio::get_associated_cancellation_slot(handler);
-            auto creator_waiter = std::make_shared<delegated_operators<ClientClassCreator, ClientRunner, decltype(handler)>>
+            auto creator_waiter = std::make_shared<delegated_operators<ClientClassCreator, ClientRunner, std::decay_t<decltype(handler)>>>
                 (std::move(handler), std::forward<ClientClassCreator>(creator), std::forward<ClientRunner>(runner));
             for(int i =0; i < number_of_concurrent_acceptor; i++)
             {
