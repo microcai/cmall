@@ -511,8 +511,9 @@ namespace cmall
 
 				if (this_client.session_info->user_info)
 				{
-					if (co_await m_database.async_load<cmall_user>(
-						this_client.session_info->user_info->uid_, *(this_client.session_info->user_info)))
+					bool db_operation = co_await m_database.async_load<cmall_user>(
+						this_client.session_info->user_info->uid_, *(this_client.session_info->user_info));
+					if (!db_operation)
 					{
 						this_client.session_info->user_info = {};
 					}
