@@ -6,6 +6,7 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/noncopyable.hpp>
+#include <string_view>
 
 namespace gitpp {
 
@@ -41,12 +42,14 @@ namespace gitpp {
 			return &oid_;
 		}
 
-		oid(const git_oid* git_oid_)
+		explicit oid(const git_oid* git_oid_)
 		{
 			memcpy(&oid_, git_oid_, sizeof (oid_));
 		}
 
 		std::string as_sha1_string() const;
+
+		static oid from_sha1_string(std::string_view);
 	};
 
 	class reference

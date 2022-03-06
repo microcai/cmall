@@ -1,5 +1,6 @@
 
 #include "gitpp/gitpp.hpp"
+#include "git2/oid.h"
 
 #include <git2.h>
 
@@ -204,6 +205,13 @@ std::string gitpp::oid::as_sha1_string() const
 	ret.resize(GIT_OID_HEXSZ);
 	git_oid_tostr(ret.data(), ret.size()+1, &oid_);
 	return ret;
+}
+
+gitpp::oid gitpp::oid::from_sha1_string(std::string_view s)
+{
+	git_oid out;
+	git_oid_fromstrn(&out, s.data(), s.length());
+	return gitpp::oid(&out);
 }
 
 gitpp::reference gitpp::repo::head() const
