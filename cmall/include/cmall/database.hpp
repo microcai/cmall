@@ -261,7 +261,7 @@ namespace cmall
 		template <typename T>
 		boost::asio::awaitable<bool> async_load(std::uint64_t id, T& value)
 		{
-			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+			return boost::asio::co_spawn(thread_pool, [id, this]()mutable -> boost::asio::awaitable<bool>
 			{
 				co_return get<T>(id, value);
 			}, boost::asio::use_awaitable);
