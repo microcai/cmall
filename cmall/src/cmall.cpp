@@ -1,4 +1,4 @@
-﻿
+
 #include <boost/asio.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/experimental/promise.hpp>
@@ -768,7 +768,7 @@ namespace cmall
 				cmall_user& user_info = *(session_info.user_info);
 				// 重新载入 user_info, 以便获取正确的收件人地址信息.
 				bool is_db_op_ok		= co_await m_database.async_update<cmall_user>(user_info.uid_,
-					   [&](cmall_user value)
+					   [&](cmall_user&& value)
 					   {
 						   value.recipients.push_back(new_address);
 						   user_info = value;
@@ -785,7 +785,7 @@ namespace cmall
 				cmall_user& user_info = *(session_info.user_info);
 
 				bool is_db_op_ok = co_await m_database.async_update<cmall_user>(user_info.uid_,
-					[&](cmall_user value) {
+					[&](cmall_user&& value) {
 						if (recipient_id_to_remove >= 0 && recipient_id_to_remove < (int64_t)value.recipients.size())
 							value.recipients.erase(value.recipients.begin() + recipient_id_to_remove);
 						user_info = value;
@@ -958,8 +958,8 @@ namespace cmall
 				{
 					throw boost::system::error_code(cmall::error::invalid_params);
 				}
-
-				co_await m_database.async_update<cmall_cart>(item_id, [count](cmall_cart old) mutable {
+				
+				co_await m_database.async_update<cmall_cart>(item_id, [count](cmall_cart&& old) mutable {
 					old.count_ = count;
 					return old;
 				});

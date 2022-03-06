@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (C) 2019 Jack.
 //
 // Author: jack
@@ -176,7 +176,7 @@ namespace cmall
 					odb::transaction t(m_db->begin());
 					T old_value;
 					m_db->load<T>(id, old_value);
-					T new_value = updater(old_value);
+					T new_value = updater(std::move(old_value));
 					auto now		  = boost::posix_time::second_clock::local_time();
 					new_value.updated_at_ = now;
 					m_db->update(new_value);
@@ -215,7 +215,7 @@ namespace cmall
 					odb::transaction t(m_db->begin());
 					T old_value;
 					m_db->load<T>(id, old_value);
-					T new_value = updater(old_value);
+					T new_value = updater(std::move(old_value));
 					m_db->update(new_value);
 					t.commit();
 					return true;
