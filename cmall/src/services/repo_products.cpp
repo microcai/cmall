@@ -8,9 +8,13 @@
 #include <string_view>
 #include <tuple>
 
+#include "boost/asio/co_spawn.hpp"
+#include "boost/asio/use_awaitable.hpp"
 #include "boost/regex/v5/regex.hpp"
 #include "boost/regex/v5/regex_match.hpp"
 #include "boost/system/detail/error_code.hpp"
+#include "boost/system/system_error.hpp"
+#include "boost/throw_exception.hpp"
 #include "services/repo_products.hpp"
 #include "utils/logging.hpp"
 
@@ -260,110 +264,58 @@ namespace services
 
 	boost::asio::awaitable<std::string> repo_products::get_file_content(boost::filesystem::path path, boost::system::error_code& ec)
 	{
-		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
-			void(boost::system::error_code, std::string)>(
-			[this, path, &ec](auto&& handler) mutable
-			{
-				boost::asio::post(impl().io,
-					[this, &ec, path, handler = std::move(handler)]() mutable
-					{
-						auto ret = impl().get_file_content(path, ec);
-						auto excutor = boost::asio::get_associated_executor(handler, impl().io);
-						boost::asio::post(excutor, [handler = std::move(handler), ret]() mutable { handler(boost::system::error_code(), ret);});
-					});
-			},
-			boost::asio::use_awaitable);
+		return boost::asio::co_spawn(impl().io, [path, &ec, this]() mutable -> boost::asio::awaitable<std::string> {
+			co_return impl().get_file_content(path, ec);
+		}, boost::asio::use_awaitable);
 	}
 
 	// 从给定的 goods_id 找到商品定义.
 	boost::asio::awaitable<product> repo_products::get_product(std::string goods_id)
 	{
-		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
-			void(boost::system::error_code, product)>(
-				[this, goods_id](auto&& handler) mutable
-				{
-					boost::asio::post(impl().io,
-					[this, goods_id, handler = std::move(handler)]() mutable
-					{
-						boost::system::error_code ec;
-						auto ret = impl().get_product(goods_id, ec);
-						auto excutor = boost::asio::get_associated_executor(handler, impl().io);
-						boost::asio::post(excutor, [handler = std::move(handler), ret, ec]() mutable { handler(ec, ret); });
-					});
-				},
-				boost::asio::use_awaitable);
+		return boost::asio::co_spawn(impl().io, [goods_id, this]() mutable -> boost::asio::awaitable<product> {
+			boost::system::error_code ec;
+			auto ret = impl().get_product(goods_id, ec);
+			if (ec)
+				boost::throw_exception(boost::system::system_error(ec));
+			co_return ret;
+		}, boost::asio::use_awaitable);
 	}
 
 	// 从给定的 goods_id 找到商品定义.
 	boost::asio::awaitable<product> repo_products::get_product(std::string goods_id, boost::system::error_code& ec)
 	{
-		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
-			void(boost::system::error_code, product)>(
-			[this, goods_id, &ec](auto&& handler) mutable
-			{
-				boost::asio::post(impl().io,
-					[this, goods_id, handler = std::move(handler), &ec]() mutable
-					{
-						auto ret = impl().get_product(goods_id, ec);
-						auto excutor = boost::asio::get_associated_executor(handler, impl().io);
-						boost::asio::post(excutor, [handler = std::move(handler), ret]() mutable { handler(boost::system::error_code(), ret); });
-					});
-			},
-			boost::asio::use_awaitable);
+		return boost::asio::co_spawn(impl().io, [goods_id, &ec, this]() mutable -> boost::asio::awaitable<product> {
+			co_return impl().get_product(goods_id, ec);
+		}, boost::asio::use_awaitable);
 	}
 
 	boost::asio::awaitable<std::vector<product>> repo_products::get_products()
 	{
-		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
-			void(boost::system::error_code, std::vector<product>)>(
-			[this](auto&& handler) mutable
-			{
-				boost::asio::post(impl().io,
-					[this, handler = std::move(handler)]() mutable
-					{
-						boost::system::error_code ec;
-						auto ret = impl().get_products(ec);
-						auto excutor = boost::asio::get_associated_executor(handler, impl().io);
-						boost::asio::post(excutor, [handler = std::move(handler), ret, ec]() mutable { handler(ec, ret);});
-					});
-			},
-			boost::asio::use_awaitable);
+		return boost::asio::co_spawn(impl().io, [this]() mutable -> boost::asio::awaitable<std::vector<product>> {
+			boost::system::error_code ec;
+			auto ret = impl().get_products(ec);
+			if (ec)
+				boost::throw_exception(boost::system::system_error(ec));
+			co_return ret;
+		}, boost::asio::use_awaitable);
 	}
 
 	boost::asio::awaitable<std::string> repo_products::get_product_detail(std::string goods_id)
 	{
-		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
-			void(boost::system::error_code, std::string)>(
-				[this, goods_id](auto&& handler) mutable
-				{
-					boost::asio::post(impl().io,
-					[this, goods_id, handler = std::move(handler)]() mutable
-					{
-						boost::system::error_code ec;
-						auto ret = impl().get_product_detail(goods_id, ec);
-						auto excutor = boost::asio::get_associated_executor(handler, impl().io);
-						boost::asio::post(excutor, [handler = std::move(handler), ret, ec]() mutable { handler(ec, ret); });
-					});
-				},
-				boost::asio::use_awaitable);
+		return boost::asio::co_spawn(impl().io, [goods_id, this]() mutable -> boost::asio::awaitable<std::string> {
+			boost::system::error_code ec;
+			auto ret = impl().get_product_detail(goods_id, ec);
+			if (ec)
+				boost::throw_exception(boost::system::system_error(ec));
+			co_return ret;
+		}, boost::asio::use_awaitable);
 	}
 
 	boost::asio::awaitable<std::string> repo_products::get_product_detail(std::string goods_id, boost::system::error_code& ec)
 	{
-		return boost::asio::async_initiate<decltype(boost::asio::use_awaitable),
-			void(boost::system::error_code, std::string)>(
-			[this, goods_id, &ec](auto&& handler) mutable
-			{
-				boost::asio::post(impl().io,
-					[this, goods_id, handler = std::move(handler), &ec]() mutable
-					{
-						auto ret = impl().get_product_detail(goods_id, ec);
-						auto excutor = boost::asio::get_associated_executor(handler, impl().io);
-						boost::asio::post(excutor, [handler = std::move(handler), ret]() mutable { handler(boost::system::error_code(), ret); });
-					});
-			},
-			boost::asio::use_awaitable);
-
+		return boost::asio::co_spawn(impl().io, [goods_id, &ec, this]() mutable -> boost::asio::awaitable<std::string> {
+			co_return impl().get_product_detail(goods_id, ec);
+		}, boost::asio::use_awaitable);
 	}
 
 	repo_products::~repo_products()
