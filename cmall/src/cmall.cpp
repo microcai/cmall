@@ -17,6 +17,7 @@
 #include "boost/asio/io_context.hpp"
 #include "boost/asio/post.hpp"
 #include "boost/asio/redirect_error.hpp"
+#include "boost/asio/system_context.hpp"
 #include "boost/asio/use_awaitable.hpp"
 #include "boost/beast/core/tcp_stream.hpp"
 #include "boost/json/value_from.hpp"
@@ -68,6 +69,7 @@ namespace cmall
 		, m_io_context(m_io_context_pool.server_io_context())
 		, m_config(config)
 		, m_database(m_config.dbcfg_)
+		, git_operation_thread_pool(8)
 		, session_cache_map(m_config.session_cache_file)
 		, telephone_verifier(m_io_context)
 		, payment_service(m_io_context)
@@ -98,7 +100,7 @@ namespace cmall
 		{
 			if (services::repo_products::is_git_repo(merchant.repo_path))
 			{
-				auto repo = std::make_shared<services::repo_products>(m_io_context, merchant.uid_, merchant.repo_path);
+				auto repo = std::make_shared<services::repo_products>(git_operation_thread_pool, merchant.uid_, merchant.repo_path);
 				this->merchant_repos.emplace(merchant.uid_, repo);
 			}
 			else

@@ -1,6 +1,10 @@
 
 #pragma once
 
+#include "boost/asio/any_io_executor.hpp"
+#include "boost/asio/execution_context.hpp"
+#include "boost/asio/executor.hpp"
+#include "boost/asio/thread_pool.hpp"
 #include "boost/system/detail/error_code.hpp"
 #include <memory>
 #include <string>
@@ -38,7 +42,7 @@ namespace services
 
 		static bool is_git_repo(boost::filesystem::path repo_path);
 
-		repo_products(boost::asio::io_context& io, std::uint64_t merchant_id, boost::filesystem::path repo_path);
+		repo_products(boost::asio::thread_pool& executor, std::uint64_t merchant_id, boost::filesystem::path repo_path);
 		~repo_products();
 
 		boost::asio::awaitable<std::string> get_file_content(boost::filesystem::path path, boost::system::error_code& ec);
@@ -54,6 +58,8 @@ namespace services
 		boost::asio::awaitable<std::string> get_product_detail(std::string goods_id, boost::system::error_code& ec);
 
 	private:
+		boost::asio::thread_pool& thread_pool;
+
 		const repo_products_impl& impl() const;
 		repo_products_impl& impl();
 

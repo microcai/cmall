@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "boost/asio/thread_pool.hpp"
 #include "cmall/internal.hpp"
 #include "cmall/database.hpp"
 
@@ -194,6 +195,8 @@ namespace cmall {
 
 		server_config m_config;
 		cmall_database m_database;
+
+		boost::asio::thread_pool git_operation_thread_pool;
 
 		services::persist_session session_cache_map;
 		services::verifycode telephone_verifier;

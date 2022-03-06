@@ -9,6 +9,8 @@
 #include <tuple>
 
 #include "boost/asio/co_spawn.hpp"
+#include "boost/asio/execution_context.hpp"
+#include "boost/asio/thread_pool.hpp"
 #include "boost/asio/use_awaitable.hpp"
 #include "boost/regex/v5/regex.hpp"
 #include "boost/regex/v5/regex_match.hpp"
@@ -28,9 +30,8 @@ namespace services
 {
 	struct repo_products_impl
 	{
-		repo_products_impl(boost::asio::io_context& io, std::uint64_t merchant_id, boost::filesystem::path repo_path)
-			: io(io)
-			, repo_path(repo_path)
+		repo_products_impl(std::uint64_t merchant_id, boost::filesystem::path repo_path)
+			: repo_path(repo_path)
 			, git_repo(repo_path)
 			, merchant_id(merchant_id)
 		{
@@ -249,22 +250,14 @@ namespace services
 			return ret;
 		}
 
-
-		boost::asio::io_context& io;
 		boost::filesystem::path repo_path;
 		gitpp::repo git_repo;
 		std::uint64_t merchant_id;
 	};
 
-	repo_products::repo_products(boost::asio::io_context& io, std::uint64_t merchant_id, boost::filesystem::path repo_path)
-	{
-		static_assert(sizeof(obj_stor) >= sizeof(repo_products_impl));
-		std::construct_at(reinterpret_cast<repo_products_impl*>(obj_stor.data()), io, merchant_id, repo_path);
-	}
-
 	boost::asio::awaitable<std::string> repo_products::get_file_content(boost::filesystem::path path, boost::system::error_code& ec)
 	{
-		return boost::asio::co_spawn(impl().io, [path, &ec, this]() mutable -> boost::asio::awaitable<std::string> {
+		return boost::asio::co_spawn(thread_pool, [path, &ec, this]() mutable -> boost::asio::awaitable<std::string> {
 			co_return impl().get_file_content(path, ec);
 		}, boost::asio::use_awaitable);
 	}
@@ -272,7 +265,7 @@ namespace services
 	// 从给定的 goods_id 找到商品定义.
 	boost::asio::awaitable<product> repo_products::get_product(std::string goods_id)
 	{
-		return boost::asio::co_spawn(impl().io, [goods_id, this]() mutable -> boost::asio::awaitable<product> {
+		return boost::asio::co_spawn(thread_pool, [goods_id, this]() mutable -> boost::asio::awaitable<product> {
 			boost::system::error_code ec;
 			auto ret = impl().get_product(goods_id, ec);
 			if (ec)
@@ -284,14 +277,14 @@ namespace services
 	// 从给定的 goods_id 找到商品定义.
 	boost::asio::awaitable<product> repo_products::get_product(std::string goods_id, boost::system::error_code& ec)
 	{
-		return boost::asio::co_spawn(impl().io, [goods_id, &ec, this]() mutable -> boost::asio::awaitable<product> {
+		return boost::asio::co_spawn(thread_pool, [goods_id, &ec, this]() mutable -> boost::asio::awaitable<product> {
 			co_return impl().get_product(goods_id, ec);
 		}, boost::asio::use_awaitable);
 	}
 
 	boost::asio::awaitable<std::vector<product>> repo_products::get_products()
 	{
-		return boost::asio::co_spawn(impl().io, [this]() mutable -> boost::asio::awaitable<std::vector<product>> {
+		return boost::asio::co_spawn(thread_pool, [this]() mutable -> boost::asio::awaitable<std::vector<product>> {
 			boost::system::error_code ec;
 			auto ret = impl().get_products(ec);
 			if (ec)
@@ -302,7 +295,7 @@ namespace services
 
 	boost::asio::awaitable<std::string> repo_products::get_product_detail(std::string goods_id)
 	{
-		return boost::asio::co_spawn(impl().io, [goods_id, this]() mutable -> boost::asio::awaitable<std::string> {
+		return boost::asio::co_spawn(thread_pool, [goods_id, this]() mutable -> boost::asio::awaitable<std::string> {
 			boost::system::error_code ec;
 			auto ret = impl().get_product_detail(goods_id, ec);
 			if (ec)
@@ -313,9 +306,16 @@ namespace services
 
 	boost::asio::awaitable<std::string> repo_products::get_product_detail(std::string goods_id, boost::system::error_code& ec)
 	{
-		return boost::asio::co_spawn(impl().io, [goods_id, &ec, this]() mutable -> boost::asio::awaitable<std::string> {
+		return boost::asio::co_spawn(thread_pool, [goods_id, &ec, this]() mutable -> boost::asio::awaitable<std::string> {
 			co_return impl().get_product_detail(goods_id, ec);
 		}, boost::asio::use_awaitable);
+	}
+
+	repo_products::repo_products(boost::asio::thread_pool& executor, std::uint64_t merchant_id, boost::filesystem::path repo_path)
+		: thread_pool(executor)
+	{
+		static_assert(sizeof(obj_stor) >= sizeof(repo_products_impl));
+		std::construct_at(reinterpret_cast<repo_products_impl*>(obj_stor.data()), merchant_id, repo_path);
 	}
 
 	repo_products::~repo_products()
