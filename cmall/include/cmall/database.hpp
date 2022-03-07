@@ -118,7 +118,7 @@ namespace cmall
 						ret = *r;
 						found = true;
 					}
-						
+
 					t.commit();
 					return found;
 				});
