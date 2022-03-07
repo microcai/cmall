@@ -210,6 +210,7 @@ public:
         cs.slot().assign([this](boost::asio::cancellation_type_t t) mutable{
 			boost::system::error_code ignore_ec;
 			accept_socket.cancel(ignore_ec);
+            LOG_DBG << "accepting loop cancelling";
         });
 
         co_await boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code)>(
@@ -226,7 +227,7 @@ public:
                         {
                             if (creator_waiter->invoked)
                                 return;
-                            creator_waiter->complete(boost::asio::error::operation_aborted);
+                            creator_waiter->complete(boost::system::error_code());
                         }
                     );
                 }
