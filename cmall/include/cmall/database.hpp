@@ -127,9 +127,6 @@ namespace cmall
 		template <typename T>
 		bool add(T& value)
 		{
-			if (!m_db)
-				return false;
-
 			return retry_database_op(
 				[&, this]() mutable
 				{
@@ -143,9 +140,6 @@ namespace cmall
 		template <typename T> requires SupportUpdateAt<T>
 		bool update(T& value)
 		{
-			if (!m_db)
-				return false;
-
 			LOG_DBG << "call update with SupportUpdateAt";
 			return retry_database_op(
 				[&, this]() mutable
@@ -162,9 +156,6 @@ namespace cmall
 		template <typename T, typename UPDATER> requires SupportUpdateAt<T>
 		bool update(const typename odb::object_traits<T>::id_type id, UPDATER&& updater)
 		{
-			if (!m_db)
-				return false;
-
 			LOG_DBG << "call update with SupportUpdateAt";
 			return retry_database_op(
 				[&, this]() mutable
@@ -184,9 +175,6 @@ namespace cmall
 		template <typename T>
 		bool update(T& value)
 		{
-			if (!m_db)
-				return false;
-
 			LOG_DBG << "call update with T";
 			return retry_database_op(
 				[&, this]() mutable
@@ -201,9 +189,6 @@ namespace cmall
 		template <typename T, typename UPDATER> requires (!SupportUpdateAt<T>)
 		bool update(const typename odb::object_traits<T>::id_type id, UPDATER&& updater)
 		{
-			if (!m_db)
-				return false;
-
 			LOG_DBG << "call update with SupportUpdateAt";
 			return retry_database_op(
 				[&, this]() mutable
@@ -221,9 +206,6 @@ namespace cmall
 		template <typename T>
 		bool hard_remove(std::uint64_t id)
 		{
-			if (!m_db)
-				return false;
-
 			return retry_database_op(
 				[&, this]() mutable
 				{
@@ -237,9 +219,6 @@ namespace cmall
 		template <typename T> requires SupportSoftDeletion<T>
 		bool soft_remove(std::uint64_t id)
 		{
-			if (!m_db)
-				return false;
-
 			return retry_database_op(
 				[&, this]() mutable
 				{
@@ -261,9 +240,6 @@ namespace cmall
 		template <typename T> requires SupportSoftDeletion<T>
 		bool soft_remove(T& value)
 		{
-			if (!m_db)
-				return false;
-
 			return retry_database_op(
 				[&, this]() mutable
 				{
