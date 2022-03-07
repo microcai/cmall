@@ -220,6 +220,8 @@ namespace cmall {
 		boost::asio::awaitable<boost::json::object> handle_jsonrpc_order_api(client_connection_ptr, const req_method method, boost::json::object params);
 		boost::asio::awaitable<boost::json::object> handle_jsonrpc_cart_api(client_connection_ptr, const req_method method, boost::json::object params);
 
+		boost::asio::awaitable<void> send_notify_message(std::uint64_t uid_, const std::string&, std::int64_t exclude_connection);
+
 	private:
 		io_context_pool& m_io_context_pool;
 		boost::asio::io_context& m_io_context;

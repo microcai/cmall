@@ -974,6 +974,8 @@ namespace cmall
 
 				co_await m_database.async_add(item);
 				reply_message["result"] = true;
+
+				co_await send_notify_message(this_user.uid_, fmt::format("{\"topic\":\"cart_changed\", \"session_id\": \"%s\"}", this_client.session_info->session_id), this_client.connection_id_);
 			}
 			break;
 			case req_method::cart_mod: // 修改数量.
@@ -999,6 +1001,7 @@ namespace cmall
 					return old;
 				});
 				reply_message["result"] = true;
+				co_await send_notify_message(this_user.uid_, fmt::format("{\"topic\":\"cart_changed\", \"session_id\": \"%s\"}", this_client.session_info->session_id), this_client.connection_id_);
 			}
 			break;
 			case req_method::cart_del: // 从购物车删除.
@@ -1020,6 +1023,7 @@ namespace cmall
 
 				co_await m_database.async_hard_remove<cmall_cart>(item_id);
 				reply_message["result"] = true;
+				co_await send_notify_message(this_user.uid_, fmt::format("{\"topic\":\"cart_changed\", \"session_id\": \"%s\"}", this_client.session_info->session_id), this_client.connection_id_);
 			}
 			break;
 			case req_method::cart_list: // 查看购物车列表.
@@ -1040,6 +1044,24 @@ namespace cmall
 				throw "this should never be executed";
 		}
 		co_return reply_message;
+	}
+
+	boost::asio::awaitable<void> cmall_service::send_notify_message(std::uint64_t uid_, const std::string& msg, std::int64_t exclude_connection_id)
+	{
+		co_return co_await boost::asio::co_spawn(m_io_context, [this, uid_, exclude_connection_id, msg]() mutable -> boost::asio::awaitable<void>
+		{
+			for (auto c : boost::make_iterator_range(active_users.get<2>().equal_range(uid_)))
+			{
+				auto client_ptr = c.lock();
+				if (client_ptr && (client_ptr->connection_id_ != exclude_connection_id))
+				{
+					co_await websocket_write(client_ptr, msg);
+				}
+
+			}
+
+		}, boost::asio::use_awaitable);
+
 	}
 
 	boost::asio::awaitable<void> cmall_service::do_ws_write(size_t connection_id, client_connection_ptr connection_ptr)
