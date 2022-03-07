@@ -94,7 +94,9 @@ namespace cmall
 	boost::asio::awaitable<bool> cmall_service::load_configs()
 	{
 		std::vector<cmall_merchant> all_merchant;
-		co_await m_database.async_load_all_merchant(all_merchant);
+		using query_t = odb::query<cmall_merchant>;
+		auto query	  = query_t::deleted_at.is_null();
+		co_await m_database.async_load<cmall_merchant>(query, all_merchant);
 
 		for (cmall_merchant& merchant : all_merchant)
 		{
@@ -682,7 +684,8 @@ namespace cmall
 					{
 						// SUCCESS.
 						cmall_user user;
-						if (co_await m_database.async_load_user_by_phone(session_info.verify_telephone, user))
+						using query_t = odb::query<cmall_user>;
+						if (co_await m_database.async_load<cmall_user>(query_t::active_phone == session_info.verify_telephone, user))
 						{
 							session_info.user_info = user;
 						}
@@ -888,13 +891,17 @@ namespace cmall
 				break;
 			case req_method::order_list:
 			{
-				std::vector<cmall_order> orders;
 				auto page = jsutil::json_accessor(params).get("page", 0).as_int64();
 				auto page_size = jsutil::json_accessor(params).get("page_size", 20).as_int64();
 
-				co_await m_database.async_load_all_user_orders(orders, this_user.uid_, (int)page, (int)page_size);
+				std::vector<cmall_order> orders;
+				using query_t = odb::query<cmall_order>;
+				auto query	  = (query_t::buyer == this_user.uid_ && query_t::deleted_at.is_null()) + " order by "
+					+ query_t::created_at + " desc limit " + std::to_string(page_size) + " offset "
+					+ std::to_string(page * page_size);
+				co_await m_database.async_load<cmall_order>(query, orders);
 
-				LOG_DBG << "order_list retrived, " << orders.size() << " items";
+				LOG_DBG << "order_list retrieved, " << orders.size() << " items";
 				reply_message["result"] = boost::json::value_from(orders);
 
 			}break;
@@ -906,8 +913,9 @@ namespace cmall
 				// TODO, load order from database first,
 
 				cmall_order order_to_pay;
-
-				bool order_founded = co_await m_database.async_load_order(order_to_pay, orderid);
+				using query_t = odb::query<cmall_order>;
+				auto query		   = query_t::oid == orderid;
+				bool order_founded = co_await m_database.async_load<cmall_order>(query, order_to_pay);
 
 				if (!order_founded ||  (order_to_pay.buyer_ != this_user.uid_))
 				{
@@ -945,14 +953,12 @@ namespace cmall
 				if (merchant_id < 0 || goods_id.empty())
 					throw boost::system::error_code(cmall::error::invalid_params);
 
-				std::vector<cmall_cart> items;
+				cmall_cart item;
 				using query_t = odb::query<cmall_cart>;
 				auto query(query_t::uid == this_user.uid_ && query_t::merchant_id == merchant_id && query_t::goods_id == goods_id);
-				co_await m_database.async_load<cmall_cart>(query, items);
-				if (items.size() > 0)
+				if (co_await m_database.async_load<cmall_cart>(query, item))
 					throw boost::system::error_code(cmall::error::already_in_cart);
 
-				cmall_cart item;
 				item.uid_ = this_user.uid_;
 				item.merchant_id_ = merchant_id;
 				item.goods_id_ = goods_id;

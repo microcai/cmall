@@ -75,16 +75,6 @@ namespace cmall
 	public:
 		void shutdown();
 
-		bool load_config(cmall_config& config);
-		bool add_config(cmall_config& config);
-		bool update_config(const cmall_config& config);
-
-		bool load_user_by_phone(const ::std::string& phone, cmall_user& user);
-		bool load_all_user_orders(std::vector<cmall_order>& orders, std::uint64_t uid, int page, int page_size);
-		bool load_order(cmall_order& order, std::string orderid);
-
-		bool load_all_merchant(std::vector<cmall_merchant>& merchants);
-
 		template <typename T>
 		bool get(std::uint64_t id, T& ret)
 		{
@@ -111,6 +101,26 @@ namespace cmall
 						ret.push_back(i);
 					t.commit();
 					return true;
+				});
+		}
+
+		template <typename T>
+		bool get(const odb::query<T>& query, T& ret)
+		{
+			return retry_database_op(
+				[&, this]() mutable
+				{
+					bool found = false;
+					odb::transaction t(m_db->begin());
+					auto r = m_db->query_one<T>(query);
+					if (r)
+					{
+						ret = *r;
+						found = true;
+					}
+						
+					t.commit();
+					return found;
 				});
 		}
 
@@ -267,11 +277,6 @@ namespace cmall
 		}
 
 	public:
-		boost::asio::awaitable<bool> async_load_user_by_phone(std::string phone, cmall_user& value);
-		boost::asio::awaitable<bool> async_load_all_user_orders(std::vector<cmall_order>& orders, std::uint64_t uid, int page, int page_size);
-		boost::asio::awaitable<bool> async_load_order(cmall_order& orders, std::string orderid);
-		boost::asio::awaitable<bool> async_load_all_merchant(std::vector<cmall_merchant>&);
-
 		template <typename T>
 		boost::asio::awaitable<bool> async_load(std::uint64_t id, T& value)
 		{
@@ -287,6 +292,14 @@ namespace cmall
 			return boost::asio::co_spawn(thread_pool, [this, query, &ret]() mutable -> boost::asio::awaitable<bool> 
 			{
 				co_return get<T>(query, ret);
+			}, boost::asio::use_awaitable);
+		}
+		template <typename T>
+		boost::asio::awaitable<bool> async_load(const odb::query<T>& query, T& ret)
+		{
+			return boost::asio::co_spawn(thread_pool, [this, query, &ret]() mutable -> boost::asio::awaitable<bool> 
+			{ 
+				co_return get<T>(query, ret); 
 			}, boost::asio::use_awaitable);
 		}
 
