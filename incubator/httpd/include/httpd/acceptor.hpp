@@ -65,10 +65,6 @@ class acceptor
 #endif
             }
         }
-        ~delegated_operators()
-        {
-            LOG_ERR << "~delegated_operators";
-        }
 
         auto make_client(std::size_t connection_id, std::string remote_addr, boost::beast::tcp_stream&& accepted_socket)
         {
@@ -237,6 +233,8 @@ public:
             }
             , boost::asio::use_awaitable
         );
+
+        LOG_DBG << "accepting loop exited";
     }
 
     boost::asio::awaitable<void> clean_shutdown()
