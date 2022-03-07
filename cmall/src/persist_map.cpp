@@ -36,8 +36,7 @@ static env::operate_parameters get_default_operate_parameters()
 
 struct persist_map_impl
 {
-	mutable boost::asio::io_context runners;
-	std::shared_ptr<boost::asio::io_context::work> workptr;
+	mutable boost::asio::thread_pool runners;
 	steady_timer timer_;
 	env_managed mdbx_env;
 	map_handle mdbx_default_map;
@@ -48,7 +47,8 @@ struct persist_map_impl
 	std::vector<std::thread> worker_threads;
 
 	persist_map_impl(std::filesystem::path session_cache_file)
-		: timer_(runners)
+		: runners(std::thread::hardware_concurrency())
+		, timer_(runners)
 		, mdbx_env(session_cache_file, get_default_operate_parameters())
 	{
 		txn_managed t = mdbx_env.start_write();
@@ -60,20 +60,15 @@ struct persist_map_impl
 		_t += 86400;
 		t.put(mdbx_lifetime_map, mdbx::slice("_persistmap"), mdbx::slice(&_t, sizeof(_t)), upsert);
 		t.commit();
-		workptr.reset(new boost::asio::io_context::work(runners));
 		boost::asio::co_spawn(runners, background_task(), boost::asio::detached);
-		//for (int i=0; i < std::thread::hardware_concurrency(); i++)
-			//worker_threads.push_back(std::thread(boost::bind(&boost::asio::io_context::run, &runners)));
 	}
 
 	~persist_map_impl()
 	{
-		workptr.reset();
 		stop_flag = true;
 		boost::system::error_code ignore_ec;
 		timer_.cancel(ignore_ec);
-		for (auto& w : worker_threads)
-			w.join();
+		runners.join();
 	}
 	boost::asio::awaitable<void> background_task()
 	{
@@ -142,10 +137,8 @@ struct persist_map_impl
 
 	boost::asio::awaitable<bool> has_key(std::string_view key) const
 	{
-		LOG_DBG << "persist_map: about to has_key";
 		co_return co_await boost::asio::co_spawn(runners, [this, key]() mutable -> boost::asio::awaitable<bool>
 		{
-		LOG_DBG << "persist_map: has_key in internal thread";
 			try
 			{
 				txn_managed t = mdbx_env.start_read();
@@ -162,10 +155,8 @@ struct persist_map_impl
 
 	boost::asio::awaitable<std::string> get(std::string_view key) const
 	{
-		LOG_DBG << "persist_map: about to get";
 		co_return co_await boost::asio::co_spawn(runners, [this, key]() mutable -> boost::asio::awaitable<std::string>
 		{
-			LOG_DBG << "persist_map: getting in internal thread";
 			txn_managed t = mdbx_env.start_read();
 			mdbx::slice v = t.get(mdbx_default_map, mdbx::slice(key));
 			std::string string_value = v.as_string();
@@ -180,21 +171,16 @@ struct persist_map_impl
 		std::time_t _expire_time;
 		std::time(&_expire_time);
 		_expire_time += lifetime.count();
-		LOG_DBG << "persist_map: about to put";
 
 		co_await boost::asio::co_spawn(runners, [this, key, _expire_time, value = std::move(value)]() mutable -> boost::asio::awaitable<void>
 		{
-			LOG_DBG << "persist_map: putting in internal thread";
 			txn_managed t = mdbx_env.start_write();
 			t.put(mdbx_default_map, mdbx::slice(key), mdbx::slice(value), upsert);
 			t.put(mdbx_lifetime_map, mdbx::slice(key), mdbx::slice(&_expire_time, sizeof _expire_time), upsert);
 			t.commit();
 
-			LOG_DBG << "new key puted to persist db: " << key;
 			co_return;
 		}, boost::asio::use_awaitable);
-
-		co_return;
 	}
 };
 

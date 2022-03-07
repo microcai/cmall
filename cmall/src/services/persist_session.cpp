@@ -38,12 +38,15 @@ namespace services
 
 		~persist_session_impl() { }
 		boost::asio::awaitable<bool> exist(std::string_view session_id) const
-		{ co_return co_await mdbx_db.has_key(session_id); }
+		{
+			co_return co_await mdbx_db.has_key(session_id);
+		}
 
 		boost::asio::awaitable<client_session> load(std::string_view session_id) const
 		{
 			client_session cs;
 			boost::json::object jv;
+
 			jv = boost::json::parse(co_await mdbx_db.get(session_id), {}, { 64, false, false, true }).as_object();
 
 			// TODO reload saved info from jv

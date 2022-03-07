@@ -21,6 +21,6 @@ private:
 	const persist_map_impl& impl() const;
 	persist_map_impl& impl();
 
-	std::array<char, 512> obj_stor;
+	std::array<char, 256> obj_stor;
 };
 

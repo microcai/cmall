@@ -184,6 +184,7 @@ namespace cmall {
 	class cmall_service
 	{
 		// c++11 noncopyable.
+		cmall_service(cmall_service&&) = delete;
 		cmall_service(const cmall_service&) = delete;
 		cmall_service& operator=(const cmall_service&) = delete;
 
@@ -212,7 +213,7 @@ namespace cmall {
 
 		boost::asio::awaitable<void> close_all_ws();
 
-		boost::asio::awaitable<void> websocket_write(client_connection_ptr connection_ptr, std::string message);
+		void websocket_write(client_connection_ptr connection_ptr, std::string message);
 
 		boost::asio::awaitable<boost::json::object> handle_jsonrpc_call(client_connection_ptr, const std::string& method, boost::json::object params);
 
@@ -238,6 +239,7 @@ namespace cmall {
 		std::map<std::uint64_t, std::shared_ptr<services::repo_products>> merchant_repos;
 
 		// ws 服务端相关.
+		std::shared_mutex active_users_mtx;
 		active_session_map active_users;
 		std::vector<httpd::acceptor<client_connection_ptr>> m_ws_acceptors;
 		std::atomic_bool m_abort{false};

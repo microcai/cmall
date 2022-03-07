@@ -65,6 +65,10 @@ class acceptor
 #endif
             }
         }
+        ~delegated_operators()
+        {
+            LOG_ERR << "~delegated_operators";
+        }
 
         auto make_client(std::size_t connection_id, std::string remote_addr, boost::beast::tcp_stream&& accepted_socket)
         {
@@ -203,7 +207,7 @@ public:
     }
 
     template<typename ClientClassCreator, typename ClientRunner>
-    boost::asio::awaitable<void> run_accept_loop(int number_of_concurrent_acceptor, ClientClassCreator&& creator, ClientRunner&& runner)
+    boost::asio::awaitable<void> run_accept_loop(int number_of_concurrent_acceptor, ClientClassCreator creator, ClientRunner runner)
     {
         boost::asio::cancellation_state cs = co_await boost::asio::this_coro::cancellation_state;
 
@@ -213,9 +217,7 @@ public:
         });
 
         co_await boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code)>(
-            [this, number_of_concurrent_acceptor
-                , creator = std::forward<ClientClassCreator>(creator)
-                , runner = std::forward<ClientRunner>(runner)](auto&& handler) mutable
+            [=, this](auto&& handler) mutable
             {
                 typedef delegated_operators<std::decay_t<ClientClassCreator>, std::decay_t<ClientRunner>, std::decay_t<decltype(handler)>> delegated_operators_t;
                 auto creator_waiter = std::make_shared<delegated_operators_t>
@@ -290,12 +292,12 @@ private:
 				}
 			}
 
-			auto client_ptr = co_await delegated_operator->make_client(connection_id, remote_host, std::move(stream));
+			auto client_ptr = (delegated_operator->make_client(connection_id, remote_host, std::move(stream)));
 
-			all_client.emplace(connection_id, client_ptr);
+			all_client.insert({connection_id, client_ptr});
 
 			boost::asio::co_spawn(get_executor(),
-				delegated_operator->start_runner(connection_id, client_ptr),
+                delegated_operator->start_runner(connection_id, client_ptr),
 				[this, connection_id, client_ptr](std::exception_ptr)
 				{
 					all_client.erase(connection_id);
