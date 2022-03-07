@@ -101,6 +101,21 @@ namespace cmall
 		}
 
 		template <typename T>
+		bool get(const odb::query<T>& query, std::vector<T>& ret)
+		{
+			return retry_database_op(
+				[&, this]() mutable
+				{
+					odb::transaction t(m_db->begin());
+					auto r = m_db->query<T>(query);
+					for (auto i : r)
+						ret.push_back(i);
+					t.commit();
+					return true;
+				});
+		}
+
+		template <typename T>
 		bool add(T& value)
 		{
 			if (!m_db)
@@ -265,6 +280,15 @@ namespace cmall
 			return boost::asio::co_spawn(thread_pool, [id, &value, this]()mutable -> boost::asio::awaitable<bool>
 			{
 				co_return get<T>(id, value);
+			}, boost::asio::use_awaitable);
+		}
+
+		template <typename T>
+		boost::asio::awaitable<bool> async_load(const odb::query<T>& query, std::vector<T>& ret)
+		{
+			return boost::asio::co_spawn(thread_pool, [this, query, &ret]() mutable -> boost::asio::awaitable<bool> 
+			{
+				co_return get<T>(query, ret);
 			}, boost::asio::use_awaitable);
 		}
 

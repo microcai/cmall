@@ -1,4 +1,4 @@
-﻿
+
 #pragma once
 
 #include <boost/system/error_code.hpp>
@@ -24,6 +24,7 @@ namespace cmall { namespace error{
 		order_not_found, 
 		goods_not_found,
 		cart_goods_not_found,
+		already_in_cart,
 	};
 
 	class cmall_category : public boost::system::error_category

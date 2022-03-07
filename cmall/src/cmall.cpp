@@ -945,6 +945,13 @@ namespace cmall
 				if (merchant_id < 0 || goods_id.empty())
 					throw boost::system::error_code(cmall::error::invalid_params);
 
+				std::vector<cmall_cart> items;
+				using query_t = odb::query<cmall_cart>;
+				auto query(query_t::uid == this_user.uid_ && query_t::merchant_id == merchant_id && query_t::goods_id == goods_id);
+				co_await m_database.async_load<cmall_cart>(query, items);
+				if (items.size() > 0)
+					throw boost::system::error_code(cmall::error::already_in_cart);
+
 				cmall_cart item;
 				item.uid_ = this_user.uid_;
 				item.merchant_id_ = merchant_id;

@@ -1,4 +1,4 @@
-﻿
+
 #include "cmall/error_code.hpp"
 
 const boost::system::error_category& cmall::error::error_category()
@@ -15,7 +15,7 @@ std::string cmall::error::cmall_category::message(int ev) const
 		case internal_server_error:
 			return (const char*) u8"服务器内部错误";
 		case unknown_method:
-			return (const char*) u8"jsonrpc 方法未知";
+			return (const char*) u8"rpc 方法未知";
 		case session_needed:
 			return (const char*) u8"需要先获取session";
 		case invalid_verify_code:
@@ -38,6 +38,8 @@ std::string cmall::error::cmall_category::message(int ev) const
 			return (const char*) u8"参数错误";
 		case cart_goods_not_found:
 			return (const char*) u8"购物车商品未找到";
+		case already_in_cart:
+			return (const char*) u8"已在购物车中";
 	}
 	return "error message";
 }
