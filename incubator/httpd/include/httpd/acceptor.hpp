@@ -65,14 +65,12 @@ typedef boost::asio::detail::socket_option::boolean<IPPROTO_IPV6, IPV6_V6ONLY> i
 template<typename AcceptedClientClass, typename Execotor = boost::asio::any_io_executor>
 class acceptor
 {
-    template<typename GetExecutor, typename ClientCreator, typename ClientRunner, typename CompletionHandler>
+    template<typename ClientCreator, typename ClientRunner, typename CompletionHandler>
     struct delegated_operators : boost::noncopyable
     {
-        boost::asio::cancellation_signal cancel_signal;
         CompletionHandler handler;
         ClientCreator creator;
         ClientRunner runner;
-        GetExecutor get_executor_;
 
 		bool invoked = false;
 
@@ -89,11 +87,6 @@ class acceptor
             }
         }
 
-        auto& get_executor()
-        {
-            return get_executor_();
-        }
-
         auto make_client(std::size_t connection_id, std::string remote_addr, boost::beast::tcp_stream&& accepted_socket)
         {
             return creator(connection_id, remote_addr, std::move(accepted_socket));
@@ -104,11 +97,10 @@ class acceptor
             return runner(connection_id, client);
         }
 
-        delegated_operators(CompletionHandler&& handler, ClientCreator&& creator, ClientRunner&& runner, GetExecutor&& get_executor_)
+        delegated_operators(CompletionHandler&& handler, ClientCreator&& creator, ClientRunner&& runner)
             : handler(std::move(handler))
             , creator(std::forward<ClientCreator>(creator))
             , runner(std::forward<ClientRunner>(runner))
-            , get_executor_(std::forward<GetExecutor>(get_executor_))
         {}
     };
 
@@ -232,34 +224,38 @@ public:
         }
     }
 
-    template<typename ClientClassCreator, typename ClientRunner, typename GetExecutor>
-    boost::asio::awaitable<void> run_accept_loop(int number_of_concurrent_acceptor, ClientClassCreator&& creator, ClientRunner&& runner, GetExecutor&& get_executor_)
+    template<typename ClientClassCreator, typename ClientRunner>
+    boost::asio::awaitable<void> run_accept_loop(int number_of_concurrent_acceptor, ClientClassCreator&& creator, ClientRunner&& runner)
     {
-        return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code)>(
-            [this, number_of_concurrent_acceptor
+
+        std::shared_ptr<boost::asio::cancellation_signal> sub_coro_cancell_signal
+            = std::make_shared<boost::asio::cancellation_signal>();
+
+        boost::asio::cancellation_state cs = co_await boost::asio::this_coro::cancellation_state;
+
+        cs.slot().assign([&sub_coro_cancell_signal](boost::asio::cancellation_type_t t) mutable{
+            sub_coro_cancell_signal->emit(t);
+        });
+
+        co_await boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code)>(
+            [this, number_of_concurrent_acceptor, sub_coro_cancell_signal
                 , creator = std::forward<ClientClassCreator>(creator)
-                , runner = std::forward<ClientRunner>(runner)
-                , get_executor_ = std::forward<GetExecutor>(get_executor_)](auto&& handler) mutable
+                , runner = std::forward<ClientRunner>(runner)](auto&& handler) mutable
             {
-                typedef delegated_operators<GetExecutor, ClientClassCreator, ClientRunner, std::decay_t<decltype(handler)>> delegated_operators_t;
-                boost::asio::cancellation_slot cs = boost::asio::get_associated_cancellation_slot(handler);
+                typedef delegated_operators<std::decay_t<ClientClassCreator>, std::decay_t<ClientRunner>, std::decay_t<decltype(handler)>> delegated_operators_t;
                 auto creator_waiter = std::make_shared<delegated_operators_t>
-                    (std::move(handler), std::forward<ClientClassCreator>(creator), std::forward<ClientRunner>(runner), std::forward<GetExecutor>(get_executor_));
-                if (cs.is_connected())
-                {
-                    cs.assign([creator_waiter = std::weak_ptr<delegated_operators_t>(creator_waiter)](boost::asio::cancellation_type_t t) mutable {
-                        if (creator_waiter.lock())
-                                creator_waiter.lock()->cancel_signal.emit(t);
-                    });
-                }
+                    (std::move(handler), std::move(creator), std::move(runner));
+
                 for(int i =0; i < number_of_concurrent_acceptor; i++)
                 {
-                    boost::asio::co_spawn(this->get_executor(), accept_loop(*creator_waiter), [creator_waiter](std::exception_ptr p)
-                    {
-                        if (creator_waiter->invoked)
-                            return;
-                        creator_waiter->complete(boost::asio::error::operation_aborted);
-                    });
+                    boost::asio::co_spawn(this->get_executor(), accept_loop(creator_waiter, sub_coro_cancell_signal->slot()),
+                        [creator_waiter](std::exception_ptr p)
+                        {
+                            if (creator_waiter->invoked)
+                                return;
+                            creator_waiter->complete(boost::asio::error::operation_aborted);
+                        }
+                    );
                 }
             }
             , boost::asio::use_awaitable
@@ -286,49 +282,52 @@ public:
     }
 
 private:
-    template<typename A, typename  B, typename C, typename D>
-    boost::asio::awaitable<void> accept_loop(delegated_operators<A, B, C, D>& delegated_operator)
+    template<typename DO>
+    boost::asio::awaitable<void> accept_loop(DO delegated_operator, boost::asio::cancellation_slot cs)
     {
 		while (true)
         {
-            boost::system::error_code error;
-#ifdef SO_REUSEPORT
-            boost::asio::ip::tcp::socket client_socket(get_executor());
-#else
-            boost::asio::ip::tcp::socket client_socket(delegated_operator.get_executor());
-#endif
-            co_await accept_socket.async_accept(client_socket, boost::asio::bind_cancellation_slot(delegated_operator.cancel_signal.slot(), boost::asio::use_awaitable));
-
-            client_socket.set_option(boost::asio::socket_base::keep_alive(true), error);
-            boost::beast::tcp_stream stream(std::move(client_socket));
-
-            static std::atomic_size_t id{ 0 };
-            size_t connection_id = id++;
-            std::string remote_host;
-            auto endp = stream.socket().remote_endpoint(error);
-            if (!error)
+            try
             {
-                if (endp.address().is_v6())
+                boost::system::error_code error;
+                boost::asio::ip::tcp::socket client_socket(get_executor());
+                co_await accept_socket.async_accept(client_socket, boost::asio::bind_cancellation_slot(cs, boost::asio::use_awaitable));
+
+                client_socket.set_option(boost::asio::socket_base::keep_alive(true), error);
+                boost::beast::tcp_stream stream(std::move(client_socket));
+
+                static std::atomic_size_t id{ 0 };
+                size_t connection_id = id++;
+                std::string remote_host;
+                auto endp = stream.socket().remote_endpoint(error);
+                if (!error)
                 {
-                    remote_host = "[" + endp.address().to_string() + "]:" + std::to_string(endp.port());
+                    if (endp.address().is_v6())
+                    {
+                        remote_host = "[" + endp.address().to_string() + "]:" + std::to_string(endp.port());
+                    }
+                    else
+                    {
+                        remote_host = endp.address().to_string() + ":" + std::to_string(endp.port());
+                    }
                 }
-                else
-                {
-                    remote_host = endp.address().to_string() + ":" + std::to_string(endp.port());
-                }
+
+                auto client_ptr = co_await delegated_operator->make_client(connection_id, remote_host, std::move(stream));
+
+                all_client.emplace(connection_id, client_ptr);
+
+                boost::asio::co_spawn(get_executor(),
+                    delegated_operator->start_runner(connection_id, client_ptr),
+                    [this, connection_id, client_ptr](std::exception_ptr)
+                    {
+                        all_client.erase(connection_id);
+                    });
+            }catch(boost::system::system_error& e)
+            {
+                boost::system::error_code error = e.code();
+                if (error == boost::asio::error::operation_aborted)
+                    co_return;
             }
-
-            auto client_ptr = co_await delegated_operator.make_client(connection_id, remote_host, std::move(stream));
-
-            all_client.emplace(connection_id, client_ptr);
-
-            boost::asio::co_spawn(client_ptr->get_executor(),
-                delegated_operator.start_runner(connection_id, client_ptr),
-                [this, connection_id, client_ptr](std::exception_ptr)
-                {
-                    all_client.erase(connection_id);
-                });
-
         }
     }
 

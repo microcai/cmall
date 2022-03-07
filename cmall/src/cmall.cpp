@@ -134,8 +134,6 @@ namespace cmall
 						},
 						[this](auto connection_id, client_connection_ptr client) mutable -> boost::asio::awaitable<void>{
 							return handle_accepted_client(connection_id, client);
-						}, [this]() mutable -> boost::asio::io_context& {
-							return m_io_context_pool.get_io_context();
 						}
 					),
 					boost::asio::experimental::use_promise
