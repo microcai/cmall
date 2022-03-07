@@ -67,7 +67,7 @@ namespace utility
 		timedmap(Executor&& io, std::chrono::milliseconds lifetime)
 			: shared_data_(std::make_shared<some_shared_data>())
 		{
-			//boost::asio::co_spawn(io, pruge_thread(lifetime, shared_data_), boost::asio::detached);
+			boost::asio::co_spawn(io, pruge_thread(lifetime, shared_data_), boost::asio::detached);
 		}
 
 		~timedmap()

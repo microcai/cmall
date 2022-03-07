@@ -241,7 +241,6 @@ public:
 
     boost::asio::awaitable<void> clean_shutdown()
     {
-
         for (auto & ws: all_client)
         {
             auto& conn_ptr = ws.second;
@@ -250,6 +249,7 @@ public:
 
 		while (all_client.size())
 		{
+            LOG_DBG << "waiting for client to exit";
             using timer = boost::asio::basic_waitable_timer<time_clock::steady_clock>;
 			timer t(get_executor());
 			t.expires_from_now(std::chrono::milliseconds(20));

@@ -1118,8 +1118,12 @@ namespace cmall
 
 	boost::asio::awaitable<void> cmall_service::close_all_ws()
 	{
+		std::vector<boost::asio::experimental::promise<void(std::exception_ptr)>> ws_runners;
 		for (auto& a: m_ws_acceptors)
-			co_await a.clean_shutdown();
+			ws_runners.push_back(boost::asio::co_spawn(a.get_executor(), a.clean_shutdown(), boost::asio::experimental::use_promise));
+
+		for (auto&& ws_runner : ws_runners)
+			co_await ws_runner.async_wait(boost::asio::use_awaitable);
 	}
 
 	void cmall_service::websocket_write(client_connection_ptr connection_ptr, std::string message)
