@@ -113,12 +113,18 @@ namespace cmall {
 
 	inline int64_t client_connection_get_id(client_connection_weakptr p)
 	{
-		return p.lock()->connection_id_;
+		auto sp = p.lock();
+		if (sp)
+			return sp->connection_id_;
+		return -1;
 	}
 
 	inline uint64_t client_connection_get_user_id(client_connection_weakptr p)
 	{
-		return p.lock()->session_info->user_info->uid_;
+		auto sp = p.lock();
+		if (sp)
+			return sp->session_info->user_info->uid_;
+		return (uint64_t)-1;
 	}
 
 	// 这个多索引map 用来快速找到同一个用户的 session
