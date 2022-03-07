@@ -130,7 +130,7 @@ namespace cmall {
 				boost::multi_index::global_fun<client_connection_weakptr, int64_t, &client_connection_get_id>
 			>,
 			boost::multi_index::hashed_non_unique<
-				boost::multi_index::global_fun<client_connection_weakptr, int64_t, &client_connection_get_user_id>
+				boost::multi_index::global_fun<client_connection_weakptr, uint64_t, &client_connection_get_user_id>
 			>
 		>
 	> active_session_map;
