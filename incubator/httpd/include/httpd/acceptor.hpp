@@ -1,9 +1,6 @@
 
 #pragma once
 
-
-#include "boost/asio/cancellation_signal.hpp"
-#include "boost/asio/error.hpp"
 #include <iostream>
 #include <mutex>
 #if __has_include("utils/logging.hpp")
@@ -11,24 +8,6 @@
 #define HTTPD_ENABLE_LOGGING 1
 #endif
 
-#include "boost/asio/any_io_executor.hpp"
-#include "boost/asio/associated_cancellation_slot.hpp"
-#include "boost/asio/associated_executor.hpp"
-#include "boost/asio/async_result.hpp"
-#include "boost/asio/awaitable.hpp"
-#include "boost/asio/bind_cancellation_slot.hpp"
-#include "boost/asio/cancellation_type.hpp"
-#include "boost/asio/co_spawn.hpp"
-#include "boost/asio/coroutine.hpp"
-#include "boost/asio/detached.hpp"
-#include "boost/asio/ip/tcp.hpp"
-#include "boost/asio/post.hpp"
-#include "boost/asio/redirect_error.hpp"
-#include "boost/asio/this_coro.hpp"
-#include "boost/asio/use_awaitable.hpp"
-#include "boost/beast/core/tcp_stream.hpp"
-#include "boost/system/detail/error_code.hpp"
-#include "boost/system/system_error.hpp"
 #include <exception>
 #include <memory>
 #include <string>
@@ -131,6 +110,11 @@ public:
         this->listen(listen_address);
     }
 
+	~acceptor()
+	{
+		LOG_DBG << "acceptor closed";
+	}
+
     auto get_executor()
     {
         return accept_socket.get_executor();
@@ -192,8 +176,8 @@ public:
 #if __linux__
         if (ipv6only)
         {
-            int on = 1;
-            if (::setsockopt(accept_socket.native_handle(), IPPROTO_IPV6, IPV6_V6ONLY, (char*)&on, sizeof(on)) == -1)
+			accept_socket.set_option(socket_options::ipv6_only(true), ec);
+            if (ec)
             {
 #ifdef HTTPD_ENABLE_LOGGING
                 LOG_ERR << "WS server setsockopt IPV6_V6ONLY";
@@ -227,7 +211,9 @@ public:
     template<typename ClientClassCreator, typename ClientRunner>
     boost::asio::awaitable<void> run_accept_loop(int number_of_concurrent_acceptor, ClientClassCreator&& creator, ClientRunner&& runner)
     {
-
+#ifdef _WIN32
+		number_of_concurrent_acceptor = 1;
+#endif
         std::shared_ptr<boost::asio::cancellation_signal> sub_coro_cancell_signal
             = std::make_shared<boost::asio::cancellation_signal>();
 
@@ -238,9 +224,9 @@ public:
         });
 
         co_await boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code)>(
-            [this, number_of_concurrent_acceptor, sub_coro_cancell_signal
+            [this, number_of_concurrent_acceptor
                 , creator = std::forward<ClientClassCreator>(creator)
-                , runner = std::forward<ClientRunner>(runner)](auto&& handler) mutable
+                , runner = std::forward<ClientRunner>(runner)](auto&& handler, auto sub_coro_cancell_signal) mutable
             {
                 typedef delegated_operators<std::decay_t<ClientClassCreator>, std::decay_t<ClientRunner>, std::decay_t<decltype(handler)>> delegated_operators_t;
                 auto creator_waiter = std::make_shared<delegated_operators_t>
@@ -258,8 +244,10 @@ public:
                     );
                 }
             }
-            , boost::asio::use_awaitable
+            , boost::asio::use_awaitable, sub_coro_cancell_signal
         );
+
+		sub_coro_cancell_signal->emit(boost::asio::cancellation_type::terminal);
     }
 
     boost::asio::awaitable<void> clean_shutdown()
@@ -325,8 +313,10 @@ private:
             }catch(boost::system::system_error& e)
             {
                 boost::system::error_code error = e.code();
-                if (error == boost::asio::error::operation_aborted)
+                if (error == boost::asio::error::operation_aborted || error == boost::asio::error::bad_descriptor)
                     co_return;
+				if (!accept_socket.is_open())
+					co_return;
             }
         }
     }
