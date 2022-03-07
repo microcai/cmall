@@ -37,7 +37,7 @@ namespace services
 		}
 
 		~persist_session_impl() { }
-		boost::asio::awaitable<bool> exist(std::string_view session_id) const { return mdbx_db.has_key(session_id); }
+		boost::asio::awaitable<bool> exist(std::string_view session_id) const { co_return co_await mdbx_db.has_key(session_id); }
 
 		boost::asio::awaitable<client_session> load(std::string_view session_id) const
 		{

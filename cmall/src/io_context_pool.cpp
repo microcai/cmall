@@ -18,7 +18,7 @@ io_context_pool::io_context_pool(std::size_t pool_size)
 	// exit until they are explicitly stopped.
 	for (std::size_t i = 0; i < pool_size; ++i)
 	{
-		io_context_ptr io_context(new boost::asio::io_context(1));
+		io_context_ptr io_context(new boost::asio::io_context());
 		work_ptr work(new boost::asio::io_context::work(*io_context));
 		io_contexts_.push_back(io_context);
 		work_.push_back(work);
@@ -42,6 +42,7 @@ void io_context_pool::run()
 
 	// main_io_context_ have no worker, so will exit if no more pending IO left.
 	main_io_context_.run();
+	LOG_DBG << "main_io_context exited";
 
 	// Wait for all threads in the pool to exit.
 	for (auto& thread : threads)

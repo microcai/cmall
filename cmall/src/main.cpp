@@ -166,8 +166,22 @@ static boost::asio::awaitable<std::string> get_default_cache_dir()
 	co_return ".";
 }
 
+#include "utils/timedmap.hpp"
 boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 {
+
+{
+	//utility::timedmap<int, int> a(ios.get_io_context(), std::chrono::minutes(99));
+
+	//a.put(2, 3);
+
+}
+
+
+
+
+
+
 	std::vector<std::string> upstreams;
 	std::vector<std::string> ws_listens;
 	std::string wsorigin;

@@ -36,16 +36,19 @@ static env::operate_parameters get_default_operate_parameters()
 
 struct persist_map_impl
 {
-	mutable boost::asio::thread_pool runners;
-
+	mutable boost::asio::io_context runners;
+	std::shared_ptr<boost::asio::io_context::work> workptr;
+	steady_timer timer_;
 	env_managed mdbx_env;
 	map_handle mdbx_default_map;
 	map_handle mdbx_lifetime_map;
 
-	boost::asio::cancellation_signal m_cancell_signal;
+	bool stop_flag = false;
+
+	std::vector<std::thread> worker_threads;
 
 	persist_map_impl(std::filesystem::path session_cache_file)
-		: runners(std::thread::hardware_concurrency())
+		: timer_(runners)
 		, mdbx_env(session_cache_file, get_default_operate_parameters())
 	{
 		txn_managed t = mdbx_env.start_write();
@@ -57,30 +60,27 @@ struct persist_map_impl
 		_t += 86400;
 		t.put(mdbx_lifetime_map, mdbx::slice("_persistmap"), mdbx::slice(&_t, sizeof(_t)), upsert);
 		t.commit();
-		boost::asio::co_spawn(runners, background_task(), boost::asio::bind_cancellation_slot(m_cancell_signal.slot(), boost::asio::detached));
+		workptr.reset(new boost::asio::io_context::work(runners));
+		boost::asio::co_spawn(runners, background_task(), boost::asio::detached);
+		//for (int i=0; i < std::thread::hardware_concurrency(); i++)
+			//worker_threads.push_back(std::thread(boost::bind(&boost::asio::io_context::run, &runners)));
 	}
 
 	~persist_map_impl()
 	{
-		m_cancell_signal.emit(boost::asio::cancellation_type::terminal);
-
-		runners.join();
+		workptr.reset();
+		stop_flag = true;
+		boost::system::error_code ignore_ec;
+		timer_.cancel(ignore_ec);
+		for (auto& w : worker_threads)
+			w.join();
 	}
-
-	static boost::asio::awaitable<bool> check_canceled()
-	{
-		boost::asio::cancellation_state cs = co_await boost::asio::this_coro::cancellation_state;
-		if (cs.cancelled() != boost::asio::cancellation_type::none)
-			throw boost::system::system_error(boost::asio::error::operation_aborted);
-		co_return false;
-	}
-
 	boost::asio::awaitable<void> background_task()
 	{
 		co_await this_coro::coro_yield();
 
 		LOG_DBG << "background_task() running";
-		for (co_await check_canceled(); !co_await check_canceled(); co_await check_canceled())
+		while(!stop_flag)
 		{
 			try
 			{
@@ -132,11 +132,11 @@ struct persist_map_impl
 				LOG_DBG << "background_task() exception: " << e.what();
 			}
 
-			co_await check_canceled();
+			if (stop_flag)
+				co_return;
 
-			steady_timer timer(runners);
-			timer.expires_from_now(std::chrono::seconds(60));
-			co_await timer.async_wait(boost::asio::bind_cancellation_slot(m_cancell_signal.slot(), boost::asio::use_awaitable));
+			timer_.expires_from_now(std::chrono::seconds(60));
+			co_await timer_.async_wait(boost::asio::use_awaitable);
 		}
 	}
 
@@ -205,17 +205,17 @@ persist_map::persist_map(std::filesystem::path persist_file)
 
 boost::asio::awaitable<bool> persist_map::has_key(std::string_view key) const
 {
-	return impl().has_key(key);
+	co_return co_await impl().has_key(key);
 }
 
 boost::asio::awaitable<std::string> persist_map::get(std::string_view key) const
 {
-	return impl().get(key);
+	co_return co_await impl().get(key);
 }
 
 boost::asio::awaitable<void> persist_map::put(std::string_view key, std::string value, std::chrono::duration<int> lifetime)
 {
-	return impl().put(key, value, lifetime);
+	co_return co_await impl().put(key, value, lifetime);
 }
 
 const persist_map_impl& persist_map::impl() const

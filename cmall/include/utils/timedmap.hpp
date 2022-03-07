@@ -54,21 +54,26 @@ namespace utility
 
 		map_t stor;
 
-		std::shared_ptr<boost::asio::cancellation_signal> cancell_signal;
+		struct some_shared_data{
+			boost::asio::cancellation_signal cancell_signal;
+			bool stop_flag = false;
+		};
 
+		std::shared_ptr<some_shared_data> shared_data_;
 		std::shared_mutex mtx;
 
 	public:
 		template<typename Executor>
 		timedmap(Executor&& io, std::chrono::milliseconds lifetime)
-			: cancell_signal(std::make_shared<boost::asio::cancellation_signal>())
+			: shared_data_(std::make_shared<some_shared_data>())
 		{
-			boost::asio::co_spawn(io, pruge_thread(lifetime), boost::asio::bind_cancellation_slot(cancell_signal->slot(), boost::asio::detached));
+			//boost::asio::co_spawn(io, pruge_thread(lifetime, shared_data_), boost::asio::detached);
 		}
 
 		~timedmap()
 		{
-			cancell_signal->emit(boost::asio::cancellation_type::terminal);
+			shared_data_->stop_flag = true;
+			shared_data_->cancell_signal.emit(boost::asio::cancellation_type::terminal);
 		}
 
 		std::optional<value_type> get(key_type key)
@@ -97,20 +102,10 @@ namespace utility
 		}
 
 	private:
-
-		static boost::asio::awaitable<bool> check_canceled()
+		boost::asio::awaitable<void> pruge_thread(std::chrono::milliseconds lifetime, std::shared_ptr<some_shared_data> shared_data)
 		{
-			boost::asio::cancellation_state cs = co_await boost::asio::this_coro::cancellation_state;
-			if (cs.cancelled() != boost::asio::cancellation_type::none)
-				throw boost::system::system_error(boost::asio::error::operation_aborted);
-			co_return false;
-		}
-
-		boost::asio::awaitable<void> pruge_thread(std::chrono::milliseconds lifetime)
-		{
-			auto cancell_signal_ = cancell_signal;
 			co_await this_coro::coro_yield();
-			while (!(co_await check_canceled()))
+			while (! shared_data->stop_flag)
 			{
 				boost::timer::cpu_timer avoid_stucker;
 
@@ -132,15 +127,16 @@ namespace utility
 					}
 				}
 
+				if (shared_data->stop_flag)
+					co_return;
+
 				boost::asio::basic_waitable_timer<time_clock::steady_clock> timer(co_await boost::asio::this_coro::executor);
-				co_await check_canceled();
+
 				timer.expires_from_now(diff);
-				co_await timer.async_wait(boost::asio::use_awaitable);
+				co_await timer.async_wait(boost::asio::bind_cancellation_slot(shared_data->cancell_signal.slot(),  boost::asio::use_awaitable));
 
 			}
-			co_return;
 		}
-
 
 	};
 

@@ -421,6 +421,10 @@ namespace cmall
 
 			if (!this_client.session_info)
 			{
+				if (method != "recover_session")
+				{
+					throw boost::system::system_error(boost::system::error_code(cmall::error::session_needed));
+				}
 				boost::json::object replay_message;
 				// 未有 session 前， 先不并发处理 request，避免 客户端恶意并发 recover_session 把程序挂掉
 				replay_message = co_await handle_jsonrpc_call(connection_ptr, method, params);
@@ -471,11 +475,6 @@ namespace cmall
 			throw boost::system::system_error(boost::system::error_code(cmall::error::unknown_method));
 		}
 
-		if (!this_client.session_info && (method.value() != req_method::recover_session))
-		{
-			throw boost::system::system_error(boost::system::error_code(cmall::error::session_needed));
-		}
-
 		auto ensure_login
 			= [&](bool check_admin = false, bool check_merchant = false) mutable -> boost::asio::awaitable<void>
 		{
@@ -498,15 +497,31 @@ namespace cmall
 			co_return;
 		};
 
+		if ((method.value() != req_method::recover_session))
+		{
+			if (!this_client.session_info)
+				throw boost::system::system_error(boost::system::error_code(cmall::error::session_needed));
+		}
+
 		switch (method.value())
 		{
 			case req_method::recover_session:
 			{
 				std::string sessionid = jsutil::json_accessor(params).get_string("sessionid");
 
-				if (sessionid.empty() || !(co_await session_cache_map.exist(sessionid)))
+				if (sessionid.empty())
 				{
-					// TODO 表示是第一次使用，所以创建一个新　session 给客户端.
+					// 表示是第一次使用，所以创建一个新　session 给客户端.
+					this_client.session_info = std::make_shared<services::client_session>();
+
+					this_client.session_info->session_id = gen_uuid();
+					sessionid							 = this_client.session_info->session_id;
+
+					co_await session_cache_map.save(*this_client.session_info);
+				}
+				else if (!(co_await session_cache_map.exist(sessionid)))
+				{
+					// 表示session 过期，所以创建一个新　session 给客户端.
 					this_client.session_info = std::make_shared<services::client_session>();
 
 					this_client.session_info->session_id = gen_uuid();
