@@ -149,6 +149,8 @@ namespace cmall
 	{
 		boost::system::error_code ec;
 
+		m_ws_acceptors.reserve(m_config.ws_listens_.size());
+
 		for (const auto& wsd : m_config.ws_listens_)
 		{
 			if constexpr ( httpd::has_so_reuseport() )

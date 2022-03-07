@@ -101,6 +101,7 @@ public:
     explicit acceptor(AnyExecotor&& executor)
         : accept_socket(std::forward<AnyExecotor>(executor))
     {
+		LOG_DBG << "acceptor created";
     }
 
     template<typename AnyExecotor>
@@ -112,7 +113,9 @@ public:
 
 	~acceptor()
 	{
-		LOG_DBG << "acceptor closed";
+        boost::system::error_code ignore_ec;
+        if (accept_socket.is_open())
+            accept_socket.close(ignore_ec);
 	}
 
     auto get_executor()
@@ -214,6 +217,8 @@ public:
 #ifdef _WIN32
 		number_of_concurrent_acceptor = 1;
 #endif
+
+        accepting = true;
         std::shared_ptr<boost::asio::cancellation_signal> sub_coro_cancell_signal
             = std::make_shared<boost::asio::cancellation_signal>();
 
@@ -248,6 +253,7 @@ public:
         );
 
 		sub_coro_cancell_signal->emit(boost::asio::cancellation_type::terminal);
+        accepting = false;
     }
 
     boost::asio::awaitable<void> clean_shutdown()
