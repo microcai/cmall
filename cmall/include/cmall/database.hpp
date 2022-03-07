@@ -140,7 +140,6 @@ namespace cmall
 		template <typename T> requires SupportUpdateAt<T>
 		bool update(T& value)
 		{
-			LOG_DBG << "call update with SupportUpdateAt";
 			return retry_database_op(
 				[&, this]() mutable
 				{
@@ -156,7 +155,6 @@ namespace cmall
 		template <typename T, typename UPDATER> requires SupportUpdateAt<T>
 		bool update(const typename odb::object_traits<T>::id_type id, UPDATER&& updater)
 		{
-			LOG_DBG << "call update with SupportUpdateAt";
 			return retry_database_op(
 				[&, this]() mutable
 				{
@@ -175,7 +173,6 @@ namespace cmall
 		template <typename T>
 		bool update(T& value)
 		{
-			LOG_DBG << "call update with T";
 			return retry_database_op(
 				[&, this]() mutable
 				{
@@ -189,7 +186,6 @@ namespace cmall
 		template <typename T, typename UPDATER> requires (!SupportUpdateAt<T>)
 		bool update(const typename odb::object_traits<T>::id_type id, UPDATER&& updater)
 		{
-			LOG_DBG << "call update with SupportUpdateAt";
 			return retry_database_op(
 				[&, this]() mutable
 				{
