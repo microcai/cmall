@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (C) 2019 Jack.
 //
 // Author: jack
@@ -6,6 +6,12 @@
 //
 
 #pragma once
+
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/sequenced_index.hpp>
+#include <boost/multi_index/global_fun.hpp>
+#include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/tag.hpp>
 
 #include "boost/asio/thread_pool.hpp"
 #include "cmall/internal.hpp"
@@ -99,10 +105,35 @@ namespace cmall {
 			, remote_host_(remote_host)
 		{
 		}
+
 	};
 
 	using client_connection_ptr = std::shared_ptr<client_connection>;
 	using client_connection_weakptr = std::weak_ptr<client_connection>;
+
+	inline int64_t client_connection_get_id(client_connection_weakptr p)
+	{
+		return p.lock()->connection_id_;
+	}
+
+	inline uint64_t client_connection_get_user_id(client_connection_weakptr p)
+	{
+		return p.lock()->session_info->user_info->uid_;
+	}
+
+	// 这个多索引map 用来快速找到同一个用户的 session
+	typedef boost::multi_index_container<
+		client_connection_weakptr,
+		boost::multi_index::indexed_by<
+			boost::multi_index::sequenced<>,
+			boost::multi_index::hashed_unique<
+				boost::multi_index::global_fun<client_connection_weakptr, int64_t, &client_connection_get_id>
+			>,
+			boost::multi_index::hashed_non_unique<
+				boost::multi_index::global_fun<client_connection_weakptr, int64_t, &client_connection_get_user_id>
+			>
+		>
+	> active_session_map;
 
 	enum class req_method {
 		recover_session,
@@ -205,6 +236,7 @@ namespace cmall {
 		std::map<std::uint64_t, std::shared_ptr<services::repo_products>> merchant_repos;
 
 		// ws 服务端相关.
+		active_session_map active_users;
 		std::vector<httpd::acceptor<client_connection_ptr>> m_ws_acceptors;
 		std::atomic_bool m_abort{false};
 	};

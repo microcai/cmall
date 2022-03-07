@@ -518,6 +518,10 @@ namespace cmall
 					{
 						this_client.session_info->user_info = {};
 					}
+					else
+					{
+						active_users.push_back(connection_ptr);
+					}
 				}
 
 				reply_message["result"] = { { "session_id", this_client.session_info->session_id },
@@ -696,6 +700,8 @@ namespace cmall
 						co_await session_cache_map.save(
 							this_client.session_info->session_id, *this_client.session_info);
 						reply_message["result"] = { { "login", "success" }, { "usertype", "user" } };
+
+						active_users.push_back(connection_ptr);
 						break;
 					}
 				}
@@ -708,6 +714,7 @@ namespace cmall
 				this_client.session_info->user_info = {};
 				co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info);
 				reply_message["result"] = { "status", "success" };
+				active_users.get<1>().erase(connection_ptr->connection_id_);
 			}
 			break;
 			case req_method::user_islogin:
