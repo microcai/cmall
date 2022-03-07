@@ -109,12 +109,12 @@ public:
     {
         this->listen(listen_address);
     }
-
+#ifndef NDEBUG
 	~acceptor()
 	{
 		LOG_DBG << "acceptor closed";
 	}
-
+#endif
     auto get_executor()
     {
         return accept_socket.get_executor();
