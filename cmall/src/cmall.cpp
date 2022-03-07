@@ -130,9 +130,17 @@ namespace cmall
 					a.get_executor(),
 					a.run_accept_loop(
 						concurrent_accepter,
-						[](std::size_t connection_id, std::string remote_host, boost::beast::tcp_stream&& tcp_stream) mutable -> boost::asio::awaitable<client_connection_ptr>
+						[this](std::size_t connection_id, std::string remote_host, boost::beast::tcp_stream&& tcp_stream) mutable -> boost::asio::awaitable<client_connection_ptr>
 						{
-							co_return std::make_shared<client_connection>(std::move(tcp_stream), connection_id, remote_host);
+							co_return std::shared_ptr<client_connection>(new client_connection(std::move(tcp_stream), connection_id, remote_host),
+								 [this, connection_id](client_connection* pointer) mutable {
+									 boost::checked_delete(pointer);
+									 // 投递回主线程删.
+									 boost::asio::post(m_io_context, [this, connection_id](){
+										 active_users.get<1>().erase(connection_id);
+									 });
+								  }
+							);
 						},
 						[this](auto connection_id, client_connection_ptr client) mutable -> boost::asio::awaitable<void>{
 							return handle_accepted_client(connection_id, client);
@@ -522,7 +530,7 @@ namespace cmall
 					}
 					else
 					{
-						active_users.push_back(connection_ptr);
+						boost::asio::post(m_io_context, [this, connection_ptr](){active_users.push_back(connection_ptr);});
 					}
 				}
 
@@ -704,7 +712,7 @@ namespace cmall
 							this_client.session_info->session_id, *this_client.session_info);
 						reply_message["result"] = { { "login", "success" }, { "usertype", "user" } };
 
-						active_users.push_back(connection_ptr);
+						boost::asio::post(m_io_context, [this, connection_ptr](){active_users.push_back(connection_ptr);});
 						break;
 					}
 				}
