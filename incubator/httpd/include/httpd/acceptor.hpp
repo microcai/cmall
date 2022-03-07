@@ -253,6 +253,7 @@ public:
 			t.expires_from_now(std::chrono::milliseconds(20));
 			co_await t.async_wait(boost::asio::use_awaitable);
 		}
+        LOG_DBG << "clean_shutdown exit";
         co_return ;
     }
 

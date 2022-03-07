@@ -1124,6 +1124,8 @@ namespace cmall
 
 		for (auto&& ws_runner : ws_runners)
 			co_await ws_runner.async_wait(boost::asio::use_awaitable);
+
+		LOG_DBG << "cmall_service::close_all_ws() success!";
 	}
 
 	void cmall_service::websocket_write(client_connection_ptr connection_ptr, std::string message)
