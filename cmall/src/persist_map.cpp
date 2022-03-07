@@ -134,7 +134,7 @@ struct persist_map_impl
 
 			co_await check_canceled();
 
-			steady_timer timer(co_await boost::asio::this_coro::executor);
+			steady_timer timer(runners);
 			timer.expires_from_now(std::chrono::seconds(60));
 			co_await timer.async_wait(boost::asio::bind_cancellation_slot(m_cancell_signal.slot(), boost::asio::use_awaitable));
 		}
@@ -142,41 +142,33 @@ struct persist_map_impl
 
 	boost::asio::awaitable<bool> has_key(std::string_view key) const
 	{
-		bool has_key_variable = false;
-		co_await boost::asio::co_spawn(runners, [this, key, &has_key_variable]() mutable -> boost::asio::awaitable<void>
+		co_return co_await boost::asio::co_spawn(runners, [this, key]() mutable -> boost::asio::awaitable<bool>
 		{
 			try
 			{
 				txn_managed t = mdbx_env.start_read();
 				t.get(mdbx_default_map, mdbx::slice(key));
 				t.commit();
-				has_key_variable = true;
-				co_return;
+				co_return true;
 			}
 			catch(std::exception&)
 			{
 			}
-
+			co_return false;
 		}, boost::asio::use_awaitable);
-
-		co_return has_key_variable;
 	}
 
 	boost::asio::awaitable<std::string> get(std::string_view key) const
 	{
-		std::string string_value;
-
-		co_await boost::asio::co_spawn(runners, [this, key, &string_value]() mutable -> boost::asio::awaitable<void>
+		co_return co_await boost::asio::co_spawn(runners, [this, key]() mutable -> boost::asio::awaitable<std::string>
 		{
 			txn_managed t = mdbx_env.start_read();
 			mdbx::slice v = t.get(mdbx_default_map, mdbx::slice(key));
-			string_value = v.as_string();
+			std::string string_value = v.as_string();
 			t.commit();
-			co_return;
+			co_return string_value;
 
 		}, boost::asio::use_awaitable);
-
-		co_return string_value;
 	}
 
 	boost::asio::awaitable<void> put(std::string_view key, std::string value, std::chrono::duration<int> lifetime)
