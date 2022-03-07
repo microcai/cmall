@@ -61,7 +61,7 @@ struct goods_description {
 			picture = other.picture;
 		if (description.empty())
 			description = other.description;
-		
+
 		rest_meta += other.rest_meta;
 		return *this;
 	}
@@ -117,6 +117,7 @@ struct goods_description_grammer : qi::grammar<Iterator, goods_description()>
 
 	qi::rule<Iterator, goods_description()> lines, line;
 	qi::rule<Iterator, KV()> pair_line;
+
 	qi::rule<Iterator, std::string()> key, value;
 
 	qi::rule<Iterator, std::string()> title_line, price_line, description_line, picture_line;
