@@ -241,8 +241,6 @@ public:
             }
             , boost::asio::use_awaitable
         );
-
-		sub_coro_cancell_signal->emit(boost::asio::cancellation_type::terminal);
     }
 
     boost::asio::awaitable<void> clean_shutdown()
