@@ -1,4 +1,4 @@
-﻿
+
 #include "utils/logging.hpp"
 
 #include "cmall/database.hpp"
@@ -127,26 +127,6 @@ namespace cmall {
 		});
 	}
 
-	bool cmall_database::load_all_user_cart(std::vector<cmall_cart>& items, std::uint64_t uid, int page, int page_size)
-	{
-		return retry_database_op([&, this]() mutable
-		{
-			odb::transaction t(m_db->begin());
-			using query = odb::query<cmall_cart>;
-			auto r = m_db->query<cmall_cart>(
-				(query::uid == uid) + " order by " + query::created_at + " desc limit " + std::to_string(page_size) + " offset " + std::to_string(page * page_size)
-			);
-
-			for (auto i : r)
-				items.push_back(i);
-			t.commit();
-
-			LOG_DBG << "load_all_user_cart(" << uid << ") retrived " << items.size() << " orders";
-
-			return true;
-		});
-	}
-
 	bool cmall_database::load_order(cmall_order& order, std::string orderid)
 	{
 		return retry_database_op([&, this]() mutable
@@ -222,14 +202,6 @@ namespace cmall {
 		return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
 		{
 			co_return load_all_merchant(merchants);
-		}, boost::asio::use_awaitable);
-	}
-
-	boost::asio::awaitable<bool> cmall_database::async_load_all_user_cart(std::vector<cmall_cart>& items, std::uint64_t uid, int page, int page_size)
-	{
-		return boost::asio::co_spawn(thread_pool, [=, &items, this]()mutable -> boost::asio::awaitable<bool>
-		{
-			co_return load_all_user_cart(items, uid, page, page_size);
 		}, boost::asio::use_awaitable);
 	}
 }

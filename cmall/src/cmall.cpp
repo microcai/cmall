@@ -1010,11 +1010,15 @@ namespace cmall
 			break;
 			case req_method::cart_list: // 查看购物车列表.
 			{
-				std::vector<cmall_cart> items;
 				auto page = jsutil::json_accessor(params).get("page", 0).as_int64();
 				auto page_size = jsutil::json_accessor(params).get("page_size", 20).as_int64();
 
-				co_await m_database.async_load_all_user_cart(items, this_user.uid_, (int)page, (int)page_size);
+				std::vector<cmall_cart> items;
+				using query_t = odb::query<cmall_cart>;
+				auto query	  = (query_t::uid == this_user.uid_) + " order by " + query_t::created_at + " desc limit "
+					+ std::to_string(page_size) + " offset " + std::to_string(page * page_size);
+				co_await m_database.async_load<cmall_cart>(query, items);
+
 				reply_message["result"] = boost::json::value_from(items);
 			}
 			break;
