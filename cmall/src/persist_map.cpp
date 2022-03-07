@@ -142,8 +142,10 @@ struct persist_map_impl
 
 	boost::asio::awaitable<bool> has_key(std::string_view key) const
 	{
+		LOG_DBG << "persist_map: about to has_key";
 		co_return co_await boost::asio::co_spawn(runners, [this, key]() mutable -> boost::asio::awaitable<bool>
 		{
+		LOG_DBG << "persist_map: has_key in internal thread";
 			try
 			{
 				txn_managed t = mdbx_env.start_read();
@@ -160,8 +162,10 @@ struct persist_map_impl
 
 	boost::asio::awaitable<std::string> get(std::string_view key) const
 	{
+		LOG_DBG << "persist_map: about to get";
 		co_return co_await boost::asio::co_spawn(runners, [this, key]() mutable -> boost::asio::awaitable<std::string>
 		{
+			LOG_DBG << "persist_map: getting in internal thread";
 			txn_managed t = mdbx_env.start_read();
 			mdbx::slice v = t.get(mdbx_default_map, mdbx::slice(key));
 			std::string string_value = v.as_string();
@@ -176,9 +180,11 @@ struct persist_map_impl
 		std::time_t _expire_time;
 		std::time(&_expire_time);
 		_expire_time += lifetime.count();
+		LOG_DBG << "persist_map: about to put";
 
 		co_await boost::asio::co_spawn(runners, [this, key, _expire_time, value = std::move(value)]() mutable -> boost::asio::awaitable<void>
 		{
+			LOG_DBG << "persist_map: putting in internal thread";
 			txn_managed t = mdbx_env.start_write();
 			t.put(mdbx_default_map, mdbx::slice(key), mdbx::slice(value), upsert);
 			t.put(mdbx_lifetime_map, mdbx::slice(key), mdbx::slice(&_expire_time, sizeof _expire_time), upsert);

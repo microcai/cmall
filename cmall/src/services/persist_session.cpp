@@ -37,7 +37,8 @@ namespace services
 		}
 
 		~persist_session_impl() { }
-		boost::asio::awaitable<bool> exist(std::string_view session_id) const { co_return co_await mdbx_db.has_key(session_id); }
+		boost::asio::awaitable<bool> exist(std::string_view session_id) const
+		{ co_return co_await mdbx_db.has_key(session_id); }
 
 		boost::asio::awaitable<client_session> load(std::string_view session_id) const
 		{
@@ -90,28 +91,31 @@ namespace services
 		std::construct_at<persist_session_impl>(reinterpret_cast<persist_session_impl*>(obj_stor.data()), persist_file);
 	}
 
-	boost::asio::awaitable<bool> persist_session::exist(std::string_view key) const { return impl().exist(key); }
+	boost::asio::awaitable<bool> persist_session::exist(std::string_view key) const
+	{
+		co_return co_await impl().exist(key);
+	}
 
 	boost::asio::awaitable<client_session> persist_session::load(std::string_view session_id) const
 	{
-		return impl().load(session_id);
+		co_return co_await impl().load(session_id);
 	}
 
 	boost::asio::awaitable<void> persist_session::save(const client_session& session, std::chrono::duration<int> lifetime)
 	{
-		return impl().save(session.session_id, session, lifetime);
+		co_return co_await impl().save(session.session_id, session, lifetime);
 	}
 
 	boost::asio::awaitable<void> persist_session::save(
 		std::string_view session_id, const client_session& session, std::chrono::duration<int> lifetime)
 	{
-		return impl().save(session_id, session, lifetime);
+		co_return co_await impl().save(session_id, session, lifetime);
 	}
 
 	boost::asio::awaitable<void> persist_session::update_lifetime(
 		std::string_view session_id, std::chrono::duration<int> lifetime)
 	{
-		return impl().update_lifetime(session_id, lifetime);
+		co_return co_await impl().update_lifetime(session_id, lifetime);
 	}
 
 	const persist_session_impl& persist_session::impl() const
