@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.8)
 cmake_policy(SET CMP0091 NEW) # for CMAKE_MSVC_RUNTIME_LIBRARY
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 project(cmall)
@@ -125,6 +125,8 @@ if (MSVC)
 		-DBOOST_FILESYSTEM_STATIC_LINK
 		-DBOOST_USE_WINAPI_VERSION=0x0601
 	)
+
+	add_compile_options(/IGNORE:4267,4244,4005)
 
 	add_compile_options(/bigobj /MP /Zc:__cplusplus)
 	MESSAGE(STATUS "Using parallel compiling (/MP)")

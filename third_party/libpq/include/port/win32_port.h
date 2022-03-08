@@ -31,7 +31,7 @@
  * VS2013 and later issue warnings about using the old Winsock API,
  * which we don't really want to hear about.
  */
-#ifdef _MSC_VER
+#ifndef _WINSOCK_DEPRECATED_NO_WARNINGS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #endif
 
