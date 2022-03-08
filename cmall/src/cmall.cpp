@@ -793,8 +793,8 @@ namespace cmall
 					item.count_		  = 1;
 
 					co_await m_database.async_add(item);
-					reply_message["result"] = true;
 				}
+				reply_message["result"] = true;
 
 				co_await send_notify_message(this_user.uid_, fmt::format(R"---({{"topic":"cart_changed", "session_id": "{}"}})---", this_client.session_info->session_id), this_client.connection_id_);
 			}
