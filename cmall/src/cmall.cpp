@@ -148,7 +148,7 @@ namespace cmall
 			}
 			else
 			{
-				m_ws_acceptors.emplace_back(m_io_context);
+				m_ws_acceptors.emplace_back(m_io_context, *this);
 				m_ws_acceptors.back().listen(wsd, ec);
 				if (ec)
 				{
@@ -454,23 +454,6 @@ namespace cmall
 				reply_message["result"] = boost::json::value_from(product);
 			}
 			break;
-			case req_method::merchant_product_list:
-			break;
-
-			case req_method::merchant_product_add:
-			{
-				co_await ensure_login(false, true);
-
-//				auto uid = this_client.session_info->user_info->uid_;
-
-			}
-			break;
-			case req_method::merchant_product_mod:
-				break;
-			case req_method::merchant_product_launch:
-				break;
-			case req_method::merchant_product_withdraw:
-				break;
 			case req_method::admin_user_list:
 				break;
 			case req_method::admin_user_ban:

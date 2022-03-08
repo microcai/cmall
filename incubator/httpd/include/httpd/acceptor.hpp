@@ -1,4 +1,4 @@
-﻿
+
 #pragma once
 
 #include <iostream>
@@ -60,7 +60,7 @@ namespace httpd
 
 	public:
 		acceptor(const acceptor&) = delete;
-		acceptor(acceptor&& o)
+		explicit acceptor(acceptor&& o)
 			: executor_(o.executor_)
 			, accept_socket_(std::move(o.accept_socket_))
 			, accepting(o.accepting)

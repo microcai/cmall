@@ -171,12 +171,6 @@ namespace cmall {
 		goods_list,
 		goods_detail,
 
-		merchant_product_list,
-		merchant_product_add,
-		merchant_product_mod,
-		merchant_product_launch,
-		merchant_product_withdraw,
-
 		admin_user_list,
 		admin_user_ban,
 		admin_merchant_list,
