@@ -1,4 +1,4 @@
-
+﻿
 #pragma once
 
 #include <iostream>
@@ -40,9 +40,6 @@ namespace httpd
 	{
 #ifdef SO_REUSEPORT
 		typedef boost::asio::detail::socket_option::boolean<SOL_SOCKET, SO_REUSEPORT> reuse_port;
-#endif
-#ifdef IPV6_V6ONLY
-		typedef boost::asio::detail::socket_option::boolean<IPPROTO_IPV6, IPV6_V6ONLY> ipv6_only;
 #endif
 	}
 
@@ -140,10 +137,9 @@ namespace httpd
 				return;
 			}
 
-#if __linux__
 			if (ipv6only)
 			{
-				accept_socket_.set_option(socket_options::ipv6_only(true), ec);
+				accept_socket_.set_option(boost::asio::ip::v6_only(true), ec);
 				if (ec)
 				{
 #ifdef HTTPD_ENABLE_LOGGING
@@ -152,9 +148,7 @@ namespace httpd
 					return;
 				}
 			}
-#else
-			boost::ignore_unused(ipv6only);
-#endif
+
 			accept_socket_.bind(endp, ec);
 			if (ec)
 			{
