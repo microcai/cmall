@@ -69,7 +69,7 @@ namespace cmall {
 		boost::asio::experimental::concurrent_channel<void(boost::system::error_code, std::string)> message_channel;
 	};
 
-	struct client_connection
+	struct client_connection : boost::noncopyable
 	{
 		boost::beast::tcp_stream tcp_stream;
 		int64_t connection_id_;
@@ -111,32 +111,26 @@ namespace cmall {
 	using client_connection_ptr = std::shared_ptr<client_connection>;
 	using client_connection_weakptr = std::weak_ptr<client_connection>;
 
-	inline int64_t client_connection_get_id(client_connection_weakptr p)
+	inline int64_t client_connection_get_id(client_connection* p)
 	{
-		auto sp = p.lock();
-		if (sp)
-			return sp->connection_id_;
-		return -1;
+		return p->connection_id_;
 	}
 
-	inline uint64_t client_connection_get_user_id(client_connection_weakptr p)
+	inline uint64_t client_connection_get_user_id(client_connection* p)
 	{
-		auto sp = p.lock();
-		if (sp)
-			return sp->session_info->user_info->uid_;
-		return (uint64_t)-1;
+		return p->session_info->user_info->uid_;
 	}
 
 	// 这个多索引map 用来快速找到同一个用户的 session
 	typedef boost::multi_index_container<
-		client_connection_weakptr,
+		client_connection*,
 		boost::multi_index::indexed_by<
 			boost::multi_index::sequenced<>,
 			boost::multi_index::hashed_unique<
-				boost::multi_index::global_fun<client_connection_weakptr, int64_t, &client_connection_get_id>
+				boost::multi_index::global_fun<client_connection*, int64_t, &client_connection_get_id>
 			>,
 			boost::multi_index::hashed_non_unique<
-				boost::multi_index::global_fun<client_connection_weakptr, uint64_t, &client_connection_get_user_id>
+				boost::multi_index::global_fun<client_connection*, uint64_t, &client_connection_get_user_id>
 			>
 		>
 	> active_session_map;
@@ -210,7 +204,7 @@ namespace cmall {
 	private:
 		boost::asio::awaitable<bool> init_ws_acceptors();
 
-		boost::asio::awaitable<void> handle_accepted_client(size_t connection_id, client_connection_ptr);
+		boost::asio::awaitable<void> handle_accepted_client(client_connection_ptr);
 
 		boost::asio::awaitable<int> render_git_repo_files(size_t connection_id, std::string merchant, std::string path_in_repo, boost::beast::tcp_stream& client, boost::beast::http::request<boost::beast::http::string_body>);
 		boost::asio::awaitable<int> render_goods_detail_content(size_t connection_id, std::string merchant, std::string goods_id, boost::beast::tcp_stream& client, int httpver, bool keepalive);
@@ -219,7 +213,7 @@ namespace cmall {
 
 		boost::asio::awaitable<void> close_all_ws();
 
-		void websocket_write(client_connection_ptr connection_ptr, std::string message);
+		boost::asio::awaitable<void> websocket_write(client_connection& connection_, std::string message);
 
 		boost::asio::awaitable<boost::json::object> handle_jsonrpc_call(client_connection_ptr, const std::string& method, boost::json::object params);
 
@@ -228,6 +222,12 @@ namespace cmall {
 		boost::asio::awaitable<boost::json::object> handle_jsonrpc_cart_api(client_connection_ptr, const req_method method, boost::json::object params);
 
 		boost::asio::awaitable<void> send_notify_message(std::uint64_t uid_, const std::string&, std::int64_t exclude_connection);
+
+		// round robing for acceptor.
+		auto& get_executor(){ return m_io_context_pool.get_io_context(); }
+
+		client_connection_ptr accept_new_connection(boost::beast::tcp_stream&& tcp_stream, std::int64_t connection_id, std::string remote_address);
+		boost::asio::awaitable<void> cleanup_connection(client_connection_ptr);
 
 	private:
 		io_context_pool& m_io_context_pool;
@@ -247,7 +247,8 @@ namespace cmall {
 		// ws 服务端相关.
 		std::shared_mutex active_users_mtx;
 		active_session_map active_users;
-		std::vector<httpd::acceptor<client_connection_ptr>> m_ws_acceptors;
+		std::vector<httpd::acceptor<client_connection_ptr, cmall_service>> m_ws_acceptors;
+		friend class httpd::acceptor<client_connection_ptr, cmall_service>;
 		std::atomic_bool m_abort{false};
 	};
 }

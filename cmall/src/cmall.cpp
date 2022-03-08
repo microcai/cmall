@@ -126,27 +126,7 @@ namespace cmall
 		for (auto & a : m_ws_acceptors)
 		{
 			ws_runners.emplace_back(
-				boost::asio::co_spawn(
-					a.get_executor(),
-					a.run_accept_loop(
-						concurrent_accepter,
-						[this](std::size_t connection_id, std::string remote_host, boost::beast::tcp_stream&& tcp_stream)
-						{
-							return std::shared_ptr<client_connection>(new client_connection(std::move(tcp_stream), connection_id, remote_host),
-								 [this, connection_id](client_connection* pointer) mutable {
-										 boost::checked_delete(pointer);
-										 std::unique_lock<std::shared_mutex> l(active_users_mtx);
-										 active_users.get<1>().erase(connection_id);
-								  }
-							);
-						},
-						[this](auto connection_id, client_connection_ptr client) mutable -> boost::asio::awaitable<void>{
-							LOG_DBG <<  "run_accept_loop:run handle_accepted_client; this=" << this;
-							return handle_accepted_client(connection_id, client);
-						}
-					),
-					boost::asio::experimental::use_promise
-				)
+				boost::asio::co_spawn(a.get_executor(), a.run_accept_loop(concurrent_accepter), boost::asio::experimental::use_promise)
 			);
 		}
 
@@ -166,7 +146,7 @@ namespace cmall
 			{
 				for (int io_index = 0; io_index < m_io_context_pool.pool_size(); io_index++)
 				{
-					m_ws_acceptors.emplace_back(m_io_context_pool.get_io_context(io_index));
+					m_ws_acceptors.emplace_back(m_io_context_pool.get_io_context(io_index), *this);
 					m_ws_acceptors.back().listen(wsd, ec);
 					if (ec)
 					{
@@ -188,13 +168,14 @@ namespace cmall
 		co_return true;
 	}
 
-	boost::asio::awaitable<void> cmall_service::handle_accepted_client(
-		size_t connection_id, client_connection_ptr client_ptr)
+	boost::asio::awaitable<void> cmall_service::handle_accepted_client(client_connection_ptr client_ptr)
 	{
 		using string_body = boost::beast::http::string_body;
 		using fields	  = boost::beast::http::fields;
 		using request	  = boost::beast::http::request<string_body>;
 		using response	  = boost::beast::http::response<string_body>;
+
+		const size_t connection_id = client_ptr->connection_id_;
 
 		bool keep_alive = false;
 
@@ -408,7 +389,7 @@ namespace cmall
 				if (jv.as_object().contains("id"))
 					reply_message["id"]		 = jv.at("id");
 				reply_message["error"]	 = { { "code", -32600 }, { "message", "Invalid Request" } };
-				websocket_write(connection_ptr, jsutil::json_to_string(reply_message));
+				co_await websocket_write(*connection_ptr, jsutil::json_to_string(reply_message));
 				continue;
 			}
 
@@ -428,7 +409,7 @@ namespace cmall
 				// 未有 session 前， 先不并发处理 request，避免 客户端恶意并发 recover_session 把程序挂掉
 				replay_message = co_await handle_jsonrpc_call(connection_ptr, method, params);
 				replay_message.insert_or_assign("id", jv.at("id"));
-				websocket_write(connection_ptr, jsutil::json_to_string(replay_message));
+				co_await websocket_write(*connection_ptr, jsutil::json_to_string(replay_message));
 				continue;
 			}
 
@@ -456,7 +437,7 @@ namespace cmall
 					// 将 id 字段原原本本的还回去, 客户端就可以根据 返回的 id 找到原来发的请求
 					if (jv.as_object().contains("id"))
 						replay_message.insert_or_assign("id", jv.at("id"));
-					websocket_write(connection_ptr, jsutil::json_to_string(replay_message));
+					co_await websocket_write(*connection_ptr, jsutil::json_to_string(replay_message));
 				},
 				boost::asio::detached);
 		}
@@ -545,7 +526,7 @@ namespace cmall
 					else
 					{
 						std::unique_lock<std::shared_mutex> l(active_users_mtx);
-						active_users.push_back(connection_ptr);
+						active_users.push_back(connection_ptr.get());
 					}
 				}
 
@@ -728,7 +709,7 @@ namespace cmall
 						reply_message["result"] = { { "login", "success" }, { "usertype", "user" } };
 
 						std::unique_lock<std::shared_mutex> l(active_users_mtx);
-						active_users.push_back(connection_ptr);
+						active_users.push_back(connection_ptr.get());
 						break;
 					}
 				}
@@ -738,11 +719,13 @@ namespace cmall
 
 			case req_method::user_logout:
 			{
+				{
+					std::unique_lock<std::shared_mutex> l(active_users_mtx);
+					active_users.get<1>().erase(connection_ptr->connection_id_);
+				}
 				this_client.session_info->user_info = {};
 				co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info);
 				reply_message["result"] = { "status", "success" };
-				std::unique_lock<std::shared_mutex> l(active_users_mtx);
-				active_users.get<1>().erase(connection_ptr->connection_id_);
 			}
 			break;
 			case req_method::user_islogin:
@@ -1069,14 +1052,8 @@ namespace cmall
 
 		for (auto c : boost::make_iterator_range(active_users.get<2>().equal_range(uid_)))
 		{
-			auto client_ptr = c.lock();
-			if (client_ptr && (client_ptr->connection_id_ != exclude_connection_id))
-			{
-				websocket_write(client_ptr, msg);
-			}
+			co_await websocket_write(*c, msg);
 		}
-
-		co_return;
 	}
 
 	boost::asio::awaitable<void> cmall_service::do_ws_write(size_t connection_id, client_connection_ptr connection_ptr)
@@ -1128,13 +1105,26 @@ namespace cmall
 		LOG_DBG << "cmall_service::close_all_ws() success!";
 	}
 
-	void cmall_service::websocket_write(client_connection_ptr connection_ptr, std::string message)
+	boost::asio::awaitable<void> cmall_service::websocket_write(client_connection& connection_, std::string message)
 	{
-		if (connection_ptr->ws_client)
+		if (connection_.ws_client)
 		{
-			boost::asio::co_spawn(connection_ptr->tcp_stream.get_executor(),
-				[connection_ptr, message]() mutable -> boost::asio::awaitable<void>
-				{ connection_ptr->ws_client->message_channel.try_send(boost::system::error_code(), message); co_return; }, boost::asio::detached);
+			co_await boost::asio::co_spawn(connection_.get_executor(),
+				[&connection_, message]() mutable -> boost::asio::awaitable<void>
+				{ connection_.ws_client->message_channel.try_send(boost::system::error_code(), message); co_return; }, boost::asio::use_awaitable);
 		}
 	}
+
+	client_connection_ptr cmall_service::accept_new_connection(boost::beast::tcp_stream&& tcp_stream, std::int64_t connection_id, std::string remote_address)
+	{
+		return std::make_shared<client_connection>(std::move(tcp_stream), connection_id, remote_address);
+	}
+
+	boost::asio::awaitable<void> cmall_service::cleanup_connection(client_connection_ptr c)
+	{
+		std::unique_lock<std::shared_mutex> l(active_users_mtx);
+		active_users.get<1>().erase(c->connection_id_);
+		co_return;
+	}
+
 }

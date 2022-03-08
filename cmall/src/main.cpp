@@ -169,19 +169,6 @@ static boost::asio::awaitable<std::string> get_default_cache_dir()
 #include "utils/timedmap.hpp"
 boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 {
-
-{
-	//utility::timedmap<int, int> a(ios.get_io_context(), std::chrono::minutes(99));
-
-	//a.put(2, 3);
-
-}
-
-
-
-
-
-
 	std::vector<std::string> upstreams;
 	std::vector<std::string> ws_listens;
 	std::string wsorigin;
@@ -307,7 +294,6 @@ int main(int argc, char** argv)
 		ios.notify_fork(boost::asio::execution_context::fork_child);
 	});
 #endif
-	// FIXME, db 的 pool size 怎么设定? co_main 跑这个 run 跑起来才会执行.
 	ios.run();
 	return main_return;
 }
