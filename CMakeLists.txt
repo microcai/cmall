@@ -284,6 +284,8 @@ set(USE_BUNDLED_ZLIB OFF)
 
 add_subdirectory(third_party/libgit2 EXCLUDE_FROM_ALL)
 
+set_target_properties(git2 PROPERTIES FOLDER "third_party/")
+
 set(MDBX_BUILD_TOOLS OFF)
 set(MDBX_BUILD_SHARED_LIBRARY OFF)
 set(MDBX_TXN_CHECKOWNER OFF) # 受 coroutine 影响, coroutine 会转移协程到不同线程执行.
