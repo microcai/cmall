@@ -29,7 +29,7 @@ namespace httpd
 
 	constexpr bool has_so_reuseport()
 	{
-#ifdef __linux__
+#ifdef SO_REUSEPORT
 		return true;
 #else
 		return false;
