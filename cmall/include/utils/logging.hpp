@@ -10,6 +10,7 @@
 #include <clocale>
 #include <fstream>
 #include <list>
+#include <chrono>
 #include <memory>
 #include <string>
 #include <tuple>
