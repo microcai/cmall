@@ -15,19 +15,15 @@ void services::tag_invoke(const boost::json::value_from_tag&, boost::json::value
 		{ "name", p.product_title },
 		{ "price", p.product_price },
 		{ "description", p.product_description },
-		{ "pictures",  p.pics},
+		{ "pictures", p.pics },
 	};
 }
-
 
 inline namespace conversion
 {
 	using namespace boost::json;
 
-	void tag_invoke(const value_from_tag&, value& jv, const cpp_numeric& u)
-	{
-		jv = to_string(u);
-	}
+	void tag_invoke(const value_from_tag&, value& jv, const cpp_numeric& u) { jv = to_string(u); }
 
 	void tag_invoke(const value_from_tag&, value& jv, const cmall_user& u)
 	{
@@ -46,8 +42,8 @@ inline namespace conversion
 	{
 		jv = {
 			{ "address", r.address },
-			{ "telephone", r.telephone},
-			{ "name", r.name},
+			{ "telephone", r.telephone },
+			{ "name", r.name },
 			{ "is_default", r.as_default },
 			{ "province", r.province.null() ? "" : r.province.get() },
 			{ "city", r.city.null() ? "" : r.city.get() },
@@ -106,7 +102,7 @@ inline namespace conversion
 		if (!obj.contains("method") || !obj.at("method").is_string())
 			return {};
 
-		auto method	 = value_to<std::string>(obj.at("method"));
+		auto method = value_to<std::string>(obj.at("method"));
 
 		jsonrpc_request_t req{ .method = method, .id = {}, .params = {} };
 		if (obj.contains("id"))
@@ -114,7 +110,7 @@ inline namespace conversion
 			req.id = obj.at("id");
 		}
 
-		if (obj.contains("params") && obj.at("params").is_object() )
+		if (obj.contains("params") && obj.at("params").is_object())
 		{
 			req.params = obj.at("params").as_object();
 		}
