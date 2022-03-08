@@ -76,9 +76,15 @@ namespace services
 			LOG_DBG << "replace url(" << original_url << ")";
 			if (boost::regex_match(original_url, w, boost::regex(R"raw(((\/)|(\.\/)|(\.\.\/))?images\/(.*))raw")))
 			{
-				LOG_DBG << "replace url(" << original_url << ") as (" << ("/repos/" + std::to_string(merchant_id) + "/images/" + w[5].str());
+				LOG_DBG << fmt::format("replace_url (%s) as (%s)", original_url, (std::to_string(merchant_id) + "/images/" + w[5].str()));
 				// 只要找到了 ../images/... 这样的路径, 就替换为 /repos/
 				return "/repos/" + std::to_string(merchant_id) + "/images/" + w[5].str();
+			}
+			else if (boost::regex_match(original_url, w, boost::regex(R"raw(((\/)|(\.\/)|(\.\.\/))?css\/(.*))raw")))
+			{
+				LOG_DBG << fmt::format("replace_url (%s) as (%s)", original_url, (std::to_string(merchant_id) + "/css/" + w[5].str()));
+				// 只要找到了 ../images/... 这样的路径, 就替换为 /repos/
+				return "/repos/" + std::to_string(merchant_id) + "/css/" + w[5].str();
 			}
 			return original_url;
 		}
