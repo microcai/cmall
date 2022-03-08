@@ -37,4 +37,11 @@ namespace httpd::detail {
         { t.async_wait(boost::asio::use_awaitable) }; // 有 async_wait() 成员函数的就是 waitable 对象.
     };
 
+    template <typename T>
+    concept is_httpd_server = requires (T t)
+    {
+        { &T::accept_new_connection }; // 有 accept_new_connection 成员
+        { &T::handle_accepted_client }; // 有 handle_accepted_client 成员
+    };
+
 }

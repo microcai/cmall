@@ -47,6 +47,8 @@ typedef boost::asio::detail::socket_option::boolean<IPPROTO_IPV6, IPV6_V6ONLY> i
 template<typename AcceptedClientClass, typename ServiceClass, typename Execotor = boost::asio::any_io_executor>
 requires requires {
     detail::is_asio_io_object<ServiceClass>;
+    detail::is_httpd_server<ServiceClass>;
+    // 访问 element_type 表明, AcceptedClientClass 必须得是一个智能指针类型.
     detail::is_asio_io_object<typename AcceptedClientClass::element_type>;
 }
 class acceptor
