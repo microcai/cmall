@@ -818,6 +818,7 @@ namespace cmall
 				});
 				reply_message["result"] = true;
 				co_await send_notify_message(this_user.uid_, fmt::format("{\"topic\":\"cart_changed\", \"session_id\": \"%s\"}", this_client.session_info->session_id), this_client.connection_id_);
+				break;
 			}
 			break;
 			case req_method::cart_del: // 从购物车删除.
