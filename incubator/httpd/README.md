@@ -16,5 +16,5 @@ server 对象使用的时候, 应该根据 has_reuseport () 决定, 是为一个
 make_shared_connection 会传入 acceptor 的 executor 作为第一个参数. 因此如果 server 使用
 acceptor per io_context 模型, 则直接用这个传入的 executor 创建 client 对象. 以便 acceptor
 和旗下接受的 client 绑在同一个 io_context 上. _acceptor和client不在同一个
-io_context 上会略微影响 async_accept 的性能._ 如果 server 使用的只是一个 acceptor, 则可以使用 io_context_pool 里的 io_context 池选一个来创建 client
-对象.
+io_context 上会略微影响 async_accept 的性能._ 如果 server 使用的只是一个 acceptor, 则可以
+使用 io_context_pool 里的 io_context 池选一个来创建 client 对象.
