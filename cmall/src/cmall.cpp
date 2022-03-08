@@ -1,4 +1,4 @@
-﻿
+
 #include <boost/asio.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/experimental/promise.hpp>
@@ -1039,7 +1039,7 @@ namespace cmall
 
 				if (target.starts_with("/repos"))
 				{
-					boost::match_results<boost::string_view::const_iterator> w;
+					boost::match_results<std::string_view::const_iterator> w;
 					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/((images|css)/.+)")))
 					{
 						std::string merhcant = w[1].str();
@@ -1063,7 +1063,7 @@ namespace cmall
 				// 这个 /goods/${merchant}/${goods_id} 获取 富文本的商品描述.
 				if (target.starts_with("/goods"))
 				{
-					boost::match_results<boost::string_view::const_iterator> w;
+					boost::match_results<std::string_view::const_iterator> w;
 					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/goods/([^/]+)/([^/]+)")))
 					{
 						std::string merhcant = w[1].str();
