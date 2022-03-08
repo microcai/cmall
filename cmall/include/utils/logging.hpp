@@ -820,6 +820,10 @@ public:
 	{
 		return strcat_impl(v);
 	}
+	inline logger___& operator<<(char v)
+	{
+		return strcat_impl(v);
+	}
 	inline logger___& operator<<(short v)
 	{
 		return strcat_impl(v);
@@ -868,6 +872,10 @@ public:
 	{
 		return strcat_impl(v);
 	}
+	inline logger___& operator<<(const std::string_view& v)
+	{
+		return strcat_impl(v);
+	}
 	inline logger___& operator<<(const char* v)
 	{
 		return strcat_impl(v);
@@ -877,6 +885,48 @@ public:
 		if (!logging_flag())
 			return *this;
 		std::format_to(std::back_inserter(out_), "{:#010x}", (std::size_t)v);
+		return *this;
+	}
+	inline logger___& operator<<(const std::chrono::nanoseconds& v)
+	{
+		if (!logging_flag())
+			return *this;
+		std::format_to(std::back_inserter(out_), "{}ns", v.count());
+		return *this;
+	}
+	inline logger___& operator<<(const std::chrono::microseconds& v)
+	{
+		if (!logging_flag())
+			return *this;
+		std::format_to(std::back_inserter(out_), "{}us", v.count());
+		return *this;
+	}
+	inline logger___& operator<<(const std::chrono::milliseconds& v)
+	{
+		if (!logging_flag())
+			return *this;
+		std::format_to(std::back_inserter(out_), "{}ms", v.count());
+		return *this;
+	}
+	inline logger___& operator<<(const std::chrono::seconds& v)
+	{
+		if (!logging_flag())
+			return *this;
+		std::format_to(std::back_inserter(out_), "{}s", v.count());
+		return *this;
+	}
+	inline logger___& operator<<(const std::chrono::minutes& v)
+	{
+		if (!logging_flag())
+			return *this;
+		std::format_to(std::back_inserter(out_), "{}min", v.count());
+		return *this;
+	}
+	inline logger___& operator<<(const std::chrono::hours& v)
+	{
+		if (!logging_flag())
+			return *this;
+		std::format_to(std::back_inserter(out_), "{}h", v.count());
 		return *this;
 	}
 	inline logger___& operator<<(const boost::posix_time::ptime& p) noexcept
