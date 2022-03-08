@@ -204,7 +204,7 @@ namespace cmall {
 	private:
 		boost::asio::awaitable<bool> init_ws_acceptors();
 
-		boost::asio::awaitable<void> handle_accepted_client(client_connection_ptr);
+		boost::asio::awaitable<void> handle_new_connection(client_connection_ptr);
 
 		boost::asio::awaitable<int> render_git_repo_files(size_t connection_id, std::string merchant, std::string path_in_repo, boost::beast::tcp_stream& client, boost::beast::http::request<boost::beast::http::string_body>);
 		boost::asio::awaitable<int> render_goods_detail_content(size_t connection_id, std::string merchant, std::string goods_id, boost::beast::tcp_stream& client, int httpver, bool keepalive);
@@ -226,8 +226,8 @@ namespace cmall {
 		// round robing for acceptor.
 		auto& get_executor(){ return m_io_context_pool.get_io_context(); }
 
-		client_connection_ptr accept_new_connection(boost::beast::tcp_stream&& tcp_stream, std::int64_t connection_id, std::string remote_address);
-		boost::asio::awaitable<void> cleanup_connection(client_connection_ptr);
+		client_connection_ptr allocate_connection(boost::beast::tcp_stream&& tcp_stream, std::int64_t connection_id, std::string remote_address);
+		boost::asio::awaitable<void> deallocate_connection(client_connection_ptr);
 
 	private:
 		io_context_pool& m_io_context_pool;

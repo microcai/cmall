@@ -40,8 +40,8 @@ namespace httpd::detail {
     template <typename T>
     concept is_httpd_server = requires (T t)
     {
-        { &T::accept_new_connection }; // 有 accept_new_connection 成员
-        { &T::handle_accepted_client }; // 有 handle_accepted_client 成员
+        { &T::allocate_connection }; // 有 allocate_connection 成员
+        { &T::handle_new_connection }; // 有 handle_new_connection 成员
     };
 
 }

@@ -288,16 +288,16 @@ private:
 				}
 			}
 
-			auto client_ptr = executor_.accept_new_connection(std::move(stream), connection_id, remote_host);
+			auto client_ptr = executor_.allocate_connection(std::move(stream), connection_id, remote_host);
 
 			all_client.insert({connection_id, client_ptr});
 
 			boost::asio::co_spawn(client_ptr->get_executor(),
-                executor_.handle_accepted_client(client_ptr),
+                executor_.handle_new_connection(client_ptr),
 				[this, connection_id, client_ptr](std::exception_ptr)
 				{
 					all_client.erase(connection_id);
-                    boost::asio::co_spawn(get_executor(), executor_.cleanup_connection(client_ptr), boost::asio::detached);
+                    boost::asio::co_spawn(get_executor(), executor_.deallocate_connection(client_ptr), boost::asio::detached);
 				});
 		}
     }

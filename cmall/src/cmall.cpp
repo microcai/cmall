@@ -168,7 +168,7 @@ namespace cmall
 		co_return true;
 	}
 
-	boost::asio::awaitable<void> cmall_service::handle_accepted_client(client_connection_ptr client_ptr)
+	boost::asio::awaitable<void> cmall_service::handle_new_connection(client_connection_ptr client_ptr)
 	{
 		using string_body = boost::beast::http::string_body;
 		using fields	  = boost::beast::http::fields;
@@ -1112,12 +1112,12 @@ namespace cmall
 		}
 	}
 
-	client_connection_ptr cmall_service::accept_new_connection(boost::beast::tcp_stream&& tcp_stream, std::int64_t connection_id, std::string remote_address)
+	client_connection_ptr cmall_service::allocate_connection(boost::beast::tcp_stream&& tcp_stream, std::int64_t connection_id, std::string remote_address)
 	{
 		return std::make_shared<client_connection>(std::move(tcp_stream), connection_id, remote_address);
 	}
 
-	boost::asio::awaitable<void> cmall_service::cleanup_connection(client_connection_ptr c)
+	boost::asio::awaitable<void> cmall_service::deallocate_connection(client_connection_ptr c)
 	{
 		std::unique_lock<std::shared_mutex> l(active_users_mtx);
 		active_users.get<1>().erase(c->connection_id_);
