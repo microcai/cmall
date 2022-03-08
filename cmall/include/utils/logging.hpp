@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (C) 2019 Jack.
 //
 // Author: jack
@@ -16,6 +16,7 @@
 #include <tuple>
 #include <version>
 #include <thread>
+#include <mutex>
 #include <functional>
 #include <filesystem>
 #include <system_error>
@@ -58,7 +59,17 @@
 
 #if defined(__has_include)
 #if __has_include(<format>)
+
+#ifndef _MSC_VER
 #include <format>
+#else
+
+// 微软的 STL 只有 足够的新才能 include fmt 不然会报错
+#if __cplusplus > 202203L
+#include <format>
+#endif
+
+#endif
 #endif
 #endif
 
