@@ -865,12 +865,17 @@ namespace cmall
 
 	boost::asio::awaitable<void> cmall_service::send_notify_message(std::uint64_t uid_, const std::string& msg, std::int64_t exclude_connection_id)
 	{
-		std::shared_lock<std::shared_mutex> l(active_users_mtx);
-
-		for (auto c : boost::make_iterator_range(active_users.get<2>().equal_range(uid_)))
+		std::vector<client_connection_ptr> active_user_connections;
 		{
-			co_await websocket_write(*c, msg);
+			std::shared_lock<std::shared_mutex> l(active_users_mtx);
+			for (auto c : boost::make_iterator_range(active_users.get<2>().equal_range(uid_)))
+			{
+				active_user_connections.push_back(c);
+			}
 		}
+		for (auto c : active_user_connections)
+			co_await websocket_write(*c, msg);
+
 	}
 
 	boost::asio::awaitable<void> cmall_service::do_ws_write(size_t connection_id, client_connection_ptr connection_ptr)
