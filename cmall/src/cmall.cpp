@@ -526,7 +526,7 @@ namespace cmall
 					else
 					{
 						std::unique_lock<std::shared_mutex> l(active_users_mtx);
-						active_users.push_back(connection_ptr.get());
+						active_users.push_back(connection_ptr);
 					}
 				}
 
@@ -709,7 +709,7 @@ namespace cmall
 						reply_message["result"] = { { "login", "success" }, { "usertype", "user" } };
 
 						std::unique_lock<std::shared_mutex> l(active_users_mtx);
-						active_users.push_back(connection_ptr.get());
+						active_users.push_back(connection_ptr);
 						break;
 					}
 				}

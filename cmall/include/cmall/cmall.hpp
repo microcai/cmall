@@ -111,26 +111,26 @@ namespace cmall {
 	using client_connection_ptr = std::shared_ptr<client_connection>;
 	using client_connection_weakptr = std::weak_ptr<client_connection>;
 
-	inline int64_t client_connection_get_id(client_connection* p)
+	inline int64_t client_connection_get_id(client_connection_ptr p)
 	{
 		return p->connection_id_;
 	}
 
-	inline uint64_t client_connection_get_user_id(client_connection* p)
+	inline uint64_t client_connection_get_user_id(client_connection_ptr p)
 	{
 		return p->session_info->user_info->uid_;
 	}
 
 	// 这个多索引map 用来快速找到同一个用户的 session
 	typedef boost::multi_index_container<
-		client_connection*,
+		client_connection_ptr,
 		boost::multi_index::indexed_by<
 			boost::multi_index::sequenced<>,
 			boost::multi_index::hashed_unique<
-				boost::multi_index::global_fun<client_connection*, int64_t, &client_connection_get_id>
+				boost::multi_index::global_fun<client_connection_ptr, int64_t, &client_connection_get_id>
 			>,
 			boost::multi_index::hashed_non_unique<
-				boost::multi_index::global_fun<client_connection*, uint64_t, &client_connection_get_user_id>
+				boost::multi_index::global_fun<client_connection_ptr, uint64_t, &client_connection_get_user_id>
 			>
 		>
 	> active_session_map;
