@@ -791,7 +791,7 @@ namespace cmall
 				co_await m_database.async_add(item);
 				reply_message["result"] = true;
 
-				co_await send_notify_message(this_user.uid_, fmt::format("{{\"topic\":\"cart_changed\", \"session_id\": \"%s\"}}", this_client.session_info->session_id), this_client.connection_id_);
+				co_await send_notify_message(this_user.uid_, fmt::format(R"---({{"topic":"cart_changed", "session_id": "{}"}})---", this_client.session_info->session_id), this_client.connection_id_);
 			}
 			break;
 			case req_method::cart_mod: // 修改数量.
@@ -817,8 +817,7 @@ namespace cmall
 					return old;
 				});
 				reply_message["result"] = true;
-				co_await send_notify_message(this_user.uid_, fmt::format("{{\"topic\":\"cart_changed\", \"session_id\": \"%s\"}}", this_client.session_info->session_id), this_client.connection_id_);
-				break;
+				co_await send_notify_message(this_user.uid_, fmt::format(R"---({{"topic":"cart_changed", "session_id": "{}"}})---", this_client.session_info->session_id), this_client.connection_id_);
 			}
 			break;
 			case req_method::cart_del: // 从购物车删除.
@@ -840,7 +839,7 @@ namespace cmall
 
 				co_await m_database.async_hard_remove<cmall_cart>(item_id);
 				reply_message["result"] = true;
-				co_await send_notify_message(this_user.uid_, fmt::format("{{\"topic\":\"cart_changed\", \"session_id\": \"%s\"}}", this_client.session_info->session_id), this_client.connection_id_);
+				co_await send_notify_message(this_user.uid_, fmt::format(R"---({{"topic":"cart_changed", "session_id": "{}"}})---", this_client.session_info->session_id), this_client.connection_id_);
 			}
 			break;
 			case req_method::cart_list: // 查看购物车列表.
