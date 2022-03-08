@@ -166,15 +166,10 @@ static boost::asio::awaitable<std::string> get_default_cache_dir()
 	co_return ".";
 }
 
-#include "utils/timedmap.hpp"
 boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 {
-	std::vector<std::string> upstreams;
 	std::vector<std::string> ws_listens;
-	std::string wsorigin;
 	std::string session_cache;
-
-	int chain_id;
 
 	std::string db_name;
 	std::string db_host;
@@ -187,13 +182,9 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 		("help,h", "Help message.")
 		("version", "Current version.")
 
-		("chain_id", po::value<int>(&chain_id)->default_value(1001011), "Chain type, default 1001011 (chs), eth chain_id is 1")
-
-		("upstream", po::value<std::vector<std::string>>(&upstreams)->multitoken(), "Upstreams.")
-		("wsorigin", po::value<std::string>(&wsorigin)->default_value(""), "Websocket allowed origin.")
-		("ws", po::value<std::vector<std::string>>(&ws_listens)->multitoken(), "For websocket server listen.")
 		("session_cache", po::value<std::string>(&session_cache)->default_value(co_await get_default_cache_dir()), "the dir for session cache")
 
+		("ws", po::value<std::vector<std::string>>(&ws_listens)->multitoken(), "For websocket server listen.")
 		("db_name", po::value<std::string>(&db_name)->default_value("cmall"), "Database name.")
 		("db_host", po::value<std::string>(&db_host)->default_value(""), "Database host.")
 		("db_port", po::value<unsigned short>(&db_port)->default_value(5432), "Database port.")
@@ -242,9 +233,7 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 	dbcfg.port_ = db_port;
 
 	cfg.dbcfg_ = dbcfg;
-	cfg.upstreams_ = upstreams;
 	cfg.ws_listens_ = ws_listens;
-	cfg.wsorigin_ = wsorigin;
 	cfg.session_cache_file = session_cache;
 
 	cmall::cmall_service xsrv(ios, cfg);

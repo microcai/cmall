@@ -37,10 +37,7 @@ namespace cmall {
 
 	struct server_config
 	{
-		std::vector<std::string> upstreams_;
 		std::vector<std::string> ws_listens_;
-		std::string wsorigin_;
-		std::string socks5proxy_;
 
 		cmall::db_config dbcfg_;
 
