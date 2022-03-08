@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+﻿cmake_minimum_required(VERSION 3.8)
 cmake_policy(SET CMP0091 NEW) # for CMAKE_MSVC_RUNTIME_LIBRARY
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 project(cmall)
@@ -100,7 +100,7 @@ if (MSVC)
 		-DBOOST_USE_WINAPI_VERSION=0x0601
 	)
 
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj /MP")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj /MP /Zc:__cplusplus")
 	MESSAGE(STATUS "Using parallel compiling (/MP)")
 	set(CMAKE_CXX_STACK_SIZE "100000000") #set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:100000000")
 	MESSAGE(STATUS "Set stack size: 100000000")
