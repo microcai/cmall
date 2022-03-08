@@ -12,9 +12,9 @@ boost::asio::awaitable<int> cmall::http_handle_static_file(size_t connection_id,
 	unz_global_info64 unzip_global_info64;
 	std::time_t if_modified_since;
 	bool have_if_modified_since = http::parse_gmt_time_fmt(
-		req[boost::beast::http::field::if_modified_since].to_string().c_str(), &if_modified_since);
+		req[boost::beast::http::field::if_modified_since], &if_modified_since);
 
-	boost::string_view accept_encoding = req[boost::beast::http::field::accept_encoding];
+	std::string_view accept_encoding = req[boost::beast::http::field::accept_encoding];
 	bool accept_deflate				   = false;
 
 	if (accept_encoding.find("deflate") != boost::string_view::npos)
@@ -23,7 +23,7 @@ boost::asio::awaitable<int> cmall::http_handle_static_file(size_t connection_id,
 	if (unzGetGlobalInfo64(zip_file, &unzip_global_info64) != UNZ_OK)
 		co_return 502;
 
-	boost::string_view path_ = req.target();
+	std::string_view path_ = req.target();
 
 	if (path_ == "/")
 		path_ = "index.html";

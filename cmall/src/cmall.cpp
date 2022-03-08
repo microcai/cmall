@@ -980,9 +980,9 @@ namespace cmall
 			request req;
 
 			co_await boost::beast::http::async_read(client_ptr->tcp_stream, buffer, req, boost::asio::use_awaitable);
-			boost::string_view target = req.target();
+			std::string_view target = req.target();
 
-			LOG_DBG << "coro: handle_accepted_client: [" << connection_id << "], got request on " << target.to_string();
+			LOG_DBG << "coro: handle_accepted_client: [" << connection_id << "], got request on " << target;
 
 			if (target.empty() || target[0] != '/' || target.find("..") != boost::beast::string_view::npos)
 			{

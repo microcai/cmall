@@ -166,6 +166,7 @@ if (IOUring_FOUND AND ENABLE_IOURING)
 	add_definitions(-DBOOST_ASIO_HAS_IO_URING -DBOOST_ASIO_DISABLE_EPOLL)
 	link_libraries(${IOUring_LIBRARIES})
 endif()
+add_definitions(-DBOOST_BEAST_USE_STD_STRING_VIEW)
 add_subdirectory(third_party/boost EXCLUDE_FROM_ALL)
 
 if (ENABLE_TCMALLOC_STATIC)

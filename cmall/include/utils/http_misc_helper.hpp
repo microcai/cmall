@@ -277,8 +277,9 @@ namespace http{
 
 	}
 
-	inline static bool parse_gmt_time_fmt(const char* date, time_t* output)
+	inline static bool parse_gmt_time_fmt(std::string_view date_str, time_t* output)
 	{
+		const char* date = date_str.data();
 		time_t t = 0;
 		// day of the week number, 0-6 (mon-sun)
 		int wdaynum = -1;
