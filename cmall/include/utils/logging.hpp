@@ -57,21 +57,11 @@
 #	endif
 #endif
 
-#if defined(__has_include)
-#if __has_include(<format>)
-
-#ifndef _MSC_VER
-#include <format>
-#else
-
 // 微软的 STL 只有 足够的新才能 include fmt 不然会报错
-#if __cplusplus > 202203L
+#ifdef __cpp_lib_format
 #include <format>
 #endif
 
-#endif
-#endif
-#endif
 
 #if !defined(__cpp_lib_format)
 #ifdef _MSC_VER
