@@ -781,15 +781,20 @@ namespace cmall
 				using query_t = odb::query<cmall_cart>;
 				auto query(query_t::uid == this_user.uid_ && query_t::merchant_id == merchant_id && query_t::goods_id == goods_id);
 				if (co_await m_database.async_load<cmall_cart>(query, item))
-					throw boost::system::system_error(cmall::error::already_in_cart);
+				{
+					item.count_ += 1;
+					co_await m_database.async_update(item);
+				}
+				else
+				{
+					item.uid_		  = this_user.uid_;
+					item.merchant_id_ = merchant_id;
+					item.goods_id_	  = goods_id;
+					item.count_		  = 1;
 
-				item.uid_ = this_user.uid_;
-				item.merchant_id_ = merchant_id;
-				item.goods_id_ = goods_id;
-				item.count_ = 1;
-
-				co_await m_database.async_add(item);
-				reply_message["result"] = true;
+					co_await m_database.async_add(item);
+					reply_message["result"] = true;
+				}
 
 				co_await send_notify_message(this_user.uid_, fmt::format(R"---({{"topic":"cart_changed", "session_id": "{}"}})---", this_client.session_info->session_id), this_client.connection_id_);
 			}
