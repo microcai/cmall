@@ -121,17 +121,9 @@ namespace cmall
 
 		constexpr int concurrent_accepter = 20;
 
-		std::vector<boost::asio::experimental::promise<void(std::exception_ptr)>> ws_runners;
-
-		for (auto & a : m_ws_acceptors)
-		{
-			ws_runners.emplace_back(
-				boost::asio::co_spawn(a.get_executor(), a.run_accept_loop(concurrent_accepter), boost::asio::experimental::use_promise)
-			);
-		}
-
-		for (auto&& ws_runner : ws_runners)
-			co_await ws_runner.async_wait(boost::asio::use_awaitable);
+		co_await httpd::detail::map(m_ws_acceptors, [concurrent_accepter](auto && a)mutable -> boost::asio::awaitable<void>{
+			return a.run_accept_loop(concurrent_accepter);
+		});
 	}
 
 	boost::asio::awaitable<bool> cmall_service::init_ws_acceptors()
