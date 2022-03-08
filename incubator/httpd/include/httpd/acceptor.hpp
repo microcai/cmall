@@ -56,32 +56,6 @@ namespace httpd
 	}
 	class acceptor
 	{
-		template <typename CompletionHandler>
-		struct handler_context : boost::noncopyable
-		{
-			CompletionHandler handler;
-
-			int num_of_invoke;
-
-			void complete(boost::system::error_code ec)
-			{
-				if (0 == (--num_of_invoke))
-				{
-					auto executor = boost::asio::get_associated_executor(handler);
-					boost::asio::post(executor, [ec, handler = std::move(this->handler)]() mutable { handler(ec); });
-#ifdef HTTPD_ENABLE_LOGGING
-					LOG_DBG << "delegated_operators complete called";
-#endif
-				}
-			}
-
-			handler_context(CompletionHandler&& handler, int num_of_invoke)
-				: handler(std::move(handler))
-				, num_of_invoke(num_of_invoke)
-			{
-			}
-		};
-
 		ServiceClass& executor_;
 		boost::asio::ip::tcp::acceptor accept_socket_;
 		std::unordered_map<std::size_t, AcceptedClientClass> all_client;
