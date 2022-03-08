@@ -237,11 +237,8 @@ namespace httpd
 
 				boost::system::error_code error;
 
-#ifdef SO_REUSEPORT
 				auto client_ptr = executor_.make_shared_connection(get_executor(), connection_id);
-#else
-				auto client_ptr = executor_.make_shared_connection(executor_.get_executor(), connection_id);
-#endif
+
 				co_await accept_socket_.async_accept(
 					client_ptr->socket(), boost::asio::redirect_error(boost::asio::use_awaitable, error));
 

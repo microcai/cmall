@@ -952,7 +952,10 @@ namespace cmall
 
 	client_connection_ptr cmall_service::make_shared_connection(const boost::asio::any_io_executor& io, std::int64_t connection_id)
 	{
-		return std::make_shared<client_connection>(io, connection_id);
+		if constexpr (httpd::has_so_reuseport())
+			return std::make_shared<client_connection>(io, connection_id);
+		else
+			return std::make_shared<client_connection>(m_io_context_pool.get_io_context(), connection_id);
 	}
 
 	boost::asio::awaitable<void> cmall_service::client_connected(client_connection_ptr client_ptr)
