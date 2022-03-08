@@ -3,7 +3,7 @@
 #include "bundle_file.hpp"
 #include "cmall/internal.hpp"
 
-#include "utils/http_misc_helper.hpp"
+#include "httpd/http_misc_helper.hpp"
 
 boost::asio::awaitable<int> cmall::http_handle_static_file(size_t connection_id, boost::beast::http::request<boost::beast::http::string_body>& req, boost::beast::tcp_stream& client)
 {
@@ -11,7 +11,7 @@ boost::asio::awaitable<int> cmall::http_handle_static_file(size_t connection_id,
 	std::shared_ptr<void> auto_cleanup((void*)zip_file, unzClose);
 	unz_global_info64 unzip_global_info64;
 	std::time_t if_modified_since;
-	bool have_if_modified_since = http::parse_gmt_time_fmt(
+	bool have_if_modified_since = httpd::parse_gmt_time_fmt(
 		req[boost::beast::http::field::if_modified_since], &if_modified_since);
 
 	std::string_view accept_encoding = req[boost::beast::http::field::accept_encoding];
@@ -44,7 +44,7 @@ boost::asio::awaitable<int> cmall::http_handle_static_file(size_t connection_id,
 
 	unzGetCurrentFileInfo64(zip_file, &target_file_info, NULL, 0, NULL, 0, NULL, 0);
 
-	std::time_t target_file_modifined_time = http::dos2unixtime(target_file_info.dosDate);
+	std::time_t target_file_modifined_time = httpd::dos2unixtime(target_file_info.dosDate);
 
 	using fields = boost::beast::http::fields;
 
@@ -52,9 +52,9 @@ boost::asio::awaitable<int> cmall::http_handle_static_file(size_t connection_id,
 
 	response res{ boost::beast::http::status::ok, req.version() };
 	res.set(boost::beast::http::field::server, HTTPD_VERSION_STRING);
-	res.set(boost::beast::http::field::expires, http::make_http_last_modified(std::time(0) + 60));
-	res.set(boost::beast::http::field::last_modified, http::make_http_last_modified(target_file_modifined_time));
-	res.set(boost::beast::http::field::content_type, http::mime_map[boost::filesystem::path(path).extension().string()]);
+	res.set(boost::beast::http::field::expires, httpd::make_http_last_modified(std::time(0) + 60));
+	res.set(boost::beast::http::field::last_modified, httpd::make_http_last_modified(target_file_modifined_time));
+	res.set(boost::beast::http::field::content_type, httpd::get_mime_type_from_extension(boost::filesystem::path(path).extension().string()));
 	res.keep_alive(req.keep_alive());
 
 	if (have_if_modified_since && (target_file_modifined_time <= if_modified_since))
@@ -62,7 +62,7 @@ boost::asio::awaitable<int> cmall::http_handle_static_file(size_t connection_id,
 		// 返回 304
 		res.result(boost::beast::http::status::not_modified);
 
-		res.set(boost::beast::http::field::expires, http::make_http_last_modified(std::time(0) + 60));
+		res.set(boost::beast::http::field::expires, httpd::make_http_last_modified(std::time(0) + 60));
 		boost::beast::http::response_serializer<boost::beast::http::buffer_body, fields> sr{ res };
 		res.body().data = nullptr;
 		res.body().more = false;

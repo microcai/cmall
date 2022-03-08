@@ -1,25 +1,20 @@
 
-#pragma once
-
-#include <map>
+#include <string_view>
 #include <string>
 #include <map>
-#include <ctime>
-#include <cstring>
-#include <cctype>
 
-namespace http{
+#include "httpd/http_misc_helper.hpp"
+
+namespace httpd {
 
 #ifdef _MSC_VER
-
 	template<typename T>
 	auto strcasecmp(T a, T b) {
 		return lstrcmpiA(a, b);
 	}
-
 #endif
 
-	static std::map<std::string, std::string> mime_map = {
+	static std::map<std::string_view, std::string> mime_map = {
 		{ ".html", "text/html; charset=utf-8" },
 		{ ".js", "application/javascript" },
 		{ ".css", "text/css" },
@@ -28,10 +23,17 @@ namespace http{
 		{ ".svg", "image/svg+xml" },
 		{ ".md", "text/markdown" },
 		{ ".jpg", "image/jpeg" },
-		{ ".jpeg", "image/jpeg" }		
+		{ ".jpeg", "image/jpeg" }
 	};
 
-	inline static time_t dos2unixtime(unsigned long dostime)
+    std::string get_mime_type_from_extension(std::string_view extension)
+    {
+        if (mime_map.contains(extension))
+            return mime_map.at(extension);
+        return std::string{};
+    }
+
+	time_t dos2unixtime(unsigned long dostime)
 	{
 		struct tm ltime = { };
 
@@ -48,7 +50,7 @@ namespace http{
 		return std::mktime(&ltime);
 	}
 
-	inline static std::string make_http_last_modified(std::time_t t)
+	std::string make_http_last_modified(std::time_t t)
 	{
 		tm* gmt = gmtime((const time_t*)&t);
 		char time_buf[512] = { 0 };
@@ -277,7 +279,7 @@ namespace http{
 
 	}
 
-	inline static bool parse_gmt_time_fmt(std::string_view date_str, time_t* output)
+	bool parse_gmt_time_fmt(std::string_view date_str, time_t* output)
 	{
 		const char* date = date_str.data();
 		time_t t = 0;
@@ -483,6 +485,4 @@ namespace http{
 
 		return true;
 	}
-
-
 }

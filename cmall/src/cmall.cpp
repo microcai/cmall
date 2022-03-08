@@ -29,7 +29,6 @@
 #include "utils/async_connect.hpp"
 #include "utils/scoped_exit.hpp"
 #include "utils/url_parser.hpp"
-#include "utils/http_misc_helper.hpp"
 
 #include "cmall/cmall.hpp"
 #include "cmall/database.hpp"
@@ -57,6 +56,7 @@
 #include "cmall/conversion.hpp"
 
 #include "httpd/httpd.hpp"
+#include "httpd/http_misc_helper.hpp"
 
 namespace cmall
 {
@@ -175,8 +175,8 @@ namespace cmall
 			co_return 404;
 		}
 
-		ec = co_await httpd::send_string_response_body(client, res_body, http::make_http_last_modified(std::time(0) + 60),
-					http::mime_map[boost::filesystem::path(path_in_repo).extension().string()], req.version(), req.keep_alive());
+		ec = co_await httpd::send_string_response_body(client, res_body, httpd::make_http_last_modified(std::time(0) + 60),
+					httpd::get_mime_type_from_extension(boost::filesystem::path(path_in_repo).extension().string()), req.version(), req.keep_alive());
 		if (ec)
 			throw boost::system::system_error(ec);
 		co_return 200;
@@ -191,7 +191,7 @@ namespace cmall
 		{
 			std::string product_detail = co_await merchant_repos[merchant_id]->get_product_detail(goods_id);
 
-			auto ec = co_await httpd::send_string_response_body(client, product_detail, http::make_http_last_modified(std::time(0) + 60),
+			auto ec = co_await httpd::send_string_response_body(client, product_detail, httpd::make_http_last_modified(std::time(0) + 60),
 						"text/markdown; charset=utf-8", http_ver, keepalive);
 			if (ec)
 				throw boost::system::system_error(ec);
