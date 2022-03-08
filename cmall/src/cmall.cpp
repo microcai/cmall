@@ -775,13 +775,13 @@ namespace cmall
 				auto merchant_id = jsutil::json_accessor(params).get("merchant_id", -1).as_int64();
 				auto goods_id = jsutil::json_accessor(params).get_string("goods_id");
 				if (merchant_id < 0 || goods_id.empty())
-					throw boost::system::error_code(cmall::error::invalid_params);
+					throw boost::system::system_error(cmall::error::invalid_params);
 
 				cmall_cart item;
 				using query_t = odb::query<cmall_cart>;
 				auto query(query_t::uid == this_user.uid_ && query_t::merchant_id == merchant_id && query_t::goods_id == goods_id);
 				if (co_await m_database.async_load<cmall_cart>(query, item))
-					throw boost::system::error_code(cmall::error::already_in_cart);
+					throw boost::system::system_error(cmall::error::already_in_cart);
 
 				item.uid_ = this_user.uid_;
 				item.merchant_id_ = merchant_id;
@@ -799,17 +799,17 @@ namespace cmall
 				auto item_id = jsutil::json_accessor(params).get("item_id", -1).as_int64();
 				auto count = jsutil::json_accessor(params).get("count", 0).as_int64();
 				if (item_id < 0 || count <= 0)
-					throw boost::system::error_code(cmall::error::invalid_params);
+					throw boost::system::system_error(cmall::error::invalid_params);
 
 				cmall_cart item;
 				bool ok = co_await m_database.async_load(item_id, item);
 				if (!ok)
 				{
-					throw boost::system::error_code(cmall::error::cart_goods_not_found);
+					throw boost::system::system_error(cmall::error::cart_goods_not_found);
 				}
 				if (item.uid_ != this_user.uid_)
 				{
-					throw boost::system::error_code(cmall::error::invalid_params);
+					throw boost::system::system_error(cmall::error::invalid_params);
 				}
 
 				co_await m_database.async_update<cmall_cart>(item_id, [count](cmall_cart&& old) mutable {
@@ -824,17 +824,17 @@ namespace cmall
 			{
 				auto item_id = jsutil::json_accessor(params).get("item_id", -1).as_int64();
 				if (item_id < 0)
-					throw boost::system::error_code(cmall::error::invalid_params);
+					throw boost::system::system_error(cmall::error::invalid_params);
 
 				cmall_cart item;
 				bool ok = co_await m_database.async_load(item_id, item);
 				if (!ok)
 				{
-					throw boost::system::error_code(cmall::error::cart_goods_not_found);
+					throw boost::system::system_error(cmall::error::cart_goods_not_found);
 				}
 				if (item.uid_ != this_user.uid_)
 				{
-					throw boost::system::error_code(cmall::error::invalid_params);
+					throw boost::system::system_error(cmall::error::invalid_params);
 				}
 
 				co_await m_database.async_hard_remove<cmall_cart>(item_id);
