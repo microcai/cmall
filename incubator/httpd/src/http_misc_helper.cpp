@@ -1,10 +1,13 @@
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include <string_view>
 #include <string>
 #include <map>
 
 #include "httpd/http_misc_helper.hpp"
-
 namespace httpd {
 
 #ifdef _MSC_VER
