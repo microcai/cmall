@@ -184,7 +184,6 @@ namespace httpd
 				{
 					boost::system::error_code ignore_ec;
 					accept_socket_.cancel(ignore_ec);
-					LOG_DBG << "accepting loop cancelling";
 				});
 
 			co_await boost::asio::co_spawn(
@@ -204,8 +203,9 @@ namespace httpd
 					co_await detail::wait_all(co_threads);
 				},
 				boost::asio::use_awaitable);
-
+#ifdef HTTPD_ENABLE_LOGGING
 			LOG_DBG << "accepting loop exited";
+#endif
 		}
 
 		boost::asio::awaitable<void> clean_shutdown()
@@ -218,13 +218,17 @@ namespace httpd
 
 			while (all_client.size())
 			{
+#ifdef HTTPD_ENABLE_LOGGING
 				LOG_DBG << "waiting for client to exit";
+#endif
 				using timer = boost::asio::basic_waitable_timer<time_clock::steady_clock>;
 				timer t(get_executor());
 				t.expires_from_now(std::chrono::milliseconds(20));
 				co_await t.async_wait(boost::asio::use_awaitable);
 			}
+#ifdef HTTPD_ENABLE_LOGGING
 			LOG_DBG << "clean_shutdown exit";
+#endif
 			co_return;
 		}
 
