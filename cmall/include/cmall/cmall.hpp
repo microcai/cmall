@@ -84,6 +84,11 @@ namespace cmall {
 			return tcp_stream.get_executor();
 		}
 
+		boost::asio::ip::tcp::socket& socket()
+		{
+			return tcp_stream.socket();
+		}
+
 		~client_connection()
 		{
 			boost::system::error_code ignore_ec;
@@ -99,10 +104,10 @@ namespace cmall {
 			boost::beast::close_socket(tcp_stream);
 		}
 
-		client_connection(boost::beast::tcp_stream&& ws, int64_t connection_id, const std::string& remote_host)
-			: tcp_stream(std::move(ws))
+		template<typename Executor>
+		client_connection(Executor&& io, int64_t connection_id)
+			: tcp_stream(std::forward<Executor>(io))
 			, connection_id_(connection_id)
-			, remote_host_(remote_host)
 		{
 		}
 
@@ -204,7 +209,10 @@ namespace cmall {
 	private:
 		boost::asio::awaitable<bool> init_ws_acceptors();
 
-		boost::asio::awaitable<void> handle_new_connection(client_connection_ptr);
+		// 这 3 个函数, 是 acceptor 需要的.
+		client_connection_ptr        make_shared_connection(const boost::asio::any_io_executor& io, std::int64_t connection_id);
+		boost::asio::awaitable<void> client_connected(client_connection_ptr);
+		boost::asio::awaitable<void> client_disconnected(client_connection_ptr);
 
 		boost::asio::awaitable<int> render_git_repo_files(size_t connection_id, std::string merchant, std::string path_in_repo, boost::beast::tcp_stream& client, boost::beast::http::request<boost::beast::http::string_body>);
 		boost::asio::awaitable<int> render_goods_detail_content(size_t connection_id, std::string merchant, std::string goods_id, boost::beast::tcp_stream& client, int httpver, bool keepalive);
@@ -225,9 +233,6 @@ namespace cmall {
 
 		// round robing for acceptor.
 		auto& get_executor(){ return m_io_context_pool.get_io_context(); }
-
-		client_connection_ptr allocate_connection(boost::beast::tcp_stream&& tcp_stream, std::int64_t connection_id, std::string remote_address);
-		boost::asio::awaitable<void> deallocate_connection(client_connection_ptr);
 
 	private:
 		io_context_pool& m_io_context_pool;

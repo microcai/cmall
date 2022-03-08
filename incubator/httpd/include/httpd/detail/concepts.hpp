@@ -40,8 +40,18 @@ namespace httpd::detail {
     template <typename T>
     concept is_httpd_server = requires (T t)
     {
-        { &T::allocate_connection }; // 有 allocate_connection 成员
-        { &T::handle_new_connection }; // 有 handle_new_connection 成员
+        is_asio_io_object<T>;
+        { &T::make_shared_connection }; // 有 make_shared_connection 成员
+        { &T::client_connected }; // 有 client_connected 成员
+        { &T::client_disconnected }; // 有 client_disconnected 成员
+    };
+
+    template <typename T>
+    concept is_httpd_client = requires (T t)
+    {
+        is_asio_io_object<T>;
+        { t.socket() } -> std::same_as<boost::asio::ip::tcp::socket&>;
+        { t.remote_hostname_ } -> std::convertible_to<std::string>;
     };
 
 }

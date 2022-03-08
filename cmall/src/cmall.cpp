@@ -168,160 +168,6 @@ namespace cmall
 		co_return true;
 	}
 
-	boost::asio::awaitable<void> cmall_service::handle_new_connection(client_connection_ptr client_ptr)
-	{
-		using string_body = boost::beast::http::string_body;
-		using fields	  = boost::beast::http::fields;
-		using request	  = boost::beast::http::request<string_body>;
-		using response	  = boost::beast::http::response<string_body>;
-
-		const size_t connection_id = client_ptr->connection_id_;
-
-		bool keep_alive = false;
-
-		auto http_simple_error_page
-			= [&client_ptr](auto body, auto status_code, unsigned version) mutable -> boost::asio::awaitable<void>
-		{
-			response res{ static_cast<boost::beast::http::status>(status_code), version };
-			res.set(boost::beast::http::field::server, HTTPD_VERSION_STRING);
-			res.set(boost::beast::http::field::content_type, "text/html");
-			res.keep_alive(false);
-			res.body() = body;
-			res.prepare_payload();
-
-			boost::beast::http::serializer<false, string_body, fields> sr{ res };
-			co_await boost::beast::http::async_write(client_ptr->tcp_stream, sr, boost::asio::use_awaitable);
-			client_ptr->tcp_stream.close();
-		};
-
-		LOG_DBG << "coro created: handle_accepted_client( " << connection_id << ")";
-
-		do
-		{
-			boost::beast::flat_buffer buffer;
-			request req;
-
-			co_await boost::beast::http::async_read(client_ptr->tcp_stream, buffer, req, boost::asio::use_awaitable);
-			boost::string_view target = req.target();
-
-			LOG_DBG << "coro: handle_accepted_client: [" << connection_id << "], got request on " << target.to_string();
-
-			if (target.empty() || target[0] != '/' || target.find("..") != boost::beast::string_view::npos)
-			{
-				co_await http_simple_error_page(
-					"Illegal request-target", boost::beast::http::status::bad_request, req.version());
-			}
-			// 处理 HTTP 请求.
-			else if (boost::beast::websocket::is_upgrade(req))
-			{
-				LOG_DBG << "ws client incoming: " << connection_id << ", remote: " << client_ptr->remote_host_;
-
-				if (!target.starts_with("/api"))
-				{
-					co_await http_simple_error_page(
-						"not allowed", boost::beast::http::status::forbidden, req.version());
-					break;
-				}
-
-				client_ptr->ws_client.emplace(client_ptr->tcp_stream);
-
-				client_ptr->ws_client->ws_stream_.set_option(boost::beast::websocket::stream_base::decorator(
-					[](auto& res) { res.set(boost::beast::http::field::server, HTTPD_VERSION_STRING); }));
-
-				co_await client_ptr->ws_client->ws_stream_.async_accept(req, boost::asio::use_awaitable);
-
-				// 获取executor.
-				auto executor = client_ptr->tcp_stream.get_executor();
-
-				// 接收到pong, 重置超时定时器.
-				client_ptr->ws_client->ws_stream_.control_callback(
-					[&tcp_stream = client_ptr->tcp_stream](
-						boost::beast::websocket::frame_type ft, boost::beast::string_view)
-					{
-						if (ft == boost::beast::websocket::frame_type::pong)
-							tcp_stream.expires_after(std::chrono::seconds(60));
-					});
-
-				using namespace boost::asio::experimental::awaitable_operators;
-
-				co_await(
-					// 启动读写协程.
-					do_ws_read(connection_id, client_ptr) && do_ws_write(connection_id, client_ptr));
-				LOG_DBG << "handle_accepted_client, " << connection_id << ", connection exit.";
-				co_return;
-			}
-			else
-			{
-				if (target.starts_with("/api"))
-				{
-					co_await http_simple_error_page(
-						"not allowed", boost::beast::http::status::forbidden, req.version());
-					continue;
-				}
-
-				if (target.starts_with("/repos"))
-				{
-					boost::match_results<boost::string_view::const_iterator> w;
-					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/((images|css)/.+)")))
-					{
-						std::string merhcant = w[1].str();
-						std::string remains = w[2].str();
-
-						int status_code = co_await render_git_repo_files(connection_id, merhcant, remains, client_ptr->tcp_stream, req);
-
-						if (status_code != 200)
-						{
-							co_await http_simple_error_page("ERRORED", status_code, req.version());
-						}
-					}
-					else
-					{
-						co_await http_simple_error_page("ERRORED", 403, req.version());
-					}
-					continue;
-
-				}
-
-				// 这个 /goods/${merchant}/${goods_id} 获取 富文本的商品描述.
-				if (target.starts_with("/goods"))
-				{
-					boost::match_results<boost::string_view::const_iterator> w;
-					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/goods/([^/]+)/([^/]+)")))
-					{
-						std::string merhcant = w[1].str();
-						std::string goods_id = w[2].str();
-
-						int status_code = co_await render_goods_detail_content(
-							connection_id, merhcant, goods_id, client_ptr->tcp_stream, req.version(), req.keep_alive());
-
-						if (status_code != 200)
-						{
-							co_await http_simple_error_page("ERRORED", status_code, req.version());
-						}
-					}
-					else
-					{
-						co_await http_simple_error_page("access denied", 401, req.version());
-					}
-					continue;
-				}
-
-				// 这里使用 zip 里打包的 angular 页面. 对不存在的地址其实直接替代性的返回 index.html 因此此
-				// api 绝对不返回 400. 如果解压内部 zip 发生错误, 会放回 500 错误代码.
-				int status_code = co_await http_handle_static_file(connection_id, req, client_ptr->tcp_stream);
-
-				if (status_code != 200)
-				{
-					co_await http_simple_error_page("internal server error", status_code, req.version());
-				}
-
-				keep_alive = !req.need_eof();
-			}
-		} while (keep_alive && (!m_abort));
-
-		LOG_DBG << "handle_accepted_client: HTTP connection closed : " << connection_id;
-	}
-
 	// 从 git 仓库获取文件，没找到返回 0
 	boost::asio::awaitable<int> cmall_service::render_git_repo_files(size_t connection_id, std::string merchant, std::string path_in_repo, boost::beast::tcp_stream& client, boost::beast::http::request<boost::beast::http::string_body>  req)
 	{
@@ -1112,12 +958,166 @@ namespace cmall
 		}
 	}
 
-	client_connection_ptr cmall_service::allocate_connection(boost::beast::tcp_stream&& tcp_stream, std::int64_t connection_id, std::string remote_address)
+	client_connection_ptr cmall_service::make_shared_connection(const boost::asio::any_io_executor& io, std::int64_t connection_id)
 	{
-		return std::make_shared<client_connection>(std::move(tcp_stream), connection_id, remote_address);
+		return std::make_shared<client_connection>(io, connection_id);
 	}
 
-	boost::asio::awaitable<void> cmall_service::deallocate_connection(client_connection_ptr c)
+	boost::asio::awaitable<void> cmall_service::client_connected(client_connection_ptr client_ptr)
+	{
+		using string_body = boost::beast::http::string_body;
+		using fields	  = boost::beast::http::fields;
+		using request	  = boost::beast::http::request<string_body>;
+		using response	  = boost::beast::http::response<string_body>;
+
+		const size_t connection_id = client_ptr->connection_id_;
+
+		bool keep_alive = false;
+
+		auto http_simple_error_page
+			= [&client_ptr](auto body, auto status_code, unsigned version) mutable -> boost::asio::awaitable<void>
+		{
+			response res{ static_cast<boost::beast::http::status>(status_code), version };
+			res.set(boost::beast::http::field::server, HTTPD_VERSION_STRING);
+			res.set(boost::beast::http::field::content_type, "text/html");
+			res.keep_alive(false);
+			res.body() = body;
+			res.prepare_payload();
+
+			boost::beast::http::serializer<false, string_body, fields> sr{ res };
+			co_await boost::beast::http::async_write(client_ptr->tcp_stream, sr, boost::asio::use_awaitable);
+			client_ptr->tcp_stream.close();
+		};
+
+		LOG_DBG << "coro created: handle_accepted_client( " << connection_id << ")";
+
+		do
+		{
+			boost::beast::flat_buffer buffer;
+			request req;
+
+			co_await boost::beast::http::async_read(client_ptr->tcp_stream, buffer, req, boost::asio::use_awaitable);
+			boost::string_view target = req.target();
+
+			LOG_DBG << "coro: handle_accepted_client: [" << connection_id << "], got request on " << target.to_string();
+
+			if (target.empty() || target[0] != '/' || target.find("..") != boost::beast::string_view::npos)
+			{
+				co_await http_simple_error_page(
+					"Illegal request-target", boost::beast::http::status::bad_request, req.version());
+			}
+			// 处理 HTTP 请求.
+			else if (boost::beast::websocket::is_upgrade(req))
+			{
+				LOG_DBG << "ws client incoming: " << connection_id << ", remote: " << client_ptr->remote_host_;
+
+				if (!target.starts_with("/api"))
+				{
+					co_await http_simple_error_page(
+						"not allowed", boost::beast::http::status::forbidden, req.version());
+					break;
+				}
+
+				client_ptr->ws_client.emplace(client_ptr->tcp_stream);
+
+				client_ptr->ws_client->ws_stream_.set_option(boost::beast::websocket::stream_base::decorator(
+					[](auto& res) { res.set(boost::beast::http::field::server, HTTPD_VERSION_STRING); }));
+
+				co_await client_ptr->ws_client->ws_stream_.async_accept(req, boost::asio::use_awaitable);
+
+				// 获取executor.
+				auto executor = client_ptr->tcp_stream.get_executor();
+
+				// 接收到pong, 重置超时定时器.
+				client_ptr->ws_client->ws_stream_.control_callback(
+					[&tcp_stream = client_ptr->tcp_stream](
+						boost::beast::websocket::frame_type ft, boost::beast::string_view)
+					{
+						if (ft == boost::beast::websocket::frame_type::pong)
+							tcp_stream.expires_after(std::chrono::seconds(60));
+					});
+
+				using namespace boost::asio::experimental::awaitable_operators;
+
+				co_await(
+					// 启动读写协程.
+					do_ws_read(connection_id, client_ptr) && do_ws_write(connection_id, client_ptr));
+				LOG_DBG << "handle_accepted_client, " << connection_id << ", connection exit.";
+				co_return;
+			}
+			else
+			{
+				if (target.starts_with("/api"))
+				{
+					co_await http_simple_error_page(
+						"not allowed", boost::beast::http::status::forbidden, req.version());
+					continue;
+				}
+
+				if (target.starts_with("/repos"))
+				{
+					boost::match_results<boost::string_view::const_iterator> w;
+					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/((images|css)/.+)")))
+					{
+						std::string merhcant = w[1].str();
+						std::string remains = w[2].str();
+
+						int status_code = co_await render_git_repo_files(connection_id, merhcant, remains, client_ptr->tcp_stream, req);
+
+						if (status_code != 200)
+						{
+							co_await http_simple_error_page("ERRORED", status_code, req.version());
+						}
+					}
+					else
+					{
+						co_await http_simple_error_page("ERRORED", 403, req.version());
+					}
+					continue;
+
+				}
+
+				// 这个 /goods/${merchant}/${goods_id} 获取 富文本的商品描述.
+				if (target.starts_with("/goods"))
+				{
+					boost::match_results<boost::string_view::const_iterator> w;
+					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/goods/([^/]+)/([^/]+)")))
+					{
+						std::string merhcant = w[1].str();
+						std::string goods_id = w[2].str();
+
+						int status_code = co_await render_goods_detail_content(
+							connection_id, merhcant, goods_id, client_ptr->tcp_stream, req.version(), req.keep_alive());
+
+						if (status_code != 200)
+						{
+							co_await http_simple_error_page("ERRORED", status_code, req.version());
+						}
+					}
+					else
+					{
+						co_await http_simple_error_page("access denied", 401, req.version());
+					}
+					continue;
+				}
+
+				// 这里使用 zip 里打包的 angular 页面. 对不存在的地址其实直接替代性的返回 index.html 因此此
+				// api 绝对不返回 400. 如果解压内部 zip 发生错误, 会放回 500 错误代码.
+				int status_code = co_await http_handle_static_file(connection_id, req, client_ptr->tcp_stream);
+
+				if (status_code != 200)
+				{
+					co_await http_simple_error_page("internal server error", status_code, req.version());
+				}
+
+				keep_alive = !req.need_eof();
+			}
+		} while (keep_alive && (!m_abort));
+
+		LOG_DBG << "handle_accepted_client: HTTP connection closed : " << connection_id;
+	}
+
+	boost::asio::awaitable<void> cmall_service::client_disconnected(client_connection_ptr c)
 	{
 		std::unique_lock<std::shared_mutex> l(active_users_mtx);
 		active_users.get<1>().erase(c->connection_id_);
