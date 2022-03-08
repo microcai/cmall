@@ -1,4 +1,4 @@
-
+﻿
 #include <boost/asio.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/experimental/promise.hpp>
@@ -739,23 +739,18 @@ namespace cmall
 				auto orderid	  = jsutil::json_accessor(params).get_string("orderid");
 				auto payment = jsutil::json_accessor(params).get_string("payment");
 
-				// TODO, load order from database first,
-
 				cmall_order order_to_pay;
 				using query_t = odb::query<cmall_order>;
-				auto query		   = query_t::oid == orderid;
+				auto query		   = query_t::oid == orderid && query_t::buyer == this_user.uid_;
 				bool order_founded = co_await m_database.async_load<cmall_order>(query, order_to_pay);
 
-				if (!order_founded ||  (order_to_pay.buyer_ != this_user.uid_))
+				if (!order_founded)
 				{
-					// TODO
 					throw boost::system::system_error(boost::system::error_code(cmall::error::order_not_found));
 				}
 
 				// 对已经存在的订单, 获取支付连接.
 				services::payment_url payurl = co_await payment_service.get_payurl(orderid, 0, "", to_string(order_to_pay.price_), services::PAYMENT_CHSPAY);
-
-				// TODO, 把 payurl.valid_until 存起来， 下次用.
 
 				reply_message["result"] = { {"type", "url"}, {"url", payurl.uri } };
 			}
