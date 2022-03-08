@@ -1095,12 +1095,9 @@ namespace cmall
 
 	boost::asio::awaitable<void> cmall_service::close_all_ws()
 	{
-		std::vector<boost::asio::experimental::promise<void(std::exception_ptr)>> ws_runners;
-		for (auto& a: m_ws_acceptors)
-			ws_runners.push_back(boost::asio::co_spawn(a.get_executor(), a.clean_shutdown(), boost::asio::experimental::use_promise));
-
-		for (auto&& ws_runner : ws_runners)
-			co_await ws_runner.async_wait(boost::asio::use_awaitable);
+		co_await httpd::detail::map(m_ws_acceptors, [](auto&& a) mutable -> boost::asio::awaitable<void>{
+			co_return co_await a.clean_shutdown();
+		});
 
 		LOG_DBG << "cmall_service::close_all_ws() success!";
 	}

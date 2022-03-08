@@ -18,6 +18,9 @@
 
 #include "detail/parser.hpp"
 #include "detail/time_clock.hpp"
+#include "detail/async_map.hpp"
+
+#include "detail/wait_all.hpp"
 
 // 每线程一个 accept 的 多 socket accept 模式 适配器.
 
@@ -202,22 +205,18 @@ public:
             LOG_DBG << "accepting loop cancelling";
         });
 
-        co_await boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code)>(
-            [=, this](auto&& handler) mutable
+        co_await boost::asio::co_spawn(get_executor(), [number_of_concurrent_acceptor, this]() mutable -> boost::asio::awaitable<void>
             {
-                typedef handler_context<std::decay_t<decltype(handler)>> delegated_handler;
-                auto real_handler = std::make_shared<delegated_handler>
-                    (std::move(handler), number_of_concurrent_acceptor);
+                std::vector<boost::asio::experimental::promise<void(std::exception_ptr)>> co_threads;
+                // 避免 object 发生移动.
+                co_threads.reserve(number_of_concurrent_acceptor);
 
                 for(int i =0; i < number_of_concurrent_acceptor; i++)
                 {
-                    boost::asio::co_spawn(this->get_executor(), accept_loop(),
-                        [real_handler](std::exception_ptr p)
-                        {
-                            real_handler->complete(boost::system::error_code());
-                        }
-                    );
+                    co_threads.emplace_back(boost::asio::co_spawn(this->get_executor(), accept_loop(), boost::asio::experimental::use_promise));
                 }
+
+                co_await detail::wait_all(co_threads);
             }
             , boost::asio::use_awaitable
         );
