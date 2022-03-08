@@ -45,6 +45,10 @@ typedef boost::asio::detail::socket_option::boolean<IPPROTO_IPV6, IPV6_V6ONLY> i
 }
 
 template<typename AcceptedClientClass, typename ServiceClass, typename Execotor = boost::asio::any_io_executor>
+requires requires {
+    detail::is_asio_io_object<ServiceClass>;
+    detail::is_asio_io_object<typename AcceptedClientClass::element_type>;
+}
 class acceptor
 {
     template<typename CompletionHandler>
