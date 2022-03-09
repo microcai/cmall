@@ -24,6 +24,7 @@ math(EXPR VERSION_TINY "${VERSION_DAY_YEAR}")
 
 include(CheckCXXCompilerFlag)
 include(CheckLibraryExists)
+include(CheckCXXSymbolExists)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/cmake")
 
@@ -166,6 +167,8 @@ else()
 	endif()
 endif()
 
+check_cxx_symbol_exists(__cpp_lib_format <format> HAS_LIBCPP_FORMAT)
+
 find_package(Threads)
 link_libraries(${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
 
@@ -215,7 +218,10 @@ else()
 	find_package(MiniZip REQUIRED)
 endif()
 
+if(NOT HAS_LIBCPP_FORMAT)
 add_subdirectory(third_party/fmt)
+endif()
+
 add_subdirectory(third_party/libpq)
 set(PostgreSQL_LIBRARIES libpq)
 
@@ -307,7 +313,6 @@ link_libraries(
 		Boost::json
 		Boost::timer
 
-		fmt
 		libodb
 		libodb-pgsql
 		libodb-boost
@@ -319,6 +324,10 @@ link_libraries(
 		${ZLIB_LIBRARIES}
 		${MINIZIP_LIBRARIES}
 )
+
+if(NOT HAS_LIBCPP_FORMAT)
+	link_libraries(fmt)
+endif()
 
 if (WIN32)
 	link_libraries(
