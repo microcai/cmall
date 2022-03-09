@@ -10,8 +10,6 @@
 #include "cmall/misc.hpp"
 #include "cmall/db.hpp"
 
-#include "cmall/rpc_defs.hpp"
-
 namespace jsutil
 {
 	namespace json = boost::json;
