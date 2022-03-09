@@ -284,6 +284,11 @@ namespace httpd {
 
 	bool parse_gmt_time_fmt(std::string_view date_str, time_t* output)
 	{
+		if (date_str.empty())
+		{
+			*output = 0;
+			return false;
+		}
 		const char* date = date_str.data();
 		time_t t = 0;
 		// day of the week number, 0-6 (mon-sun)
