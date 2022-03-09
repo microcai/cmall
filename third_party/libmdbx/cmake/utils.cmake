@@ -187,7 +187,6 @@ macro(fetch_version name source_root_directory parent_scope)
     endif()
 
     if(NOT ${name}_VERSION)
-      message(WARNING "Unable to retrieve ${name} version from \"${version_file}\" file.")
       set(${name}_VERSION_LIST ${${name}_GIT_VERSION})
       string(REPLACE ";" "." ${name}_VERSION "${${name}_GIT_VERSION}")
     else()
