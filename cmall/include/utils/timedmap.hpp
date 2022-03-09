@@ -26,6 +26,9 @@ namespace utility
 {
 
 	template<typename value_type, typename key_type>
+	requires requires {
+		std::is_trivially_constructible<key_type>::value;
+	}
 	class timedmap
 	{
 		struct container_item_type
