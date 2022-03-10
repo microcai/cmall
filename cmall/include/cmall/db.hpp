@@ -122,6 +122,13 @@ struct cmall_user
 	odb::nullable<boost::posix_time::ptime> deleted_at_;
 };
 
+enum class merchant_state_t
+{
+	normal = 0,
+	disabled, // 停用.
+	banned, // 封禁.
+};
+
 // 商户表.
 #pragma db object
 struct cmall_merchant 

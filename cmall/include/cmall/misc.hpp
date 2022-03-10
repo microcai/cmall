@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <exception>
 #include <optional>
 #include <thread>
 #include <boost/beast.hpp>
@@ -17,6 +18,7 @@
 
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/multiprecision/cpp_dec_float.hpp>
+#include <type_traits>
 
 #include "fmt_extra.hpp"
 
@@ -158,4 +160,36 @@ inline std::string fill_hexstring(const std::string& str)
 	}
 
 	return str;
+}
+
+template <typename E>
+constexpr auto to_underlying(E e) noexcept
+{
+	// c++23 会有std::to_underlying
+	return static_cast<std::underlying_type_t<E>>(e);
+}
+
+template <typename T>
+requires std::integral<T> || std::floating_point<T>
+std::optional<T> parse_number(std::string_view str, int base = 10)
+{
+	try {
+		if constexpr (std::is_integral_v<T>)
+		{
+			if (std::is_signed_v<T>) 
+			{
+				return static_cast<T>(std::stoll(str.data(), nullptr, base));
+			} 
+			else 
+			{
+				return static_cast<T>(std::stoull(str.data(), nullptr, base));
+			}
+		}
+		else
+		{
+			return static_cast<T>(std::stold(str.data(), nullptr));
+		}
+	} catch (const std::exception& e) {
+		return {};
+	}
 }

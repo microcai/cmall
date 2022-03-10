@@ -9,6 +9,7 @@
 #include <boost/json.hpp>
 #include <boost/regex.hpp>
 #include <boost/scope_exit.hpp>
+#include <cstddef>
 #include <mutex>
 #include <shared_mutex>
 #include <string>
@@ -25,6 +26,7 @@
 #include "boost/system/system_error.hpp"
 #include "boost/throw_exception.hpp"
 #include "cmall/error_code.hpp"
+#include "cmall/misc.hpp"
 #include "httpd/acceptor.hpp"
 #include "utils/async_connect.hpp"
 #include "utils/scoped_exit.hpp"
@@ -95,7 +97,7 @@ namespace cmall
 	{
 		std::vector<cmall_merchant> all_merchant;
 		using query_t = odb::query<cmall_merchant>;
-		auto query	  = query_t::deleted_at.is_null();
+		auto query	  = query_t::verified == true && query_t::state == to_underlying(merchant_state_t::normal) && query_t::deleted_at.is_null();
 		co_await m_database.async_load<cmall_merchant>(query, all_merchant);
 
 		for (cmall_merchant& merchant : all_merchant)
@@ -407,52 +409,8 @@ namespace cmall
 				break;
 
 			case req_method::goods_list:
-			{
-				std::vector<services::product> all_products;
-
-				// 列出 商品, 根据参数决定是首页还是商户
-				auto merchant = jsutil::json_accessor(params).get_string("merchant");
-
-				if (merchant == "")
-				{
-					for (auto& [merchant_id, merchant_repo] : merchant_repos)
-					{
-						std::vector<services::product> products = co_await merchant_repo->get_products();
-						std::copy(products.begin(), products.end(), std::back_inserter(all_products));
-					}
-
-				}
-				else
-				{
-					auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
-					if (merchant_repos.contains(merchant_id))
-					{
-						std::vector<services::product> products = co_await merchant_repos[merchant_id]->get_products();
-						std::copy(products.begin(), products.end(), std::back_inserter(all_products));
-					}
-				}
-
-				reply_message["result"] = boost::json::value_from(all_products);
-			}
-			break;
 			case req_method::goods_detail:
-			{
-				auto merchant_id = jsutil::json_accessor(params).get("merchant_id", -1).as_int64();
-				auto goods_id = jsutil::json_accessor(params).get_string("goods_id");
-
-				if (!merchant_repos.contains(merchant_id))
-					throw boost::system::system_error(cmall::error::invalid_params);
-				if (goods_id.empty())
-					throw boost::system::system_error(cmall::error::invalid_params);
-
-
-				boost::system::error_code ec;
-				auto product = co_await merchant_repos[merchant_id]->get_product(goods_id, ec);
-				if (ec)
-					throw boost::system::system_error(cmall::error::goods_not_found);
-				// 获取商品信息, 注意这个不是商品描述, 而是商品 标题, 价格, 和缩略图. 用在商品列表页面.
-				reply_message["result"] = boost::json::value_from(product);
-			}
+				co_return co_await handle_jsonrpc_goods_api(connection_ptr, method.value(), params);
 			break;
 			case req_method::admin_user_list:
 				break;
@@ -864,6 +822,74 @@ namespace cmall
 			default:
 				throw "this should never be executed";
 		}
+		co_return reply_message;
+	}
+	boost::asio::awaitable<boost::json::object> cmall_service::handle_jsonrpc_goods_api(client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
+	{
+		client_connection& this_client = *connection_ptr;
+		boost::json::object reply_message;
+		services::client_session& session_info = *this_client.session_info;
+		cmall_user& this_user = *(session_info.user_info);
+
+		switch (method)
+		{
+			case req_method::goods_list:
+			{
+				// 列出 商品, 根据参数决定是首页还是商户
+				auto merchant = jsutil::json_accessor(params).get_string("merchant");
+				auto merchant_id = parse_number<std::uint64_t>(merchant);
+
+				std::vector<cmall_merchant> merchants;
+				using query_t = odb::query<cmall_merchant>;
+				auto query = query_t::verified == true && query_t::state == to_underlying(merchant_state_t::normal) && query_t::deleted_at.is_null();
+				if (merchant_id.has_value())
+				{
+					query = query_t::uid == merchant_id.value() && query;
+				}
+				query += " order by uid desc"; // 优先显示新商户的商品.
+
+				co_await m_database.async_load<cmall_merchant>(query, merchants);
+
+				std::vector<services::product> all_products;
+				if (merchants.size() > 0)
+				{
+					for (const auto& m : merchants)
+					{
+						if (!services::repo_products::is_git_repo(m.repo_path))
+							continue;
+						
+						auto repo = std::make_shared<services::repo_products>(git_operation_thread_pool, m.uid_, m.repo_path);
+						std::vector<services::product> products = co_await repo->get_products();
+						std::copy(products.begin(), products.end(), std::back_inserter(all_products));
+					}
+				}
+
+				reply_message["result"] = boost::json::value_from(all_products);
+			}
+			break;
+			case req_method::goods_detail:
+			{
+				auto merchant_id = jsutil::json_accessor(params).get("merchant_id", -1).as_int64();
+				auto goods_id = jsutil::json_accessor(params).get_string("goods_id");
+
+				if (!merchant_repos.contains(merchant_id))
+					throw boost::system::system_error(cmall::error::invalid_params);
+				if (goods_id.empty())
+					throw boost::system::system_error(cmall::error::invalid_params);
+
+
+				boost::system::error_code ec;
+				auto product = co_await merchant_repos[merchant_id]->get_product(goods_id, ec);
+				if (ec)
+					throw boost::system::system_error(cmall::error::goods_not_found);
+				// 获取商品信息, 注意这个不是商品描述, 而是商品 标题, 价格, 和缩略图. 用在商品列表页面.
+				reply_message["result"] = boost::json::value_from(product);
+			}
+			break;
+			default:
+				throw "this should never be executed";
+		}
+
 		co_return reply_message;
 	}
 
