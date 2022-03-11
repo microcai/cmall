@@ -168,7 +168,7 @@ else()
 	endif()
 endif()
 
-check_cxx_symbol_exists(__cpp_lib_format <format> HAS_LIBCPP_FORMAT)
+check_cxx_symbol_exists(__cpp_lib_format "version" HAS_LIBCPP_FORMAT)
 
 find_package(Threads)
 link_libraries(${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
