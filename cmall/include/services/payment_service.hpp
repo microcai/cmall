@@ -25,7 +25,7 @@ namespace services
 		~payment();
 
 		// get payment url.
-		boost::asio::awaitable<payment_url> get_payurl(std::string orderid, int nthTry, std::string order_title, std::string order_amount, PAYMENT_GATEWAY gateway);
+		boost::asio::awaitable<payment_url> get_payurl(std::string_view script_content, std::string orderid, int nthTry, std::string order_title, std::string order_amount, PAYMENT_GATEWAY gateway);
 		// query payment success.
 		boost::asio::awaitable<bool> query_pay(std::string orderid, PAYMENT_GATEWAY gateway);
 

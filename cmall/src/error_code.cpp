@@ -40,6 +40,8 @@ std::string cmall::error::cmall_category::message(int ev) const
 			return (const char*) u8"购物车商品未找到";
 		case already_in_cart:
 			return (const char*) u8"已在购物车中";
+		case merchant_vanished:
+			return (const char*) u8"商户蜜汁消失";
 	}
 	return "error message";
 }

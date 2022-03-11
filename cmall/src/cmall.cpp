@@ -708,7 +708,15 @@ namespace cmall
 				}
 
 				// 对已经存在的订单, 获取支付连接.
-				services::payment_url payurl = co_await payment_service.get_payurl(orderid, 0, "", to_string(order_to_pay.price_), services::PAYMENT_CHSPAY);
+				boost::system::error_code ec;
+				std::uint64_t merchant_id = order_to_pay.bought_goods[0].merchant_id;
+				if (!merchant_repos.contains(merchant_id))
+					throw boost::system::system_error(boost::system::error_code(cmall::error::merchant_vanished));
+
+				std::string pay_script_content
+					= co_await merchant_repos[merchant_id]->get_file_content("scripts/getpayurl.js", ec);
+				services::payment_url payurl = co_await payment_service.get_payurl(
+					pay_script_content, orderid, 0, "", to_string(order_to_pay.price_), services::PAYMENT_CHSPAY);
 
 				reply_message["result"] = { {"type", "url"}, {"url", payurl.uri } };
 			}

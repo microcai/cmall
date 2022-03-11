@@ -24,6 +24,7 @@ namespace cmall
 			already_exist,
 			invalid_params,
 			order_not_found,
+			merchant_vanished,
 			goods_not_found,
 			cart_goods_not_found,
 			already_in_cart,
