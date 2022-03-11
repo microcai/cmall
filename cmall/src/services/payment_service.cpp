@@ -38,7 +38,8 @@ namespace services
 
 				LOG_DBG << "parent pid = " << getpid();
 
-				child cp(search_path("node"), "-", "--", "--order-id", orderid, "--order-amount", order_amount, std_in < nodejs_input, std_out > nodejs_output, start_dir("/tmp")
+				child cp(search_path("node"), "-", "--", "--order-id", orderid, "--order-amount", order_amount
+					, std_in < nodejs_input, std_out > nodejs_output, start_dir("/tmp")
 #ifdef __linux
 					, boost::process::extend::on_exec_setup=[](auto & exec) { sandbox::install_seccomp(); sandbox::drop_root(); }
 #endif
