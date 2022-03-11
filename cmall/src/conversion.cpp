@@ -104,6 +104,14 @@ inline namespace conversion
 		};
 	}
 
+	void tag_invoke(const value_from_tag&, value& jv, const cmall_apply_for_mechant& a)
+	{
+		jv = {
+			{ "applicant_user_id", a.applicant_->uid_ },
+			{ "created_at", to_string(a.created_at_) },
+		};
+	}
+
 	maybe_jsonrpc_request_t tag_invoke(const value_to_tag<maybe_jsonrpc_request_t>&, const value& jv)
 	{
 		if (!jv.is_object())

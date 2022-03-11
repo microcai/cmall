@@ -426,6 +426,7 @@ namespace cmall
 			case req_method::admin_user_list:
 			case req_method::admin_user_ban:
 			case req_method::admin_list_merchants:
+			case req_method::admin_list_applicants:
 			case req_method::admin_merchant_ban:
 			case req_method::admin_product_list:
 			case req_method::admin_product_withdraw:
@@ -946,6 +947,12 @@ namespace cmall
 				reply_message["result"] = boost::json::value_from(all_merchants);
 			}
 			break;
+			case req_method::admin_list_applicants:
+			{
+				std::vector<cmall_apply_for_mechant> all_applicats;
+				co_await m_database.async_load_all(all_applicats);
+				reply_message["result"] = boost::json::value_from(all_applicats);
+			}break;
 			case req_method::admin_user_list:
 			case req_method::admin_user_ban:
 			case req_method::admin_merchant_ban:
