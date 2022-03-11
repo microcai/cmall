@@ -171,6 +171,7 @@ namespace cmall {
 		admin_user_list,
 		admin_user_ban,
 		admin_list_merchants,
+		admin_list_applicants,
 		admin_merchant_ban,
 		admin_product_list,
 		admin_product_withdraw,
@@ -220,6 +221,8 @@ namespace cmall {
 		boost::asio::awaitable<boost::json::object> handle_jsonrpc_order_api(client_connection_ptr, const req_method method, boost::json::object params);
 		boost::asio::awaitable<boost::json::object> handle_jsonrpc_cart_api(client_connection_ptr, const req_method method, boost::json::object params);
 		boost::asio::awaitable<boost::json::object> handle_jsonrpc_goods_api(client_connection_ptr, const req_method method, boost::json::object params);
+
+		boost::asio::awaitable<boost::json::object> handle_jsonrpc_admin_api(client_connection_ptr, const req_method method, boost::json::object params);
 
 		boost::asio::awaitable<void> send_notify_message(std::uint64_t uid_, const std::string&, std::int64_t exclude_connection);
 

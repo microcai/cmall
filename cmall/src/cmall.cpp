@@ -425,20 +425,14 @@ namespace cmall
 				break;
 			case req_method::admin_user_list:
 			case req_method::admin_user_ban:
-				break;
 			case req_method::admin_list_merchants:
-			{
-				co_await ensure_login(true);
-				std::vector<cmall_merchant> all_merchants;
-				co_await m_database.async_load_all(all_merchants);
-				reply_message["result"] = boost::json::value_from(all_merchants);
-			}
-			break;
 			case req_method::admin_merchant_ban:
 			case req_method::admin_product_list:
 			case req_method::admin_product_withdraw:
 			case req_method::admin_order_force_refund:
 				co_await ensure_login(true);
+				co_return co_await handle_jsonrpc_admin_api(connection_ptr, method.value(), params);
+
 				break;
 		}
 
@@ -864,6 +858,7 @@ namespace cmall
 		}
 		co_return reply_message;
 	}
+
 	boost::asio::awaitable<boost::json::object> cmall_service::handle_jsonrpc_goods_api(
 		client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
 	{
@@ -927,6 +922,36 @@ namespace cmall
 				// 获取商品信息, 注意这个不是商品描述, 而是商品 标题, 价格, 和缩略图. 用在商品列表页面.
 				reply_message["result"] = boost::json::value_from(product);
 			}
+			break;
+			default:
+				throw "this should never be executed";
+		}
+
+		co_return reply_message;
+	}
+
+	boost::asio::awaitable<boost::json::object> cmall_service::handle_jsonrpc_admin_api(client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
+	{
+		client_connection& this_client = *connection_ptr;
+		boost::json::object reply_message;
+		services::client_session& session_info = *this_client.session_info;
+		cmall_user& this_user				   = *(session_info.user_info);
+
+		switch (method)
+		{
+			case req_method::admin_list_merchants:
+			{
+				std::vector<cmall_merchant> all_merchants;
+				co_await m_database.async_load_all(all_merchants);
+				reply_message["result"] = boost::json::value_from(all_merchants);
+			}
+			break;
+			case req_method::admin_user_list:
+			case req_method::admin_user_ban:
+			case req_method::admin_merchant_ban:
+			case req_method::admin_product_list:
+			case req_method::admin_product_withdraw:
+			case req_method::admin_order_force_refund:
 			break;
 			default:
 				throw "this should never be executed";
