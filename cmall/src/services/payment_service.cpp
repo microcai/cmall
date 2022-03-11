@@ -4,6 +4,7 @@
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/process.hpp>
 #include <boost/process/extend.hpp>
+#include <boost/process/handles.hpp>
 #include <chrono>
 #include <cstdlib>
 
@@ -39,7 +40,7 @@ namespace services
 				LOG_DBG << "parent pid = " << getpid();
 
 				child cp(search_path("node"), "-", "--", "--order-id", orderid, "--order-amount", order_amount
-					, std_in < nodejs_input, std_out > nodejs_output, start_dir("/tmp"), limit_handles.allowStd(),
+					, std_in < nodejs_input, std_out > nodejs_output, start_dir("/tmp"), limit_handles
 #ifdef __linux
 					, boost::process::extend::on_exec_setup=[](auto & exec) { sandbox::no_fd_leak(); sandbox::install_seccomp(); sandbox::drop_root(); }
 #endif
