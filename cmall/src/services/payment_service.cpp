@@ -3,6 +3,7 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/process.hpp>
+#include <boost/process/extend.hpp>
 #include <chrono>
 #include <cstdlib>
 
@@ -15,6 +16,8 @@ using namespace boost::asio::experimental::awaitable_operators;
 
 #include "utils/timedmap.hpp"
 #include "utils/logging.hpp"
+
+#include "../sandbox.hpp"
 
 namespace services
 {
@@ -33,14 +36,20 @@ namespace services
 				async_pipe nodejs_output(io);
 				async_pipe nodejs_input(io);
 
-				child cp(search_path("node"), "-", "--", "--order-id", orderid, "--order-amount", order_amount, std_in < nodejs_input, std_out > nodejs_output, start_dir("/tmp"));
+				LOG_DBG << "parent pid = " << getpid();
+
+				child cp(search_path("node"), "-", "--", "--order-id", orderid, "--order-amount", order_amount, std_in < nodejs_input, std_out > nodejs_output, start_dir("/tmp")
+#ifdef __linux
+					, boost::process::extend::on_exec_setup=[](auto & exec) { sandbox::install_seccomp(); sandbox::drop_root(); }
+#endif
+				);
 
 				std::string out;
 				auto d_buffer = boost::asio::dynamic_buffer(out);
 
 				auto read_promis = boost::asio::async_read_until(nodejs_output, d_buffer, '\n', boost::asio::experimental::use_promise);
 
-				std::string drop_privalage = "try{process.setgid(65535); process.setuid(65535);}catch(e){}\n";
+				std::string drop_privalage = "try{chroot('/');process.setgid(65535); process.setuid(65535);}catch(e){}\n";
 
 				auto new_script = std::string("") + std::string(script_content);
 
