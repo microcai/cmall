@@ -249,6 +249,12 @@ namespace cmall
 		}
 
 	public:
+		template <typename T> requires SupportSoftDeletion<T>
+		boost::asio::awaitable<bool> async_load_all(std::vector<T> & value)
+		{
+			co_return co_await async_load<T>( odb::query<T>::deleted_at.is_null(), value);
+		}
+
 		template <typename T>
 		boost::asio::awaitable<bool> async_load(std::uint64_t id, T& value)
 		{
@@ -261,7 +267,7 @@ namespace cmall
 		template <typename T>
 		boost::asio::awaitable<bool> async_load(const odb::query<T>& query, std::vector<T>& ret)
 		{
-			return boost::asio::co_spawn(thread_pool, [this, query, &ret]() mutable -> boost::asio::awaitable<bool> 
+			return boost::asio::co_spawn(thread_pool, [this, query, &ret]() mutable -> boost::asio::awaitable<bool>
 			{
 				co_return get<T>(query, ret);
 			}, boost::asio::use_awaitable);
@@ -269,9 +275,9 @@ namespace cmall
 		template <typename T>
 		boost::asio::awaitable<bool> async_load(const odb::query<T>& query, T& ret)
 		{
-			return boost::asio::co_spawn(thread_pool, [this, query, &ret]() mutable -> boost::asio::awaitable<bool> 
-			{ 
-				co_return get<T>(query, ret); 
+			return boost::asio::co_spawn(thread_pool, [this, query, &ret]() mutable -> boost::asio::awaitable<bool>
+			{
+				co_return get<T>(query, ret);
 			}, boost::asio::use_awaitable);
 		}
 

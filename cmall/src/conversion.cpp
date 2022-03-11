@@ -38,6 +38,18 @@ inline namespace conversion
 		};
 	}
 
+	void tag_invoke(const value_from_tag&, value& jv, const cmall_merchant& m)
+	{
+		jv = {
+			{ "uid", m.uid_ },
+			{ "name", m.name_ },
+			{ "verified", m.verified_ },
+			{ "state", m.state_ },
+			{ "desc", m.desc_.null() ? "" : m.desc_.get() },
+			{ "created_at", ::to_string(m.created_at_) },
+		};
+	}
+
 	void tag_invoke(const value_from_tag&, value& jv, const Recipient& r)
 	{
 		jv = {

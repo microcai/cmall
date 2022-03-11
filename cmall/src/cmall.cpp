@@ -1,9 +1,9 @@
 
 #include <boost/asio.hpp>
+#include <boost/asio/awaitable.hpp>
+#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/experimental/promise.hpp>
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/awaitable.hpp>
 
 #include <boost/date_time.hpp>
 #include <boost/json.hpp>
@@ -57,8 +57,8 @@
 
 #include "cmall/conversion.hpp"
 
-#include "httpd/httpd.hpp"
 #include "httpd/http_misc_helper.hpp"
+#include "httpd/httpd.hpp"
 
 namespace cmall
 {
@@ -97,14 +97,16 @@ namespace cmall
 	{
 		std::vector<cmall_merchant> all_merchant;
 		using query_t = odb::query<cmall_merchant>;
-		auto query	  = query_t::verified == true && query_t::state == to_underlying(merchant_state_t::normal) && query_t::deleted_at.is_null();
+		auto query	  = query_t::verified == true && query_t::state == to_underlying(merchant_state_t::normal)
+			&& query_t::deleted_at.is_null();
 		co_await m_database.async_load<cmall_merchant>(query, all_merchant);
 
 		for (cmall_merchant& merchant : all_merchant)
 		{
 			if (services::repo_products::is_git_repo(merchant.repo_path))
 			{
-				auto repo = std::make_shared<services::repo_products>(git_operation_thread_pool, merchant.uid_, merchant.repo_path);
+				auto repo = std::make_shared<services::repo_products>(
+					git_operation_thread_pool, merchant.uid_, merchant.repo_path);
 				this->merchant_repos.emplace(merchant.uid_, repo);
 			}
 			else
@@ -123,9 +125,9 @@ namespace cmall
 
 		constexpr int concurrent_accepter = 20;
 
-		co_await httpd::detail::map(m_ws_acceptors, [concurrent_accepter](auto && a)mutable -> boost::asio::awaitable<void>{
-			return a.run_accept_loop(concurrent_accepter);
-		});
+		co_await httpd::detail::map(m_ws_acceptors,
+			[concurrent_accepter](auto&& a) mutable -> boost::asio::awaitable<void>
+			{ return a.run_accept_loop(concurrent_accepter); });
 	}
 
 	boost::asio::awaitable<bool> cmall_service::init_ws_acceptors()
@@ -136,7 +138,7 @@ namespace cmall
 
 		for (const auto& wsd : m_config.ws_listens_)
 		{
-			if constexpr ( httpd::has_so_reuseport() )
+			if constexpr (httpd::has_so_reuseport())
 			{
 				for (int io_index = 0; io_index < m_io_context_pool.pool_size(); io_index++)
 				{
@@ -163,7 +165,9 @@ namespace cmall
 	}
 
 	// 从 git 仓库获取文件，没找到返回 0
-	boost::asio::awaitable<int> cmall_service::render_git_repo_files(size_t connection_id, std::string merchant, std::string path_in_repo, boost::beast::tcp_stream& client, boost::beast::http::request<boost::beast::http::string_body>  req)
+	boost::asio::awaitable<int> cmall_service::render_git_repo_files(size_t connection_id, std::string merchant,
+		std::string path_in_repo, boost::beast::tcp_stream& client,
+		boost::beast::http::request<boost::beast::http::string_body> req)
 	{
 		auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
 
@@ -177,8 +181,12 @@ namespace cmall
 			co_return 404;
 		}
 
-		ec = co_await httpd::send_string_response_body(client, res_body, httpd::make_http_last_modified(std::time(0) + 60),
-					httpd::get_mime_type_from_extension(boost::filesystem::path(path_in_repo).extension().string()), req.version(), req.keep_alive());
+		ec = co_await httpd::send_string_response_body(client,
+			res_body,
+			httpd::make_http_last_modified(std::time(0) + 60),
+			httpd::get_mime_type_from_extension(boost::filesystem::path(path_in_repo).extension().string()),
+			req.version(),
+			req.keep_alive());
 		if (ec)
 			throw boost::system::system_error(ec);
 		co_return 200;
@@ -193,8 +201,12 @@ namespace cmall
 		{
 			std::string product_detail = co_await merchant_repos[merchant_id]->get_product_detail(goods_id);
 
-			auto ec = co_await httpd::send_string_response_body(client, product_detail, httpd::make_http_last_modified(std::time(0) + 60),
-						"text/markdown; charset=utf-8", http_ver, keepalive);
+			auto ec = co_await httpd::send_string_response_body(client,
+				product_detail,
+				httpd::make_http_last_modified(std::time(0) + 60),
+				"text/markdown; charset=utf-8",
+				http_ver,
+				keepalive);
 			if (ec)
 				throw boost::system::system_error(ec);
 			co_return 200;
@@ -212,7 +224,7 @@ namespace cmall
 			auto body = boost::beast::buffers_to_string(buffer.data());
 
 			boost::system::error_code ec;
-			auto jv	  = boost::json::parse(body, ec, {}, { 64, false, false, true });
+			auto jv = boost::json::parse(body, ec, {}, { 64, false, false, true });
 
 			if (ec || !jv.is_object())
 			{
@@ -227,8 +239,8 @@ namespace cmall
 				// 格式不对.
 				boost::json::object reply_message;
 				if (jv.as_object().contains("id"))
-					reply_message["id"]		 = jv.at("id");
-				reply_message["error"]	 = { { "code", -32600 }, { "message", "Invalid Request" } };
+					reply_message["id"] = jv.at("id");
+				reply_message["error"] = { { "code", -32600 }, { "message", "Invalid Request" } };
 				co_await websocket_write(*connection_ptr, jsutil::json_to_string(reply_message));
 				continue;
 			}
@@ -304,13 +316,13 @@ namespace cmall
 			auto uid = this_client.session_info->user_info->uid_;
 			if (check_admin)
 			{
-				// TODO, 检查用户是否是 admin 才能继续操作.
+				if (!this_client.session_info->isAdmin)
+					throw boost::system::system_error(error::admin_user_required);
 			}
 
 			if (check_merchant)
 			{
-				cmall_merchant merchant;
-				if (!co_await m_database.async_load<cmall_merchant>(uid, merchant))
+				if (!this_client.session_info->isMerchant)
 					throw boost::system::system_error(error::merchant_user_required);
 			}
 
@@ -328,50 +340,59 @@ namespace cmall
 			case req_method::recover_session:
 			{
 				std::string sessionid = jsutil::json_accessor(params).get_string("sessionid");
+				std::string api_token = jsutil::json_accessor(params).get_string("api-token");
 
-				if (sessionid.empty())
+				if (api_token.empty())
 				{
-					// 表示是第一次使用，所以创建一个新　session 给客户端.
-					this_client.session_info = std::make_shared<services::client_session>();
-
-					this_client.session_info->session_id = gen_uuid();
-					sessionid							 = this_client.session_info->session_id;
-
-					co_await session_cache_map.save(*this_client.session_info);
-				}
-				else if (!(co_await session_cache_map.exist(sessionid)))
-				{
-					// 表示session 过期，所以创建一个新　session 给客户端.
-					this_client.session_info = std::make_shared<services::client_session>();
-
-					this_client.session_info->session_id = gen_uuid();
-					sessionid							 = this_client.session_info->session_id;
-
-					co_await session_cache_map.save(*this_client.session_info);
-				}
-				else
-				{
-					this_client.session_info
-						= std::make_shared<services::client_session>(co_await session_cache_map.load(sessionid));
-				}
-
-				if (this_client.session_info->user_info)
-				{
-					bool db_operation = co_await m_database.async_load<cmall_user>(
-						this_client.session_info->user_info->uid_, *(this_client.session_info->user_info));
-					if (!db_operation)
+					if (sessionid.empty())
 					{
-						this_client.session_info->user_info = {};
+						// 表示是第一次使用，所以创建一个新　session 给客户端.
+						this_client.session_info = std::make_shared<services::client_session>();
+
+						this_client.session_info->session_id = gen_uuid();
+						sessionid							 = this_client.session_info->session_id;
+
+						co_await session_cache_map.save(*this_client.session_info);
+					}
+					else if (!(co_await session_cache_map.exist(sessionid)))
+					{
+						// 表示session 过期，所以创建一个新　session 给客户端.
+						this_client.session_info = std::make_shared<services::client_session>();
+
+						this_client.session_info->session_id = gen_uuid();
+						sessionid							 = this_client.session_info->session_id;
+
+						co_await session_cache_map.save(*this_client.session_info);
 					}
 					else
 					{
-						std::unique_lock<std::shared_mutex> l(active_users_mtx);
-						active_users.push_back(connection_ptr);
+						this_client.session_info
+							= std::make_shared<services::client_session>(co_await session_cache_map.load(sessionid));
 					}
-				}
 
-				reply_message["result"] = { { "session_id", this_client.session_info->session_id },
-					{ "isLogin", static_cast<bool>(this_client.session_info->user_info) } };
+					if (this_client.session_info->user_info)
+					{
+						bool db_operation = co_await m_database.async_load<cmall_user>(
+							this_client.session_info->user_info->uid_, *(this_client.session_info->user_info));
+						if (!db_operation)
+						{
+							this_client.session_info->user_info = {};
+						}
+						else
+						{
+							std::unique_lock<std::shared_mutex> l(active_users_mtx);
+							active_users.push_back(connection_ptr);
+						}
+					}
+
+					reply_message["result"] = { { "session_id", this_client.session_info->session_id },
+						{ "isLogin", static_cast<bool>(this_client.session_info->user_info) } };
+				}
+				else
+				{
+					// TODO apitoken 机制不需要 session, 认证后, 直接通过
+					throw boost::system::system_error(cmall::error::not_implemented);
+				}
 			}
 			break;
 
@@ -411,20 +432,23 @@ namespace cmall
 			case req_method::goods_list:
 			case req_method::goods_detail:
 				co_return co_await handle_jsonrpc_goods_api(connection_ptr, method.value(), params);
-			break;
-			case req_method::admin_user_list:
 				break;
+			case req_method::admin_user_list:
 			case req_method::admin_user_ban:
 				break;
-			case req_method::admin_merchant_list:
-				break;
+			case req_method::admin_list_merchants:
+			{
+				co_await ensure_login(true);
+				std::vector<cmall_merchant> all_merchants;
+				co_await m_database.async_load_all(all_merchants);
+				reply_message["result"] = boost::json::value_from(all_merchants);
+			}
+			break;
 			case req_method::admin_merchant_ban:
-				break;
 			case req_method::admin_product_list:
-				break;
 			case req_method::admin_product_withdraw:
-				break;
 			case req_method::admin_order_force_refund:
+				co_await ensure_login(true);
 				break;
 		}
 
@@ -468,7 +492,8 @@ namespace cmall
 						// SUCCESS.
 						cmall_user user;
 						using query_t = odb::query<cmall_user>;
-						if (co_await m_database.async_load<cmall_user>(query_t::active_phone == session_info.verify_telephone, user))
+						if (co_await m_database.async_load<cmall_user>(
+								query_t::active_phone == session_info.verify_telephone, user))
 						{
 							session_info.user_info = user;
 						}
@@ -536,8 +561,8 @@ namespace cmall
 
 				std::string desc = jsutil::json_accessor(params).get_string("desc");
 
-				m.uid_ = uid;
-				m.name_ = name;
+				m.uid_		= uid;
+				m.name_		= name;
 				m.verified_ = false;
 				if (!desc.empty())
 					m.desc_ = desc;
@@ -553,7 +578,7 @@ namespace cmall
 				boost::json::array recipients_array;
 				for (int i = 0; i < user_info.recipients.size(); i++)
 				{
-					auto jsobj =  boost::json::value_from(user_info.recipients[i]);
+					auto jsobj				= boost::json::value_from(user_info.recipients[i]);
 					jsobj.as_object()["id"] = i;
 					recipients_array.push_back(jsobj);
 				}
@@ -586,15 +611,16 @@ namespace cmall
 			case req_method::user_erase_receipt_address:
 			{
 				auto recipient_id_to_remove = params["recipient_id"].as_int64();
-				cmall_user& user_info = *(session_info.user_info);
+				cmall_user& user_info		= *(session_info.user_info);
 
-				bool is_db_op_ok = co_await m_database.async_update<cmall_user>(user_info.uid_,
-					[&](cmall_user&& value) {
-						if (recipient_id_to_remove >= 0 && recipient_id_to_remove < (int64_t)value.recipients.size())
-							value.recipients.erase(value.recipients.begin() + recipient_id_to_remove);
-						user_info = value;
-						return value;
-					});
+				bool is_db_op_ok		= co_await m_database.async_update<cmall_user>(user_info.uid_,
+					   [&](cmall_user&& value)
+					   {
+						   if (recipient_id_to_remove >= 0 && recipient_id_to_remove < (int64_t)value.recipients.size())
+							   value.recipients.erase(value.recipients.begin() + recipient_id_to_remove);
+						   user_info = value;
+						   return value;
+					   });
 				reply_message["result"] = is_db_op_ok;
 			}
 			break;
@@ -605,12 +631,13 @@ namespace cmall
 		co_return reply_message;
 	}
 
-	boost::asio::awaitable<boost::json::object> cmall_service::handle_jsonrpc_order_api(client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
+	boost::asio::awaitable<boost::json::object> cmall_service::handle_jsonrpc_order_api(
+		client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
 	{
 		client_connection& this_client = *connection_ptr;
 		boost::json::object reply_message;
 		services::client_session& session_info = *this_client.session_info;
-		cmall_user& this_user = *(session_info.user_info);
+		cmall_user& this_user				   = *(session_info.user_info);
 
 		switch (method)
 		{
@@ -621,7 +648,8 @@ namespace cmall
 				co_await m_database.async_load<cmall_user>(this_user.uid_, *this_client.session_info->user_info);
 				cmall_user& user_info = *(this_client.session_info->user_info);
 
-				boost::json::array goods_array_ref	  = jsutil::json_accessor(params).get("goods", boost::json::array{}).as_array();
+				boost::json::array goods_array_ref
+					= jsutil::json_accessor(params).get("goods", boost::json::array{}).as_array();
 
 				auto recipient_id = jsutil::json_accessor(params).get("recipient_id", -1).as_int64();
 
@@ -639,25 +667,26 @@ namespace cmall
 
 				cpp_numeric total_price = 0;
 
-				for (boost::json::value goods_v :  goods_array_ref)
+				for (boost::json::value goods_v : goods_array_ref)
 				{
 					boost::json::object goods_ref = goods_v.as_object();
-					auto merchant_id_of_goods = goods_ref["merchant_id"].as_int64();
-					auto goods_id_of_goods = jsutil::json_as_string(goods_ref["goods_id"].as_string(), "");
+					auto merchant_id_of_goods	  = goods_ref["merchant_id"].as_int64();
+					auto goods_id_of_goods		  = jsutil::json_as_string(goods_ref["goods_id"].as_string(), "");
 
 					boost::system::error_code ec;
-					services::product product_in_mall = co_await merchant_repos[merchant_id_of_goods]->get_product(goods_id_of_goods, ec);
+					services::product product_in_mall
+						= co_await merchant_repos[merchant_id_of_goods]->get_product(goods_id_of_goods, ec);
 					if (ec) // 商品不存在
 						continue;
 
 					goods_snapshot good_snap;
 
-					good_snap.description_ = product_in_mall.product_description;
+					good_snap.description_	   = product_in_mall.product_description;
 					good_snap.good_version_git = product_in_mall.git_version;
-					good_snap.name_ = product_in_mall.product_title;
-					good_snap.merchant_id = merchant_id_of_goods;
-					good_snap.goods_id = product_in_mall.product_id;
-					good_snap.price_ = cpp_numeric(product_in_mall.product_price);
+					good_snap.name_			   = product_in_mall.product_title;
+					good_snap.merchant_id	   = merchant_id_of_goods;
+					good_snap.goods_id		   = product_in_mall.product_id;
+					good_snap.price_		   = cpp_numeric(product_in_mall.product_price);
 					new_order.bought_goods.push_back(good_snap);
 
 					total_price += good_snap.price_;
@@ -678,7 +707,7 @@ namespace cmall
 				break;
 			case req_method::order_list:
 			{
-				auto page = jsutil::json_accessor(params).get("page", 0).as_int64();
+				auto page	   = jsutil::json_accessor(params).get("page", 0).as_int64();
 				auto page_size = jsutil::json_accessor(params).get("page_size", 20).as_int64();
 
 				std::vector<cmall_order> orders;
@@ -690,15 +719,15 @@ namespace cmall
 
 				LOG_DBG << "order_list retrieved, " << orders.size() << " items";
 				reply_message["result"] = boost::json::value_from(orders);
-
-			}break;
+			}
+			break;
 			case req_method::order_get_pay_url:
 			{
-				auto orderid	  = jsutil::json_accessor(params).get_string("orderid");
+				auto orderid = jsutil::json_accessor(params).get_string("orderid");
 				auto payment = jsutil::json_accessor(params).get_string("payment");
 
 				cmall_order order_to_pay;
-				using query_t = odb::query<cmall_order>;
+				using query_t	   = odb::query<cmall_order>;
 				auto query		   = query_t::oid == orderid && query_t::buyer == this_user.uid_;
 				bool order_founded = co_await m_database.async_load<cmall_order>(query, order_to_pay);
 
@@ -718,7 +747,7 @@ namespace cmall
 				services::payment_url payurl = co_await payment_service.get_payurl(
 					pay_script_content, orderid, 0, "", to_string(order_to_pay.price_), services::PAYMENT_CHSPAY);
 
-				reply_message["result"] = { {"type", "url"}, {"url", payurl.uri } };
+				reply_message["result"] = { { "type", "url" }, { "url", payurl.uri } };
 			}
 			break;
 			default:
@@ -727,25 +756,27 @@ namespace cmall
 		co_return reply_message;
 	}
 
-	boost::asio::awaitable<boost::json::object> cmall_service::handle_jsonrpc_cart_api(client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
+	boost::asio::awaitable<boost::json::object> cmall_service::handle_jsonrpc_cart_api(
+		client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
 	{
 		client_connection& this_client = *connection_ptr;
 		boost::json::object reply_message;
 		services::client_session& session_info = *this_client.session_info;
-		cmall_user& this_user = *(session_info.user_info);
+		cmall_user& this_user				   = *(session_info.user_info);
 
 		switch (method)
 		{
 			case req_method::cart_add: // 添加到购物车.
 			{
 				auto merchant_id = jsutil::json_accessor(params).get("merchant_id", -1).as_int64();
-				auto goods_id = jsutil::json_accessor(params).get_string("goods_id");
+				auto goods_id	 = jsutil::json_accessor(params).get_string("goods_id");
 				if (merchant_id < 0 || goods_id.empty())
 					throw boost::system::system_error(cmall::error::invalid_params);
 
 				cmall_cart item;
 				using query_t = odb::query<cmall_cart>;
-				auto query(query_t::uid == this_user.uid_ && query_t::merchant_id == merchant_id && query_t::goods_id == goods_id);
+				auto query(query_t::uid == this_user.uid_ && query_t::merchant_id == merchant_id
+					&& query_t::goods_id == goods_id);
 				if (co_await m_database.async_load<cmall_cart>(query, item))
 				{
 					item.count_ += 1;
@@ -762,13 +793,16 @@ namespace cmall
 				}
 				reply_message["result"] = true;
 
-				co_await send_notify_message(this_user.uid_, fmt::format(R"---({{"topic":"cart_changed", "session_id": "{}"}})---", this_client.session_info->session_id), this_client.connection_id_);
+				co_await send_notify_message(this_user.uid_,
+					fmt::format(R"---({{"topic":"cart_changed", "session_id": "{}"}})---",
+						this_client.session_info->session_id),
+					this_client.connection_id_);
 			}
 			break;
 			case req_method::cart_mod: // 修改数量.
 			{
 				auto item_id = jsutil::json_accessor(params).get("item_id", -1).as_int64();
-				auto count = jsutil::json_accessor(params).get("count", 0).as_int64();
+				auto count	 = jsutil::json_accessor(params).get("count", 0).as_int64();
 				if (item_id < 0 || count <= 0)
 					throw boost::system::system_error(cmall::error::invalid_params);
 
@@ -783,12 +817,17 @@ namespace cmall
 					throw boost::system::system_error(cmall::error::invalid_params);
 				}
 
-				co_await m_database.async_update<cmall_cart>(item_id, [count](cmall_cart&& old) mutable {
-					old.count_ = count;
-					return old;
-				});
+				co_await m_database.async_update<cmall_cart>(item_id,
+					[count](cmall_cart&& old) mutable
+					{
+						old.count_ = count;
+						return old;
+					});
 				reply_message["result"] = true;
-				co_await send_notify_message(this_user.uid_, fmt::format(R"---({{"topic":"cart_changed", "session_id": "{}"}})---", this_client.session_info->session_id), this_client.connection_id_);
+				co_await send_notify_message(this_user.uid_,
+					fmt::format(R"---({{"topic":"cart_changed", "session_id": "{}"}})---",
+						this_client.session_info->session_id),
+					this_client.connection_id_);
 			}
 			break;
 			case req_method::cart_del: // 从购物车删除.
@@ -810,12 +849,15 @@ namespace cmall
 
 				co_await m_database.async_hard_remove<cmall_cart>(item_id);
 				reply_message["result"] = true;
-				co_await send_notify_message(this_user.uid_, fmt::format(R"---({{"topic":"cart_changed", "session_id": "{}"}})---", this_client.session_info->session_id), this_client.connection_id_);
+				co_await send_notify_message(this_user.uid_,
+					fmt::format(R"---({{"topic":"cart_changed", "session_id": "{}"}})---",
+						this_client.session_info->session_id),
+					this_client.connection_id_);
 			}
 			break;
 			case req_method::cart_list: // 查看购物车列表.
 			{
-				auto page = jsutil::json_accessor(params).get("page", 0).as_int64();
+				auto page	   = jsutil::json_accessor(params).get("page", 0).as_int64();
 				auto page_size = jsutil::json_accessor(params).get("page_size", 20).as_int64();
 
 				std::vector<cmall_cart> items;
@@ -832,24 +874,26 @@ namespace cmall
 		}
 		co_return reply_message;
 	}
-	boost::asio::awaitable<boost::json::object> cmall_service::handle_jsonrpc_goods_api(client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
+	boost::asio::awaitable<boost::json::object> cmall_service::handle_jsonrpc_goods_api(
+		client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
 	{
 		client_connection& this_client = *connection_ptr;
 		boost::json::object reply_message;
 		services::client_session& session_info = *this_client.session_info;
-		cmall_user& this_user = *(session_info.user_info);
+		cmall_user& this_user				   = *(session_info.user_info);
 
 		switch (method)
 		{
 			case req_method::goods_list:
 			{
 				// 列出 商品, 根据参数决定是首页还是商户
-				auto merchant = jsutil::json_accessor(params).get_string("merchant");
+				auto merchant	 = jsutil::json_accessor(params).get_string("merchant");
 				auto merchant_id = parse_number<std::uint64_t>(merchant);
 
 				std::vector<cmall_merchant> merchants;
 				using query_t = odb::query<cmall_merchant>;
-				auto query = query_t::verified == true && query_t::state == to_underlying(merchant_state_t::normal) && query_t::deleted_at.is_null();
+				auto query	  = query_t::verified == true && query_t::state == to_underlying(merchant_state_t::normal)
+					&& query_t::deleted_at.is_null();
 				if (merchant_id.has_value())
 				{
 					query = query_t::uid == merchant_id.value() && query;
@@ -865,8 +909,9 @@ namespace cmall
 					{
 						if (!services::repo_products::is_git_repo(m.repo_path))
 							continue;
-						
-						auto repo = std::make_shared<services::repo_products>(git_operation_thread_pool, m.uid_, m.repo_path);
+
+						auto repo
+							= std::make_shared<services::repo_products>(git_operation_thread_pool, m.uid_, m.repo_path);
 						std::vector<services::product> products = co_await repo->get_products();
 						std::copy(products.begin(), products.end(), std::back_inserter(all_products));
 					}
@@ -878,13 +923,12 @@ namespace cmall
 			case req_method::goods_detail:
 			{
 				auto merchant_id = jsutil::json_accessor(params).get("merchant_id", -1).as_int64();
-				auto goods_id = jsutil::json_accessor(params).get_string("goods_id");
+				auto goods_id	 = jsutil::json_accessor(params).get_string("goods_id");
 
 				if (!merchant_repos.contains(merchant_id))
 					throw boost::system::system_error(cmall::error::invalid_params);
 				if (goods_id.empty())
 					throw boost::system::system_error(cmall::error::invalid_params);
-
 
 				boost::system::error_code ec;
 				auto product = co_await merchant_repos[merchant_id]->get_product(goods_id, ec);
@@ -901,7 +945,8 @@ namespace cmall
 		co_return reply_message;
 	}
 
-	boost::asio::awaitable<void> cmall_service::send_notify_message(std::uint64_t uid_, const std::string& msg, std::int64_t exclude_connection_id)
+	boost::asio::awaitable<void> cmall_service::send_notify_message(
+		std::uint64_t uid_, const std::string& msg, std::int64_t exclude_connection_id)
 	{
 		std::vector<client_connection_ptr> active_user_connections;
 		{
@@ -913,7 +958,6 @@ namespace cmall
 		}
 		for (auto c : active_user_connections)
 			co_await websocket_write(*c, msg);
-
 	}
 
 	boost::asio::awaitable<void> cmall_service::do_ws_write(size_t connection_id, client_connection_ptr connection_ptr)
@@ -929,7 +973,7 @@ namespace cmall
 				timer t(co_await boost::asio::this_coro::executor);
 				t.expires_from_now(std::chrono::seconds(15));
 				std::variant<std::monostate, std::string> awaited_result
-					= co_await(t.async_wait(boost::asio::use_awaitable)
+					= co_await (t.async_wait(boost::asio::use_awaitable)
 						|| message_deque.async_receive(boost::asio::use_awaitable));
 				if (awaited_result.index() == 0)
 				{
@@ -955,9 +999,8 @@ namespace cmall
 
 	boost::asio::awaitable<void> cmall_service::close_all_ws()
 	{
-		co_await httpd::detail::map(m_ws_acceptors, [](auto&& a) mutable -> boost::asio::awaitable<void>{
-			co_return co_await a.clean_shutdown();
-		});
+		co_await httpd::detail::map(m_ws_acceptors,
+			[](auto&& a) mutable -> boost::asio::awaitable<void> { co_return co_await a.clean_shutdown(); });
 
 		LOG_DBG << "cmall_service::close_all_ws() success!";
 	}
@@ -966,13 +1009,19 @@ namespace cmall
 	{
 		if (connection_.ws_client)
 		{
-			co_await boost::asio::co_spawn(connection_.get_executor(),
+			co_await boost::asio::co_spawn(
+				connection_.get_executor(),
 				[&connection_, message]() mutable -> boost::asio::awaitable<void>
-				{ connection_.ws_client->message_channel.try_send(boost::system::error_code(), message); co_return; }, boost::asio::use_awaitable);
+				{
+					connection_.ws_client->message_channel.try_send(boost::system::error_code(), message);
+					co_return;
+				},
+				boost::asio::use_awaitable);
 		}
 	}
 
-	client_connection_ptr cmall_service::make_shared_connection(const boost::asio::any_io_executor& io, std::int64_t connection_id)
+	client_connection_ptr cmall_service::make_shared_connection(
+		const boost::asio::any_io_executor& io, std::int64_t connection_id)
 	{
 		if constexpr (httpd::has_so_reuseport())
 			return std::make_shared<client_connection>(io, connection_id);
@@ -1056,7 +1105,7 @@ namespace cmall
 
 				using namespace boost::asio::experimental::awaitable_operators;
 
-				co_await(
+				co_await (
 					// 启动读写协程.
 					do_ws_read(connection_id, client_ptr) && do_ws_write(connection_id, client_ptr));
 				LOG_DBG << "handle_accepted_client, " << connection_id << ", connection exit.";
@@ -1074,12 +1123,14 @@ namespace cmall
 				if (target.starts_with("/repos"))
 				{
 					boost::match_results<std::string_view::const_iterator> w;
-					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/((images|css)/.+)")))
+					if (boost::regex_match(
+							target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/((images|css)/.+)")))
 					{
 						std::string merhcant = w[1].str();
-						std::string remains = w[2].str();
+						std::string remains	 = w[2].str();
 
-						int status_code = co_await render_git_repo_files(connection_id, merhcant, remains, client_ptr->tcp_stream, req);
+						int status_code = co_await render_git_repo_files(
+							connection_id, merhcant, remains, client_ptr->tcp_stream, req);
 
 						if (status_code != 200)
 						{
@@ -1091,7 +1142,6 @@ namespace cmall
 						co_await http_simple_error_page("ERRORED", 403, req.version());
 					}
 					continue;
-
 				}
 
 				// 这个 /goods/${merchant}/${goods_id} 获取 富文本的商品描述.

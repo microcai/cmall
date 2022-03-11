@@ -2789,6 +2789,688 @@ namespace odb
     return st.execute ();
   }
 
+  // administrators
+  //
+
+  const char access::object_traits_impl< ::administrators, id_pgsql >::
+  persist_statement_name[] = "persist_administrators";
+
+  const char access::object_traits_impl< ::administrators, id_pgsql >::
+  find_statement_name[] = "find_administrators";
+
+  const char access::object_traits_impl< ::administrators, id_pgsql >::
+  update_statement_name[] = "update_administrators";
+
+  const char access::object_traits_impl< ::administrators, id_pgsql >::
+  erase_statement_name[] = "erase_administrators";
+
+  const char access::object_traits_impl< ::administrators, id_pgsql >::
+  query_statement_name[] = "query_administrators";
+
+  const char access::object_traits_impl< ::administrators, id_pgsql >::
+  erase_query_statement_name[] = "erase_query_administrators";
+
+  const unsigned int access::object_traits_impl< ::administrators, id_pgsql >::
+  persist_statement_types[] =
+  {
+    pgsql::int8_oid
+  };
+
+  const unsigned int access::object_traits_impl< ::administrators, id_pgsql >::
+  find_statement_types[] =
+  {
+    pgsql::int8_oid
+  };
+
+  const unsigned int access::object_traits_impl< ::administrators, id_pgsql >::
+  update_statement_types[] =
+  {
+    pgsql::int8_oid,
+    pgsql::int8_oid
+  };
+
+  const char alias_traits<  ::cmall_user,
+    id_pgsql,
+    access::object_traits_impl< ::administrators, id_pgsql >::user_tag>::
+  table_name[] = "\"user\"";
+
+  struct access::object_traits_impl< ::administrators, id_pgsql >::extra_statement_cache_type
+  {
+    extra_statement_cache_type (
+      pgsql::connection&,
+      image_type&,
+      id_image_type&,
+      pgsql::binding&,
+      pgsql::binding&,
+      pgsql::native_binding&,
+      const unsigned int*)
+    {
+    }
+  };
+
+  access::object_traits_impl< ::administrators, id_pgsql >::id_type
+  access::object_traits_impl< ::administrators, id_pgsql >::
+  id (const id_image_type& i)
+  {
+    pgsql::database* db (0);
+    ODB_POTENTIALLY_UNUSED (db);
+
+    id_type id;
+    {
+      pgsql::value_traits<
+          ::uint64_t,
+          pgsql::id_bigint >::set_value (
+        id,
+        i.id_value,
+        i.id_null);
+    }
+
+    return id;
+  }
+
+  access::object_traits_impl< ::administrators, id_pgsql >::id_type
+  access::object_traits_impl< ::administrators, id_pgsql >::
+  id (const image_type& i)
+  {
+    pgsql::database* db (0);
+    ODB_POTENTIALLY_UNUSED (db);
+
+    id_type id;
+    {
+      pgsql::value_traits<
+          ::uint64_t,
+          pgsql::id_bigint >::set_value (
+        id,
+        i.uid_value,
+        i.uid_null);
+    }
+
+    return id;
+  }
+
+  bool access::object_traits_impl< ::administrators, id_pgsql >::
+  grow (image_type& i,
+        bool* t)
+  {
+    ODB_POTENTIALLY_UNUSED (i);
+    ODB_POTENTIALLY_UNUSED (t);
+
+    bool grew (false);
+
+    // uid_
+    //
+    t[0UL] = 0;
+
+    // user
+    //
+    t[1UL] = 0;
+
+    return grew;
+  }
+
+  void access::object_traits_impl< ::administrators, id_pgsql >::
+  bind (pgsql::bind* b,
+        image_type& i,
+        pgsql::statement_kind sk)
+  {
+    ODB_POTENTIALLY_UNUSED (sk);
+
+    using namespace pgsql;
+
+    std::size_t n (0);
+
+    // uid_
+    //
+    if (sk != statement_insert && sk != statement_update)
+    {
+      b[n].type = pgsql::bind::bigint;
+      b[n].buffer = &i.uid_value;
+      b[n].is_null = &i.uid_null;
+      n++;
+    }
+
+    // user
+    //
+    b[n].type = pgsql::bind::bigint;
+    b[n].buffer = &i.user_value;
+    b[n].is_null = &i.user_null;
+    n++;
+  }
+
+  void access::object_traits_impl< ::administrators, id_pgsql >::
+  bind (pgsql::bind* b, id_image_type& i)
+  {
+    std::size_t n (0);
+    b[n].type = pgsql::bind::bigint;
+    b[n].buffer = &i.id_value;
+    b[n].is_null = &i.id_null;
+  }
+
+  bool access::object_traits_impl< ::administrators, id_pgsql >::
+  init (image_type& i,
+        const object_type& o,
+        pgsql::statement_kind sk)
+  {
+    ODB_POTENTIALLY_UNUSED (i);
+    ODB_POTENTIALLY_UNUSED (o);
+    ODB_POTENTIALLY_UNUSED (sk);
+
+    using namespace pgsql;
+
+    bool grew (false);
+
+    // user
+    //
+    {
+      ::std::shared_ptr< ::cmall_user > const& v =
+        o.user;
+
+      typedef object_traits< ::cmall_user > obj_traits;
+      typedef odb::pointer_traits< ::std::shared_ptr< ::cmall_user > > ptr_traits;
+
+      bool is_null (ptr_traits::null_ptr (v));
+      if (!is_null)
+      {
+        const obj_traits::id_type& ptr_id (
+          obj_traits::id (ptr_traits::get_ref (v)));
+
+        pgsql::value_traits<
+            obj_traits::id_type,
+            pgsql::id_bigint >::set_image (
+          i.user_value, is_null, ptr_id);
+        i.user_null = is_null;
+      }
+      else
+        i.user_null = true;
+    }
+
+    return grew;
+  }
+
+  void access::object_traits_impl< ::administrators, id_pgsql >::
+  init (object_type& o,
+        const image_type& i,
+        database* db)
+  {
+    ODB_POTENTIALLY_UNUSED (o);
+    ODB_POTENTIALLY_UNUSED (i);
+    ODB_POTENTIALLY_UNUSED (db);
+
+    // uid_
+    //
+    {
+      ::uint64_t& v =
+        o.uid_;
+
+      pgsql::value_traits<
+          ::uint64_t,
+          pgsql::id_bigint >::set_value (
+        v,
+        i.uid_value,
+        i.uid_null);
+    }
+
+    // user
+    //
+    {
+      ::std::shared_ptr< ::cmall_user >& v =
+        o.user;
+
+      typedef object_traits< ::cmall_user > obj_traits;
+      typedef odb::pointer_traits< ::std::shared_ptr< ::cmall_user > > ptr_traits;
+
+      if (i.user_null)
+        v = ptr_traits::pointer_type ();
+      else
+      {
+        obj_traits::id_type ptr_id;
+        pgsql::value_traits<
+            obj_traits::id_type,
+            pgsql::id_bigint >::set_value (
+          ptr_id,
+          i.user_value,
+          i.user_null);
+
+        // If a compiler error points to the line below, then
+        // it most likely means that a pointer used in a member
+        // cannot be initialized from an object pointer.
+        //
+        v = ptr_traits::pointer_type (
+          static_cast<pgsql::database*> (db)->load<
+            obj_traits::object_type > (ptr_id));
+      }
+    }
+  }
+
+  void access::object_traits_impl< ::administrators, id_pgsql >::
+  init (id_image_type& i, const id_type& id)
+  {
+    {
+      bool is_null (false);
+      pgsql::value_traits<
+          ::uint64_t,
+          pgsql::id_bigint >::set_image (
+        i.id_value, is_null, id);
+      i.id_null = is_null;
+    }
+  }
+
+  const char access::object_traits_impl< ::administrators, id_pgsql >::persist_statement[] =
+  "INSERT INTO \"administrators\" "
+  "(\"uid\", "
+  "\"user\") "
+  "VALUES "
+  "(DEFAULT, $1) "
+  "RETURNING \"uid\"";
+
+  const char access::object_traits_impl< ::administrators, id_pgsql >::find_statement[] =
+  "SELECT "
+  "\"administrators\".\"uid\", "
+  "\"administrators\".\"user\" "
+  "FROM \"administrators\" "
+  "WHERE \"administrators\".\"uid\"=$1";
+
+  const char access::object_traits_impl< ::administrators, id_pgsql >::update_statement[] =
+  "UPDATE \"administrators\" "
+  "SET "
+  "\"user\"=$1 "
+  "WHERE \"uid\"=$2";
+
+  const char access::object_traits_impl< ::administrators, id_pgsql >::erase_statement[] =
+  "DELETE FROM \"administrators\" "
+  "WHERE \"uid\"=$1";
+
+  const char access::object_traits_impl< ::administrators, id_pgsql >::query_statement[] =
+  "SELECT\n"
+  "\"administrators\".\"uid\",\n"
+  "\"administrators\".\"user\"\n"
+  "FROM \"administrators\"\n"
+  "LEFT JOIN \"cmall_user\" AS \"user\" ON \"user\".\"uid\"=\"administrators\".\"user\"";
+
+  const char access::object_traits_impl< ::administrators, id_pgsql >::erase_query_statement[] =
+  "DELETE FROM \"administrators\"";
+
+  const char access::object_traits_impl< ::administrators, id_pgsql >::table_name[] =
+  "\"administrators\"";
+
+  void access::object_traits_impl< ::administrators, id_pgsql >::
+  persist (database& db, object_type& obj)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+
+    using namespace pgsql;
+
+    pgsql::connection& conn (
+      pgsql::transaction::current ().connection ());
+    statements_type& sts (
+      conn.statement_cache ().find_object<object_type> ());
+
+    callback (db,
+              static_cast<const object_type&> (obj),
+              callback_event::pre_persist);
+
+    image_type& im (sts.image ());
+    binding& imb (sts.insert_image_binding ());
+
+    if (init (im, obj, statement_insert))
+      im.version++;
+
+    if (im.version != sts.insert_image_version () ||
+        imb.version == 0)
+    {
+      bind (imb.bind, im, statement_insert);
+      sts.insert_image_version (im.version);
+      imb.version++;
+    }
+
+    {
+      id_image_type& i (sts.id_image ());
+      binding& b (sts.id_image_binding ());
+      if (i.version != sts.id_image_version () || b.version == 0)
+      {
+        bind (b.bind, i);
+        sts.id_image_version (i.version);
+        b.version++;
+      }
+    }
+
+    insert_statement& st (sts.persist_statement ());
+    if (!st.execute ())
+      throw object_already_persistent ();
+
+    obj.uid_ = id (sts.id_image ());
+
+    callback (db,
+              static_cast<const object_type&> (obj),
+              callback_event::post_persist);
+  }
+
+  void access::object_traits_impl< ::administrators, id_pgsql >::
+  update (database& db, const object_type& obj)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+
+    using namespace pgsql;
+    using pgsql::update_statement;
+
+    callback (db, obj, callback_event::pre_update);
+
+    pgsql::transaction& tr (pgsql::transaction::current ());
+    pgsql::connection& conn (tr.connection ());
+    statements_type& sts (
+      conn.statement_cache ().find_object<object_type> ());
+
+    id_image_type& idi (sts.id_image ());
+    init (idi, id (obj));
+
+    image_type& im (sts.image ());
+    if (init (im, obj, statement_update))
+      im.version++;
+
+    bool u (false);
+    binding& imb (sts.update_image_binding ());
+    if (im.version != sts.update_image_version () ||
+        imb.version == 0)
+    {
+      bind (imb.bind, im, statement_update);
+      sts.update_image_version (im.version);
+      imb.version++;
+      u = true;
+    }
+
+    binding& idb (sts.id_image_binding ());
+    if (idi.version != sts.update_id_image_version () ||
+        idb.version == 0)
+    {
+      if (idi.version != sts.id_image_version () ||
+          idb.version == 0)
+      {
+        bind (idb.bind, idi);
+        sts.id_image_version (idi.version);
+        idb.version++;
+      }
+
+      sts.update_id_image_version (idi.version);
+
+      if (!u)
+        imb.version++;
+    }
+
+    update_statement& st (sts.update_statement ());
+    if (st.execute () == 0)
+      throw object_not_persistent ();
+
+    callback (db, obj, callback_event::post_update);
+    pointer_cache_traits::update (db, obj);
+  }
+
+  void access::object_traits_impl< ::administrators, id_pgsql >::
+  erase (database& db, const id_type& id)
+  {
+    using namespace pgsql;
+
+    ODB_POTENTIALLY_UNUSED (db);
+
+    pgsql::connection& conn (
+      pgsql::transaction::current ().connection ());
+    statements_type& sts (
+      conn.statement_cache ().find_object<object_type> ());
+
+    id_image_type& i (sts.id_image ());
+    init (i, id);
+
+    binding& idb (sts.id_image_binding ());
+    if (i.version != sts.id_image_version () || idb.version == 0)
+    {
+      bind (idb.bind, i);
+      sts.id_image_version (i.version);
+      idb.version++;
+    }
+
+    if (sts.erase_statement ().execute () != 1)
+      throw object_not_persistent ();
+
+    pointer_cache_traits::erase (db, id);
+  }
+
+  access::object_traits_impl< ::administrators, id_pgsql >::pointer_type
+  access::object_traits_impl< ::administrators, id_pgsql >::
+  find (database& db, const id_type& id)
+  {
+    using namespace pgsql;
+
+    {
+      pointer_type p (pointer_cache_traits::find (db, id));
+
+      if (!pointer_traits::null_ptr (p))
+        return p;
+    }
+
+    pgsql::connection& conn (
+      pgsql::transaction::current ().connection ());
+    statements_type& sts (
+      conn.statement_cache ().find_object<object_type> ());
+
+    statements_type::auto_lock l (sts);
+
+    if (l.locked ())
+    {
+      if (!find_ (sts, &id))
+        return pointer_type ();
+    }
+
+    pointer_type p (
+      access::object_factory<object_type, pointer_type>::create ());
+    pointer_traits::guard pg (p);
+
+    pointer_cache_traits::insert_guard ig (
+      pointer_cache_traits::insert (db, id, p));
+
+    object_type& obj (pointer_traits::get_ref (p));
+
+    if (l.locked ())
+    {
+      select_statement& st (sts.find_statement ());
+      ODB_POTENTIALLY_UNUSED (st);
+
+      callback (db, obj, callback_event::pre_load);
+      init (obj, sts.image (), &db);
+      load_ (sts, obj, false);
+      sts.load_delayed (0);
+      l.unlock ();
+      callback (db, obj, callback_event::post_load);
+      pointer_cache_traits::load (ig.position ());
+    }
+    else
+      sts.delay_load (id, obj, ig.position ());
+
+    ig.release ();
+    pg.release ();
+    return p;
+  }
+
+  bool access::object_traits_impl< ::administrators, id_pgsql >::
+  find (database& db, const id_type& id, object_type& obj)
+  {
+    using namespace pgsql;
+
+    pgsql::connection& conn (
+      pgsql::transaction::current ().connection ());
+    statements_type& sts (
+      conn.statement_cache ().find_object<object_type> ());
+
+    statements_type::auto_lock l (sts);
+    assert (l.locked ()) /* Must be a top-level call. */;
+
+    if (!find_ (sts, &id))
+      return false;
+
+    select_statement& st (sts.find_statement ());
+    ODB_POTENTIALLY_UNUSED (st);
+
+    reference_cache_traits::position_type pos (
+      reference_cache_traits::insert (db, id, obj));
+    reference_cache_traits::insert_guard ig (pos);
+
+    callback (db, obj, callback_event::pre_load);
+    init (obj, sts.image (), &db);
+    load_ (sts, obj, false);
+    sts.load_delayed (0);
+    l.unlock ();
+    callback (db, obj, callback_event::post_load);
+    reference_cache_traits::load (pos);
+    ig.release ();
+    return true;
+  }
+
+  bool access::object_traits_impl< ::administrators, id_pgsql >::
+  reload (database& db, object_type& obj)
+  {
+    using namespace pgsql;
+
+    pgsql::connection& conn (
+      pgsql::transaction::current ().connection ());
+    statements_type& sts (
+      conn.statement_cache ().find_object<object_type> ());
+
+    statements_type::auto_lock l (sts);
+    assert (l.locked ()) /* Must be a top-level call. */;
+
+    const id_type& id (object_traits_impl::id (obj));
+    if (!find_ (sts, &id))
+      return false;
+
+    select_statement& st (sts.find_statement ());
+    ODB_POTENTIALLY_UNUSED (st);
+
+    callback (db, obj, callback_event::pre_load);
+    init (obj, sts.image (), &db);
+    load_ (sts, obj, true);
+    sts.load_delayed (0);
+    l.unlock ();
+    callback (db, obj, callback_event::post_load);
+    return true;
+  }
+
+  bool access::object_traits_impl< ::administrators, id_pgsql >::
+  find_ (statements_type& sts,
+         const id_type* id)
+  {
+    using namespace pgsql;
+
+    id_image_type& i (sts.id_image ());
+    init (i, *id);
+
+    binding& idb (sts.id_image_binding ());
+    if (i.version != sts.id_image_version () || idb.version == 0)
+    {
+      bind (idb.bind, i);
+      sts.id_image_version (i.version);
+      idb.version++;
+    }
+
+    image_type& im (sts.image ());
+    binding& imb (sts.select_image_binding ());
+
+    if (im.version != sts.select_image_version () ||
+        imb.version == 0)
+    {
+      bind (imb.bind, im, statement_select);
+      sts.select_image_version (im.version);
+      imb.version++;
+    }
+
+    select_statement& st (sts.find_statement ());
+
+    st.execute ();
+    auto_result ar (st);
+    select_statement::result r (st.fetch ());
+
+    return r != select_statement::no_data;
+  }
+
+  result< access::object_traits_impl< ::administrators, id_pgsql >::object_type >
+  access::object_traits_impl< ::administrators, id_pgsql >::
+  query (database&, const query_base_type& q)
+  {
+    using namespace pgsql;
+    using odb::details::shared;
+    using odb::details::shared_ptr;
+
+    pgsql::connection& conn (
+      pgsql::transaction::current ().connection ());
+
+    statements_type& sts (
+      conn.statement_cache ().find_object<object_type> ());
+
+    image_type& im (sts.image ());
+    binding& imb (sts.select_image_binding ());
+
+    if (im.version != sts.select_image_version () ||
+        imb.version == 0)
+    {
+      bind (imb.bind, im, statement_select);
+      sts.select_image_version (im.version);
+      imb.version++;
+    }
+
+    std::string text (query_statement);
+    if (!q.empty ())
+    {
+      text += "\n";
+      text += q.clause ();
+    }
+
+    q.init_parameters ();
+    shared_ptr<select_statement> st (
+      new (shared) select_statement (
+        sts.connection (),
+        query_statement_name,
+        text,
+        true,
+        true,
+        q.parameter_types (),
+        q.parameter_count (),
+        q.parameters_binding (),
+        imb));
+
+    st->execute ();
+    st->deallocate ();
+
+    shared_ptr< odb::object_result_impl<object_type> > r (
+      new (shared) pgsql::object_result_impl<object_type> (
+        q, st, sts, 0));
+
+    return result<object_type> (r);
+  }
+
+  unsigned long long access::object_traits_impl< ::administrators, id_pgsql >::
+  erase_query (database&, const query_base_type& q)
+  {
+    using namespace pgsql;
+
+    pgsql::connection& conn (
+      pgsql::transaction::current ().connection ());
+
+    std::string text (erase_query_statement);
+    if (!q.empty ())
+    {
+      text += ' ';
+      text += q.clause ();
+    }
+
+    q.init_parameters ();
+    delete_statement st (
+      conn,
+      erase_query_statement_name,
+      text,
+      q.parameter_types (),
+      q.parameter_count (),
+      q.parameters_binding ());
+
+    return st.execute ();
+  }
+
   // cmall_merchant
   //
 
@@ -7926,6 +8608,7 @@ namespace odb
           db.execute ("DROP TABLE IF EXISTS \"cmall_order_recipient\" CASCADE");
           db.execute ("DROP TABLE IF EXISTS \"cmall_order\" CASCADE");
           db.execute ("DROP TABLE IF EXISTS \"cmall_merchant\" CASCADE");
+          db.execute ("DROP TABLE IF EXISTS \"administrators\" CASCADE");
           db.execute ("DROP TABLE IF EXISTS \"cmall_user_recipients\" CASCADE");
           db.execute ("DROP TABLE IF EXISTS \"cmall_user_used_phones\" CASCADE");
           db.execute ("DROP TABLE IF EXISTS \"cmall_user\" CASCADE");
@@ -7993,6 +8676,13 @@ namespace odb
                       "  ON \"cmall_user_recipients\" (\"object_id\")");
           db.execute ("CREATE INDEX \"cmall_user_recipients_index_i\"\n"
                       "  ON \"cmall_user_recipients\" (\"index\")");
+          db.execute ("CREATE TABLE \"administrators\" (\n"
+                      "  \"uid\" BIGSERIAL NOT NULL PRIMARY KEY,\n"
+                      "  \"user\" BIGINT NULL,\n"
+                      "  CONSTRAINT \"user_fk\"\n"
+                      "    FOREIGN KEY (\"user\")\n"
+                      "    REFERENCES \"cmall_user\" (\"uid\")\n"
+                      "    INITIALLY DEFERRED)");
           db.execute ("CREATE TABLE \"cmall_merchant\" (\n"
                       "  \"uid\" BIGINT NOT NULL PRIMARY KEY,\n"
                       "  \"name\" TEXT NOT NULL,\n"
@@ -8092,7 +8782,7 @@ namespace odb
                       "  \"migration\" BOOLEAN NOT NULL)");
           db.execute ("INSERT INTO \"schema_version\" (\n"
                       "  \"name\", \"version\", \"migration\")\n"
-                      "  SELECT '', 9, FALSE\n"
+                      "  SELECT '', 10, FALSE\n"
                       "  WHERE NOT EXISTS (\n"
                       "    SELECT 1 FROM \"schema_version\" WHERE \"name\" = '')");
           return false;
@@ -8182,6 +8872,66 @@ namespace odb
     "",
     9ULL,
     &migrate_schema_9);
+
+  static bool
+  migrate_schema_10 (database& db, unsigned short pass, bool pre)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (pass);
+    ODB_POTENTIALLY_UNUSED (pre);
+
+    if (pre)
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          db.execute ("CREATE TABLE \"administrators\" (\n"
+                      "  \"uid\" BIGSERIAL NOT NULL PRIMARY KEY,\n"
+                      "  \"user\" BIGINT NULL)");
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("ALTER TABLE \"administrators\"\n"
+                      "  ADD CONSTRAINT \"user_fk\"\n"
+                      "    FOREIGN KEY (\"user\")\n"
+                      "    REFERENCES \"cmall_user\" (\"uid\")\n"
+                      "    INITIALLY DEFERRED");
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"version\" = 10, \"migration\" = TRUE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+    else
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"migration\" = FALSE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  static const schema_catalog_migrate_entry
+  migrate_schema_entry_10_ (
+    id_pgsql,
+    "",
+    10ULL,
+    &migrate_schema_10);
 }
 
 #include <odb/post.hxx>

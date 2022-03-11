@@ -1,4 +1,20 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
+  <changeset version="10">
+    <add-table name="administrators" kind="object">
+      <column name="uid" type="BIGINT" null="false"/>
+      <column name="user" type="BIGINT" null="true"/>
+      <primary-key auto="true">
+        <column name="uid"/>
+      </primary-key>
+      <foreign-key name="user_fk" deferrable="DEFERRED">
+        <column name="user"/>
+        <references table="cmall_user">
+          <column name="uid"/>
+        </references>
+      </foreign-key>
+    </add-table>
+  </changeset>
+
   <changeset version="9">
     <add-table name="cmall_apply_for_mechant" kind="object">
       <column name="id" type="BIGINT" null="false"/>

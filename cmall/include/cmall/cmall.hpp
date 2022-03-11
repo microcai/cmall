@@ -170,7 +170,7 @@ namespace cmall {
 
 		admin_user_list,
 		admin_user_ban,
-		admin_merchant_list,
+		admin_list_merchants,
 		admin_merchant_ban,
 		admin_product_list,
 		admin_product_withdraw,

@@ -14,6 +14,8 @@ DROP TABLE IF EXISTS "cmall_order" CASCADE;
 
 DROP TABLE IF EXISTS "cmall_merchant" CASCADE;
 
+DROP TABLE IF EXISTS "administrators" CASCADE;
+
 DROP TABLE IF EXISTS "cmall_user_recipients" CASCADE;
 
 DROP TABLE IF EXISTS "cmall_user_used_phones" CASCADE;
@@ -86,6 +88,14 @@ CREATE INDEX "cmall_user_recipients_object_id_i"
 
 CREATE INDEX "cmall_user_recipients_index_i"
   ON "cmall_user_recipients" ("index");
+
+CREATE TABLE "administrators" (
+  "uid" BIGSERIAL NOT NULL PRIMARY KEY,
+  "user" BIGINT NULL,
+  CONSTRAINT "user_fk"
+    FOREIGN KEY ("user")
+    REFERENCES "cmall_user" ("uid")
+    INITIALLY DEFERRED);
 
 CREATE TABLE "cmall_merchant" (
   "uid" BIGINT NOT NULL PRIMARY KEY,
@@ -193,7 +203,7 @@ CREATE INDEX "cmall_apply_for_mechant_applicant_i"
 
 INSERT INTO "schema_version" (
   "name", "version", "migration")
-  SELECT '', 9, FALSE
+  SELECT '', 10, FALSE
   WHERE NOT EXISTS (
     SELECT 1 FROM "schema_version" WHERE "name" = '');
 

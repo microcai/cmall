@@ -40,7 +40,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(8, 9, open)
+#pragma db model version(8, 10, open)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -121,6 +121,14 @@ struct cmall_user
 	boost::posix_time::ptime created_at_{ boost::posix_time::second_clock::local_time() };
 	boost::posix_time::ptime updated_at_{ boost::posix_time::second_clock::local_time() };
 	odb::nullable<boost::posix_time::ptime> deleted_at_;
+};
+
+#pragma db object
+struct administrators
+{
+	#pragma db id auto
+	std::uint64_t uid_;
+	std::shared_ptr<cmall_user> user;
 };
 
 enum class merchant_state_t

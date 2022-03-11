@@ -25,6 +25,8 @@ namespace services
 		// 使用 session_id 可以快速找回已登录回话.
 		std::string session_id;
 		std::optional<cmall_user> user_info;
+		bool isAdmin = false;
+		bool isMerchant = false;
 		std::string verify_telephone;
 		std::optional<verify_session> verify_session_cookie;
 	};
