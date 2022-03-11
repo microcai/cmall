@@ -40,8 +40,11 @@ namespace services
 
 				auto read_promis = boost::asio::async_read_until(nodejs_output, d_buffer, '\n', boost::asio::experimental::use_promise);
 
-				co_await boost::asio::async_write(nodejs_input, boost::asio::buffer("try{process.setgid(65535); process.setuid(65535);}catch(e){};\n"), boost::asio::use_awaitable);
+				std::string drop_privalage = "try{process.setgid(65535); process.setuid(65535);}catch(e){}\n";
 
+				auto new_script = std::string("") + std::string(script_content);
+
+				co_await boost::asio::async_write(nodejs_input, boost::asio::buffer(drop_privalage), boost::asio::use_awaitable);
 				co_await boost::asio::async_write(nodejs_input, boost::asio::buffer(script_content), boost::asio::use_awaitable);
 				nodejs_input.close();
 
