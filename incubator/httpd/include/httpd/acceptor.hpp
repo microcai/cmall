@@ -115,6 +115,17 @@ namespace httpd
 #endif
 				return;
 			}
+
+#ifdef BOOST_POSIX_API
+			int fd = accept_socket_.native_handle();
+			int flags = fcntl(fd, F_GETFD);
+			if (! (flags & FD_CLOEXEC))
+			{
+				flags |= FD_CLOEXEC;  
+				fcntl(fd, F_SETFD, flags);
+			}
+#endif
+
 #ifdef SO_REUSEPORT
 			if constexpr (has_so_reuseport())
 			{
