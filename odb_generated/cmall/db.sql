@@ -2,6 +2,8 @@
  * compiler for C++.
  */
 
+DROP TABLE IF EXISTS "cmall_apply_for_mechant" CASCADE;
+
 DROP TABLE IF EXISTS "cmall_cart" CASCADE;
 
 DROP TABLE IF EXISTS "cmall_order_bought_goods" CASCADE;
@@ -174,9 +176,24 @@ CREATE TABLE "cmall_cart" (
 CREATE INDEX "cmall_cart_uid_i"
   ON "cmall_cart" ("uid");
 
+CREATE TABLE "cmall_apply_for_mechant" (
+  "id" BIGSERIAL NOT NULL PRIMARY KEY,
+  "applicant" BIGINT NULL,
+  "ext" TEXT NOT NULL,
+  "created_at" TIMESTAMP NULL,
+  "updated_at" TIMESTAMP NULL,
+  "deleted_at" TIMESTAMP NULL,
+  CONSTRAINT "applicant_fk"
+    FOREIGN KEY ("applicant")
+    REFERENCES "cmall_user" ("uid")
+    INITIALLY DEFERRED);
+
+CREATE INDEX "cmall_apply_for_mechant_applicant_i"
+  ON "cmall_apply_for_mechant" ("applicant");
+
 INSERT INTO "schema_version" (
   "name", "version", "migration")
-  SELECT '', 8, FALSE
+  SELECT '', 9, FALSE
   WHERE NOT EXISTS (
     SELECT 1 FROM "schema_version" WHERE "name" = '');
 

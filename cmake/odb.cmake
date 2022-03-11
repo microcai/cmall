@@ -13,7 +13,7 @@ set(EXTRA_ARGS ${ARGV3})
 add_custom_command(OUTPUT ${OUT_DIR}/${ODB_HEADER_BASE}.sql
                    COMMAND ${ODB_COMPILER} ARGS
 				   ${EXTRA_ARGS} ${ARGV4} ${ARGV5}
-                              -d pgsql --std c++11 -p boost --generate-schema --generate-query --generate-schema-only --pgsql-server-version 9.6 --hxx-prologue "#include \"db_traits.hpp\""
+                              -d pgsql --std c++14 -p boost --generate-schema --generate-query --generate-schema-only --pgsql-server-version 9.6 --hxx-prologue "#include \"db_traits.hpp\""
                               ${ODB_HEADER}
                               -I ${ODB_INCLUDE_DIRS}
                               -I ${ODB_LIB_DIR}
@@ -33,7 +33,7 @@ add_custom_command(OUTPUT
 				   COMMAND ${ODB_COMPILER}
 				   ARGS ${EXTRA_ARGS}  ${ARGV4} ${ARGV5}
 				   --ixx-suffix .ihh
-				   -d pgsql --std c++11 -p boost --generate-query --generate-schema --schema-format embedded --pgsql-server-version 9.6 --hxx-prologue "#include \"db_traits.hpp\""
+				   -d pgsql --std c++14 -p boost --generate-query --generate-schema --schema-format embedded --pgsql-server-version 9.6 --hxx-prologue "#include \"db_traits.hpp\""
 				   ${ODB_HEADER}
                               -I ${ODB_INCLUDE_DIRS}
                               -I ${ODB_LIB_DIR}

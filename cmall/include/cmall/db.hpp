@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <memory>
 #include <vector>
 #include <sstream>
 #include <iostream>
@@ -39,7 +40,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(5, 8, open)
+#pragma db model version(8, 9, open)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -92,8 +93,8 @@ struct Recipient
 };
 
 // 用户表.
-#pragma db object
-struct cmall_user 
+#pragma db object pointer(std::shared_ptr)
+struct cmall_user
 {
 #pragma db id auto
 	std::uint64_t uid_;
@@ -131,7 +132,7 @@ enum class merchant_state_t
 
 // 商户表.
 #pragma db object
-struct cmall_merchant 
+struct cmall_merchant
 {
 #pragma db id
 	std::uint64_t uid_;
@@ -224,4 +225,22 @@ struct cmall_cart
 
 	boost::posix_time::ptime created_at_{ boost::posix_time::second_clock::local_time() };
 	boost::posix_time::ptime updated_at_{ boost::posix_time::second_clock::local_time() };
+};
+
+
+// 购物车.
+#pragma db object
+struct cmall_apply_for_mechant
+{
+#pragma db id auto
+	std::uint64_t id_;
+
+#pragma db index
+	std::shared_ptr<cmall_user> applicant_;
+
+	std::string ext_;
+
+	boost::posix_time::ptime created_at_{ boost::posix_time::second_clock::local_time() };
+	boost::posix_time::ptime updated_at_{ boost::posix_time::second_clock::local_time() };
+	odb::nullable<boost::posix_time::ptime> deleted_at_;
 };

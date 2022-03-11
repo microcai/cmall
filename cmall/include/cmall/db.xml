@@ -1,37 +1,29 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
-  <changeset version="8">
-    <add-table name="cmall_cart" kind="object">
+  <changeset version="9">
+    <add-table name="cmall_apply_for_mechant" kind="object">
       <column name="id" type="BIGINT" null="false"/>
-      <column name="uid" type="BIGINT" null="false"/>
-      <column name="merchant_id" type="BIGINT" null="false"/>
-      <column name="goods_id" type="TEXT" null="false"/>
-      <column name="count" type="BIGINT" null="false"/>
+      <column name="applicant" type="BIGINT" null="true"/>
+      <column name="ext" type="TEXT" null="false"/>
       <column name="created_at" type="TIMESTAMP" null="true"/>
       <column name="updated_at" type="TIMESTAMP" null="true"/>
+      <column name="deleted_at" type="TIMESTAMP" null="true"/>
       <primary-key auto="true">
         <column name="id"/>
       </primary-key>
-      <index name="cmall_cart_uid_i">
-        <column name="uid"/>
+      <foreign-key name="applicant_fk" deferrable="DEFERRED">
+        <column name="applicant"/>
+        <references table="cmall_user">
+          <column name="uid"/>
+        </references>
+      </foreign-key>
+      <index name="cmall_apply_for_mechant_applicant_i">
+        <column name="applicant"/>
       </index>
     </add-table>
+    <drop-table name="cmall_applicant"/>
   </changeset>
 
-  <changeset version="7">
-    <alter-table name="cmall_order_bought_goods">
-      <add-column name="value_merchant_id" type="BIGINT" null="false"/>
-      <add-column name="value_goods_id" type="TEXT" null="false"/>
-      <drop-column name="value_owner"/>
-    </alter-table>
-  </changeset>
-
-  <changeset version="6">
-    <alter-table name="cmall_order">
-      <drop-column name="currency"/>
-    </alter-table>
-  </changeset>
-
-  <model version="5">
+  <model version="8">
     <table name="cmall_config" kind="object">
       <column name="id" type="BIGINT" null="false"/>
       <primary-key auto="true">
@@ -121,7 +113,6 @@
       <column name="oid" type="TEXT" null="false"/>
       <column name="buyer" type="BIGINT" null="false"/>
       <column name="price" type="NUMERIC" null="false"/>
-      <column name="currency" type="TEXT" null="false"/>
       <column name="currency_rate" type="numeric" null="false" default="'1'"/>
       <column name="pay_amount" type="numeric" null="false" default="'0'"/>
       <column name="stage" type="SMALLINT" null="false"/>
@@ -168,11 +159,12 @@
     <table name="cmall_order_bought_goods" kind="container">
       <column name="object_id" type="BIGINT" null="false"/>
       <column name="index" type="BIGINT" null="false"/>
-      <column name="value_owner" type="BIGINT" null="false"/>
       <column name="value_name" type="TEXT" null="false"/>
       <column name="value_price" type="NUMERIC" null="false"/>
       <column name="value_description" type="TEXT" null="false"/>
       <column name="value_good_version_git" type="TEXT" null="false"/>
+      <column name="value_merchant_id" type="BIGINT" null="false"/>
+      <column name="value_goods_id" type="TEXT" null="false"/>
       <foreign-key name="object_id_fk" on-delete="CASCADE">
         <column name="object_id"/>
         <references table="cmall_order">
@@ -184,6 +176,35 @@
       </index>
       <index name="cmall_order_bought_goods_index_i">
         <column name="index"/>
+      </index>
+    </table>
+    <table name="cmall_cart" kind="object">
+      <column name="id" type="BIGINT" null="false"/>
+      <column name="uid" type="BIGINT" null="false"/>
+      <column name="merchant_id" type="BIGINT" null="false"/>
+      <column name="goods_id" type="TEXT" null="false"/>
+      <column name="count" type="BIGINT" null="false"/>
+      <column name="created_at" type="TIMESTAMP" null="true"/>
+      <column name="updated_at" type="TIMESTAMP" null="true"/>
+      <primary-key auto="true">
+        <column name="id"/>
+      </primary-key>
+      <index name="cmall_cart_uid_i">
+        <column name="uid"/>
+      </index>
+    </table>
+    <table name="cmall_applicant" kind="object">
+      <column name="id" type="BIGINT" null="false"/>
+      <column name="applicant" type="BIGINT" null="false"/>
+      <column name="memo" type="TEXT" null="false"/>
+      <column name="created_at" type="TIMESTAMP" null="true"/>
+      <column name="updated_at" type="TIMESTAMP" null="true"/>
+      <column name="deleted_at" type="TIMESTAMP" null="true"/>
+      <primary-key auto="true">
+        <column name="id"/>
+      </primary-key>
+      <index name="cmall_applicant_applicant_i">
+        <column name="applicant"/>
       </index>
     </table>
   </model>
