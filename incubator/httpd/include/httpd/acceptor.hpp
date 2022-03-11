@@ -251,6 +251,12 @@ namespace httpd
 					continue;
 				}
 
+#ifdef BOOST_POSIX_API
+				int fd = client_ptr->socket().native_handle();
+				int flags = fcntl(fd, F_GETFD);  
+				flags |= FD_CLOEXEC;  
+				fcntl(fd, F_SETFD, flags);  
+#endif
 				client_ptr->socket().set_option(boost::asio::socket_base::keep_alive(true), error);
 
 				std::string remote_host;
