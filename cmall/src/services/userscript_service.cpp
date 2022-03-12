@@ -30,7 +30,6 @@ namespace services
 
 		boost::asio::awaitable<std::string> run_script(std::string_view script_content, std::vector<std::string> script_arguments)
 		{
-			std::string ret;
 			using namespace boost::process;
 
 			async_pipe nodejs_output(io);
@@ -73,7 +72,7 @@ namespace services
 				cp.terminate();
 
 			int result = cp.exit_code();
-			co_return ret;
+			co_return out;
 		}
 
 		boost::asio::io_context& io;
