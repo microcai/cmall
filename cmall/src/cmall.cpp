@@ -441,6 +441,8 @@ namespace cmall
 				co_return co_await handle_jsonrpc_goods_api(connection_ptr, method.value(), params);
 				break;
 			case req_method::merchant_get_sold_order_detail:
+			case req_method::merchant_sold_orders_mark_payed:
+				co_await ensure_login(false, true);
 				co_return co_await handle_jsonrpc_merchant_api(connection_ptr, method.value(), params);
 				break;
 			case req_method::admin_user_list:
@@ -997,6 +999,28 @@ namespace cmall
 					reply_message["result"] = boost::json::value_from(orders[0]);
 				else
 					throw boost::system::system_error(cmall::error::order_not_found);
+			}
+			case req_method::merchant_sold_orders_mark_payed:
+			{
+				auto orderid	   = jsutil::json_accessor(params).get_string("orderid");
+
+				std::vector<cmall_order> orders;
+				using query_t = odb::query<cmall_order>;
+				auto query	  = (query_t::oid == orderid && query_t::seller == this_user.uid_ && query_t::deleted_at.is_null());
+				co_await m_database.async_load<cmall_order>(query, orders);
+
+				LOG_DBG << "order_list retrieved, " << orders.size() << " items";
+				if (orders.size() == 1)
+				{
+					orders[0].payed_at_ = boost::posix_time::second_clock::local_time();
+
+					bool success = co_await m_database.async_update<cmall_order>(orders[0]);
+
+					reply_message["result"] = success;
+				}
+				else
+					throw boost::system::system_error(cmall::error::order_not_found);
+
 			}
 			break;
 			default:

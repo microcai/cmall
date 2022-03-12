@@ -169,6 +169,7 @@ namespace cmall {
 		goods_detail,
 
 		merchant_get_sold_order_detail,
+		merchant_sold_orders_mark_payed,
 
 		admin_user_list,
 		admin_user_ban,
