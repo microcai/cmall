@@ -408,6 +408,7 @@ namespace cmall
 								this_client.session_info = std::make_shared<services::client_session>();
 								this_client.session_info->isMerchant = true;
 								this_client.session_info->user_info = db_user;
+								this_client.session_info->merchant_info = merchant;
 								reply_message["result"] = true;
 								break;
 							}
