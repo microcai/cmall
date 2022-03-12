@@ -428,7 +428,7 @@ namespace cmall
 				break;
 			case req_method::order_create_cart:
 			case req_method::order_create_direct:
-			case req_method::order_status:
+			case req_method::order_detail:
 			case req_method::order_close:
 			case req_method::order_list:
 			case req_method::order_get_pay_url:
@@ -439,6 +439,9 @@ namespace cmall
 			case req_method::goods_list:
 			case req_method::goods_detail:
 				co_return co_await handle_jsonrpc_goods_api(connection_ptr, method.value(), params);
+				break;
+			case req_method::merchant_get_sold_order_detail:
+				co_return co_await handle_jsonrpc_merchant_api(connection_ptr, method.value(), params);
 				break;
 			case req_method::admin_user_list:
 			case req_method::admin_user_ban:
@@ -665,6 +668,7 @@ namespace cmall
 				new_order.buyer_ = user_info.uid_;
 				new_order.oid_	 = gen_uuid();
 				new_order.stage_ = order_unpay;
+				new_order.seller_ = 0;
 
 				cpp_numeric total_price = 0;
 
@@ -678,7 +682,14 @@ namespace cmall
 					services::product product_in_mall
 						= co_await merchant_repos[merchant_id_of_goods]->get_product(goods_id_of_goods, ec);
 					if (ec) // 商品不存在
-						continue;
+						throw boost::system::system_error(cmall::error::goods_not_found);
+					if (new_order.seller_ == 0)
+						new_order.seller_ = merchant_id_of_goods;
+					else if (new_order.seller_ != merchant_id_of_goods)
+					{
+						// TODO, 如果不是同一个商户的东西, 是否可以直接变成多个订单?
+						throw boost::system::system_error(cmall::error::should_be_same_merchant);
+					}
 
 					goods_snapshot good_snap;
 
@@ -702,8 +713,22 @@ namespace cmall
 				};
 			}
 			break;
-			case req_method::order_status:
-				break;
+			case req_method::order_detail:
+			{
+				auto orderid	   = jsutil::json_accessor(params).get_string("orderid");
+
+				std::vector<cmall_order> orders;
+				using query_t = odb::query<cmall_order>;
+				auto query	  = (query_t::oid == orderid && query_t::buyer == this_user.uid_ && query_t::deleted_at.is_null());
+				co_await m_database.async_load<cmall_order>(query, orders);
+
+				LOG_DBG << "order_list retrieved, " << orders.size() << " items";
+				if (orders.size() == 1)
+					reply_message["result"] = boost::json::value_from(orders[0]);
+				else
+					throw boost::system::system_error(cmall::error::order_not_found);
+			}
+			break;
 			case req_method::order_close:
 				break;
 			case req_method::order_list:
@@ -938,6 +963,38 @@ namespace cmall
 					throw boost::system::system_error(cmall::error::goods_not_found);
 				// 获取商品信息, 注意这个不是商品描述, 而是商品 标题, 价格, 和缩略图. 用在商品列表页面.
 				reply_message["result"] = boost::json::value_from(product);
+			}
+			break;
+			default:
+				throw "this should never be executed";
+		}
+
+		co_return reply_message;
+	}
+
+	boost::asio::awaitable<boost::json::object> cmall_service::handle_jsonrpc_merchant_api(client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
+	{
+		client_connection& this_client = *connection_ptr;
+		boost::json::object reply_message;
+		services::client_session& session_info = *this_client.session_info;
+		cmall_user& this_user				   = *(session_info.user_info);
+
+		switch (method)
+		{
+			case req_method::merchant_get_sold_order_detail:
+			{
+				auto orderid	   = jsutil::json_accessor(params).get_string("orderid");
+
+				std::vector<cmall_order> orders;
+				using query_t = odb::query<cmall_order>;
+				auto query	  = (query_t::oid == orderid && query_t::seller == this_user.uid_ && query_t::deleted_at.is_null());
+				co_await m_database.async_load<cmall_order>(query, orders);
+
+				LOG_DBG << "order_list retrieved, " << orders.size() << " items";
+				if (orders.size() == 1)
+					reply_message["result"] = boost::json::value_from(orders[0]);
+				else
+					throw boost::system::system_error(cmall::error::order_not_found);
 			}
 			break;
 			default:

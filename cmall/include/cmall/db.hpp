@@ -40,7 +40,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(8, 11, open)
+#pragma db model version(8, 12, open)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -195,6 +195,8 @@ struct cmall_order {
 
 #pragma db index
 	uint64_t buyer_; // 购买者
+#pragma db index default(1)
+	uint64_t seller_; // 卖家
 
 	cpp_numeric price_; // 下单时价格
  #pragma db type("numeric") default("1")

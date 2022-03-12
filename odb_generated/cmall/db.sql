@@ -116,6 +116,7 @@ CREATE TABLE "cmall_order" (
   "id" BIGSERIAL NOT NULL PRIMARY KEY,
   "oid" TEXT NOT NULL,
   "buyer" BIGINT NOT NULL,
+  "seller" BIGINT NOT NULL DEFAULT 1,
   "price" NUMERIC NOT NULL,
   "currency_rate" numeric NOT NULL DEFAULT '1',
   "pay_amount" numeric NOT NULL DEFAULT '0',
@@ -132,6 +133,9 @@ CREATE UNIQUE INDEX "cmall_order_oid_i"
 
 CREATE INDEX "cmall_order_buyer_i"
   ON "cmall_order" ("buyer");
+
+CREATE INDEX "cmall_order_seller_i"
+  ON "cmall_order" ("seller");
 
 CREATE TABLE "cmall_order_recipient" (
   "object_id" BIGINT NOT NULL,
@@ -204,7 +208,7 @@ CREATE INDEX "cmall_apply_for_mechant_applicant_i"
 
 INSERT INTO "schema_version" (
   "name", "version", "migration")
-  SELECT '', 11, FALSE
+  SELECT '', 12, FALSE
   WHERE NOT EXISTS (
     SELECT 1 FROM "schema_version" WHERE "name" = '');
 

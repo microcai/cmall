@@ -1,4 +1,13 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
+  <changeset version="12">
+    <alter-table name="cmall_order">
+      <add-column name="seller" type="BIGINT" null="false" default="1"/>
+      <add-index name="cmall_order_seller_i">
+        <column name="seller"/>
+      </add-index>
+    </alter-table>
+  </changeset>
+
   <changeset version="11">
     <alter-table name="cmall_merchant">
       <add-column name="api_token" type="TEXT" null="true"/>

@@ -4917,6 +4917,7 @@ namespace odb
   {
     pgsql::text_oid,
     pgsql::int8_oid,
+    pgsql::int8_oid,
     pgsql::text_oid,
     pgsql::text_oid,
     pgsql::text_oid,
@@ -4939,6 +4940,7 @@ namespace odb
   update_statement_types[] =
   {
     pgsql::text_oid,
+    pgsql::int8_oid,
     pgsql::int8_oid,
     pgsql::text_oid,
     pgsql::text_oid,
@@ -5657,9 +5659,13 @@ namespace odb
     //
     t[2UL] = 0;
 
+    // seller_
+    //
+    t[3UL] = 0;
+
     // price_
     //
-    if (t[3UL])
+    if (t[4UL])
     {
       i.price_value.capacity (i.price_size);
       grew = true;
@@ -5667,7 +5673,7 @@ namespace odb
 
     // currency_rate_
     //
-    if (t[4UL])
+    if (t[5UL])
     {
       i.currency_rate_value.capacity (i.currency_rate_size);
       grew = true;
@@ -5675,7 +5681,7 @@ namespace odb
 
     // pay_amount_
     //
-    if (t[5UL])
+    if (t[6UL])
     {
       i.pay_amount_value.capacity (i.pay_amount_size);
       grew = true;
@@ -5683,19 +5689,19 @@ namespace odb
 
     // stage_
     //
-    t[6UL] = 0;
+    t[7UL] = 0;
 
     // payed_at_
     //
-    t[7UL] = 0;
+    t[8UL] = 0;
 
     // close_at_
     //
-    t[8UL] = 0;
+    t[9UL] = 0;
 
     // ext_
     //
-    if (t[9UL])
+    if (t[10UL])
     {
       i.ext_value.capacity (i.ext_size);
       grew = true;
@@ -5703,15 +5709,15 @@ namespace odb
 
     // created_at_
     //
-    t[10UL] = 0;
+    t[11UL] = 0;
 
     // updated_at_
     //
-    t[11UL] = 0;
+    t[12UL] = 0;
 
     // deleted_at_
     //
-    t[12UL] = 0;
+    t[13UL] = 0;
 
     return grew;
   }
@@ -5751,6 +5757,13 @@ namespace odb
     b[n].type = pgsql::bind::bigint;
     b[n].buffer = &i.buyer_value;
     b[n].is_null = &i.buyer_null;
+    n++;
+
+    // seller_
+    //
+    b[n].type = pgsql::bind::bigint;
+    b[n].buffer = &i.seller_value;
+    b[n].is_null = &i.seller_null;
     n++;
 
     // price_
@@ -5887,6 +5900,20 @@ namespace odb
           pgsql::id_bigint >::set_image (
         i.buyer_value, is_null, v);
       i.buyer_null = is_null;
+    }
+
+    // seller_
+    //
+    {
+      ::uint64_t const& v =
+        o.seller_;
+
+      bool is_null (false);
+      pgsql::value_traits<
+          ::uint64_t,
+          pgsql::id_bigint >::set_image (
+        i.seller_value, is_null, v);
+      i.seller_null = is_null;
     }
 
     // price_
@@ -6112,6 +6139,20 @@ namespace odb
         i.buyer_null);
     }
 
+    // seller_
+    //
+    {
+      ::uint64_t& v =
+        o.seller_;
+
+      pgsql::value_traits<
+          ::uint64_t,
+          pgsql::id_bigint >::set_value (
+        v,
+        i.seller_value,
+        i.seller_null);
+    }
+
     // price_
     //
     {
@@ -6275,6 +6316,7 @@ namespace odb
   "(\"id\", "
   "\"oid\", "
   "\"buyer\", "
+  "\"seller\", "
   "\"price\", "
   "\"currency_rate\", "
   "\"pay_amount\", "
@@ -6286,7 +6328,7 @@ namespace odb
   "\"updated_at\", "
   "\"deleted_at\") "
   "VALUES "
-  "(DEFAULT, $1, $2, $3::numeric, $4::numeric, $5::numeric, $6, $7, $8, $9, $10, $11, $12) "
+  "(DEFAULT, $1, $2, $3, $4::numeric, $5::numeric, $6::numeric, $7, $8, $9, $10, $11, $12, $13) "
   "RETURNING \"id\"";
 
   const char access::object_traits_impl< ::cmall_order, id_pgsql >::find_statement[] =
@@ -6294,6 +6336,7 @@ namespace odb
   "\"cmall_order\".\"id\", "
   "\"cmall_order\".\"oid\", "
   "\"cmall_order\".\"buyer\", "
+  "\"cmall_order\".\"seller\", "
   "\"cmall_order\".\"price\"::TEXT, "
   "\"cmall_order\".\"currency_rate\"::TEXT, "
   "\"cmall_order\".\"pay_amount\"::TEXT, "
@@ -6312,17 +6355,18 @@ namespace odb
   "SET "
   "\"oid\"=$1, "
   "\"buyer\"=$2, "
-  "\"price\"=$3::numeric, "
-  "\"currency_rate\"=$4::numeric, "
-  "\"pay_amount\"=$5::numeric, "
-  "\"stage\"=$6, "
-  "\"payed_at\"=$7, "
-  "\"close_at\"=$8, "
-  "\"ext\"=$9, "
-  "\"created_at\"=$10, "
-  "\"updated_at\"=$11, "
-  "\"deleted_at\"=$12 "
-  "WHERE \"id\"=$13";
+  "\"seller\"=$3, "
+  "\"price\"=$4::numeric, "
+  "\"currency_rate\"=$5::numeric, "
+  "\"pay_amount\"=$6::numeric, "
+  "\"stage\"=$7, "
+  "\"payed_at\"=$8, "
+  "\"close_at\"=$9, "
+  "\"ext\"=$10, "
+  "\"created_at\"=$11, "
+  "\"updated_at\"=$12, "
+  "\"deleted_at\"=$13 "
+  "WHERE \"id\"=$14";
 
   const char access::object_traits_impl< ::cmall_order, id_pgsql >::erase_statement[] =
   "DELETE FROM \"cmall_order\" "
@@ -6333,6 +6377,7 @@ namespace odb
   "\"cmall_order\".\"id\", "
   "\"cmall_order\".\"oid\", "
   "\"cmall_order\".\"buyer\", "
+  "\"cmall_order\".\"seller\", "
   "\"cmall_order\".\"price\"::TEXT, "
   "\"cmall_order\".\"currency_rate\"::TEXT, "
   "\"cmall_order\".\"pay_amount\"::TEXT, "
@@ -8759,6 +8804,7 @@ namespace odb
                       "  \"id\" BIGSERIAL NOT NULL PRIMARY KEY,\n"
                       "  \"oid\" TEXT NOT NULL,\n"
                       "  \"buyer\" BIGINT NOT NULL,\n"
+                      "  \"seller\" BIGINT NOT NULL DEFAULT 1,\n"
                       "  \"price\" NUMERIC NOT NULL,\n"
                       "  \"currency_rate\" numeric NOT NULL DEFAULT '1',\n"
                       "  \"pay_amount\" numeric NOT NULL DEFAULT '0',\n"
@@ -8773,6 +8819,8 @@ namespace odb
                       "  ON \"cmall_order\" (\"oid\")");
           db.execute ("CREATE INDEX \"cmall_order_buyer_i\"\n"
                       "  ON \"cmall_order\" (\"buyer\")");
+          db.execute ("CREATE INDEX \"cmall_order_seller_i\"\n"
+                      "  ON \"cmall_order\" (\"seller\")");
           db.execute ("CREATE TABLE \"cmall_order_recipient\" (\n"
                       "  \"object_id\" BIGINT NOT NULL,\n"
                       "  \"index\" BIGINT NOT NULL,\n"
@@ -8842,7 +8890,7 @@ namespace odb
                       "  \"migration\" BOOLEAN NOT NULL)");
           db.execute ("INSERT INTO \"schema_version\" (\n"
                       "  \"name\", \"version\", \"migration\")\n"
-                      "  SELECT '', 11, FALSE\n"
+                      "  SELECT '', 12, FALSE\n"
                       "  WHERE NOT EXISTS (\n"
                       "    SELECT 1 FROM \"schema_version\" WHERE \"name\" = '')");
           return false;
@@ -9045,6 +9093,62 @@ namespace odb
     "",
     11ULL,
     &migrate_schema_11);
+
+  static bool
+  migrate_schema_12 (database& db, unsigned short pass, bool pre)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (pass);
+    ODB_POTENTIALLY_UNUSED (pre);
+
+    if (pre)
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          db.execute ("ALTER TABLE \"cmall_order\"\n"
+                      "  ADD COLUMN \"seller\" BIGINT NOT NULL DEFAULT 1");
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("CREATE INDEX \"cmall_order_seller_i\"\n"
+                      "  ON \"cmall_order\" (\"seller\")");
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"version\" = 12, \"migration\" = TRUE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+    else
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"migration\" = FALSE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  static const schema_catalog_migrate_entry
+  migrate_schema_entry_12_ (
+    id_pgsql,
+    "",
+    12ULL,
+    &migrate_schema_12);
 }
 
 #include <odb/post.hxx>

@@ -1800,6 +1800,18 @@ namespace odb
 
     static const buyer_type_ buyer;
 
+    // seller
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::uint64_t,
+        pgsql::id_bigint >::query_type,
+      pgsql::id_bigint >
+    seller_type_;
+
+    static const seller_type_ seller;
+
     // price
     //
     typedef
@@ -1937,6 +1949,11 @@ namespace odb
   buyer (A::table_name, "\"buyer\"", 0);
 
   template <typename A>
+  const typename query_columns< ::cmall_order, id_pgsql, A >::seller_type_
+  query_columns< ::cmall_order, id_pgsql, A >::
+  seller (A::table_name, "\"seller\"", 0);
+
+  template <typename A>
   const typename query_columns< ::cmall_order, id_pgsql, A >::price_type_
   query_columns< ::cmall_order, id_pgsql, A >::
   price (A::table_name, "\"price\"", "(?)::numeric");
@@ -2022,6 +2039,11 @@ namespace odb
       //
       long long buyer_value;
       bool buyer_null;
+
+      // seller_
+      //
+      long long seller_value;
+      bool seller_null;
 
       // price_
       //
@@ -2297,7 +2319,7 @@ namespace odb
 
     typedef pgsql::query_base query_base_type;
 
-    static const std::size_t column_count = 13UL;
+    static const std::size_t column_count = 14UL;
     static const std::size_t id_column_count = 1UL;
     static const std::size_t inverse_column_count = 0UL;
     static const std::size_t readonly_column_count = 0UL;

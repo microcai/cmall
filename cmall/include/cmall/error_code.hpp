@@ -29,6 +29,7 @@ namespace cmall
 			goods_not_found,
 			cart_goods_not_found,
 			already_in_cart,
+			should_be_same_merchant,
 		};
 
 		class cmall_category : public boost::system::error_category
