@@ -4,6 +4,7 @@
 #include "cmall/internal.hpp"
 
 #include "httpd/http_misc_helper.hpp"
+#include "utils/uawaitable.hpp"
 
 boost::asio::awaitable<int> cmall::http_handle_static_file(size_t connection_id, boost::beast::http::request<boost::beast::http::string_body>& req, boost::beast::tcp_stream& client)
 {
@@ -109,8 +110,8 @@ boost::asio::awaitable<int> cmall::http_handle_static_file(size_t connection_id,
 			res.body().size = bytes_transferred;
 			res.body().more = true;
 		}
-		co_await boost::beast::http::async_write(
-			client, sr, boost::asio::redirect_error(boost::asio::use_awaitable, ec));
+
+		co_await boost::beast::http::async_write(client, sr, asio_util::use_awaitable[ec]);
 
 		if (ec == boost::beast::http::error::need_buffer)
 			continue;
