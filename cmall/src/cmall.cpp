@@ -442,6 +442,7 @@ namespace cmall
 				break;
 			case req_method::merchant_get_sold_order_detail:
 			case req_method::merchant_sold_orders_mark_payed:
+			case req_method::merchant_list_sold_orders:
 				co_await ensure_login(false, true);
 				co_return co_await handle_jsonrpc_merchant_api(connection_ptr, method.value(), params);
 				break;
@@ -1021,6 +1022,17 @@ namespace cmall
 				else
 					throw boost::system::system_error(cmall::error::order_not_found);
 
+			}
+			break;
+			case req_method::merchant_list_sold_orders:
+			{
+				std::vector<cmall_order> orders;
+				using query_t = odb::query<cmall_order>;
+				auto query	  = (query_t::seller == this_user.uid_ && query_t::deleted_at.is_null());
+				co_await m_database.async_load<cmall_order>(query, orders);
+
+				LOG_DBG << "order_list retrieved, " << orders.size() << " items";
+				reply_message["result"] = boost::json::value_from(orders);
 			}
 			break;
 			default:
