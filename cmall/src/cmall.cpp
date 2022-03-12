@@ -1068,8 +1068,6 @@ namespace cmall
 			{
 				// 列出 商品, 根据参数决定是首页还是商户
 				auto merchant_id = this_merchant.uid_;
-				co_await m_database.async_load<cmall_merchant>(query, merchants);
-
 				std::vector<services::product> all_products;
 
 				if (merchant_repos.contains(this_merchant.uid_))
