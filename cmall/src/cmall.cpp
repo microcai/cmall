@@ -459,6 +459,7 @@ namespace cmall
 				break;
 			case req_method::merchant_get_sold_order_detail:
 			case req_method::merchant_sold_orders_mark_payed:
+			case req_method::merchant_goods_list:
 			case req_method::merchant_list_sold_orders:
 			case req_method::merchant_delete_sold_orders:
 			case req_method::merchant_get_gitea_password:
@@ -1063,6 +1064,22 @@ namespace cmall
 
 			}
 			break;
+			case req_method::merchant_goods_list:
+			{
+				// 列出 商品, 根据参数决定是首页还是商户
+				auto merchant_id = this_merchant.uid_;
+				co_await m_database.async_load<cmall_merchant>(query, merchants);
+
+				std::vector<services::product> all_products;
+
+				if (merchant_repos.contains(this_merchant.uid_))
+				{
+					all_products = co_await merchant_repos[this_merchant.uid_]->get_products();
+				}
+
+				reply_message["result"] = boost::json::value_from(all_products);
+
+			}break;
 			case req_method::merchant_list_sold_orders:
 			{
 				std::vector<cmall_order> orders;
