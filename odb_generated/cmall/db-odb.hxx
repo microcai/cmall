@@ -1384,6 +1384,18 @@ namespace odb
 
     static const desc_type_ desc;
 
+    // api_token
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::std::basic_string< char >,
+        pgsql::id_string >::query_type,
+      pgsql::id_string >
+    api_token_type_;
+
+    static const api_token_type_ api_token;
+
     // created_at
     //
     typedef
@@ -1459,6 +1471,11 @@ namespace odb
   desc (A::table_name, "\"desc\"", 0);
 
   template <typename A>
+  const typename query_columns< ::cmall_merchant, id_pgsql, A >::api_token_type_
+  query_columns< ::cmall_merchant, id_pgsql, A >::
+  api_token (A::table_name, "\"api_token\"", 0);
+
+  template <typename A>
   const typename query_columns< ::cmall_merchant, id_pgsql, A >::created_at_type_
   query_columns< ::cmall_merchant, id_pgsql, A >::
   created_at (A::table_name, "\"created_at\"", 0);
@@ -1526,6 +1543,12 @@ namespace odb
       std::size_t desc_size;
       bool desc_null;
 
+      // api_token_
+      //
+      details::buffer api_token_value;
+      std::size_t api_token_size;
+      bool api_token_null;
+
       // created_at_
       //
       long long created_at_value;
@@ -1586,7 +1609,7 @@ namespace odb
 
     typedef pgsql::query_base query_base_type;
 
-    static const std::size_t column_count = 9UL;
+    static const std::size_t column_count = 10UL;
     static const std::size_t id_column_count = 1UL;
     static const std::size_t inverse_column_count = 0UL;
     static const std::size_t readonly_column_count = 0UL;

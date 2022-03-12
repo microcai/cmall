@@ -103,6 +103,7 @@ CREATE TABLE "cmall_merchant" (
   "verified" BOOLEAN NOT NULL,
   "state" SMALLINT NOT NULL,
   "desc" TEXT NULL,
+  "api_token" TEXT NULL,
   "created_at" TIMESTAMP NULL,
   "updated_at" TIMESTAMP NULL,
   "deleted_at" TIMESTAMP NULL,
@@ -203,7 +204,7 @@ CREATE INDEX "cmall_apply_for_mechant_applicant_i"
 
 INSERT INTO "schema_version" (
   "name", "version", "migration")
-  SELECT '', 10, FALSE
+  SELECT '', 11, FALSE
   WHERE NOT EXISTS (
     SELECT 1 FROM "schema_version" WHERE "name" = '');
 

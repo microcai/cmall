@@ -245,7 +245,7 @@ namespace cmall
 			{
 				if (method != "recover_session")
 				{
-					throw boost::system::system_error(boost::system::error_code(cmall::error::session_needed));
+					throw boost::system::system_error(cmall::error::session_needed);
 				}
 				boost::json::object replay_message;
 				// 未有 session 前， 先不并发处理 request，避免 客户端恶意并发 recover_session 把程序挂掉
@@ -294,7 +294,7 @@ namespace cmall
 		auto method = magic_enum::enum_cast<req_method>(methodstr);
 		if (!method.has_value())
 		{
-			throw boost::system::system_error(boost::system::error_code(cmall::error::unknown_method));
+			throw boost::system::system_error(cmall::error::unknown_method);
 		}
 
 		auto ensure_login
@@ -322,7 +322,7 @@ namespace cmall
 		if ((method.value() != req_method::recover_session))
 		{
 			if (!this_client.session_info)
-				throw boost::system::system_error(boost::system::error_code(cmall::error::session_needed));
+				throw boost::system::system_error(cmall::error::session_needed);
 		}
 
 		switch (method.value())
@@ -380,6 +380,23 @@ namespace cmall
 				}
 				else
 				{
+					cmall_merchant merchant;
+					if (co_await m_database.async_load<cmall_merchant>(odb::query<cmall_merchant>::api_token == api_token, merchant))
+					{
+						if (merchant.verified_)
+						{
+							cmall_user db_user;
+							if (co_await m_database.async_load<cmall_user>(merchant.uid_, db_user))
+							{
+								this_client.session_info = std::make_shared<services::client_session>();
+								this_client.session_info->isMerchant = true;
+								this_client.session_info->user_info = db_user;
+								reply_message["result"] = true;
+								break;
+							}
+						}
+					}
+
 					// TODO apitoken 机制不需要 session, 认证后, 直接通过
 					throw boost::system::system_error(cmall::error::not_implemented);
 				}
@@ -640,8 +657,7 @@ namespace cmall
 
 				if (!(recipient_id >= 0 && recipient_id < (int64_t)user_info.recipients.size()))
 				{
-					throw boost::system::system_error(
-						boost::system::error_code(cmall::error::recipient_id_out_of_range));
+					throw boost::system::system_error(cmall::error::recipient_id_out_of_range);
 				}
 
 				cmall_order new_order;
@@ -718,14 +734,14 @@ namespace cmall
 
 				if (!order_founded)
 				{
-					throw boost::system::system_error(boost::system::error_code(cmall::error::order_not_found));
+					throw boost::system::system_error(cmall::error::order_not_found);
 				}
 
 				// 对已经存在的订单, 获取支付连接.
 				boost::system::error_code ec;
 				std::uint64_t merchant_id = order_to_pay.bought_goods[0].merchant_id;
 				if (!merchant_repos.contains(merchant_id))
-					throw boost::system::system_error(boost::system::error_code(cmall::error::merchant_vanished));
+					throw boost::system::system_error(cmall::error::merchant_vanished);
 
 				std::string pay_script_content
 					= co_await merchant_repos[merchant_id]->get_file_content("scripts/getpayurl.js", ec);

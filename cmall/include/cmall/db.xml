@@ -1,4 +1,10 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
+  <changeset version="11">
+    <alter-table name="cmall_merchant">
+      <add-column name="api_token" type="TEXT" null="true"/>
+    </alter-table>
+  </changeset>
+
   <changeset version="10">
     <add-table name="administrators" kind="object">
       <column name="uid" type="BIGINT" null="false"/>
