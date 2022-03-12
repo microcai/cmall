@@ -392,8 +392,12 @@ namespace cmall
 						}
 					}
 
-					reply_message["result"] = { { "session_id", this_client.session_info->session_id },
-						{ "isLogin", static_cast<bool>(this_client.session_info->user_info) } };
+					reply_message["result"] = {
+						{ "session_id", this_client.session_info->session_id },
+						{ "isAdmin", static_cast<bool>(this_client.session_info->adAdmin) },
+						{ "isMerchant", static_cast<bool>(this_client.session_info->isMerchant) },
+						{ "isLogin", static_cast<bool>(this_client.session_info->user_info) },
+					};
 				}
 				else
 				{
