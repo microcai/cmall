@@ -1,7 +1,17 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
+  <changeset version="13">
+    <alter-table name="cmall_order">
+      <add-column name="snap_git_version" type="TEXT" null="false" default="''"/>
+      <add-index name="cmall_order_snap_git_version_i">
+        <column name="snap_git_version"/>
+      </add-index>
+      <drop-column name="currency_rate"/>
+    </alter-table>
+  </changeset>
+
   <changeset version="12">
     <alter-table name="cmall_order">
-      <add-column name="seller" type="BIGINT" null="false" default="1"/>
+      <add-column name="seller" type="BIGINT" null="false"/>
       <add-index name="cmall_order_seller_i">
         <column name="seller"/>
       </add-index>

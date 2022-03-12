@@ -4920,10 +4920,10 @@ namespace odb
     pgsql::int8_oid,
     pgsql::text_oid,
     pgsql::text_oid,
-    pgsql::text_oid,
     pgsql::int2_oid,
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
+    pgsql::text_oid,
     pgsql::text_oid,
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
@@ -4944,10 +4944,10 @@ namespace odb
     pgsql::int8_oid,
     pgsql::text_oid,
     pgsql::text_oid,
-    pgsql::text_oid,
     pgsql::int2_oid,
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
+    pgsql::text_oid,
     pgsql::text_oid,
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
@@ -5671,17 +5671,9 @@ namespace odb
       grew = true;
     }
 
-    // currency_rate_
-    //
-    if (t[5UL])
-    {
-      i.currency_rate_value.capacity (i.currency_rate_size);
-      grew = true;
-    }
-
     // pay_amount_
     //
-    if (t[6UL])
+    if (t[5UL])
     {
       i.pay_amount_value.capacity (i.pay_amount_size);
       grew = true;
@@ -5689,15 +5681,23 @@ namespace odb
 
     // stage_
     //
-    t[7UL] = 0;
+    t[6UL] = 0;
 
     // payed_at_
     //
-    t[8UL] = 0;
+    t[7UL] = 0;
 
     // close_at_
     //
-    t[9UL] = 0;
+    t[8UL] = 0;
+
+    // snap_git_version
+    //
+    if (t[9UL])
+    {
+      i.snap_git_version_value.capacity (i.snap_git_version_size);
+      grew = true;
+    }
 
     // ext_
     //
@@ -5775,15 +5775,6 @@ namespace odb
     b[n].is_null = &i.price_null;
     n++;
 
-    // currency_rate_
-    //
-    b[n].type = pgsql::bind::text;
-    b[n].buffer = i.currency_rate_value.data ();
-    b[n].capacity = i.currency_rate_value.capacity ();
-    b[n].size = &i.currency_rate_size;
-    b[n].is_null = &i.currency_rate_null;
-    n++;
-
     // pay_amount_
     //
     b[n].type = pgsql::bind::text;
@@ -5812,6 +5803,15 @@ namespace odb
     b[n].type = pgsql::bind::timestamp;
     b[n].buffer = &i.close_at_value;
     b[n].is_null = &i.close_at_null;
+    n++;
+
+    // snap_git_version
+    //
+    b[n].type = pgsql::bind::text;
+    b[n].buffer = i.snap_git_version_value.data ();
+    b[n].capacity = i.snap_git_version_value.capacity ();
+    b[n].size = &i.snap_git_version_size;
+    b[n].is_null = &i.snap_git_version_null;
     n++;
 
     // ext_
@@ -5937,27 +5937,6 @@ namespace odb
       grew = grew || (cap != i.price_value.capacity ());
     }
 
-    // currency_rate_
-    //
-    {
-      ::cpp_numeric const& v =
-        o.currency_rate_;
-
-      bool is_null (false);
-      std::size_t size (0);
-      std::size_t cap (i.currency_rate_value.capacity ());
-      pgsql::value_traits<
-          ::cpp_numeric,
-          pgsql::id_string >::set_image (
-        i.currency_rate_value,
-        size,
-        is_null,
-        v);
-      i.currency_rate_null = is_null;
-      i.currency_rate_size = size;
-      grew = grew || (cap != i.currency_rate_value.capacity ());
-    }
-
     // pay_amount_
     //
     {
@@ -6019,6 +5998,27 @@ namespace odb
           pgsql::id_timestamp >::set_image (
         i.close_at_value, is_null, v);
       i.close_at_null = is_null;
+    }
+
+    // snap_git_version
+    //
+    {
+      ::std::string const& v =
+        o.snap_git_version;
+
+      bool is_null (false);
+      std::size_t size (0);
+      std::size_t cap (i.snap_git_version_value.capacity ());
+      pgsql::value_traits<
+          ::std::string,
+          pgsql::id_string >::set_image (
+        i.snap_git_version_value,
+        size,
+        is_null,
+        v);
+      i.snap_git_version_null = is_null;
+      i.snap_git_version_size = size;
+      grew = grew || (cap != i.snap_git_version_value.capacity ());
     }
 
     // ext_
@@ -6168,21 +6168,6 @@ namespace odb
         i.price_null);
     }
 
-    // currency_rate_
-    //
-    {
-      ::cpp_numeric& v =
-        o.currency_rate_;
-
-      pgsql::value_traits<
-          ::cpp_numeric,
-          pgsql::id_string >::set_value (
-        v,
-        i.currency_rate_value,
-        i.currency_rate_size,
-        i.currency_rate_null);
-    }
-
     // pay_amount_
     //
     {
@@ -6238,6 +6223,21 @@ namespace odb
         v,
         i.close_at_value,
         i.close_at_null);
+    }
+
+    // snap_git_version
+    //
+    {
+      ::std::string& v =
+        o.snap_git_version;
+
+      pgsql::value_traits<
+          ::std::string,
+          pgsql::id_string >::set_value (
+        v,
+        i.snap_git_version_value,
+        i.snap_git_version_size,
+        i.snap_git_version_null);
     }
 
     // ext_
@@ -6318,17 +6318,17 @@ namespace odb
   "\"buyer\", "
   "\"seller\", "
   "\"price\", "
-  "\"currency_rate\", "
   "\"pay_amount\", "
   "\"stage\", "
   "\"payed_at\", "
   "\"close_at\", "
+  "\"snap_git_version\", "
   "\"ext\", "
   "\"created_at\", "
   "\"updated_at\", "
   "\"deleted_at\") "
   "VALUES "
-  "(DEFAULT, $1, $2, $3, $4::numeric, $5::numeric, $6::numeric, $7, $8, $9, $10, $11, $12, $13) "
+  "(DEFAULT, $1, $2, $3, $4::numeric, $5::numeric, $6, $7, $8, $9, $10, $11, $12, $13) "
   "RETURNING \"id\"";
 
   const char access::object_traits_impl< ::cmall_order, id_pgsql >::find_statement[] =
@@ -6338,11 +6338,11 @@ namespace odb
   "\"cmall_order\".\"buyer\", "
   "\"cmall_order\".\"seller\", "
   "\"cmall_order\".\"price\"::TEXT, "
-  "\"cmall_order\".\"currency_rate\"::TEXT, "
   "\"cmall_order\".\"pay_amount\"::TEXT, "
   "\"cmall_order\".\"stage\", "
   "\"cmall_order\".\"payed_at\", "
   "\"cmall_order\".\"close_at\", "
+  "\"cmall_order\".\"snap_git_version\", "
   "\"cmall_order\".\"ext\", "
   "\"cmall_order\".\"created_at\", "
   "\"cmall_order\".\"updated_at\", "
@@ -6357,11 +6357,11 @@ namespace odb
   "\"buyer\"=$2, "
   "\"seller\"=$3, "
   "\"price\"=$4::numeric, "
-  "\"currency_rate\"=$5::numeric, "
-  "\"pay_amount\"=$6::numeric, "
-  "\"stage\"=$7, "
-  "\"payed_at\"=$8, "
-  "\"close_at\"=$9, "
+  "\"pay_amount\"=$5::numeric, "
+  "\"stage\"=$6, "
+  "\"payed_at\"=$7, "
+  "\"close_at\"=$8, "
+  "\"snap_git_version\"=$9, "
   "\"ext\"=$10, "
   "\"created_at\"=$11, "
   "\"updated_at\"=$12, "
@@ -6379,11 +6379,11 @@ namespace odb
   "\"cmall_order\".\"buyer\", "
   "\"cmall_order\".\"seller\", "
   "\"cmall_order\".\"price\"::TEXT, "
-  "\"cmall_order\".\"currency_rate\"::TEXT, "
   "\"cmall_order\".\"pay_amount\"::TEXT, "
   "\"cmall_order\".\"stage\", "
   "\"cmall_order\".\"payed_at\", "
   "\"cmall_order\".\"close_at\", "
+  "\"cmall_order\".\"snap_git_version\", "
   "\"cmall_order\".\"ext\", "
   "\"cmall_order\".\"created_at\", "
   "\"cmall_order\".\"updated_at\", "
@@ -8804,13 +8804,13 @@ namespace odb
                       "  \"id\" BIGSERIAL NOT NULL PRIMARY KEY,\n"
                       "  \"oid\" TEXT NOT NULL,\n"
                       "  \"buyer\" BIGINT NOT NULL,\n"
-                      "  \"seller\" BIGINT NOT NULL DEFAULT 1,\n"
+                      "  \"seller\" BIGINT NOT NULL,\n"
                       "  \"price\" NUMERIC NOT NULL,\n"
-                      "  \"currency_rate\" numeric NOT NULL DEFAULT '1',\n"
                       "  \"pay_amount\" numeric NOT NULL DEFAULT '0',\n"
                       "  \"stage\" SMALLINT NOT NULL,\n"
                       "  \"payed_at\" TIMESTAMP NULL,\n"
                       "  \"close_at\" TIMESTAMP NULL,\n"
+                      "  \"snap_git_version\" TEXT NOT NULL DEFAULT '',\n"
                       "  \"ext\" TEXT NULL,\n"
                       "  \"created_at\" TIMESTAMP NULL,\n"
                       "  \"updated_at\" TIMESTAMP NULL,\n"
@@ -8821,6 +8821,8 @@ namespace odb
                       "  ON \"cmall_order\" (\"buyer\")");
           db.execute ("CREATE INDEX \"cmall_order_seller_i\"\n"
                       "  ON \"cmall_order\" (\"seller\")");
+          db.execute ("CREATE INDEX \"cmall_order_snap_git_version_i\"\n"
+                      "  ON \"cmall_order\" (\"snap_git_version\")");
           db.execute ("CREATE TABLE \"cmall_order_recipient\" (\n"
                       "  \"object_id\" BIGINT NOT NULL,\n"
                       "  \"index\" BIGINT NOT NULL,\n"
@@ -8890,7 +8892,7 @@ namespace odb
                       "  \"migration\" BOOLEAN NOT NULL)");
           db.execute ("INSERT INTO \"schema_version\" (\n"
                       "  \"name\", \"version\", \"migration\")\n"
-                      "  SELECT '', 12, FALSE\n"
+                      "  SELECT '', 13, FALSE\n"
                       "  WHERE NOT EXISTS (\n"
                       "    SELECT 1 FROM \"schema_version\" WHERE \"name\" = '')");
           return false;
@@ -9108,7 +9110,7 @@ namespace odb
         case 1:
         {
           db.execute ("ALTER TABLE \"cmall_order\"\n"
-                      "  ADD COLUMN \"seller\" BIGINT NOT NULL DEFAULT 1");
+                      "  ADD COLUMN \"seller\" BIGINT NULL");
           return true;
         }
         case 2:
@@ -9132,6 +9134,8 @@ namespace odb
         }
         case 2:
         {
+          db.execute ("ALTER TABLE \"cmall_order\"\n"
+                      "  ALTER COLUMN \"seller\" SET NOT NULL");
           db.execute ("UPDATE \"schema_version\"\n"
                       "  SET \"migration\" = FALSE\n"
                       "  WHERE \"name\" = ''");
@@ -9149,6 +9153,64 @@ namespace odb
     "",
     12ULL,
     &migrate_schema_12);
+
+  static bool
+  migrate_schema_13 (database& db, unsigned short pass, bool pre)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (pass);
+    ODB_POTENTIALLY_UNUSED (pre);
+
+    if (pre)
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          db.execute ("ALTER TABLE \"cmall_order\"\n"
+                      "  ADD COLUMN \"snap_git_version\" TEXT NOT NULL DEFAULT ''");
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("CREATE INDEX \"cmall_order_snap_git_version_i\"\n"
+                      "  ON \"cmall_order\" (\"snap_git_version\")");
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"version\" = 13, \"migration\" = TRUE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+    else
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("ALTER TABLE \"cmall_order\"\n"
+                      "  DROP COLUMN \"currency_rate\"");
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"migration\" = FALSE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  static const schema_catalog_migrate_entry
+  migrate_schema_entry_13_ (
+    id_pgsql,
+    "",
+    13ULL,
+    &migrate_schema_13);
 }
 
 #include <odb/post.hxx>

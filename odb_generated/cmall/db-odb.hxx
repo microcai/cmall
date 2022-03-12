@@ -1824,18 +1824,6 @@ namespace odb
 
     static const price_type_ price;
 
-    // currency_rate
-    //
-    typedef
-    pgsql::query_column<
-      pgsql::value_traits<
-        ::cpp_numeric,
-        pgsql::id_string >::query_type,
-      pgsql::id_string >
-    currency_rate_type_;
-
-    static const currency_rate_type_ currency_rate;
-
     // pay_amount
     //
     typedef
@@ -1883,6 +1871,18 @@ namespace odb
     close_at_type_;
 
     static const close_at_type_ close_at;
+
+    // snap_git_version
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::std::string,
+        pgsql::id_string >::query_type,
+      pgsql::id_string >
+    snap_git_version_type_;
+
+    static const snap_git_version_type_ snap_git_version;
 
     // ext
     //
@@ -1959,11 +1959,6 @@ namespace odb
   price (A::table_name, "\"price\"", "(?)::numeric");
 
   template <typename A>
-  const typename query_columns< ::cmall_order, id_pgsql, A >::currency_rate_type_
-  query_columns< ::cmall_order, id_pgsql, A >::
-  currency_rate (A::table_name, "\"currency_rate\"", "(?)::numeric");
-
-  template <typename A>
   const typename query_columns< ::cmall_order, id_pgsql, A >::pay_amount_type_
   query_columns< ::cmall_order, id_pgsql, A >::
   pay_amount (A::table_name, "\"pay_amount\"", "(?)::numeric");
@@ -1982,6 +1977,11 @@ namespace odb
   const typename query_columns< ::cmall_order, id_pgsql, A >::close_at_type_
   query_columns< ::cmall_order, id_pgsql, A >::
   close_at (A::table_name, "\"close_at\"", 0);
+
+  template <typename A>
+  const typename query_columns< ::cmall_order, id_pgsql, A >::snap_git_version_type_
+  query_columns< ::cmall_order, id_pgsql, A >::
+  snap_git_version (A::table_name, "\"snap_git_version\"", 0);
 
   template <typename A>
   const typename query_columns< ::cmall_order, id_pgsql, A >::ext_type_
@@ -2051,12 +2051,6 @@ namespace odb
       std::size_t price_size;
       bool price_null;
 
-      // currency_rate_
-      //
-      details::buffer currency_rate_value;
-      std::size_t currency_rate_size;
-      bool currency_rate_null;
-
       // pay_amount_
       //
       details::buffer pay_amount_value;
@@ -2077,6 +2071,12 @@ namespace odb
       //
       long long close_at_value;
       bool close_at_null;
+
+      // snap_git_version
+      //
+      details::buffer snap_git_version_value;
+      std::size_t snap_git_version_size;
+      bool snap_git_version_null;
 
       // ext_
       //

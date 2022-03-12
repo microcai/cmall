@@ -2,6 +2,9 @@
  * compiler for C++.
  */
 
+ALTER TABLE "cmall_order"
+  ALTER COLUMN "seller" SET NOT NULL;
+
 UPDATE "schema_version"
   SET "migration" = FALSE
   WHERE "name" = '';

@@ -40,7 +40,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(8, 12, open)
+#pragma db model version(8, 13, open)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -195,12 +195,10 @@ struct cmall_order {
 
 #pragma db index
 	uint64_t buyer_; // 购买者
-#pragma db index default(1)
+#pragma db index
 	uint64_t seller_; // 卖家
 
 	cpp_numeric price_; // 下单时价格
- #pragma db type("numeric") default("1")
-	cpp_numeric currency_rate_; // 币种汇率
  #pragma db type("numeric") default("0")
 	cpp_numeric pay_amount_; // 支付数额
 
@@ -211,6 +209,8 @@ struct cmall_order {
 	odb::nullable<boost::posix_time::ptime> close_at_;
 
 	std::vector<goods_snapshot> bought_goods;
+#pragma db index default("")
+	std::string snap_git_version; // 下单时 商户的仓库 git 版本.
 
 	odb::nullable<std::string> ext_; // 扩展字段
 

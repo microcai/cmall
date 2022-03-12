@@ -691,6 +691,8 @@ namespace cmall
 						throw boost::system::system_error(cmall::error::should_be_same_merchant);
 					}
 
+					new_order.snap_git_version = product_in_mall.git_version;
+
 					goods_snapshot good_snap;
 
 					good_snap.description_	   = product_in_mall.product_description;

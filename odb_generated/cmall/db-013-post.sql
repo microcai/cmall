@@ -3,12 +3,9 @@
  */
 
 ALTER TABLE "cmall_order"
-  ADD COLUMN "seller" BIGINT NULL;
-
-CREATE INDEX "cmall_order_seller_i"
-  ON "cmall_order" ("seller");
+  DROP COLUMN "currency_rate";
 
 UPDATE "schema_version"
-  SET "version" = 12, "migration" = TRUE
+  SET "migration" = FALSE
   WHERE "name" = '';
 
