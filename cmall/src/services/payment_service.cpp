@@ -32,13 +32,13 @@ namespace services
 		boost::asio::awaitable<payment_url> get_payurl(std::string_view script_content, std::string orderid, int nthTry, std::string order_title, std::string order_amount, PAYMENT_GATEWAY gateway)
 		{
 			payment_url ret;
-			ret.uri = co_await nodejs.run_script(script_content, {"--order-id", orderid, "--order-amount", order_amount});
+			ret.uri = co_await nodejs.run_script(script_content, {"-", "--", "--order-id", orderid, "--order-amount", order_amount});
 			co_return ret;
 		}
 
 		boost::asio::awaitable<bool> query_pay(std::string orderid, PAYMENT_GATEWAY gateway)
 		{
-			auto result = co_await nodejs.run_script("", {"--order-id", orderid});
+			auto result = co_await nodejs.run_script("", {"-", "--", "--order-id", orderid});
 			co_return result == "payed";
 		}
 
