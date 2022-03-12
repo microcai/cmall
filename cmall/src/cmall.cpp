@@ -394,7 +394,7 @@ namespace cmall
 
 					reply_message["result"] = {
 						{ "session_id", this_client.session_info->session_id },
-						{ "isAdmin", static_cast<bool>(this_client.session_info->adAdmin) },
+						{ "isAdmin", static_cast<bool>(this_client.session_info->isAdmin) },
 						{ "isMerchant", static_cast<bool>(this_client.session_info->isMerchant) },
 						{ "isLogin", static_cast<bool>(this_client.session_info->user_info) },
 					};
