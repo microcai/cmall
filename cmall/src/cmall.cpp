@@ -562,7 +562,11 @@ namespace cmall
 						// 认证成功后， sessionid 写入 mdbx 数据库以便日后恢复.
 						co_await session_cache_map.save(
 							this_client.session_info->session_id, *this_client.session_info);
-						reply_message["result"] = { { "login", "success" }, { "usertype", "user" } };
+						reply_message["result"] = {
+							 { "login", "success" },
+							 { "isMerchant", session_info.isMerchant },
+							 { "isAdmin", session_info.isAdmin },
+						};
 
 						std::unique_lock<std::shared_mutex> l(active_users_mtx);
 						active_users.push_back(connection_ptr);
