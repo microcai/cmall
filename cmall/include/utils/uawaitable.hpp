@@ -26,10 +26,10 @@ namespace asio_util
 	};
 
 	//
-	// uawaitable usage:
+	// use_awaitable usage:
 	//
 	// boost::system::error_code ec;
-	// stream.async_read(buffer, uawaitable[ec]);
+	// stream.async_read(buffer, use_awaitable[ec]);
 	//
 
 	static asio_util::uawaitable_t use_awaitable;
