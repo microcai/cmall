@@ -8914,7 +8914,6 @@ namespace odb
         }
         case 2:
         {
-          db.execute ("DROP TABLE \"cmall_applicant\"");
           db.execute ("UPDATE \"schema_version\"\n"
                       "  SET \"migration\" = FALSE\n"
                       "  WHERE \"name\" = ''");

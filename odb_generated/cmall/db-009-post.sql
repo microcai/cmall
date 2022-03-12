@@ -2,8 +2,6 @@
  * compiler for C++.
  */
 
-DROP TABLE "cmall_applicant";
-
 UPDATE "schema_version"
   SET "migration" = FALSE
   WHERE "name" = '';
