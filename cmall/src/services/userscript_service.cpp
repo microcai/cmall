@@ -35,9 +35,9 @@ namespace services
 			async_pipe nodejs_output(io);
 			async_pipe nodejs_input(io);
 
-			LOG_DBG << "parent pid = " << getpid();
+			LOG_DBG << "script_content = " << script_content;
 
-			child cp(search_path("node"), boost::process::args(script_arguments)
+			child cp(io, search_path("node"), boost::process::args(script_arguments)
 				, std_in < nodejs_input, std_out > nodejs_output, start_dir("/tmp")
 #ifdef __linux
 				, boost::process::extend::on_exec_setup=[](auto & exec) { sandbox::no_fd_leak(); sandbox::install_seccomp(); sandbox::drop_root(); }
@@ -51,9 +51,7 @@ namespace services
 
 			std::string drop_privalage = "try{chroot('/');process.setgid(65535); process.setuid(65535);}catch(e){}\n";
 
-			auto new_script = std::string("") + std::string(script_content);
-
-			co_await boost::asio::async_write(nodejs_input, boost::asio::buffer(drop_privalage), boost::asio::use_awaitable);
+			//co_await boost::asio::async_write(nodejs_input, boost::asio::buffer(drop_privalage), boost::asio::use_awaitable);
 			co_await boost::asio::async_write(nodejs_input, boost::asio::buffer(script_content), boost::asio::use_awaitable);
 			nodejs_input.close();
 

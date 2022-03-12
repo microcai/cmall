@@ -33,6 +33,8 @@ namespace services
 		{
 			payment_url ret;
 			ret.uri = co_await nodejs.run_script(script_content, {"-", "--", "--order-id", orderid, "--order-amount", order_amount});
+			if (!ret.uri.empty())
+				ret.uri.pop_back();
 			co_return ret;
 		}
 
