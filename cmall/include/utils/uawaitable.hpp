@@ -24,14 +24,14 @@ namespace asio_util
 			return boost::asio::redirect_error(boost::asio::use_awaitable, ec);
 		}
 	};
+
+	//
+	// uawaitable usage:
+	//
+	// boost::system::error_code ec;
+	// stream.async_read(buffer, uawaitable[ec]);
+	//
+
+	static asio_util::uawaitable_t use_awaitable;
 }
-
-//
-// uawaitable usage:
-//
-// boost::system::error_code ec;
-// stream.async_read(buffer, uawaitable[ec]);
-//
-
-static asio_util::uawaitable_t uawaitable;
 
