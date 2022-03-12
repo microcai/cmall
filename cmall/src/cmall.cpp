@@ -460,6 +460,7 @@ namespace cmall
 			case req_method::merchant_get_sold_order_detail:
 			case req_method::merchant_sold_orders_mark_payed:
 			case req_method::merchant_list_sold_orders:
+			case req_method::merchant_delete_sold_orders:
 			case req_method::merchant_get_gitea_password:
 			case req_method::merchant_reset_gitea_password:
 				co_await ensure_login(false, true);
@@ -1072,6 +1073,27 @@ namespace cmall
 				LOG_DBG << "order_list retrieved, " << orders.size() << " items";
 				reply_message["result"] = boost::json::value_from(orders);
 			}
+			break;
+			case req_method::merchant_delete_sold_orders:
+			{
+				auto orderid	   = jsutil::json_accessor(params).get_string("orderid");
+
+				std::vector<cmall_order> orders;
+				using query_t = odb::query<cmall_order>;
+				auto query	  = (query_t::oid == orderid && query_t::seller == this_user.uid_ && query_t::deleted_at.is_null());
+				co_await m_database.async_load<cmall_order>(query, orders);
+
+				LOG_DBG << "order_list retrieved, " << orders.size() << " items";
+				if (orders.size() == 1)
+				{
+					orders[0].payed_at_ = boost::posix_time::second_clock::local_time();
+
+					bool success = co_await m_database.async_soft_remove<cmall_order>(orders[0]);
+
+					reply_message["result"] = success;
+				}
+				else
+					throw boost::system::system_error(cmall::error::order_not_found);			}
 			break;
 			case req_method::merchant_get_gitea_password:
 				reply_message["result"] = this_merchant.gitea_password.null() ? boost::json::value(nullptr) : boost::json::value(this_merchant.gitea_password.get());

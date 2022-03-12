@@ -171,6 +171,7 @@ namespace cmall {
 		merchant_get_sold_order_detail,
 		merchant_sold_orders_mark_payed,
 		merchant_list_sold_orders,
+		merchant_delete_sold_orders,
 		merchant_get_gitea_password,
 		merchant_reset_gitea_password,
 
