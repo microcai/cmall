@@ -1396,6 +1396,18 @@ namespace odb
 
     static const api_token_type_ api_token;
 
+    // gitea_password
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::std::basic_string< char >,
+        pgsql::id_string >::query_type,
+      pgsql::id_string >
+    gitea_password_type_;
+
+    static const gitea_password_type_ gitea_password;
+
     // created_at
     //
     typedef
@@ -1476,6 +1488,11 @@ namespace odb
   api_token (A::table_name, "\"api_token\"", 0);
 
   template <typename A>
+  const typename query_columns< ::cmall_merchant, id_pgsql, A >::gitea_password_type_
+  query_columns< ::cmall_merchant, id_pgsql, A >::
+  gitea_password (A::table_name, "\"gitea_password\"", 0);
+
+  template <typename A>
   const typename query_columns< ::cmall_merchant, id_pgsql, A >::created_at_type_
   query_columns< ::cmall_merchant, id_pgsql, A >::
   created_at (A::table_name, "\"created_at\"", 0);
@@ -1549,6 +1566,12 @@ namespace odb
       std::size_t api_token_size;
       bool api_token_null;
 
+      // gitea_password
+      //
+      details::buffer gitea_password_value;
+      std::size_t gitea_password_size;
+      bool gitea_password_null;
+
       // created_at_
       //
       long long created_at_value;
@@ -1609,7 +1632,7 @@ namespace odb
 
     typedef pgsql::query_base query_base_type;
 
-    static const std::size_t column_count = 10UL;
+    static const std::size_t column_count = 11UL;
     static const std::size_t id_column_count = 1UL;
     static const std::size_t inverse_column_count = 0UL;
     static const std::size_t readonly_column_count = 0UL;

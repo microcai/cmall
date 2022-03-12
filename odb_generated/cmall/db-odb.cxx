@@ -3501,6 +3501,7 @@ namespace odb
     pgsql::int2_oid,
     pgsql::text_oid,
     pgsql::text_oid,
+    pgsql::text_oid,
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
@@ -3519,6 +3520,7 @@ namespace odb
     pgsql::text_oid,
     pgsql::bool_oid,
     pgsql::int2_oid,
+    pgsql::text_oid,
     pgsql::text_oid,
     pgsql::text_oid,
     pgsql::timestamp_oid,
@@ -3607,21 +3609,29 @@ namespace odb
       grew = true;
     }
 
-    // created_at_
+    // gitea_password
     //
-    t[6UL] = 0;
+    if (t[6UL])
+    {
+      i.gitea_password_value.capacity (i.gitea_password_size);
+      grew = true;
+    }
 
-    // updated_at_
+    // created_at_
     //
     t[7UL] = 0;
 
-    // deleted_at_
+    // updated_at_
     //
     t[8UL] = 0;
 
+    // deleted_at_
+    //
+    t[9UL] = 0;
+
     // repo_path
     //
-    if (t[9UL])
+    if (t[10UL])
     {
       i.repo_path_value.capacity (i.repo_path_size);
       grew = true;
@@ -3690,6 +3700,15 @@ namespace odb
     b[n].capacity = i.api_token_value.capacity ();
     b[n].size = &i.api_token_size;
     b[n].is_null = &i.api_token_null;
+    n++;
+
+    // gitea_password
+    //
+    b[n].type = pgsql::bind::text;
+    b[n].buffer = i.gitea_password_value.data ();
+    b[n].capacity = i.gitea_password_value.capacity ();
+    b[n].size = &i.gitea_password_size;
+    b[n].is_null = &i.gitea_password_null;
     n++;
 
     // created_at_
@@ -3849,6 +3868,27 @@ namespace odb
       i.api_token_null = is_null;
       i.api_token_size = size;
       grew = grew || (cap != i.api_token_value.capacity ());
+    }
+
+    // gitea_password
+    //
+    {
+      ::odb::nullable< ::std::basic_string< char > > const& v =
+        o.gitea_password;
+
+      bool is_null (true);
+      std::size_t size (0);
+      std::size_t cap (i.gitea_password_value.capacity ());
+      pgsql::value_traits<
+          ::odb::nullable< ::std::basic_string< char > >,
+          pgsql::id_string >::set_image (
+        i.gitea_password_value,
+        size,
+        is_null,
+        v);
+      i.gitea_password_null = is_null;
+      i.gitea_password_size = size;
+      grew = grew || (cap != i.gitea_password_value.capacity ());
     }
 
     // created_at_
@@ -4013,6 +4053,21 @@ namespace odb
         i.api_token_null);
     }
 
+    // gitea_password
+    //
+    {
+      ::odb::nullable< ::std::basic_string< char > >& v =
+        o.gitea_password;
+
+      pgsql::value_traits<
+          ::odb::nullable< ::std::basic_string< char > >,
+          pgsql::id_string >::set_value (
+        v,
+        i.gitea_password_value,
+        i.gitea_password_size,
+        i.gitea_password_null);
+    }
+
     // created_at_
     //
     {
@@ -4092,12 +4147,13 @@ namespace odb
   "\"state\", "
   "\"desc\", "
   "\"api_token\", "
+  "\"gitea_password\", "
   "\"created_at\", "
   "\"updated_at\", "
   "\"deleted_at\", "
   "\"repo_path\") "
   "VALUES "
-  "($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)";
+  "($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)";
 
   const char access::object_traits_impl< ::cmall_merchant, id_pgsql >::find_statement[] =
   "SELECT "
@@ -4107,6 +4163,7 @@ namespace odb
   "\"cmall_merchant\".\"state\", "
   "\"cmall_merchant\".\"desc\", "
   "\"cmall_merchant\".\"api_token\", "
+  "\"cmall_merchant\".\"gitea_password\", "
   "\"cmall_merchant\".\"created_at\", "
   "\"cmall_merchant\".\"updated_at\", "
   "\"cmall_merchant\".\"deleted_at\", "
@@ -4122,11 +4179,12 @@ namespace odb
   "\"state\"=$3, "
   "\"desc\"=$4, "
   "\"api_token\"=$5, "
-  "\"created_at\"=$6, "
-  "\"updated_at\"=$7, "
-  "\"deleted_at\"=$8, "
-  "\"repo_path\"=$9 "
-  "WHERE \"uid\"=$10";
+  "\"gitea_password\"=$6, "
+  "\"created_at\"=$7, "
+  "\"updated_at\"=$8, "
+  "\"deleted_at\"=$9, "
+  "\"repo_path\"=$10 "
+  "WHERE \"uid\"=$11";
 
   const char access::object_traits_impl< ::cmall_merchant, id_pgsql >::erase_statement[] =
   "DELETE FROM \"cmall_merchant\" "
@@ -4140,6 +4198,7 @@ namespace odb
   "\"cmall_merchant\".\"state\", "
   "\"cmall_merchant\".\"desc\", "
   "\"cmall_merchant\".\"api_token\", "
+  "\"cmall_merchant\".\"gitea_password\", "
   "\"cmall_merchant\".\"created_at\", "
   "\"cmall_merchant\".\"updated_at\", "
   "\"cmall_merchant\".\"deleted_at\", "
@@ -8794,6 +8853,7 @@ namespace odb
                       "  \"state\" SMALLINT NOT NULL,\n"
                       "  \"desc\" TEXT NULL,\n"
                       "  \"api_token\" TEXT NULL,\n"
+                      "  \"gitea_password\" TEXT NULL,\n"
                       "  \"created_at\" TIMESTAMP NULL,\n"
                       "  \"updated_at\" TIMESTAMP NULL,\n"
                       "  \"deleted_at\" TIMESTAMP NULL,\n"
@@ -8892,7 +8952,7 @@ namespace odb
                       "  \"migration\" BOOLEAN NOT NULL)");
           db.execute ("INSERT INTO \"schema_version\" (\n"
                       "  \"name\", \"version\", \"migration\")\n"
-                      "  SELECT '', 13, FALSE\n"
+                      "  SELECT '', 14, FALSE\n"
                       "  WHERE NOT EXISTS (\n"
                       "    SELECT 1 FROM \"schema_version\" WHERE \"name\" = '')");
           return false;
@@ -9211,6 +9271,60 @@ namespace odb
     "",
     13ULL,
     &migrate_schema_13);
+
+  static bool
+  migrate_schema_14 (database& db, unsigned short pass, bool pre)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (pass);
+    ODB_POTENTIALLY_UNUSED (pre);
+
+    if (pre)
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          db.execute ("ALTER TABLE \"cmall_merchant\"\n"
+                      "  ADD COLUMN \"gitea_password\" TEXT NULL");
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"version\" = 14, \"migration\" = TRUE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+    else
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"migration\" = FALSE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  static const schema_catalog_migrate_entry
+  migrate_schema_entry_14_ (
+    id_pgsql,
+    "",
+    14ULL,
+    &migrate_schema_14);
 }
 
 #include <odb/post.hxx>

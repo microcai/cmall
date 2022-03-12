@@ -370,6 +370,23 @@ namespace cmall
 						}
 						else
 						{
+							cmall_merchant merchant_user;
+							administrators admin_user;
+							// 如果是 merchant/admin 也载入他们的信息
+							if (co_await m_database.async_load<cmall_merchant>(this_client.session_info->user_info->uid_, merchant_user))
+							{
+								if (merchant_user.verified_ && merchant_user.state_ == 0)
+								{
+									this_client.session_info->merchant_info = merchant_user;
+									this_client.session_info->isMerchant = true;
+								}
+							}
+							if (co_await m_database.async_load<administrators>(this_client.session_info->user_info->uid_, admin_user))
+							{
+								this_client.session_info->admin_info = admin_user;
+								this_client.session_info->isAdmin = true;
+							}
+
 							std::unique_lock<std::shared_mutex> l(active_users_mtx);
 							active_users.push_back(connection_ptr);
 						}
@@ -443,6 +460,8 @@ namespace cmall
 			case req_method::merchant_get_sold_order_detail:
 			case req_method::merchant_sold_orders_mark_payed:
 			case req_method::merchant_list_sold_orders:
+			case req_method::merchant_get_gitea_password:
+			case req_method::merchant_reset_gitea_password:
 				co_await ensure_login(false, true);
 				co_return co_await handle_jsonrpc_merchant_api(connection_ptr, method.value(), params);
 				break;
@@ -504,6 +523,24 @@ namespace cmall
 								query_t::active_phone == session_info.verify_telephone, user))
 						{
 							session_info.user_info = user;
+
+							cmall_merchant merchant_user;
+							administrators admin_user;
+
+							// 如果是 merchant/admin 也载入他们的信息
+							if (co_await m_database.async_load<cmall_merchant>(user.uid_, merchant_user))
+							{
+								if (merchant_user.verified_ && merchant_user.state_ == 0)
+								{
+									session_info.merchant_info = merchant_user;
+									session_info.isMerchant = true;
+								}
+							}
+							if (co_await m_database.async_load<administrators>(user.uid_, admin_user))
+							{
+								session_info.admin_info = admin_user;
+								session_info.isAdmin = true;
+							}
 						}
 						else
 						{
@@ -983,6 +1020,7 @@ namespace cmall
 		boost::json::object reply_message;
 		services::client_session& session_info = *this_client.session_info;
 		cmall_user& this_user				   = *(session_info.user_info);
+		cmall_merchant& this_merchant		   = *(session_info.merchant_info);
 
 		switch (method)
 		{
@@ -1033,6 +1071,14 @@ namespace cmall
 
 				LOG_DBG << "order_list retrieved, " << orders.size() << " items";
 				reply_message["result"] = boost::json::value_from(orders);
+			}
+			break;
+			case req_method::merchant_get_gitea_password:
+				reply_message["result"] = this_merchant.gitea_password.null() ? boost::json::value(nullptr) : boost::json::value(this_merchant.gitea_password.get());
+				break;
+			case req_method::merchant_reset_gitea_password:
+			{
+
 			}
 			break;
 			default:
@@ -1323,5 +1369,4 @@ namespace cmall
 		active_users.get<1>().erase(c->connection_id_);
 		co_return;
 	}
-
 }
