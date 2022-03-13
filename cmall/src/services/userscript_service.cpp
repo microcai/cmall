@@ -17,8 +17,39 @@ using namespace boost::asio::experimental::awaitable_operators;
 
 #include "utils/timedmap.hpp"
 #include "utils/logging.hpp"
+#include "utils/scoped_exit.hpp"
+#include "cmall/error_code.hpp"
 
 #include "../sandbox.hpp"
+#ifdef __linux__
+
+#include <sys/socket.h>
+
+static int recv_fd(int sock)
+{
+	struct msghdr msg = {};
+	struct cmsghdr *cmsg;
+	char buf[CMSG_SPACE(sizeof(int))] = {0}, c = 'c';
+	struct iovec io = {
+		.iov_base = &c,
+		.iov_len = 1,
+	};
+
+	msg.msg_iov = &io;
+	msg.msg_iovlen = 1;
+	msg.msg_control = buf;
+	msg.msg_controllen = sizeof(buf);
+
+	if (recvmsg(sock, &msg, 0) < 0) {
+		perror("recvmsg");
+		return -1;
+	}
+
+	cmsg = CMSG_FIRSTHDR(&msg);
+
+	return *((int *)CMSG_DATA(cmsg));
+}
+#endif
 
 namespace services
 {
@@ -37,13 +68,31 @@ namespace services
 
 			LOG_DBG << "script_content = " << script_content;
 
+#ifdef __linux
+			int sk_pair[2] = {-1, -1};
+			if (socketpair(PF_LOCAL, SOCK_SEQPACKET|SOCK_CLOEXEC, 0, sk_pair) < 0)
+				throw boost::system::system_error(cmall::error::internal_server_error);
+			scoped_exit sk_pair_cleanup([=]()
+			{
+				::close(sk_pair[0]);
+				::close(sk_pair[1]);
+			});
+
+#endif
 			child cp(io, search_path("node"), boost::process::args(script_arguments)
 				, std_in < nodejs_input, std_out > nodejs_output, start_dir("/tmp")
 #ifdef __linux
-				, boost::process::extend::on_exec_setup=[](auto & exec) { sandbox::no_fd_leak(); sandbox::install_seccomp(); sandbox::drop_root(); }
+				, boost::process::extend::on_exec_setup=[sk_parent=sk_pair[0], sk_child = sk_pair[1]](auto & exec) { ::close(sk_parent); sandbox::no_fd_leak(); sandbox::install_seccomp(sk_child); sandbox::drop_root(); }
 #endif
 			);
 
+#ifdef __linux__
+			::close(sk_pair[1]);
+			int sec_comp_notify_fd = recv_fd(sk_pair[0]);
+			auto seccomp_supervisor_promise = boost::asio::co_spawn(io, sandbox::seccomp_supervisor(sec_comp_notify_fd), boost::asio::experimental::use_promise);
+			::close(sk_pair[0]);
+			sk_pair_cleanup.dismiss();
+#endif
 			std::string out;
 			auto d_buffer = boost::asio::dynamic_buffer(out);
 
