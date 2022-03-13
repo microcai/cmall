@@ -8,6 +8,8 @@ endif()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../odb_generated)
 add_definitions(-DLOGGING_COMPRESS_LOGS)
 
+find_package(seccomp)
+
 file(GLOB cmall_SRCS
 	LIST_DIRECTORIES false
 	RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
@@ -33,6 +35,10 @@ add_executable(cmall ${cmall_SRCS}
 )
 
 target_link_libraries(cmall gitpp httpd)
+
+if (SECCOMP_FOUND)
+	target_link_libraries(cmall ${SECCOMP_LIBRARY})
+endif()
 
 target_include_directories(cmall PRIVATE
 	${CMAKE_BINARY_DIR}
