@@ -12,6 +12,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <sys/uio.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -252,7 +253,7 @@ boost::asio::awaitable<void> sandbox::seccomp_supervisor(int seccomp_notify_fd_)
 	}
 
 	char path[8192];
-	char openat_param1[8192];
+	char openat_param1[8193];
 
 	while (true)
 	{
@@ -287,13 +288,11 @@ boost::asio::awaitable<void> sandbox::seccomp_supervisor(int seccomp_notify_fd_)
 				// 要使用跨进程 memcpy
                 if (seccomp_notify_id_valid(seccomp_notify_fd_, req->id) !=0)
                     co_return;
-				snprintf(path, sizeof(path), "/proc/%d/mem", req->pid);
-				int mem = open(path, O_RDONLY | O_CLOEXEC);
-				boost::asio::random_access_file mem_file(this_executor, mem);
-				memset(openat_param1, 0, sizeof(openat_param1));
 
-				mem_file.read_some_at(req->data.args[1], boost::asio::buffer(openat_param1));
-
+                struct iovec this_readbuf = { openat_param1, sizeof (openat_param1) - 1 };
+                struct iovec traced_readbuf = { reinterpret_cast<void*>(req->data.args[1]), 4096 };
+                memset(openat_param1, 0 , sizeof openat_param1);
+                process_vm_readv(req->pid, &this_readbuf, 1, &traced_readbuf, 1, 0);
 				std::string node_want_open = openat_param1;
 
 				do
