@@ -29,33 +29,22 @@ namespace services
 			: nodejs(io)
 		{}
 
-		boost::asio::awaitable<payment_url> get_payurl(std::string_view script_content, std::string orderid, int nthTry, std::string order_title, std::string order_amount, PAYMENT_GATEWAY gateway)
+		boost::asio::awaitable<payment_url> get_payurl(std::string_view script_content, std::string orderid, int nthTry, std::string order_amount, std::string paymentmethod)
 		{
 			payment_url ret;
-			ret.uri = co_await nodejs.run_script(script_content, {"-", "--", "--order-id", orderid, "--order-amount", order_amount});
+			ret.uri = co_await nodejs.run_script(script_content, {"-", "--", "--order-id", orderid, "--order-amount", order_amount, "--method", paymentmethod});
 			if (!ret.uri.empty())
 				ret.uri.pop_back();
 			co_return ret;
-		}
-
-		boost::asio::awaitable<bool> query_pay(std::string orderid, PAYMENT_GATEWAY gateway)
-		{
-			auto result = co_await nodejs.run_script("", {"-", "--", "--order-id", orderid});
-			co_return result == "payed";
 		}
 
 		services::userscript nodejs;
 	};
 
 	// verify the user input verify_code against verify_session
-	boost::asio::awaitable<payment_url> payment::get_payurl(std::string_view script_content, std::string orderid, int nthTry, std::string order_title, std::string order_amount, PAYMENT_GATEWAY gateway)
+	boost::asio::awaitable<payment_url> payment::get_payurl(std::string_view script_content, std::string orderid, int nthTry, std::string order_amount, std::string paymentmethod)
 	{
-		return impl().get_payurl(script_content, orderid, nthTry, order_title, order_amount, gateway);
-	}
-
-	boost::asio::awaitable<bool> payment::query_pay(std::string orderid, PAYMENT_GATEWAY gateway)
-	{
-		return impl().query_pay(orderid, gateway);
+		return impl().get_payurl(script_content, orderid, nthTry, order_amount, paymentmethod);
 	}
 
 	payment::payment(boost::asio::io_context& io)

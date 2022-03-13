@@ -804,6 +804,7 @@ namespace cmall
 			{
 				auto orderid = jsutil::json_accessor(params).get_string("orderid");
 				auto payment = jsutil::json_accessor(params).get_string("payment");
+				auto paymentmethod = jsutil::json_accessor(params).get_string("payment");
 
 				cmall_order order_to_pay;
 				using query_t	   = odb::query<cmall_order>;
@@ -824,7 +825,7 @@ namespace cmall
 				std::string pay_script_content
 					= co_await merchant_repos[merchant_id]->get_file_content("scripts/getpayurl.js", ec);
 				services::payment_url payurl = co_await payment_service.get_payurl(
-					pay_script_content, orderid, 0, "", to_string(order_to_pay.price_), services::PAYMENT_CHSPAY);
+					pay_script_content, orderid, 0, to_string(order_to_pay.price_), paymentmethod);
 
 				reply_message["result"] = { { "type", "url" }, { "url", payurl.uri } };
 			}
