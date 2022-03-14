@@ -32,6 +32,12 @@ namespace services
 		boost::asio::awaitable<payment_url> get_payurl(std::string_view script_content, std::string orderid, int nthTry, std::string order_amount, std::string paymentmethod)
 		{
 			payment_url ret;
+
+			if (script_content.empty())
+			{
+				throw boost::system::system_error(cmall::error::no_payment_script_supplyed);
+			}
+
 			ret.uri = co_await nodejs.run_script(script_content, {"-", "--", "--order-id", orderid, "--order-amount", order_amount, "--method", paymentmethod});
 			if (!ret.uri.empty())
 				ret.uri.pop_back();
