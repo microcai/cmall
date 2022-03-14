@@ -956,8 +956,6 @@ namespace cmall
 		client_connection& this_client = *connection_ptr;
 		boost::json::object reply_message;
 		services::client_session& session_info = *this_client.session_info;
-		cmall_user& this_user				   = *(session_info.user_info);
-		boost::ignore_unused(this_user);
 
 		switch (method)
 		{
