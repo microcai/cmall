@@ -31,6 +31,7 @@
 #include "services/payment_service.hpp"
 #include "services/repo_products.hpp"
 #include "services/userscript_service.hpp"
+#include "services/gitea_service.hpp"
 
 #include "httpd/acceptor.hpp"
 
@@ -258,6 +259,7 @@ namespace cmall {
 		services::verifycode telephone_verifier;
 		services::payment payment_service;
 		services::userscript script_runner;
+		services::gitea gitea_service;
 
 		std::map<std::uint64_t, std::shared_ptr<services::repo_products>> merchant_repos;
 

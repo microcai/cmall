@@ -7,10 +7,6 @@
 
 namespace services
 {
-	// struct payment_url {
-	// 	std::string uri;
-	// 	boost::posix_time::ptime valid_until;
-	// };
 	struct gitea_impl;
 	class gitea
 	{

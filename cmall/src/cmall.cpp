@@ -64,6 +64,7 @@ namespace cmall
 		, telephone_verifier(m_io_context)
 		, payment_service(m_io_context)
 		, script_runner(m_io_context)
+		, gitea_service(m_io_context)
 	{
 	}
 
@@ -1207,7 +1208,35 @@ namespace cmall
 			break;
 			case req_method::admin_approve_merchant:
 			{
+				auto apply_id_str = jsutil::json_accessor(params).get_string("apply_id");
+				auto apply_id = parse_number<std::uint64_t>(apply_id_str);
+				if (!apply_id.has_value()) 
+					throw boost::system::system_error(cmall::error::invalid_params);
+				
+				// TODO: 以下两个动作应在一个事务中
+				// 更新申请状态.
+				cmall_apply_for_mechant apply;
+				bool found = co_await m_database.async_load(apply_id.value(), apply);
+				if (!found)
+					throw boost::system::system_error(cmall::error::merchant_vanished);
 
+				apply.approved_ = true;
+				co_await m_database.async_update(apply);
+
+				// 创建商户.
+				auto gitea_password = gen_password();
+				cmall_merchant m;
+				m.uid_ = apply.applicant_->uid_;
+				m.name_ = apply.applicant_->name_;
+				m.state_ = to_underlying(merchant_state_t::normal);
+				m.gitea_password = gitea_password;
+				co_await m_database.async_add(m);
+
+				// 初始化仓库.
+				// TODO: 设置正确地址
+				std::string gitea_template_loaction = "/var/lib/gitea/template/product_template";
+				co_await gitea_service.init_user(m.uid_, gitea_password, gitea_template_loaction);
+				reply_message["result"] = true;
 			}
 			break;
 			case req_method::admin_deny_applicant:
