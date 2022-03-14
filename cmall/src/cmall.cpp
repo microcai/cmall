@@ -1192,7 +1192,7 @@ namespace cmall
 		while (!m_abort)
 			try
 			{
-				timer t(co_await boost::asio::this_coro::executor);
+				steady_timer t(co_await boost::asio::this_coro::executor);
 				t.expires_from_now(std::chrono::seconds(15));
 				std::variant<std::monostate, std::string> awaited_result
 					= co_await (t.async_wait(boost::asio::use_awaitable)
