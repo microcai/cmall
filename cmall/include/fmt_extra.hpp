@@ -24,7 +24,7 @@
 #ifdef __cpp_lib_format
 namespace std {
 #else
-namespace fmt
+namespace fmt {
 #endif
 	template <>
 	struct formatter<boost::multiprecision::cpp_dec_float_50> {
