@@ -240,7 +240,7 @@ struct cmall_cart
 };
 
 
-// 购物车.
+// 申请表.
 #pragma db object
 struct cmall_apply_for_mechant
 {

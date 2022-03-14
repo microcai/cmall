@@ -604,21 +604,14 @@ namespace cmall
 				cmall_merchant m;
 				if (co_await m_database.async_load<cmall_merchant>(uid, m))
 				{
-					// already applied
+					// already a merchant
 					throw boost::system::system_error(cmall::error::already_exist);
 				}
 
-				std::string name = jsutil::json_accessor(params).get_string("name");
-				if (name.empty())
-					throw boost::system::system_error(cmall::error::invalid_params);
+				cmall_apply_for_mechant apply;
+				apply.applicant_ = std::make_shared<cmall_user>(this_client.session_info->user_info.value());
+				co_await m_database.async_add(apply);
 
-				std::string desc = jsutil::json_accessor(params).get_string("desc");
-
-				m.uid_		= uid;
-				m.name_		= name;
-				if (!desc.empty())
-					m.desc_ = desc;
-				co_await m_database.async_add<cmall_merchant>(m);
 				reply_message["result"] = true;
 			}
 			break;
