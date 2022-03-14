@@ -1166,7 +1166,17 @@ namespace cmall
 				break;
 			case req_method::merchant_reset_gitea_password:
 			{
-
+				auto gitea_password = gen_password();
+				bool ok = co_await gitea_service.change_password(this_merchant.uid_, gitea_password);
+				if (ok)
+				{
+					this_merchant.gitea_password = gitea_password;
+					co_await m_database.async_update<cmall_merchant>(this_merchant.uid_, [&](cmall_merchant&& m) mutable {
+						m.gitea_password = gitea_password;
+						return m;
+					});
+				}
+				reply_message["result"] = ok;
 			}
 			break;
 			default:
