@@ -55,6 +55,8 @@ if (ENABLE_LTO)
 	set(ENABLE_MOLD OFF FORCE)
 endif()
 
+IF(NOT MSVC)
+
 if (ENABLE_LLD)
 	list(APPEND CMAKE_EXE_LINKER_FLAGS "-fuse-ld=lld")
 elseif (ENABLE_MOLD)
@@ -68,6 +70,7 @@ else()
 		list(APPEND CMAKE_EXE_LINKER_FLAGS "-fuse-ld=lld")
 	endif()
 endif()
+ENDIF(NOT MSVC)
 
 if (ENABLE_LTO)
 	if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
