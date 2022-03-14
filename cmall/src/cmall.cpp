@@ -91,14 +91,14 @@ namespace cmall
 			auto repo = std::make_shared<services::repo_products>(
 				background_task_thread_pool, merchant.uid_, merchant.repo_path);
 			std::unique_lock<std::shared_mutex> l(merchant_repos_mtx);
-			this->merchant_repos.erase(merchant.uid_);
-			this->merchant_repos.emplace(merchant.uid_, repo);
+			merchant_repos.get<tag::merchant_uid_tag>().erase(merchant.uid_);
+			merchant_repos.get<tag::merchant_uid_tag>().insert(repo);
 			co_return true;
 		}
 		else
 		{
 			std::unique_lock<std::shared_mutex> l(merchant_repos_mtx);
-			this->merchant_repos.erase(merchant.uid_);
+			merchant_repos.get<tag::merchant_uid_tag>().erase(merchant.uid_);
 			LOG_ERR << "no bare git repos @(" << merchant.repo_path << ") for merchant <<" << merchant.name_;
 		}
 		co_return false;
@@ -107,10 +107,14 @@ namespace cmall
 	std::shared_ptr<services::repo_products> cmall_service::get_merchant_git_repo(std::uint64_t merchant_uid, boost::system::error_code& ec) const
 	{
 		std::shared_lock<std::shared_mutex> l(merchant_repos_mtx);
-		if (merchant_repos.contains(merchant_uid))
-			return merchant_repos.at(merchant_uid);
-		ec = cmall::error::merchant_vanished;
-		return {};
+		auto& index_by_uid = merchant_repos.get<tag::merchant_uid_tag>();
+		auto it = index_by_uid.find(merchant_uid);
+		if (it == index_by_uid.end())
+		{
+			ec = cmall::error::merchant_vanished;
+			return {};
+		}
+		return * it;
 	}
 
 	std::shared_ptr<services::repo_products> cmall_service::get_merchant_git_repo(const cmall_merchant& merchant, boost::system::error_code& ec) const
@@ -128,9 +132,13 @@ namespace cmall
 	std::shared_ptr<services::repo_products> cmall_service::get_merchant_git_repo(std::uint64_t merchant_uid) const
 	{
 		std::shared_lock<std::shared_mutex> l(merchant_repos_mtx);
-		if (merchant_repos.contains(merchant_uid))
-			return merchant_repos.at(merchant_uid);
-		throw boost::system::system_error(cmall::error::merchant_vanished);
+		auto& index_by_uid = merchant_repos.get<tag::merchant_uid_tag>();
+		auto it = index_by_uid.find(merchant_uid);
+		if (it == index_by_uid.end())
+		{
+			throw boost::system::system_error(cmall::error::merchant_vanished);
+		}
+		return * it;
 	}
 
 	boost::asio::awaitable<bool> cmall_service::load_configs()

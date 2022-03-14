@@ -10,6 +10,7 @@
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/multi_index/global_fun.hpp>
+#include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/tag.hpp>
 
@@ -126,19 +127,54 @@ namespace cmall {
 		return p->session_info->user_info->uid_;
 	}
 
+	namespace tag{
+		struct connection_id_tag{};
+		struct userid_tag{};
+		struct merchant_ranke_tag{};
+		struct merchant_uid_tag{};
+	}
+
 	// 这个多索引map 用来快速找到同一个用户的 session
 	typedef boost::multi_index_container<
 		client_connection_ptr,
 		boost::multi_index::indexed_by<
 			boost::multi_index::sequenced<>,
 			boost::multi_index::hashed_unique<
+				boost::multi_index::tag<tag::connection_id_tag>,
 				boost::multi_index::global_fun<client_connection_ptr, int64_t, &client_connection_get_id>
 			>,
 			boost::multi_index::hashed_non_unique<
+				boost::multi_index::tag<tag::userid_tag>,
 				boost::multi_index::global_fun<client_connection_ptr, uint64_t, &client_connection_get_user_id>
 			>
 		>
 	> active_session_map;
+
+	inline std::int64_t merchant_get_rank(std::shared_ptr<services::repo_products>)
+	{
+		return 0;
+	}
+
+	inline std::uint64_t merchant_get_uid(std::shared_ptr<services::repo_products>)
+	{
+		return 0;
+	}
+
+	// 这个多索引map 用来快速找到同一个用户的 session
+	typedef boost::multi_index_container<
+		std::shared_ptr<services::repo_products>,
+		boost::multi_index::indexed_by<
+			boost::multi_index::sequenced<>,
+			boost::multi_index::ordered_unique<
+				boost::multi_index::tag<tag::merchant_ranke_tag>,
+				boost::multi_index::global_fun<std::shared_ptr<services::repo_products>, std::int64_t, &merchant_get_rank>
+			>,
+			boost::multi_index::hashed_unique<
+				boost::multi_index::tag<tag::merchant_uid_tag>,
+				boost::multi_index::global_fun<std::shared_ptr<services::repo_products>, std::uint64_t, &merchant_get_uid>
+			>
+		>
+	> loaded_merchant_map;
 
 	enum class req_method {
 		recover_session,
@@ -269,7 +305,7 @@ namespace cmall {
 		services::gitea gitea_service;
 
 		mutable std::shared_mutex merchant_repos_mtx;
-		std::map<std::uint64_t, std::shared_ptr<services::repo_products>> merchant_repos;
+		loaded_merchant_map merchant_repos;
 
 		// ws 服务端相关.
 		std::shared_mutex active_users_mtx;
