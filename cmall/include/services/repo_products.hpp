@@ -57,6 +57,8 @@ namespace services
 		boost::asio::awaitable<std::string> get_product_detail(std::string goods_id);
 		boost::asio::awaitable<std::string> get_product_detail(std::string goods_id, boost::system::error_code& ec);
 
+		std::uint64_t get_merchant_uid() const;
+
 	private:
 		boost::asio::thread_pool& thread_pool;
 

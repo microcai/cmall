@@ -317,6 +317,11 @@ namespace services
 		}, boost::asio::use_awaitable);
 	}
 
+	std::uint64_t repo_products::get_merchant_uid() const
+	{
+		return impl().merchant_id;
+	}
+
 	repo_products::repo_products(boost::asio::thread_pool& executor, std::uint64_t merchant_id, std::filesystem::path repo_path)
 		: thread_pool(executor)
 	{

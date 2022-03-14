@@ -155,9 +155,9 @@ namespace cmall {
 		return 0;
 	}
 
-	inline std::uint64_t merchant_get_uid(std::shared_ptr<services::repo_products>)
+	inline std::uint64_t merchant_get_uid(std::shared_ptr<services::repo_products> p)
 	{
-		return 0;
+		return p->get_merchant_uid();
 	}
 
 	// 这个多索引map 用来快速找到同一个用户的 session
