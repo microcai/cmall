@@ -2723,6 +2723,18 @@ namespace odb
 
     static const applicant_type_ applicant;
 
+    // approved
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        bool,
+        pgsql::id_boolean >::query_type,
+      pgsql::id_boolean >
+    approved_type_;
+
+    static const approved_type_ approved;
+
     // ext
     //
     typedef
@@ -2783,6 +2795,11 @@ namespace odb
   applicant (A::table_name, "\"applicant\"", 0);
 
   template <typename A>
+  const typename pointer_query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::approved_type_
+  pointer_query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::
+  approved (A::table_name, "\"approved\"", 0);
+
+  template <typename A>
   const typename pointer_query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::ext_type_
   pointer_query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::
   ext (A::table_name, "\"ext\"", 0);
@@ -2826,6 +2843,11 @@ namespace odb
       //
       long long applicant_value;
       bool applicant_null;
+
+      // approved_
+      //
+      bool approved_value;
+      bool approved_null;
 
       // ext_
       //
@@ -2892,7 +2914,7 @@ namespace odb
 
     typedef pgsql::query_base query_base_type;
 
-    static const std::size_t column_count = 6UL;
+    static const std::size_t column_count = 7UL;
     static const std::size_t id_column_count = 1UL;
     static const std::size_t inverse_column_count = 0UL;
     static const std::size_t readonly_column_count = 0UL;
@@ -3124,6 +3146,18 @@ namespace odb
 
     static const applicant_type_ applicant;
 
+    // approved
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        bool,
+        pgsql::id_boolean >::query_type,
+      pgsql::id_boolean >
+    approved_type_;
+
+    static const approved_type_ approved;
+
     // ext
     //
     typedef
@@ -3182,6 +3216,11 @@ namespace odb
   const typename query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::applicant_type_
   query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::
   applicant (A::table_name, "\"applicant\"", 0);
+
+  template <typename A>
+  const typename query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::approved_type_
+  query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::
+  approved (A::table_name, "\"approved\"", 0);
 
   template <typename A>
   const typename query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::ext_type_

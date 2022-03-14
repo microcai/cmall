@@ -1182,8 +1182,27 @@ namespace cmall
 			case req_method::admin_order_force_refund:
 			break;
 			case req_method::admin_approve_merchant:
+			{
+
+			}
 			break;
 			case req_method::admin_deny_applicant:
+			{
+				auto apply_id_str = jsutil::json_accessor(params).get_string("apply_id");
+				auto apply_id = parse_number<std::uint64_t>(apply_id_str);
+				auto reason = jsutil::json_accessor(params).get_string("apply_id");
+				if (!apply_id.has_value()) 
+					throw boost::system::system_error(cmall::error::invalid_params);
+				
+				using query_t = odb::query<cmall_apply_for_mechant>;
+				auto query = query_t::id == apply_id.value() && query_t::approved == false;
+				co_await m_database.async_update<cmall_apply_for_mechant>(query, [reason](cmall_apply_for_mechant&& apply) mutable {
+					apply.approved_ = false;
+					apply.ext_ = reason;
+					return apply;
+				});
+				reply_message["result"] = true;
+			}
 			break;
 			case req_method::admin_disable_merchants:
 			break;

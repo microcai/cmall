@@ -7835,6 +7835,7 @@ namespace odb
   persist_statement_types[] =
   {
     pgsql::int8_oid,
+    pgsql::bool_oid,
     pgsql::text_oid,
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
@@ -7851,6 +7852,7 @@ namespace odb
   update_statement_types[] =
   {
     pgsql::int8_oid,
+    pgsql::bool_oid,
     pgsql::text_oid,
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
@@ -7934,9 +7936,13 @@ namespace odb
     //
     t[1UL] = 0;
 
+    // approved_
+    //
+    t[2UL] = 0;
+
     // ext_
     //
-    if (t[2UL])
+    if (t[3UL])
     {
       i.ext_value.capacity (i.ext_size);
       grew = true;
@@ -7944,15 +7950,15 @@ namespace odb
 
     // created_at_
     //
-    t[3UL] = 0;
+    t[4UL] = 0;
 
     // updated_at_
     //
-    t[4UL] = 0;
+    t[5UL] = 0;
 
     // deleted_at_
     //
-    t[5UL] = 0;
+    t[6UL] = 0;
 
     return grew;
   }
@@ -7983,6 +7989,13 @@ namespace odb
     b[n].type = pgsql::bind::bigint;
     b[n].buffer = &i.applicant_value;
     b[n].is_null = &i.applicant_null;
+    n++;
+
+    // approved_
+    //
+    b[n].type = pgsql::bind::boolean_;
+    b[n].buffer = &i.approved_value;
+    b[n].is_null = &i.approved_null;
     n++;
 
     // ext_
@@ -8061,6 +8074,20 @@ namespace odb
       }
       else
         i.applicant_null = true;
+    }
+
+    // approved_
+    //
+    {
+      bool const& v =
+        o.approved_;
+
+      bool is_null (false);
+      pgsql::value_traits<
+          bool,
+          pgsql::id_boolean >::set_image (
+        i.approved_value, is_null, v);
+      i.approved_null = is_null;
     }
 
     // ext_
@@ -8183,6 +8210,20 @@ namespace odb
       }
     }
 
+    // approved_
+    //
+    {
+      bool& v =
+        o.approved_;
+
+      pgsql::value_traits<
+          bool,
+          pgsql::id_boolean >::set_value (
+        v,
+        i.approved_value,
+        i.approved_null);
+    }
+
     // ext_
     //
     {
@@ -8258,18 +8299,20 @@ namespace odb
   "INSERT INTO \"cmall_apply_for_mechant\" "
   "(\"id\", "
   "\"applicant\", "
+  "\"approved\", "
   "\"ext\", "
   "\"created_at\", "
   "\"updated_at\", "
   "\"deleted_at\") "
   "VALUES "
-  "(DEFAULT, $1, $2, $3, $4, $5) "
+  "(DEFAULT, $1, $2, $3, $4, $5, $6) "
   "RETURNING \"id\"";
 
   const char access::object_traits_impl< ::cmall_apply_for_mechant, id_pgsql >::find_statement[] =
   "SELECT "
   "\"cmall_apply_for_mechant\".\"id\", "
   "\"cmall_apply_for_mechant\".\"applicant\", "
+  "\"cmall_apply_for_mechant\".\"approved\", "
   "\"cmall_apply_for_mechant\".\"ext\", "
   "\"cmall_apply_for_mechant\".\"created_at\", "
   "\"cmall_apply_for_mechant\".\"updated_at\", "
@@ -8281,11 +8324,12 @@ namespace odb
   "UPDATE \"cmall_apply_for_mechant\" "
   "SET "
   "\"applicant\"=$1, "
-  "\"ext\"=$2, "
-  "\"created_at\"=$3, "
-  "\"updated_at\"=$4, "
-  "\"deleted_at\"=$5 "
-  "WHERE \"id\"=$6";
+  "\"approved\"=$2, "
+  "\"ext\"=$3, "
+  "\"created_at\"=$4, "
+  "\"updated_at\"=$5, "
+  "\"deleted_at\"=$6 "
+  "WHERE \"id\"=$7";
 
   const char access::object_traits_impl< ::cmall_apply_for_mechant, id_pgsql >::erase_statement[] =
   "DELETE FROM \"cmall_apply_for_mechant\" "
@@ -8295,6 +8339,7 @@ namespace odb
   "SELECT\n"
   "\"cmall_apply_for_mechant\".\"id\",\n"
   "\"cmall_apply_for_mechant\".\"applicant\",\n"
+  "\"cmall_apply_for_mechant\".\"approved\",\n"
   "\"cmall_apply_for_mechant\".\"ext\",\n"
   "\"cmall_apply_for_mechant\".\"created_at\",\n"
   "\"cmall_apply_for_mechant\".\"updated_at\",\n"
@@ -8886,6 +8931,7 @@ namespace odb
           db.execute ("CREATE TABLE \"cmall_apply_for_mechant\" (\n"
                       "  \"id\" BIGSERIAL NOT NULL PRIMARY KEY,\n"
                       "  \"applicant\" BIGINT NULL,\n"
+                      "  \"approved\" BOOLEAN NOT NULL DEFAULT FALSE,\n"
                       "  \"ext\" TEXT NOT NULL,\n"
                       "  \"created_at\" TIMESTAMP NULL,\n"
                       "  \"updated_at\" TIMESTAMP NULL,\n"
@@ -8906,7 +8952,7 @@ namespace odb
                       "  \"migration\" BOOLEAN NOT NULL)");
           db.execute ("INSERT INTO \"schema_version\" (\n"
                       "  \"name\", \"version\", \"migration\")\n"
-                      "  SELECT '', 15, FALSE\n"
+                      "  SELECT '', 16, FALSE\n"
                       "  WHERE NOT EXISTS (\n"
                       "    SELECT 1 FROM \"schema_version\" WHERE \"name\" = '')");
           return false;
@@ -9333,6 +9379,60 @@ namespace odb
     "",
     15ULL,
     &migrate_schema_15);
+
+  static bool
+  migrate_schema_16 (database& db, unsigned short pass, bool pre)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (pass);
+    ODB_POTENTIALLY_UNUSED (pre);
+
+    if (pre)
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          db.execute ("ALTER TABLE \"cmall_apply_for_mechant\"\n"
+                      "  ADD COLUMN \"approved\" BOOLEAN NOT NULL DEFAULT FALSE");
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"version\" = 16, \"migration\" = TRUE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+    else
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"migration\" = FALSE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  static const schema_catalog_migrate_entry
+  migrate_schema_entry_16_ (
+    id_pgsql,
+    "",
+    16ULL,
+    &migrate_schema_16);
 }
 
 #include <odb/post.hxx>

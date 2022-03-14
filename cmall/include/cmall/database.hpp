@@ -153,6 +153,46 @@ namespace cmall
 		}
 
 		template <typename T, typename UPDATER> requires SupportUpdateAt<T>
+		bool update(const odb::query<T>& query, UPDATER&& updater)
+		{
+			return retry_database_op(
+				[&, this]() mutable
+				{
+					auto now		  = boost::posix_time::second_clock::local_time();
+					odb::transaction t(m_db->begin());
+					auto r = m_db->query<T>(query);
+					for (auto& i : r)
+					{
+						T new_value = updater(std::move(i));
+						new_value.updated_at_ = now;
+						m_db->update(new_value);
+					}
+						
+					t.commit();
+					return true;
+				});
+		}
+
+		template <typename T, typename UPDATER> requires (!SupportUpdateAt<T>)
+		bool update(const odb::query<T>& query, UPDATER&& updater)
+		{
+			return retry_database_op(
+				[&, this]() mutable
+				{
+					odb::transaction t(m_db->begin());
+					auto r = m_db->query<T>(query);
+					for (auto& i : r)
+					{
+						T new_value = updater(std::move(i));
+						m_db->update(new_value);
+					}
+						
+					t.commit();
+					return true;
+				});
+		}
+
+		template <typename T, typename UPDATER> requires SupportUpdateAt<T>
 		bool update(const typename odb::object_traits<T>::id_type id, UPDATER&& updater)
 		{
 			return retry_database_op(
@@ -305,6 +345,15 @@ namespace cmall
 			return boost::asio::co_spawn(thread_pool, [id, updater = std::forward<UPDATER>(updater), this]()mutable -> boost::asio::awaitable<bool>
 			{
 				co_return update<T>(id, std::forward<UPDATER>(updater));
+			}, boost::asio::use_awaitable);
+		}
+
+		template<typename T, typename UPDATER>
+		boost::asio::awaitable<bool> async_update(const odb::query<T>& query, UPDATER && updater)
+		{
+			return boost::asio::co_spawn(thread_pool, [query, updater = std::forward<UPDATER>(updater), this]()mutable -> boost::asio::awaitable<bool>
+			{
+				co_return update<T>(query, std::forward<UPDATER>(updater));
 			}, boost::asio::use_awaitable);
 		}
 

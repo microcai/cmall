@@ -40,7 +40,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(8, 15, open)
+#pragma db model version(8, 16, open)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -249,6 +249,9 @@ struct cmall_apply_for_mechant
 
 #pragma db index
 	std::shared_ptr<cmall_user> applicant_;
+
+#pragma db default(false)
+	bool approved_{false};
 
 	std::string ext_;
 

@@ -197,6 +197,7 @@ CREATE INDEX "cmall_cart_uid_i"
 CREATE TABLE "cmall_apply_for_mechant" (
   "id" BIGSERIAL NOT NULL PRIMARY KEY,
   "applicant" BIGINT NULL,
+  "approved" BOOLEAN NOT NULL DEFAULT FALSE,
   "ext" TEXT NOT NULL,
   "created_at" TIMESTAMP NULL,
   "updated_at" TIMESTAMP NULL,
@@ -211,7 +212,7 @@ CREATE INDEX "cmall_apply_for_mechant_applicant_i"
 
 INSERT INTO "schema_version" (
   "name", "version", "migration")
-  SELECT '', 15, FALSE
+  SELECT '', 16, FALSE
   WHERE NOT EXISTS (
     SELECT 1 FROM "schema_version" WHERE "name" = '');
 
