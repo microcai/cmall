@@ -76,6 +76,8 @@ inline namespace conversion
 			{ "created_at", ::to_string(o.created_at_) },
 			{ "bought_goods", o.bought_goods },
 			{ "recipients", o.recipient },
+			{ "git_version", o.snap_git_version },
+			{ "kuaidiinfo", value_from(o.kuaidi) },
 			{ "ext", o.ext_.null() ? "" : o.ext_.get() },
 		};
 	}
@@ -108,6 +110,14 @@ inline namespace conversion
 		jv = {
 			{ "applicant_user_id", a.applicant_->uid_ },
 			{ "created_at", to_string(a.created_at_) },
+		};
+	}
+
+	void tag_invoke(const value_from_tag&, value& jv, const cmall_kuaidi_info& k)
+	{
+		jv = {
+			{ "kuaidihao", k.kuaidihao },
+			{ "kuaidigongsi", k.kuaidigongsi },
 		};
 	}
 
