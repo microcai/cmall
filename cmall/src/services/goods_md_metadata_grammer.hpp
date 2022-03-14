@@ -10,6 +10,11 @@
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix.hpp>
 
+#ifdef _MSC_VER
+#	pragma warning(push)
+#	pragma warning(disable: 4244 4459)
+#endif // _MSC_VER
+
 namespace qi = boost::spirit::qi;
 
 struct KV
