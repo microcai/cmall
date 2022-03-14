@@ -10,10 +10,12 @@
 #include <boost/regex.hpp>
 #include <boost/scope_exit.hpp>
 #include <cstddef>
+#include <iterator>
 #include <mutex>
 #include <shared_mutex>
 #include <string>
 #include <vector>
+#include <iterator>
 
 #include "cmall/error_code.hpp"
 #include "cmall/misc.hpp"
@@ -1227,8 +1229,33 @@ namespace cmall
 			}
 			break;
 			case req_method::admin_disable_merchants:
-			break;
 			case req_method::admin_reenable_merchants:
+			{
+				bool enable = method == req_method::admin_reenable_merchants;
+				auto merchants = jsutil::json_accessor(params).get("merchants", {}); 
+				if (!merchants.is_array())
+					throw boost::system::system_error(cmall::error::invalid_params);
+
+				auto marr = merchants.as_array();
+				std::vector<std::uint64_t> mids;
+				for (const auto& v : marr)
+				{
+					if (v.is_uint64())
+						mids.push_back(v.as_uint64());
+				}
+				if (!mids.empty())
+				{
+					auto state = enable ? to_underlying(merchant_state_t::normal) : to_underlying(merchant_state_t::disabled);
+					using query_t = odb::query<cmall_merchant>;
+					auto query = query_t::uid.in_range(mids.begin(), mids.end());
+					co_await m_database.async_update<cmall_merchant>(query, [state](cmall_merchant&& m) mutable {
+						m.state_ = state;
+						return m;
+					});
+				}
+				
+				reply_message["result"] = true;
+			}
 			break;
 			default:
 				throw "this should never be executed";
