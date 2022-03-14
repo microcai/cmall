@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (C) 2022 microcai.
 //
 // Author: jack
@@ -15,7 +15,11 @@
 
 #include <boost/multiprecision/cpp_dec_float.hpp>
 
+#ifdef __cpp_lib_format
+#include <format>
+#else
 #include <fmt/format.h>
+#endif
 
 namespace fmt {
 	template <>
