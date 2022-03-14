@@ -83,7 +83,7 @@ namespace cmall
 	{
 		std::vector<cmall_merchant> all_merchant;
 		using query_t = odb::query<cmall_merchant>;
-		auto query	  = (query_t::verified == true) && (query_t::state == to_underlying(merchant_state_t::normal))
+		auto query	  = (query_t::verified == true) && (query_t::state == (uint8_t)to_underlying(merchant_state_t::normal))
 			&& (query_t::deleted_at.is_null());
 		co_await m_database.async_load<cmall_merchant>(query, all_merchant);
 
@@ -969,7 +969,7 @@ namespace cmall
 
 				std::vector<cmall_merchant> merchants;
 				using query_t = odb::query<cmall_merchant>;
-				auto query	  = query_t::verified == true && query_t::state == to_underlying(merchant_state_t::normal)
+				auto query	  = query_t::verified == true && query_t::state == (uint8_t) to_underlying(merchant_state_t::normal)
 					&& query_t::deleted_at.is_null();
 				if (merchant_id.has_value())
 				{
