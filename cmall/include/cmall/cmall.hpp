@@ -30,6 +30,7 @@
 #include "services/persist_session.hpp"
 #include "services/payment_service.hpp"
 #include "services/repo_products.hpp"
+#include "services/userscript_service.hpp"
 
 #include "httpd/acceptor.hpp"
 
@@ -250,11 +251,12 @@ namespace cmall {
 		server_config m_config;
 		cmall_database m_database;
 
-		boost::asio::thread_pool git_operation_thread_pool;
+		boost::asio::thread_pool background_task_thread_pool;
 
 		services::persist_session session_cache_map;
 		services::verifycode telephone_verifier;
 		services::payment payment_service;
+		services::userscript script_runner;
 
 		std::map<std::uint64_t, std::shared_ptr<services::repo_products>> merchant_repos;
 

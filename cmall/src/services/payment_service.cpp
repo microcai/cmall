@@ -39,7 +39,7 @@ namespace services
 				throw boost::system::system_error(cmall::error::no_payment_script_supplyed);
 			}
 
-			ret.uri = co_await nodejs.run_script(script_content, {"-", "--", "--order-id", orderid, "--order-amount", order_amount, "--method", paymentmethod});
+			ret.uri = co_await nodejs.run_script(script_content, {"--order-id", orderid, "--order-amount", order_amount, "--method", paymentmethod});
 			if (!ret.uri.empty())
 				ret.uri.pop_back();
 			co_return ret;

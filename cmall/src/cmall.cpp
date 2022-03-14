@@ -57,10 +57,11 @@ namespace cmall
 		, m_io_context(m_io_context_pool.server_io_context())
 		, m_config(config)
 		, m_database(m_config.dbcfg_)
-		, git_operation_thread_pool(8)
+		, background_task_thread_pool(8)
 		, session_cache_map(m_config.session_cache_file)
 		, telephone_verifier(m_io_context)
 		, payment_service(m_io_context)
+		, script_runner(m_io_context)
 	{
 	}
 
@@ -92,7 +93,7 @@ namespace cmall
 			if (services::repo_products::is_git_repo(merchant.repo_path))
 			{
 				auto repo = std::make_shared<services::repo_products>(
-					git_operation_thread_pool, merchant.uid_, merchant.repo_path);
+					background_task_thread_pool, merchant.uid_, merchant.repo_path);
 				this->merchant_repos.emplace(merchant.uid_, repo);
 			}
 			else
@@ -987,7 +988,7 @@ namespace cmall
 							continue;
 
 						auto repo
-							= std::make_shared<services::repo_products>(git_operation_thread_pool, m.uid_, m.repo_path);
+							= std::make_shared<services::repo_products>(background_task_thread_pool, m.uid_, m.repo_path);
 						std::vector<services::product> products = co_await repo->get_products();
 						std::copy(products.begin(), products.end(), std::back_inserter(all_products));
 					}
@@ -1058,15 +1059,36 @@ namespace cmall
 				LOG_DBG << "order_list retrieved, " << orders.size() << " items";
 				if (orders.size() == 1)
 				{
-					orders[0].payed_at_ = boost::posix_time::second_clock::local_time();
+					if (orders[0].payed_at_.null())
+					{
+						orders[0].payed_at_ = boost::posix_time::second_clock::local_time();
 
-					bool success = co_await m_database.async_update<cmall_order>(orders[0]);
+						bool success = co_await m_database.async_update<cmall_order>(orders[0]);
+						reply_message["result"] = success;
 
-					reply_message["result"] = success;
+						if (success)
+						{
+							boost::system::error_code ec;
+							if (merchant_repos.contains(this_merchant.uid_))
+							{
+								std::string pay_script_content = co_await merchant_repos[this_merchant.uid_]->get_file_content(
+									"scripts/orderstatus.js", ec);
+								if (!ec && !pay_script_content.empty())
+								{
+									boost::asio::co_spawn(background_task_thread_pool, 
+									 script_runner.run_script(pay_script_content, {"--order-id", orderid}), boost::asio::detached);
+								}
+							}
+						}
+						else
+						{
+							throw boost::system::system_error(cmall::error::internal_server_error);
+						}
+					}
+					reply_message["result"] = true;
 				}
 				else
-					throw boost::system::system_error(cmall::error::order_not_found);
-
+					throw boost::system::system_error(cmall::error::order_not_found);				
 			}
 			break;
 			case req_method::merchant_goods_list:

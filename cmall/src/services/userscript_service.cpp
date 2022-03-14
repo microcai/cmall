@@ -68,6 +68,9 @@ namespace services
 
 			LOG_DBG << "script_content = " << script_content;
 
+			script_arguments.insert(script_arguments.begin(), "--");
+			script_arguments.insert(script_arguments.begin(), "-");
+
 #ifdef __linux
 			int sk_pair[2] = {-1, -1};
 			if (socketpair(PF_LOCAL, SOCK_SEQPACKET|SOCK_CLOEXEC, 0, sk_pair) < 0)
