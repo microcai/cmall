@@ -83,8 +83,8 @@ namespace cmall
 	{
 		std::vector<cmall_merchant> all_merchant;
 		using query_t = odb::query<cmall_merchant>;
-		auto query	  = query_t::verified == true && query_t::state == to_underlying(merchant_state_t::normal)
-			&& query_t::deleted_at.is_null();
+		auto query	  = (query_t::verified == true) && (query_t::state == to_underlying(merchant_state_t::normal))
+			&& (query_t::deleted_at.is_null());
 		co_await m_database.async_load<cmall_merchant>(query, all_merchant);
 
 		for (cmall_merchant& merchant : all_merchant)
@@ -957,6 +957,7 @@ namespace cmall
 		boost::json::object reply_message;
 		services::client_session& session_info = *this_client.session_info;
 		cmall_user& this_user				   = *(session_info.user_info);
+		boost::ignore_unused(this_user);
 
 		switch (method)
 		{
@@ -1072,7 +1073,6 @@ namespace cmall
 			case req_method::merchant_goods_list:
 			{
 				// 列出 商品, 根据参数决定是首页还是商户
-				auto merchant_id = this_merchant.uid_;
 				std::vector<services::product> all_products;
 
 				if (merchant_repos.contains(this_merchant.uid_))
@@ -1136,6 +1136,7 @@ namespace cmall
 		boost::json::object reply_message;
 		services::client_session& session_info = *this_client.session_info;
 		cmall_user& this_user				   = *(session_info.user_info);
+		boost::ignore_unused(this_user);
 
 		switch (method)
 		{

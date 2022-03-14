@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (C) 2019 Jack.
 //
 // Author: jack
@@ -110,7 +110,7 @@ namespace multiprecision = boost::multiprecision;
 
 #include "utils/url_parser.hpp"
 #include "utils/time_clock.hpp"
-using timer = boost::asio::basic_waitable_timer<time_clock::steady_clock>;
+using steady_timer = boost::asio::basic_waitable_timer<time_clock::steady_clock>;
 
 #pragma warning(push)
 #pragma warning(disable: 4267)

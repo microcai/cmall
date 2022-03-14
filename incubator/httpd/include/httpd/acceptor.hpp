@@ -185,7 +185,7 @@ namespace httpd
 			boost::asio::cancellation_state cs = co_await boost::asio::this_coro::cancellation_state;
 
 			cs.slot().assign(
-				[this](boost::asio::cancellation_type_t t) mutable
+				[this](boost::asio::cancellation_type_t) mutable
 				{
 					boost::system::error_code ignore_ec;
 					accept_socket_.cancel(ignore_ec);

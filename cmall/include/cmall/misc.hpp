@@ -189,7 +189,9 @@ std::optional<T> parse_number(std::string_view str, int base = 10)
 		{
 			return static_cast<T>(std::stold(str.data(), nullptr));
 		}
-	} catch (const std::exception& e) {
+	}
+	catch (const std::exception&)
+	{
 		return {};
 	}
 }
