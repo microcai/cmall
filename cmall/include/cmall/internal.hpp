@@ -82,8 +82,8 @@
 #include <boost/smart_ptr/make_local_shared.hpp>
 
 
-#include <boost/filesystem.hpp>
-namespace fs = boost::filesystem;
+#include <filesystem>
+namespace fs = std::filesystem;
 
 #include <boost/signals2.hpp>
 

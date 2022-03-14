@@ -55,7 +55,7 @@ boost::asio::awaitable<int> cmall::http_handle_static_file(size_t connection_id,
 	res.set(boost::beast::http::field::server, HTTPD_VERSION_STRING);
 	res.set(boost::beast::http::field::expires, httpd::make_http_last_modified(std::time(0) + 60));
 	res.set(boost::beast::http::field::last_modified, httpd::make_http_last_modified(target_file_modifined_time));
-	res.set(boost::beast::http::field::content_type, httpd::get_mime_type_from_extension(boost::filesystem::path(path).extension().string()));
+	res.set(boost::beast::http::field::content_type, httpd::get_mime_type_from_extension(std::filesystem::path(path).extension().string()));
 	res.keep_alive(req.keep_alive());
 
 	if (have_if_modified_since && (target_file_modifined_time <= if_modified_since))

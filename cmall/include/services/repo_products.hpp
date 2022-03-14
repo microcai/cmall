@@ -38,14 +38,14 @@ namespace services
 	{
 	public:
 
-		static bool init_bare_repo(boost::filesystem::path repo_path);
+		static bool init_bare_repo(std::filesystem::path repo_path);
 
-		static bool is_git_repo(boost::filesystem::path repo_path);
+		static bool is_git_repo(std::filesystem::path repo_path);
 
-		repo_products(boost::asio::thread_pool& executor, std::uint64_t merchant_id, boost::filesystem::path repo_path);
+		repo_products(boost::asio::thread_pool& executor, std::uint64_t merchant_id, std::filesystem::path repo_path);
 		~repo_products();
 
-		boost::asio::awaitable<std::string> get_file_content(boost::filesystem::path path, boost::system::error_code& ec);
+		boost::asio::awaitable<std::string> get_file_content(std::filesystem::path path, boost::system::error_code& ec);
 
 		// 扫描用户仓库, 返回找到的商品定义.
 		boost::asio::awaitable<std::vector<product>> get_products();

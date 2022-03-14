@@ -22,6 +22,7 @@ using namespace boost::asio::experimental::awaitable_operators;
 #include "utils/timedmap.hpp"
 #include "utils/logging.hpp"
 #include "cmall/error_code.hpp"
+#include "utils/uawaitable.hpp"
 
 #include "../sandbox.hpp"
 
@@ -75,10 +76,9 @@ namespace services
 			);
 
 			std::string output;
-			auto size = co_await boost::asio::async_read_until(out, boost::asio::dynamic_buffer(output), '\n', boost::asio::use_awaitable);
-			output.resize(size);
+			boost::system::error_code ec;
+			co_await boost::asio::async_read_until(out, boost::asio::dynamic_buffer(output), '\n', asio_util::use_awaitable[ec]);
 
-			std::error_code ec;
 			cp.wait_for(std::chrono::milliseconds(120), ec);
 			if (cp.running())
 				cp.terminate();

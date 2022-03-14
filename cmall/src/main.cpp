@@ -155,13 +155,13 @@ static boost::asio::awaitable<std::string> get_default_cache_dir()
 	if (::access("/var/lib/cmall", W_OK | R_OK | X_OK) ==  0)
 		co_return "/var/lib/cmall";
 #endif
-	boost::system::error_code ec;
-	if (boost::filesystem::create_directory("session_cache", ec))
+	std::error_code ec;
+	if (std::filesystem::create_directory("session_cache", ec))
 	{
 		co_return "session_cache";
 	}
 
-	if (boost::filesystem::exists("session_cache"))
+	if (std::filesystem::exists("session_cache"))
 		co_return "session_cache";
 	co_return ".";
 }

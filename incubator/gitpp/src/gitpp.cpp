@@ -167,7 +167,7 @@ gitpp::repo::repo(git_repository* repo_) noexcept
 {
 }
 
-gitpp::repo::repo(boost::filesystem::path repo_dir)
+gitpp::repo::repo(std::filesystem::path repo_dir)
 	: repo_(nullptr)
 {
 	if (0 != git_repository_open_ext(&repo_, repo_dir.string().c_str(), GIT_REPOSITORY_OPEN_NO_SEARCH, nullptr))
@@ -187,7 +187,7 @@ bool gitpp::repo::is_bare() const noexcept
 	return git_repository_is_bare(repo_);
 }
 
-bool gitpp::is_git_repo(boost::filesystem::path dir)
+bool gitpp::is_git_repo(std::filesystem::path dir)
 {
 	try
 	{
@@ -246,7 +246,7 @@ gitpp::blob gitpp::repo::get_blob(gitpp::oid blob_id) const
 	return blob(cblob);
 }
 
-bool gitpp::init_bare_repo(boost::filesystem::path repo_path)
+bool gitpp::init_bare_repo(std::filesystem::path repo_path)
 {
 	git_repository * repo = nullptr;
 

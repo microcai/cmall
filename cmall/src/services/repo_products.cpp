@@ -30,7 +30,7 @@ namespace services
 {
 	struct repo_products_impl
 	{
-		repo_products_impl(std::uint64_t merchant_id, boost::filesystem::path repo_path)
+		repo_products_impl(std::uint64_t merchant_id, std::filesystem::path repo_path)
 			: repo_path(repo_path)
 			, git_repo(repo_path)
 			, merchant_id(merchant_id)
@@ -41,7 +41,7 @@ namespace services
 		}
 
 		template<typename WalkHandler>
-		void treewalk(const gitpp::tree& tree, boost::filesystem::path parent_dir_in_git, WalkHandler walker)
+		void treewalk(const gitpp::tree& tree, std::filesystem::path parent_dir_in_git, WalkHandler walker)
 		{
 			for (const gitpp::tree_entry & tree_entry : tree)
 			{
@@ -134,7 +134,7 @@ namespace services
 			return product{};
 		}
 
-		std::string get_file_content(boost::filesystem::path look_for_file, boost::system::error_code& ec)
+		std::string get_file_content(std::filesystem::path look_for_file, boost::system::error_code& ec)
 		{
 			std::string ret;
 			gitpp::oid commit_version = git_repo.head().target();
@@ -164,9 +164,9 @@ namespace services
 			auto goods = repo_tree.by_path("goods");
 
 			if (!goods.empty())
-				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), boost::filesystem::path(""), [goods_id, &commit_version, &ret, &ec, this](const gitpp::tree_entry & tree_entry, boost::filesystem::path) mutable
+				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), std::filesystem::path(""), [goods_id, &commit_version, &ret, &ec, this](const gitpp::tree_entry & tree_entry, std::filesystem::path) mutable
 				{
-					boost::filesystem::path entry_filename(tree_entry.name());
+					std::filesystem::path entry_filename(tree_entry.name());
 
 					if (entry_filename.stem().string() == goods_id && entry_filename.has_extension() && entry_filename.extension() == ".md")
 					{
@@ -200,9 +200,9 @@ namespace services
 			auto goods = repo_tree.by_path("goods");
 
 			if (!goods.empty())
-				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), boost::filesystem::path(""), [&, this](const gitpp::tree_entry & tree_entry, boost::filesystem::path parent_dir_in_git)
+				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), std::filesystem::path(""), [&, this](const gitpp::tree_entry & tree_entry, std::filesystem::path parent_dir_in_git)
 				{
-					boost::filesystem::path entry_filename(tree_entry.name());
+					std::filesystem::path entry_filename(tree_entry.name());
 					if (entry_filename.has_extension() && entry_filename.extension() == ".md")
 					{
 						auto file_blob = git_repo.get_blob(tree_entry.get_oid());
@@ -233,9 +233,9 @@ namespace services
 			auto goods = repo_tree.by_path("goods");
 
 			if (!goods.empty())
-				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), boost::filesystem::path(""), [goods_id, &ret, &ec, this](const gitpp::tree_entry & tree_entry, boost::filesystem::path) mutable -> bool
+				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), std::filesystem::path(""), [goods_id, &ret, &ec, this](const gitpp::tree_entry & tree_entry, std::filesystem::path) mutable -> bool
 				{
-					boost::filesystem::path entry_filename(tree_entry.name());
+					std::filesystem::path entry_filename(tree_entry.name());
 
 					if (entry_filename.stem().string() == goods_id && entry_filename.has_extension() && entry_filename.extension() == ".md")
 					{
@@ -256,12 +256,12 @@ namespace services
 			return ret;
 		}
 
-		boost::filesystem::path repo_path;
+		std::filesystem::path repo_path;
 		gitpp::repo git_repo;
 		std::uint64_t merchant_id;
 	};
 
-	boost::asio::awaitable<std::string> repo_products::get_file_content(boost::filesystem::path path, boost::system::error_code& ec)
+	boost::asio::awaitable<std::string> repo_products::get_file_content(std::filesystem::path path, boost::system::error_code& ec)
 	{
 		return boost::asio::co_spawn(thread_pool, [path, &ec, this]() mutable -> boost::asio::awaitable<std::string> {
 			co_return impl().get_file_content(path, ec);
@@ -317,7 +317,7 @@ namespace services
 		}, boost::asio::use_awaitable);
 	}
 
-	repo_products::repo_products(boost::asio::thread_pool& executor, std::uint64_t merchant_id, boost::filesystem::path repo_path)
+	repo_products::repo_products(boost::asio::thread_pool& executor, std::uint64_t merchant_id, std::filesystem::path repo_path)
 		: thread_pool(executor)
 	{
 		static_assert(sizeof(obj_stor) >= sizeof(repo_products_impl));
@@ -339,12 +339,12 @@ namespace services
 		return *reinterpret_cast<repo_products_impl*>(obj_stor.data());
 	}
 
-	bool repo_products::init_bare_repo(boost::filesystem::path repo_path)
+	bool repo_products::init_bare_repo(std::filesystem::path repo_path)
 	{
 		return gitpp::init_bare_repo(repo_path);
 	}
 
-	bool repo_products::is_git_repo(boost::filesystem::path repo_path)
+	bool repo_products::is_git_repo(std::filesystem::path repo_path)
 	{
 		return gitpp::is_git_repo(repo_path);
 	}

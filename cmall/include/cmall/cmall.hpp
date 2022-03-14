@@ -44,6 +44,7 @@ namespace cmall {
 		cmall::db_config dbcfg_;
 
 		std::filesystem::path session_cache_file;
+		std::filesystem::path gitea_template_loaction;
 	};
 
 	using ws_stream = websocket::stream<boost::beast::tcp_stream>;

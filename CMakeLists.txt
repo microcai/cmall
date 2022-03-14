@@ -307,7 +307,6 @@ add_subdirectory(third_party/libmdbx EXCLUDE_FROM_ALL)
 link_libraries(
 		Boost::thread
 		Boost::date_time
-		Boost::filesystem
 		Boost::program_options
 		Boost::regex
 		Boost::json

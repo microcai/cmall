@@ -4,7 +4,7 @@
 #include <git2/types.h>
 #include <git2/buffer.h>
 
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <boost/noncopyable.hpp>
 #include <string_view>
 
@@ -166,7 +166,7 @@ namespace gitpp {
 		git_repository* repo_;
 	public:
 		explicit repo(git_repository*) noexcept;
-		repo(boost::filesystem::path repo_dir);                   // throws not_repo
+		repo(std::filesystem::path repo_dir);                   // throws not_repo
 		~repo() noexcept;
 
 	public:
@@ -183,7 +183,7 @@ namespace gitpp {
 
 	};
 
-	bool is_git_repo(boost::filesystem::path);
-	bool init_bare_repo(boost::filesystem::path repo_path);
+	bool is_git_repo(std::filesystem::path);
+	bool init_bare_repo(std::filesystem::path repo_path);
 
 }

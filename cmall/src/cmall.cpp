@@ -174,7 +174,7 @@ namespace cmall
 		ec = co_await httpd::send_string_response_body(client,
 			res_body,
 			httpd::make_http_last_modified(std::time(0) + 60),
-			httpd::get_mime_type_from_extension(boost::filesystem::path(path_in_repo).extension().string()),
+			httpd::get_mime_type_from_extension(std::filesystem::path(path_in_repo).extension().string()),
 			req.version(),
 			req.keep_alive());
 		if (ec)
@@ -1220,9 +1220,9 @@ namespace cmall
 			{
 				auto apply_id_str = jsutil::json_accessor(params).get_string("apply_id");
 				auto apply_id = parse_number<std::uint64_t>(apply_id_str);
-				if (!apply_id.has_value()) 
+				if (!apply_id.has_value())
 					throw boost::system::system_error(cmall::error::invalid_params);
-				
+
 				// TODO: 以下两个动作应在一个事务中
 				// 更新申请状态.
 				cmall_apply_for_mechant apply;
@@ -1254,9 +1254,9 @@ namespace cmall
 				auto apply_id_str = jsutil::json_accessor(params).get_string("apply_id");
 				auto apply_id = parse_number<std::uint64_t>(apply_id_str);
 				auto reason = jsutil::json_accessor(params).get_string("apply_id");
-				if (!apply_id.has_value()) 
+				if (!apply_id.has_value())
 					throw boost::system::system_error(cmall::error::invalid_params);
-				
+
 				using query_t = odb::query<cmall_apply_for_mechant>;
 				auto query = query_t::id == apply_id.value() && query_t::approved == false;
 				co_await m_database.async_update<cmall_apply_for_mechant>(query, [reason](cmall_apply_for_mechant&& apply) mutable {
@@ -1271,7 +1271,7 @@ namespace cmall
 			case req_method::admin_reenable_merchants:
 			{
 				bool enable = method == req_method::admin_reenable_merchants;
-				auto merchants = jsutil::json_accessor(params).get("merchants", {}); 
+				auto merchants = jsutil::json_accessor(params).get("merchants", {});
 				if (!merchants.is_array())
 					throw boost::system::system_error(cmall::error::invalid_params);
 
@@ -1292,7 +1292,6 @@ namespace cmall
 						return m;
 					});
 				}
-				
 				reply_message["result"] = true;
 			}
 			break;
