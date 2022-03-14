@@ -184,6 +184,11 @@ namespace cmall {
 		admin_product_list,
 		admin_product_withdraw,
 		admin_order_force_refund,
+
+		admin_approve_merchant,
+		admin_deny_applicant,
+		admin_disable_merchants,
+		admin_reenable_merchants,
 	};
 
 	class cmall_service

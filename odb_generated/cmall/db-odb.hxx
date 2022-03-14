@@ -1348,18 +1348,6 @@ namespace odb
 
     static const name_type_ name;
 
-    // verified
-    //
-    typedef
-    pgsql::query_column<
-      pgsql::value_traits<
-        bool,
-        pgsql::id_boolean >::query_type,
-      pgsql::id_boolean >
-    verified_type_;
-
-    static const verified_type_ verified;
-
     // state
     //
     typedef
@@ -1468,11 +1456,6 @@ namespace odb
   name (A::table_name, "\"name\"", 0);
 
   template <typename A>
-  const typename query_columns< ::cmall_merchant, id_pgsql, A >::verified_type_
-  query_columns< ::cmall_merchant, id_pgsql, A >::
-  verified (A::table_name, "\"verified\"", 0);
-
-  template <typename A>
   const typename query_columns< ::cmall_merchant, id_pgsql, A >::state_type_
   query_columns< ::cmall_merchant, id_pgsql, A >::
   state (A::table_name, "\"state\"", 0);
@@ -1543,11 +1526,6 @@ namespace odb
       details::buffer name_value;
       std::size_t name_size;
       bool name_null;
-
-      // verified_
-      //
-      bool verified_value;
-      bool verified_null;
 
       // state_
       //
@@ -1632,7 +1610,7 @@ namespace odb
 
     typedef pgsql::query_base query_base_type;
 
-    static const std::size_t column_count = 11UL;
+    static const std::size_t column_count = 10UL;
     static const std::size_t id_column_count = 1UL;
     static const std::size_t inverse_column_count = 0UL;
     static const std::size_t readonly_column_count = 0UL;

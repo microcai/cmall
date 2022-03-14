@@ -100,7 +100,6 @@ CREATE TABLE "administrators" (
 CREATE TABLE "cmall_merchant" (
   "uid" BIGINT NOT NULL PRIMARY KEY,
   "name" TEXT NOT NULL,
-  "verified" BOOLEAN NOT NULL,
   "state" SMALLINT NOT NULL,
   "desc" TEXT NULL,
   "api_token" TEXT NULL,
@@ -212,7 +211,7 @@ CREATE INDEX "cmall_apply_for_mechant_applicant_i"
 
 INSERT INTO "schema_version" (
   "name", "version", "migration")
-  SELECT '', 14, FALSE
+  SELECT '', 15, FALSE
   WHERE NOT EXISTS (
     SELECT 1 FROM "schema_version" WHERE "name" = '');
 

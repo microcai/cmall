@@ -83,7 +83,7 @@ namespace cmall
 	{
 		std::vector<cmall_merchant> all_merchant;
 		using query_t = odb::query<cmall_merchant>;
-		auto query	  = (query_t::verified == true) && (query_t::state == (uint8_t)to_underlying(merchant_state_t::normal))
+		auto query	  = (query_t::state == (uint8_t)to_underlying(merchant_state_t::normal))
 			&& (query_t::deleted_at.is_null());
 		co_await m_database.async_load<cmall_merchant>(query, all_merchant);
 
@@ -370,7 +370,7 @@ namespace cmall
 							// 如果是 merchant/admin 也载入他们的信息
 							if (co_await m_database.async_load<cmall_merchant>(this_client.session_info->user_info->uid_, merchant_user))
 							{
-								if (merchant_user.verified_ && merchant_user.state_ == 0)
+								if (merchant_user.state_ == 0)
 								{
 									this_client.session_info->merchant_info = merchant_user;
 									this_client.session_info->isMerchant = true;
@@ -399,18 +399,15 @@ namespace cmall
 					cmall_merchant merchant;
 					if (co_await m_database.async_load<cmall_merchant>(odb::query<cmall_merchant>::api_token == api_token, merchant))
 					{
-						if (merchant.verified_)
+						cmall_user db_user;
+						if (co_await m_database.async_load<cmall_user>(merchant.uid_, db_user))
 						{
-							cmall_user db_user;
-							if (co_await m_database.async_load<cmall_user>(merchant.uid_, db_user))
-							{
-								this_client.session_info = std::make_shared<services::client_session>();
-								this_client.session_info->isMerchant = true;
-								this_client.session_info->user_info = db_user;
-								this_client.session_info->merchant_info = merchant;
-								reply_message["result"] = true;
-								break;
-							}
+							this_client.session_info = std::make_shared<services::client_session>();
+							this_client.session_info->isMerchant = true;
+							this_client.session_info->user_info = db_user;
+							this_client.session_info->merchant_info = merchant;
+							reply_message["result"] = true;
+							break;
 						}
 					}
 
@@ -475,6 +472,10 @@ namespace cmall
 			case req_method::admin_product_list:
 			case req_method::admin_product_withdraw:
 			case req_method::admin_order_force_refund:
+			case req_method::admin_approve_merchant:
+			case req_method::admin_deny_applicant:
+			case req_method::admin_disable_merchants:
+			case req_method::admin_reenable_merchants:
 				co_await ensure_login(true);
 				co_return co_await handle_jsonrpc_admin_api(connection_ptr, method.value(), params);
 
@@ -532,7 +533,7 @@ namespace cmall
 							// 如果是 merchant/admin 也载入他们的信息
 							if (co_await m_database.async_load<cmall_merchant>(user.uid_, merchant_user))
 							{
-								if (merchant_user.verified_ && merchant_user.state_ == 0)
+								if (merchant_user.state_ == 0)
 								{
 									session_info.merchant_info = merchant_user;
 									session_info.isMerchant = true;
@@ -614,7 +615,6 @@ namespace cmall
 
 				m.uid_		= uid;
 				m.name_		= name;
-				m.verified_ = false;
 				if (!desc.empty())
 					m.desc_ = desc;
 				co_await m_database.async_add<cmall_merchant>(m);
@@ -968,7 +968,7 @@ namespace cmall
 
 				std::vector<cmall_merchant> merchants;
 				using query_t = odb::query<cmall_merchant>;
-				auto query	  = query_t::verified == true && query_t::state == (uint8_t) to_underlying(merchant_state_t::normal)
+				auto query	  = query_t::state == (uint8_t) to_underlying(merchant_state_t::normal)
 					&& query_t::deleted_at.is_null();
 				if (merchant_id.has_value())
 				{
@@ -1158,6 +1158,14 @@ namespace cmall
 			case req_method::admin_product_list:
 			case req_method::admin_product_withdraw:
 			case req_method::admin_order_force_refund:
+			break;
+			case req_method::admin_approve_merchant:
+			break;
+			case req_method::admin_deny_applicant:
+			break;
+			case req_method::admin_disable_merchants:
+			break;
+			case req_method::admin_reenable_merchants:
 			break;
 			default:
 				throw "this should never be executed";

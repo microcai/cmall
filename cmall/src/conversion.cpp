@@ -43,7 +43,6 @@ inline namespace conversion
 		jv = {
 			{ "uid", m.uid_ },
 			{ "name", m.name_ },
-			{ "verified", m.verified_ },
 			{ "state", m.state_ },
 			{ "desc", m.desc_.null() ? "" : m.desc_.get() },
 			{ "created_at", ::to_string(m.created_at_) },

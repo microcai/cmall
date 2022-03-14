@@ -40,7 +40,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(8, 14, open)
+#pragma db model version(8, 15, open)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -147,8 +147,6 @@ struct cmall_merchant
 
 #pragma db index
 	std::string name_; // 商户名称.
-
-	bool verified_{ false }; // 是否验证通过.
 
 	uint8_t state_{ 0 }; // 状态, 正常/停用/封禁.
 

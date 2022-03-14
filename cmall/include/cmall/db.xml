@@ -1,4 +1,10 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
+  <changeset version="15">
+    <alter-table name="cmall_merchant">
+      <drop-column name="verified"/>
+    </alter-table>
+  </changeset>
+
   <changeset version="14">
     <alter-table name="cmall_merchant">
       <add-column name="gitea_password" type="TEXT" null="true"/>
