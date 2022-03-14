@@ -66,10 +66,11 @@ namespace services
 			async_pipe nodejs_output(io);
 			async_pipe nodejs_input(io);
 
-			LOG_DBG << "script_content = " << script_content;
+			std::vector<std::string> node_args;
 
-			script_arguments.insert(script_arguments.begin(), "--");
-			script_arguments.insert(script_arguments.begin(), "-");
+			node_args.push_back("-");
+
+			std::copy(script_arguments.begin(), script_arguments.end(), std::back_inserter(node_args));
 
 #ifdef __linux
 			int sk_pair[2] = {-1, -1};
@@ -82,7 +83,7 @@ namespace services
 			});
 
 #endif
-			child cp(io, search_path("node"), boost::process::args(script_arguments)
+			child cp(io, search_path("node"), boost::process::args(node_args)
 				, std_in < nodejs_input, std_out > nodejs_output
 #ifdef _WIN32
 				, start_dir("C:\\")

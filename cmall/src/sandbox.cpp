@@ -133,6 +133,8 @@ void sandbox::install_seccomp(int notifyfd)
 	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(readv), 0);
 	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(write), 0);
 	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(writev), 0);
+	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(readlink), 0);
+	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(access), 0);
 
 	// epoll/select/poll
 	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(_newselect), 0);
@@ -154,7 +156,7 @@ void sandbox::install_seccomp(int notifyfd)
 	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(select), 0);
 
 	// allowed to make outbound socket
-	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(connect), 0);
+	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_NOTIFY, SCMP_SYS(connect), 0);
 	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(getpeername), 0);
 	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(getsockname), 0);
 	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(getsockopt), 0);
@@ -172,6 +174,7 @@ void sandbox::install_seccomp(int notifyfd)
 	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(socket), 0);
 	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(socketcall), 0);
 	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(socketpair), 0);
+	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(bind), 0);
 
 	// thread is allowed
 	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(clone3), 0);
@@ -217,8 +220,7 @@ void sandbox::install_seccomp(int notifyfd)
 
 	// hack allowd for lib loading
 	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_NOTIFY, SCMP_SYS(openat), 0);
-	seccomp_rule_add_exact(
-		seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(newfstatat), 1, SCMP_A3(SCMP_CMP_EQ, AT_EMPTY_PATH, AT_EMPTY_PATH));
+	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(newfstatat), 0);
 	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(fcntl), 0);
 
 	seccomp_load(seccomp_ctx);
@@ -282,36 +284,166 @@ boost::asio::awaitable<void> sandbox::seccomp_supervisor(int seccomp_notify_fd_)
 			resp->error = -EPERM;
 			resp->val	= 0;
 
-			if (req->data.nr == SCMP_SYS(openat))
+			switch (req->data.nr)
 			{
-				// req->data.args[1] 是待打开的文件名. 但是, 这个指针是在待打开的进程里的, 所以
-				// 要使用跨进程 memcpy
-                if (seccomp_notify_id_valid(seccomp_notify_fd_, req->id) !=0)
-                    co_return;
-
-                struct iovec this_readbuf = { openat_param1, sizeof (openat_param1) - 1 };
-                struct iovec traced_readbuf = { reinterpret_cast<void*>(req->data.args[1]), 4096 };
-                memset(openat_param1, 0 , sizeof openat_param1);
-                process_vm_readv(req->pid, &this_readbuf, 1, &traced_readbuf, 1, 0);
-				std::string node_want_open = openat_param1;
-
-				do
+				case SCMP_SYS(openat):
 				{
-					if ((static_cast<int>(req->data.args[0]) == AT_FDCWD) && (req->data.args[2] == (O_RDONLY | O_CLOEXEC)))
+					// req->data.args[1] 是待打开的文件名. 但是, 这个指针是在待打开的进程里的, 所以
+					// 要使用跨进程 memcpy
+					if (seccomp_notify_id_valid(seccomp_notify_fd_, req->id) !=0)
+						co_return;
+
+					struct iovec this_readbuf = { openat_param1, sizeof (openat_param1) - 1 };
+					struct iovec traced_readbuf = { reinterpret_cast<void*>(req->data.args[1]), 4096 };
+					memset(openat_param1, 0 , sizeof openat_param1);
+					process_vm_readv(req->pid, &this_readbuf, 1, &traced_readbuf, 1, 0);
+					std::string node_want_open = openat_param1;
+
+					int dirfd = static_cast<int>(req->data.args[0]);
+
+					do
 					{
-						if (node_want_open.starts_with("/usr") || node_want_open.starts_with("/lib")|| node_want_open.starts_with("/etc/ld")
-							|| node_want_open.starts_with("/proc/meminfo") || node_want_open.starts_with("/dev/null")
-							|| node_want_open.starts_with("/dev/urandom"))
+						if (dirfd == AT_FDCWD && (req->data.args[2] == (O_RDONLY | O_CLOEXEC)))
 						{
-							LOG_DBG << "node wants to open file " << openat_param1 << " allowed";
+							if (node_want_open.starts_with("/usr")
+								|| node_want_open.starts_with("/lib")
+								|| node_want_open.starts_with("/etc/ld")
+								|| node_want_open.starts_with("/run")
+								|| node_want_open.starts_with("/etc/resolv.conf")
+								|| node_want_open.starts_with("/etc/localtime")
+								|| node_want_open.starts_with("/etc/ssl")
+								|| node_want_open.starts_with("/etc/host.conf")
+								|| node_want_open.starts_with("/etc/hosts")
+								|| node_want_open.starts_with("/sys/fs/cgroup/memory/")
+								|| node_want_open.starts_with("/proc/meminfo")
+								|| node_want_open.starts_with("/etc/nsswitch.conf")
+								|| node_want_open.starts_with("/etc/gai.conf")
+								|| node_want_open.starts_with("/dev/"))
+							{
+								LOG_DBG << "node wants to open file " << openat_param1 << " allowed";
+								resp->error = 0;
+								resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
+								break;
+							}
+						}
+						else if ((dirfd == AT_FDCWD) && (req->data.args[2] == (O_RDONLY)))
+						{
+							if (true
+								|| node_want_open.starts_with("/etc/resolv.conf")
+								|| node_want_open.starts_with("/etc/localtime")
+								|| node_want_open.starts_with("/etc/ssl")
+								|| node_want_open.starts_with("/etc/hosts")
+								|| node_want_open.starts_with("/usr/share")
+								|| node_want_open.starts_with("/etc/host.conf")
+								|| node_want_open.starts_with("/etc/nsswitch.conf")
+								|| node_want_open.starts_with("/etc/gai.conf")
+								|| node_want_open.starts_with("/dev/urandom"))
+							{
+								LOG_DBG << "node wants to open file O_RDONLY " << openat_param1 << " allowed";
+								resp->error = 0;
+								resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
+								break;
+							}
+						}
+
+						if ((memcmp(openat_param1, "/dev/", 6) == 0) && (dirfd == AT_FDCWD))
+						{
+							LOG_DBG << "node wants to open dir /dev/ allowed";
 							resp->error = 0;
-                            resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
+							resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
 							break;
 						}
+
+
+						if ((memcmp(openat_param1, "/dev/pts", 8) == 0) && (dirfd == AT_FDCWD))
+						{
+							LOG_DBG << "node wants to open dir /dev/pts/? allowed";
+							resp->error = 0;
+							resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
+							break;
+						}
+
+
+						LOG_ERR << "node wants to open file " << openat_param1 << " but open denied";
 					}
-					LOG_DBG << "node wants to open file " << openat_param1 << " but open denied";
-				}
-                while(false);
+					while(false);
+				}break;
+				case SCMP_SYS(connect):
+				{
+					socklen_t addrlen = static_cast<socklen_t>(req->data.args[2]);
+
+					std::vector<char> raw_socket(addrlen);
+
+					struct iovec this_readbuf = { raw_socket.data(), addrlen };
+					struct iovec traced_readbuf = { reinterpret_cast<void*>(req->data.args[1]), addrlen };
+					process_vm_readv(req->pid, &this_readbuf, 1, &traced_readbuf, 1, 0);
+
+					if (raw_socket[0] == AF_LOCAL)
+					{
+						sockaddr_un * addr = reinterpret_cast<sockaddr_un *>(raw_socket.data());
+
+						std::string_view unix_socket_path(addr->sun_path, 108);
+
+						if (unix_socket_path.starts_with("/run/systemd/resolve"))
+						{
+							LOG_DBG << "node wants to connecto to systemd-resolved, allowed";
+							resp->error = 0;
+							resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
+							break;
+
+						}
+						// 拒绝 af_local
+						break;
+					}
+
+					if ((raw_socket[0] == AF_INET) && (addrlen == sizeof(sockaddr_in)))
+					{
+						sockaddr_in * addr = reinterpret_cast<sockaddr_in *>(raw_socket.data());
+						auto destip = boost::asio::ip::make_address_v4(*
+							reinterpret_cast<const boost::asio::ip::address_v4::bytes_type*>(&(addr->sin_addr))
+						);
+
+						LOG_DBG << "node wants to connect to " << destip.to_string();
+
+						// 拒绝连接  5432
+						if (addr->sin_port == 5432)
+							break;
+						
+
+						if (destip.is_multicast())
+							break;
+
+						// 终于允许连接了.
+						resp->error = 0;
+						resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
+						break;
+					}
+					else if ((raw_socket[0] == AF_INET6) && (addrlen == sizeof(sockaddr_in6)))
+					{
+						sockaddr_in6 * addr = reinterpret_cast<sockaddr_in6 *>(raw_socket.data());
+						auto destip = boost::asio::ip::make_address_v6(*
+							reinterpret_cast<const boost::asio::ip::address_v6::bytes_type*>(&(addr->sin6_addr)),
+							addr->sin6_scope_id
+						);
+
+						LOG_DBG << "node wants to connect to " << destip.to_string();
+
+						// 拒绝连接  5432
+						if (addr->sin6_port == 5432)
+							break;
+
+						if (destip.is_multicast())
+							break;
+						if (destip.is_site_local())
+							break;
+						// 终于允许连接了.
+						resp->error = 0;
+						resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
+						break;
+					}
+				}break;
+				default:
+					break;
 			}
 
 			ret = seccomp_notify_respond(seccomp_notify_fd_, resp);
