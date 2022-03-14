@@ -50,6 +50,8 @@ public:
     typedef ::boost::asio::windows::stream_handle   handle_type;
     typedef typename handle_type::executor_type executor_type;
 
+	auto get_executor() { return _source.get_executor(); }
+
     async_pipe(boost::asio::io_context & ios) : async_pipe(ios, ios, make_pipe_name(), true) {}
     async_pipe(boost::asio::io_context & ios_source, boost::asio::io_context & ios_sink)
                 : async_pipe(ios_source, ios_sink, make_pipe_name(), true) {}
