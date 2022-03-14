@@ -30,6 +30,8 @@ using namespace boost::asio::experimental::awaitable_operators;
 
 #include <sys/types.h>
 #include <pwd.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 
 static bool change_user(std::string_view name)
 {
@@ -51,6 +53,34 @@ static bool change_user(std::string_view name)
 	return ok == 0;
 }
 
+
+static boost::asio::awaitable<int> async_wait_child(boost::process::child& child)
+{
+	auto executor = co_await boost::asio::this_coro::executor;
+	int pidfd_ = syscall(SYS_pidfd_open, child.id(), 0);
+
+	boost::asio::posix::stream_descriptor pidfd(executor, pidfd_);
+
+	co_await pidfd.async_wait(boost::asio::posix::stream_descriptor::wait_read, boost::asio::use_awaitable);
+
+	co_return child.wait_for(std::chrono::milliseconds(2));
+}
+
+#endif
+
+#ifdef _WIN32
+
+
+static boost::asio::awaitable<int> async_wait_child(boost::process::child& child)
+{
+	auto executor = co_await boost::asio::this_coro::executor;
+	windows::object_handle pidfd(executor, child.id());
+
+	co_await pidfd.async_wait(boost::asio::use_awaitable);
+
+	co_return child.wait_for(std::chrono::milliseconds(2));
+}
+
 #endif
 
 namespace services
@@ -70,20 +100,15 @@ namespace services
 		{
 			using namespace boost::process;
 
-			async_pipe out(io);
-			child cp(io, search_path("gitea"), args(gitea_args), std_out > out, limit_handles
-			#ifdef __linux
+			child cp(io, search_path("gitea"), args(gitea_args)
+			#ifdef BOOST_POSIX_API
 				, extend::on_exec_setup=[](auto& exec){
 					::change_user("gitea");
 				}
 			#endif
 			);
 
-			std::string output;
-			boost::system::error_code ec;
-			co_await boost::asio::async_read_until(out, boost::asio::dynamic_buffer(output), '\n', asio_util::use_awaitable[ec]);
-
-			cp.wait_for(std::chrono::milliseconds(120), ec);
+			co_await async_wait_child(cp);
 			if (cp.running())
 				cp.terminate();
 
