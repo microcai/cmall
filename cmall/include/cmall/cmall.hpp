@@ -216,6 +216,12 @@ namespace cmall {
 		boost::asio::awaitable<void> stop();
 
 	private:
+		boost::asio::awaitable<bool> load_merchant_git(const cmall_merchant& merchant); // false if no git repo for merchant
+		std::shared_ptr<services::repo_products> get_merchant_git_repo(std::uint64_t merchant_uid, boost::system::error_code& ec) const;
+		std::shared_ptr<services::repo_products> get_merchant_git_repo(const cmall_merchant& merchant, boost::system::error_code& ec) const;
+		std::shared_ptr<services::repo_products> get_merchant_git_repo(const cmall_merchant& merchant) const; // will throw if not found
+		std::shared_ptr<services::repo_products> get_merchant_git_repo(std::uint64_t merchant_uid) const; // will throw if not found
+
 		boost::asio::awaitable<bool> init_ws_acceptors();
 
 		// 这 3 个函数, 是 acceptor 需要的.
@@ -262,6 +268,7 @@ namespace cmall {
 		services::userscript script_runner;
 		services::gitea gitea_service;
 
+		mutable std::shared_mutex merchant_repos_mtx;
 		std::map<std::uint64_t, std::shared_ptr<services::repo_products>> merchant_repos;
 
 		// ws 服务端相关.

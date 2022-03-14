@@ -83,6 +83,56 @@ namespace cmall
 		LOG_DBG << "cmall_service.stop()";
 	}
 
+	// false if no git repo for merchant
+	boost::asio::awaitable<bool> cmall_service::load_merchant_git(const cmall_merchant& merchant)
+	{
+		if (services::repo_products::is_git_repo(merchant.repo_path))
+		{
+			auto repo = std::make_shared<services::repo_products>(
+				background_task_thread_pool, merchant.uid_, merchant.repo_path);
+			std::unique_lock<std::shared_mutex> l(merchant_repos_mtx);
+			this->merchant_repos.erase(merchant.uid_);
+			this->merchant_repos.emplace(merchant.uid_, repo);
+			co_return true;
+		}
+		else
+		{
+			std::unique_lock<std::shared_mutex> l(merchant_repos_mtx);
+			this->merchant_repos.erase(merchant.uid_);
+			LOG_ERR << "no bare git repos @(" << merchant.repo_path << ") for merchant <<" << merchant.name_;
+		}
+		co_return false;
+	}
+
+	std::shared_ptr<services::repo_products> cmall_service::get_merchant_git_repo(std::uint64_t merchant_uid, boost::system::error_code& ec) const
+	{
+		std::shared_lock<std::shared_mutex> l(merchant_repos_mtx);
+		if (merchant_repos.contains(merchant_uid))
+			return merchant_repos.at(merchant_uid);
+		ec = cmall::error::merchant_vanished;
+		return {};
+	}
+
+	std::shared_ptr<services::repo_products> cmall_service::get_merchant_git_repo(const cmall_merchant& merchant, boost::system::error_code& ec) const
+	{
+		return get_merchant_git_repo(merchant.uid_, ec);
+	}
+
+	 // will throw if not found
+	std::shared_ptr<services::repo_products> cmall_service::get_merchant_git_repo(const cmall_merchant& merchant) const
+	{
+		return get_merchant_git_repo(merchant.uid_);
+	}
+
+	 // will throw if not found
+	std::shared_ptr<services::repo_products> cmall_service::get_merchant_git_repo(std::uint64_t merchant_uid) const
+	{
+		std::shared_lock<std::shared_mutex> l(merchant_repos_mtx);
+		if (merchant_repos.contains(merchant_uid))
+			return merchant_repos.at(merchant_uid);
+		throw boost::system::system_error(cmall::error::merchant_vanished);
+	}
+
 	boost::asio::awaitable<bool> cmall_service::load_configs()
 	{
 		std::vector<cmall_merchant> all_merchant;
@@ -93,16 +143,7 @@ namespace cmall
 
 		for (cmall_merchant& merchant : all_merchant)
 		{
-			if (services::repo_products::is_git_repo(merchant.repo_path))
-			{
-				auto repo = std::make_shared<services::repo_products>(
-					background_task_thread_pool, merchant.uid_, merchant.repo_path);
-				this->merchant_repos.emplace(merchant.uid_, repo);
-			}
-			else
-			{
-				LOG_ERR << "no bare git repos @(" << merchant.repo_path << ") for merchant <<" << merchant.name_;
-			}
+			co_await load_merchant_git(merchant);
 		}
 
 		co_return true;
@@ -161,11 +202,13 @@ namespace cmall
 	{
 		auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
 
-		if (!merchant_repos.contains(merchant_id))
+		boost::system::error_code ec;
+		auto merchant_repo_ptr = get_merchant_git_repo(merchant_id, ec);
+
+		if (ec)
 			co_return 404;
 
-		boost::system::error_code ec;
-		auto res_body = co_await merchant_repos[merchant_id]->get_file_content(path_in_repo, ec);
+		auto res_body = co_await merchant_repo_ptr->get_file_content(path_in_repo, ec);
 		if (ec)
 		{
 			co_return 404;
@@ -187,21 +230,23 @@ namespace cmall
 		std::string goods_id, boost::beast::tcp_stream& client, int http_ver, bool keepalive)
 	{
 		auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
-		if (merchant_repos.contains(merchant_id))
-		{
-			std::string product_detail = co_await merchant_repos[merchant_id]->get_product_detail(goods_id);
+		boost::system::error_code ec;
+		auto merchant_repo_ptr = get_merchant_git_repo(merchant_id, ec);
 
-			auto ec = co_await httpd::send_string_response_body(client,
-				product_detail,
-				httpd::make_http_last_modified(std::time(0) + 60),
-				"text/markdown; charset=utf-8",
-				http_ver,
-				keepalive);
-			if (ec)
-				throw boost::system::system_error(ec);
-			co_return 200;
-		}
-		co_return 404;
+		if (ec)
+			co_return 404;
+
+		std::string product_detail = co_await merchant_repo_ptr->get_product_detail(goods_id);
+
+		ec = co_await httpd::send_string_response_body(client,
+			product_detail,
+			httpd::make_http_last_modified(std::time(0) + 60),
+			"text/markdown; charset=utf-8",
+			http_ver,
+			keepalive);
+		if (ec)
+			throw boost::system::system_error(ec);
+		co_return 200;
 	}
 
 	boost::asio::awaitable<void> cmall_service::do_ws_read(size_t connection_id, client_connection_ptr connection_ptr)
@@ -724,9 +769,8 @@ namespace cmall
 
 					boost::system::error_code ec;
 					services::product product_in_mall
-						= co_await merchant_repos[merchant_id_of_goods]->get_product(goods_id_of_goods, ec);
-					if (ec) // 商品不存在
-						throw boost::system::system_error(cmall::error::goods_not_found);
+						= co_await get_merchant_git_repo(merchant_id_of_goods)->get_product(goods_id_of_goods);
+
 					if (new_order.seller_ == 0)
 						new_order.seller_ = merchant_id_of_goods;
 					else if ( static_cast<std::int64_t>(new_order.seller_) != merchant_id_of_goods)
@@ -812,13 +856,10 @@ namespace cmall
 				// 对已经存在的订单, 获取支付连接.
 				boost::system::error_code ec;
 				std::uint64_t merchant_id = order_to_pay.bought_goods[0].merchant_id;
-				if (!merchant_repos.contains(merchant_id))
-					throw boost::system::system_error(cmall::error::merchant_vanished);
 
 				std::string pay_script_content
-					= co_await merchant_repos[merchant_id]->get_file_content("scripts/getpayurl.js", ec);
-				services::payment_url payurl = co_await payment_service.get_payurl(
-					pay_script_content, orderid, 0, to_string(order_to_pay.price_), paymentmethod);
+					= co_await get_merchant_git_repo(merchant_id)->get_file_content("scripts/getpayurl.js", ec);
+				services::payment_url payurl = co_await payment_service.get_payurl(pay_script_content, orderid, 0, to_string(order_to_pay.price_), paymentmethod);
 
 				reply_message["result"] = { { "type", "url" }, { "url", payurl.uri } };
 			}
@@ -999,15 +1040,11 @@ namespace cmall
 				auto merchant_id = jsutil::json_accessor(params).get("merchant_id", -1).as_int64();
 				auto goods_id	 = jsutil::json_accessor(params).get_string("goods_id");
 
-				if (!merchant_repos.contains(merchant_id))
-					throw boost::system::system_error(cmall::error::invalid_params);
 				if (goods_id.empty())
 					throw boost::system::system_error(cmall::error::invalid_params);
 
-				boost::system::error_code ec;
-				auto product = co_await merchant_repos[merchant_id]->get_product(goods_id, ec);
-				if (ec)
-					throw boost::system::system_error(cmall::error::goods_not_found);
+				auto product = co_await get_merchant_git_repo(merchant_id)->get_product(goods_id);
+
 				// 获取商品信息, 注意这个不是商品描述, 而是商品 标题, 价格, 和缩略图. 用在商品列表页面.
 				reply_message["result"] = boost::json::value_from(product);
 			}
@@ -1066,13 +1103,13 @@ namespace cmall
 						if (success)
 						{
 							boost::system::error_code ec;
-							if (merchant_repos.contains(this_merchant.uid_))
+							auto merchant_repo_ptr = get_merchant_git_repo(this_merchant, ec);
+							if (merchant_repo_ptr)
 							{
-								std::string pay_script_content = co_await merchant_repos[this_merchant.uid_]->get_file_content(
-									"scripts/orderstatus.js", ec);
+								std::string pay_script_content = co_await merchant_repo_ptr->get_file_content("scripts/orderstatus.js", ec);
 								if (!ec && !pay_script_content.empty())
 								{
-									boost::asio::co_spawn(background_task_thread_pool, 
+									boost::asio::co_spawn(background_task_thread_pool,
 									 script_runner.run_script(pay_script_content, {"--order-id", orderid}), boost::asio::detached);
 								}
 							}
@@ -1085,19 +1122,13 @@ namespace cmall
 					reply_message["result"] = true;
 				}
 				else
-					throw boost::system::system_error(cmall::error::order_not_found);				
+					throw boost::system::system_error(cmall::error::order_not_found);
 			}
 			break;
 			case req_method::merchant_goods_list:
 			{
 				// 列出 商品, 根据参数决定是首页还是商户
-				std::vector<services::product> all_products;
-
-				if (merchant_repos.contains(this_merchant.uid_))
-				{
-					all_products = co_await merchant_repos[this_merchant.uid_]->get_products();
-				}
-
+				std::vector<services::product> all_products = co_await get_merchant_git_repo(this_merchant)->get_products();
 				reply_message["result"] = boost::json::value_from(all_products);
 
 			}break;
@@ -1242,10 +1273,14 @@ namespace cmall
 				m.gitea_password = gitea_password;
 				co_await m_database.async_add(m);
 
-				// 初始化仓库.
-				// TODO: 设置正确地址
-				std::string gitea_template_loaction = "/var/lib/gitea/template/product_template";
-				co_await gitea_service.init_user(m.uid_, gitea_password, gitea_template_loaction);
+				co_await boost::asio::co_spawn(background_task_thread_pool, [this, m, gitea_password]() mutable -> boost::asio::awaitable<void>
+				{
+					// 初始化仓库.
+					// TODO: 设置正确地址
+					std::string gitea_template_loaction = "/var/lib/gitea/template/product_template";
+					co_await gitea_service.init_user(m.uid_, gitea_password, gitea_template_loaction);
+					co_await load_merchant_git(m);
+				}, boost::asio::use_awaitable);
 				reply_message["result"] = true;
 			}
 			break;

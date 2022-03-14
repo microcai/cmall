@@ -99,7 +99,8 @@ namespace services
 			int sec_comp_notify_fd = recv_fd(sk_pair[0]);
 			::close(sk_pair[0]);
 			sk_pair_cleanup.dismiss();
-			auto seccomp_supervisor_promise = boost::asio::co_spawn(io, sandbox::seccomp_supervisor(sec_comp_notify_fd), boost::asio::experimental::use_promise);
+			auto seccomp_supervisor_promise = boost::asio::co_spawn(co_await boost::asio::this_coro::executor,
+				sandbox::seccomp_supervisor(sec_comp_notify_fd), boost::asio::experimental::use_promise);
 #endif
 			std::string out;
 			auto d_buffer = boost::asio::dynamic_buffer(out);

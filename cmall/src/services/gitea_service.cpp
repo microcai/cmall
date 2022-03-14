@@ -31,17 +31,21 @@ using namespace boost::asio::experimental::awaitable_operators;
 #include <sys/types.h>
 #include <pwd.h>
 
-static bool change_user(const char* name)
+static bool change_user(std::string_view name)
 {
-	struct passwd pwd;
+	struct passwd pwd_storeage;
 	struct passwd *result;
-	char buf[16384];
+	std::vector<char> buf(sysconf(_SC_GETPW_R_SIZE_MAX) == -1 ? 16384 : sysconf(_SC_GETPW_R_SIZE_MAX));
 
-	int ok = getpwnam_r(name, &pwd, buf, 16384, &result);
+	int ok = getpwnam_r(name.data(), &pwd_storeage, buf.data(), buf.capacity(), &result);
 	if (ok == 0)
 	{
-		setgid(pwd.pw_gid);
-		setuid(pwd.pw_uid);
+		setgid(result->pw_gid);
+		setuid(result->pw_uid);
+	}
+	else
+	{
+		throw std::runtime_error("gitea user not found, refuse to run gitea command");
 	}
 
 	return ok == 0;
@@ -67,10 +71,10 @@ namespace services
 			using namespace boost::process;
 
 			async_pipe out(io);
-			child cp(io, search_path("gitea"), args(gitea_args), std_out > out
+			child cp(io, search_path("gitea"), args(gitea_args), std_out > out, limit_handles
 			#ifdef __linux
 				, extend::on_exec_setup=[](auto& exec){
-					change_user("gitea");
+					::change_user("gitea");
 				}
 			#endif
 			);
