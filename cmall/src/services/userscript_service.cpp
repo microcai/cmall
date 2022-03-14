@@ -118,7 +118,6 @@ namespace services
 			if (cp.running())
 				cp.terminate();
 
-			int result = cp.exit_code();
 			co_return out;
 		}
 

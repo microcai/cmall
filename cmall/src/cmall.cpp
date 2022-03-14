@@ -299,7 +299,6 @@ namespace cmall
 			if (!this_client.session_info->user_info)
 				throw boost::system::system_error(error::login_required);
 
-			auto uid = this_client.session_info->user_info->uid_;
 			if (check_admin)
 			{
 				if (!this_client.session_info->isAdmin)
@@ -732,7 +731,7 @@ namespace cmall
 						throw boost::system::system_error(cmall::error::goods_not_found);
 					if (new_order.seller_ == 0)
 						new_order.seller_ = merchant_id_of_goods;
-					else if (new_order.seller_ != merchant_id_of_goods)
+					else if ( static_cast<std::int64_t>(new_order.seller_) != merchant_id_of_goods)
 					{
 						// TODO, 如果不是同一个商户的东西, 是否可以直接变成多个订单?
 						throw boost::system::system_error(cmall::error::should_be_same_merchant);
@@ -870,7 +869,7 @@ namespace cmall
 				reply_message["result"] = true;
 
 				co_await send_notify_message(this_user.uid_,
-					fmt::format(R"---({{"topic":"cart_changed", "session_id": "{}"}})---",
+					std::format(R"---({{"topic":"cart_changed", "session_id": "{}"}})---",
 						this_client.session_info->session_id),
 					this_client.connection_id_);
 			}
@@ -901,7 +900,7 @@ namespace cmall
 					});
 				reply_message["result"] = true;
 				co_await send_notify_message(this_user.uid_,
-					fmt::format(R"---({{"topic":"cart_changed", "session_id": "{}"}})---",
+					std::format(R"---({{"topic":"cart_changed", "session_id": "{}"}})---",
 						this_client.session_info->session_id),
 					this_client.connection_id_);
 			}
@@ -926,7 +925,7 @@ namespace cmall
 				co_await m_database.async_hard_remove<cmall_cart>(item_id);
 				reply_message["result"] = true;
 				co_await send_notify_message(this_user.uid_,
-					fmt::format(R"---({{"topic":"cart_changed", "session_id": "{}"}})---",
+					std::format(R"---({{"topic":"cart_changed", "session_id": "{}"}})---",
 						this_client.session_info->session_id),
 					this_client.connection_id_);
 			}
