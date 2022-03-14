@@ -280,7 +280,7 @@ boost::asio::awaitable<void> sandbox::seccomp_supervisor(int seccomp_notify_fd_)
 			if (ret != 0)
 			{
 				int e = errno;
-				LOG_DBG << "seccomp_notify_receive failed with e=" << e;
+				LOG_DBG << "[seccomp] seccomp_notify_receive failed with e=" << e;
 				co_return;
 			}
 
@@ -324,7 +324,7 @@ boost::asio::awaitable<void> sandbox::seccomp_supervisor(int seccomp_notify_fd_)
 								|| node_want_open.starts_with("/etc/gai.conf")
 								|| node_want_open.starts_with("/dev/"))
 							{
-								LOG_DBG << "node wants to open file " << openat_param1 << " allowed";
+								LOG_DBG << "[seccomp] node wants to open file " << openat_param1 << " allowed";
 								resp->error = 0;
 								resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
 								break;
@@ -343,7 +343,7 @@ boost::asio::awaitable<void> sandbox::seccomp_supervisor(int seccomp_notify_fd_)
 								|| node_want_open.starts_with("/etc/gai.conf")
 								|| node_want_open.starts_with("/dev/urandom"))
 							{
-								LOG_DBG << "node wants to open file O_RDONLY " << openat_param1 << " allowed";
+								LOG_DBG << "[seccomp] node wants to open file O_RDONLY " << openat_param1 << " allowed";
 								resp->error = 0;
 								resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
 								break;
@@ -352,7 +352,7 @@ boost::asio::awaitable<void> sandbox::seccomp_supervisor(int seccomp_notify_fd_)
 
 						if ((memcmp(openat_param1, "/dev/", 6) == 0) && (dirfd == AT_FDCWD))
 						{
-							LOG_DBG << "node wants to open dir /dev/ allowed";
+							LOG_DBG << "[seccomp] node wants to open dir /dev/ allowed";
 							resp->error = 0;
 							resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
 							break;
@@ -361,14 +361,13 @@ boost::asio::awaitable<void> sandbox::seccomp_supervisor(int seccomp_notify_fd_)
 
 						if ((memcmp(openat_param1, "/dev/pts", 8) == 0) && (dirfd == AT_FDCWD))
 						{
-							LOG_DBG << "node wants to open dir /dev/pts/? allowed";
+							LOG_DBG << "[seccomp] node wants to open dir /dev/pts/? allowed";
 							resp->error = 0;
 							resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
 							break;
 						}
 
-
-						LOG_ERR << "node wants to open file " << openat_param1 << " but open denied";
+						LOG_ERR << "[seccomp] node wants to open file " << openat_param1 << " but open denied";
 					}
 					while(false);
 				}break;
@@ -390,7 +389,7 @@ boost::asio::awaitable<void> sandbox::seccomp_supervisor(int seccomp_notify_fd_)
 
 						if (unix_socket_path.starts_with("/run/systemd/resolve"))
 						{
-							LOG_DBG << "node wants to connecto to systemd-resolved, allowed";
+							LOG_DBG << "[seccomp] node wants to connecto to systemd-resolved, allowed";
 							resp->error = 0;
 							resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
 							break;
@@ -407,12 +406,11 @@ boost::asio::awaitable<void> sandbox::seccomp_supervisor(int seccomp_notify_fd_)
 							reinterpret_cast<const boost::asio::ip::address_v4::bytes_type*>(&(addr->sin_addr))
 						);
 
-						LOG_DBG << "node wants to connect to " << destip.to_string() << ":" << addr->sin_port;
+						LOG_DBG << "[seccomp] node wants to connect to " << destip.to_string() << ":" << addr->sin_port;
 
 						// 拒绝连接  5432
 						if (addr->sin_port == 5432)
 							break;
-						
 
 						if (destip.is_multicast())
 							break;
@@ -430,7 +428,7 @@ boost::asio::awaitable<void> sandbox::seccomp_supervisor(int seccomp_notify_fd_)
 							addr->sin6_scope_id
 						);
 
-						LOG_DBG << "node wants to connect to [" << destip.to_string() << "]:" << addr->sin6_port;
+						LOG_DBG << "[seccomp] node wants to connect to [" << destip.to_string() << "]:" << addr->sin6_port;
 
 						// 拒绝连接  5432
 						if (addr->sin6_port == 5432)
