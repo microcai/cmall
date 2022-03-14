@@ -10,6 +10,8 @@ static int count_backticks(std::string_view::iterator first, std::string_view::i
 	while (*first == '`')
 	{
 		counted++; first++;
+		if (first ==last)
+			break;
 	}
 	return counted;
 }
@@ -70,7 +72,7 @@ static std::string_view::iterator skip_backtick_text(int back_tick_type, std::st
 std::string md::markdown_transpile(std::string_view original, url_replacer replacer)
 {
     std::string converted;
-    converted.reserve(original.length() * 1.5);
+    converted.reserve(original.length() * 2);
 
 	enum grammer_state
 	{
