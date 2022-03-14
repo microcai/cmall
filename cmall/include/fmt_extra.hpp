@@ -21,7 +21,11 @@
 #include <fmt/format.h>
 #endif
 
-namespace fmt {
+#ifdef __cpp_lib_format
+namespace std {
+#else
+namespace fmt
+#endif
 	template <>
 	struct formatter<boost::multiprecision::cpp_dec_float_50> {
 		constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {

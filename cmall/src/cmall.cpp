@@ -31,10 +31,6 @@
 #pragma clang diagnostic ignored "-Wexpansion-to-defined"
 #endif
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-#include <fmt/printf.h>
-
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
