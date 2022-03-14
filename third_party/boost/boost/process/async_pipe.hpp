@@ -201,6 +201,9 @@ public:
     /// Copy the sink out of this class and change the io_context. \attention Will always copy
     handle_type sink  (::boost::asio::io_context& ios) const &;
 
+	boost::asio::io_context& get_executor() {
+		return _source.get_executor();
+	}
 
 
 };
