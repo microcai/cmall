@@ -1108,7 +1108,7 @@ namespace cmall
 			{
 				std::vector<cmall_order> orders;
 				using query_t = odb::query<cmall_order>;
-				auto query	  = (query_t::seller == this_user.uid_ && query_t::deleted_at.is_null());
+				auto query	  = (query_t::seller == this_user.uid_ && query_t::deleted_at.is_null()) + " order by " + query_t::created_at + " desc";
 				co_await m_database.async_load<cmall_order>(query, orders);
 
 				LOG_DBG << "order_list retrieved, " << orders.size() << " items";
