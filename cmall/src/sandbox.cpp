@@ -50,10 +50,12 @@ static int send_fd(int sock, int fd)
 
 void sandbox::install_seccomp(int notifyfd)
 {
-	auto seccomp_ctx = seccomp_init(SCMP_ACT_ERRNO(EPERM));
+//	auto seccomp_ctx = seccomp_init(SCMP_ACT_ERRNO(ENOSYS));
+	auto seccomp_ctx = seccomp_init(SCMP_ACT_ERRNO(ENOSYS));
 
 	// default syscall that should always success.
 	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(arch_prctl), 0);
+	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(prctl), 0);
 	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(brk), 0);
 	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(cacheflush), 0);
 	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(clock_getres), 0);
@@ -178,6 +180,7 @@ void sandbox::install_seccomp(int notifyfd)
 
 	// thread is allowed
 	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(clone3), 0);
+	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(tgkill), 0);
 
 	// some generic kernel service allowed
 	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ERRNO(ENOENT), SCMP_SYS(getcwd), 0);
@@ -222,6 +225,7 @@ void sandbox::install_seccomp(int notifyfd)
 	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_NOTIFY, SCMP_SYS(openat), 0);
 	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(newfstatat), 0);
 	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(fcntl), 0);
+	seccomp_rule_add_exact(seccomp_ctx, SCMP_ACT_ALLOW, SCMP_SYS(statx), 0);
 
 	seccomp_load(seccomp_ctx);
 
@@ -403,7 +407,7 @@ boost::asio::awaitable<void> sandbox::seccomp_supervisor(int seccomp_notify_fd_)
 							reinterpret_cast<const boost::asio::ip::address_v4::bytes_type*>(&(addr->sin_addr))
 						);
 
-						LOG_DBG << "node wants to connect to " << destip.to_string();
+						LOG_DBG << "node wants to connect to " << destip.to_string() << ":" << addr->sin_port;
 
 						// 拒绝连接  5432
 						if (addr->sin_port == 5432)
@@ -426,7 +430,7 @@ boost::asio::awaitable<void> sandbox::seccomp_supervisor(int seccomp_notify_fd_)
 							addr->sin6_scope_id
 						);
 
-						LOG_DBG << "node wants to connect to " << destip.to_string();
+						LOG_DBG << "node wants to connect to [" << destip.to_string() << "]:" << addr->sin6_port;
 
 						// 拒绝连接  5432
 						if (addr->sin6_port == 5432)
