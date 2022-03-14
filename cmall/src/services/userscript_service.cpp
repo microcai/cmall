@@ -89,9 +89,9 @@ namespace services
 #ifdef __linux__
 			::close(sk_pair[1]);
 			int sec_comp_notify_fd = recv_fd(sk_pair[0]);
-			auto seccomp_supervisor_promise = boost::asio::co_spawn(io, sandbox::seccomp_supervisor(sec_comp_notify_fd), boost::asio::experimental::use_promise);
 			::close(sk_pair[0]);
 			sk_pair_cleanup.dismiss();
+			auto seccomp_supervisor_promise = boost::asio::co_spawn(io, sandbox::seccomp_supervisor(sec_comp_notify_fd), boost::asio::experimental::use_promise);
 #endif
 			std::string out;
 			auto d_buffer = boost::asio::dynamic_buffer(out);
@@ -110,14 +110,15 @@ namespace services
 			auto out_size = co_await (
 				read_promis.async_wait(boost::asio::use_awaitable) || t.async_wait(boost::asio::use_awaitable)
 			);
-
 			out.resize(std::get<0>(out_size));
 
 			std::error_code stdec;
 			cp.wait_for(std::chrono::milliseconds(12), stdec);
 			if (cp.running())
 				cp.terminate();
-
+#ifdef __linux__
+			seccomp_supervisor_promise.cancel();;
+#endif
 			co_return out;
 		}
 
