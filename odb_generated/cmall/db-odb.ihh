@@ -362,6 +362,32 @@ namespace odb
     i.good_version_git_null = true;
   }
 
+  // cmall_kuaidi_info
+  //
+
+  inline
+  bool access::composite_value_traits< ::cmall_kuaidi_info, id_pgsql >::
+  get_null (const image_type& i)
+  {
+    bool r (true);
+    r = r && i.kuaidihao_null;
+    r = r && i.kuaidigongsi_null;
+    return r;
+  }
+
+  inline
+  void access::composite_value_traits< ::cmall_kuaidi_info, id_pgsql >::
+  set_null (image_type& i,
+            pgsql::statement_kind sk)
+  {
+    ODB_POTENTIALLY_UNUSED (sk);
+
+    using namespace pgsql;
+
+    i.kuaidihao_null = true;
+    i.kuaidigongsi_null = true;
+  }
+
   // cmall_order
   //
 

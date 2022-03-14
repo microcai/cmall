@@ -40,7 +40,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(8, 16, open)
+#pragma db model version(8, 17, open)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -183,6 +183,13 @@ enum order_status_t
 	// TODO, more
 };
 
+#pragma db value
+struct cmall_kuaidi_info
+{
+	std::string kuaidihao;
+	std::string kuaidigongsi;
+};
+
 // 订单表
 #pragma db object
 struct cmall_order {
@@ -211,6 +218,9 @@ struct cmall_order {
 	std::vector<goods_snapshot> bought_goods;
 #pragma db index default("")
 	std::string snap_git_version; // 下单时 商户的仓库 git 版本.
+
+#pragma db index_column("kuaidihao")
+	std::vector<cmall_kuaidi_info> kuaidi;
 
 	odb::nullable<std::string> ext_; // 扩展字段
 

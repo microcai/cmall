@@ -6,6 +6,8 @@ DROP TABLE IF EXISTS "cmall_apply_for_mechant" CASCADE;
 
 DROP TABLE IF EXISTS "cmall_cart" CASCADE;
 
+DROP TABLE IF EXISTS "cmall_order_kuaidi" CASCADE;
+
 DROP TABLE IF EXISTS "cmall_order_bought_goods" CASCADE;
 
 DROP TABLE IF EXISTS "cmall_order_recipient" CASCADE;
@@ -182,6 +184,22 @@ CREATE INDEX "cmall_order_bought_goods_object_id_i"
 CREATE INDEX "cmall_order_bought_goods_index_i"
   ON "cmall_order_bought_goods" ("index");
 
+CREATE TABLE "cmall_order_kuaidi" (
+  "object_id" BIGINT NOT NULL,
+  "kuaidihao" BIGINT NOT NULL,
+  "value_kuaidihao" TEXT NOT NULL,
+  "value_kuaidigongsi" TEXT NOT NULL,
+  CONSTRAINT "object_id_fk"
+    FOREIGN KEY ("object_id")
+    REFERENCES "cmall_order" ("id")
+    ON DELETE CASCADE);
+
+CREATE INDEX "cmall_order_kuaidi_object_id_i"
+  ON "cmall_order_kuaidi" ("object_id");
+
+CREATE INDEX "cmall_order_kuaidi_kuaidihao_i"
+  ON "cmall_order_kuaidi" ("kuaidihao");
+
 CREATE TABLE "cmall_cart" (
   "id" BIGSERIAL NOT NULL PRIMARY KEY,
   "uid" BIGINT NOT NULL,
@@ -212,7 +230,7 @@ CREATE INDEX "cmall_apply_for_mechant_applicant_i"
 
 INSERT INTO "schema_version" (
   "name", "version", "migration")
-  SELECT '', 16, FALSE
+  SELECT '', 17, FALSE
   WHERE NOT EXISTS (
     SELECT 1 FROM "schema_version" WHERE "name" = '');
 

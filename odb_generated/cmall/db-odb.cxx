@@ -4905,6 +4905,168 @@ namespace odb
     }
   }
 
+  // cmall_kuaidi_info
+  //
+
+  bool access::composite_value_traits< ::cmall_kuaidi_info, id_pgsql >::
+  grow (image_type& i,
+        bool* t)
+  {
+    ODB_POTENTIALLY_UNUSED (i);
+    ODB_POTENTIALLY_UNUSED (t);
+
+    bool grew (false);
+
+    // kuaidihao
+    //
+    if (t[0UL])
+    {
+      i.kuaidihao_value.capacity (i.kuaidihao_size);
+      grew = true;
+    }
+
+    // kuaidigongsi
+    //
+    if (t[1UL])
+    {
+      i.kuaidigongsi_value.capacity (i.kuaidigongsi_size);
+      grew = true;
+    }
+
+    return grew;
+  }
+
+  void access::composite_value_traits< ::cmall_kuaidi_info, id_pgsql >::
+  bind (pgsql::bind* b,
+        image_type& i,
+        pgsql::statement_kind sk)
+  {
+    ODB_POTENTIALLY_UNUSED (b);
+    ODB_POTENTIALLY_UNUSED (i);
+    ODB_POTENTIALLY_UNUSED (sk);
+
+    using namespace pgsql;
+
+    std::size_t n (0);
+    ODB_POTENTIALLY_UNUSED (n);
+
+    // kuaidihao
+    //
+    b[n].type = pgsql::bind::text;
+    b[n].buffer = i.kuaidihao_value.data ();
+    b[n].capacity = i.kuaidihao_value.capacity ();
+    b[n].size = &i.kuaidihao_size;
+    b[n].is_null = &i.kuaidihao_null;
+    n++;
+
+    // kuaidigongsi
+    //
+    b[n].type = pgsql::bind::text;
+    b[n].buffer = i.kuaidigongsi_value.data ();
+    b[n].capacity = i.kuaidigongsi_value.capacity ();
+    b[n].size = &i.kuaidigongsi_size;
+    b[n].is_null = &i.kuaidigongsi_null;
+    n++;
+  }
+
+  bool access::composite_value_traits< ::cmall_kuaidi_info, id_pgsql >::
+  init (image_type& i,
+        const value_type& o,
+        pgsql::statement_kind sk)
+  {
+    ODB_POTENTIALLY_UNUSED (i);
+    ODB_POTENTIALLY_UNUSED (o);
+    ODB_POTENTIALLY_UNUSED (sk);
+
+    using namespace pgsql;
+
+    bool grew (false);
+
+    // kuaidihao
+    //
+    {
+      ::std::string const& v =
+        o.kuaidihao;
+
+      bool is_null (false);
+      std::size_t size (0);
+      std::size_t cap (i.kuaidihao_value.capacity ());
+      pgsql::value_traits<
+          ::std::string,
+          pgsql::id_string >::set_image (
+        i.kuaidihao_value,
+        size,
+        is_null,
+        v);
+      i.kuaidihao_null = is_null;
+      i.kuaidihao_size = size;
+      grew = grew || (cap != i.kuaidihao_value.capacity ());
+    }
+
+    // kuaidigongsi
+    //
+    {
+      ::std::string const& v =
+        o.kuaidigongsi;
+
+      bool is_null (false);
+      std::size_t size (0);
+      std::size_t cap (i.kuaidigongsi_value.capacity ());
+      pgsql::value_traits<
+          ::std::string,
+          pgsql::id_string >::set_image (
+        i.kuaidigongsi_value,
+        size,
+        is_null,
+        v);
+      i.kuaidigongsi_null = is_null;
+      i.kuaidigongsi_size = size;
+      grew = grew || (cap != i.kuaidigongsi_value.capacity ());
+    }
+
+    return grew;
+  }
+
+  void access::composite_value_traits< ::cmall_kuaidi_info, id_pgsql >::
+  init (value_type& o,
+        const image_type&  i,
+        database* db)
+  {
+    ODB_POTENTIALLY_UNUSED (o);
+    ODB_POTENTIALLY_UNUSED (i);
+    ODB_POTENTIALLY_UNUSED (db);
+
+    // kuaidihao
+    //
+    {
+      ::std::string& v =
+        o.kuaidihao;
+
+      pgsql::value_traits<
+          ::std::string,
+          pgsql::id_string >::set_value (
+        v,
+        i.kuaidihao_value,
+        i.kuaidihao_size,
+        i.kuaidihao_null);
+    }
+
+    // kuaidigongsi
+    //
+    {
+      ::std::string& v =
+        o.kuaidigongsi;
+
+      pgsql::value_traits<
+          ::std::string,
+          pgsql::id_string >::set_value (
+        v,
+        i.kuaidigongsi_value,
+        i.kuaidigongsi_size,
+        i.kuaidigongsi_null);
+    }
+  }
+
   // cmall_order
   //
 
@@ -4973,6 +5135,7 @@ namespace odb
   {
     pgsql::container_statements_impl< recipient_traits > recipient;
     pgsql::container_statements_impl< bought_goods_traits > bought_goods;
+    pgsql::container_statements_impl< kuaidi_traits > kuaidi;
 
     extra_statement_cache_type (
       pgsql::connection& c,
@@ -4983,7 +5146,8 @@ namespace odb
       pgsql::native_binding& idn,
       const unsigned int* idt)
     : recipient (c, id, idn, idt),
-      bought_goods (c, id, idn, idt)
+      bought_goods (c, id, idn, idt),
+      kuaidi (c, id, idn, idt)
     {
     }
   };
@@ -5599,6 +5763,301 @@ namespace odb
   }
 
   void access::object_traits_impl< ::cmall_order, id_pgsql >::bought_goods_traits::
+  erase (statements_type& sts)
+  {
+    using namespace pgsql;
+
+    functions_type& fs (sts.functions ());
+    fs.ordered_ = true;
+    container_traits_type::erase (fs);
+  }
+
+  // kuaidi
+  //
+
+  const char access::object_traits_impl< ::cmall_order, id_pgsql >::kuaidi_traits::
+  select_name[] = "select_cmall_order_kuaidi";
+
+  const char access::object_traits_impl< ::cmall_order, id_pgsql >::kuaidi_traits::
+  insert_name[] = "insert_cmall_order_kuaidi";
+
+  const char access::object_traits_impl< ::cmall_order, id_pgsql >::kuaidi_traits::
+  delete_name[] = "delete_cmall_order_kuaidi";
+
+  const unsigned int access::object_traits_impl< ::cmall_order, id_pgsql >::kuaidi_traits::
+  insert_types[] =
+  {
+    pgsql::int8_oid,
+    pgsql::int8_oid,
+    pgsql::text_oid,
+    pgsql::text_oid
+  };
+
+  const char access::object_traits_impl< ::cmall_order, id_pgsql >::kuaidi_traits::
+  select_statement[] =
+  "SELECT "
+  "\"cmall_order_kuaidi\".\"kuaidihao\", "
+  "\"cmall_order_kuaidi\".\"value_kuaidihao\", "
+  "\"cmall_order_kuaidi\".\"value_kuaidigongsi\" "
+  "FROM \"cmall_order_kuaidi\" "
+  "WHERE \"cmall_order_kuaidi\".\"object_id\"=$1 ORDER BY \"cmall_order_kuaidi\".\"kuaidihao\"";
+
+  const char access::object_traits_impl< ::cmall_order, id_pgsql >::kuaidi_traits::
+  insert_statement[] =
+  "INSERT INTO \"cmall_order_kuaidi\" "
+  "(\"object_id\", "
+  "\"kuaidihao\", "
+  "\"value_kuaidihao\", "
+  "\"value_kuaidigongsi\") "
+  "VALUES "
+  "($1, $2, $3, $4)";
+
+  const char access::object_traits_impl< ::cmall_order, id_pgsql >::kuaidi_traits::
+  delete_statement[] =
+  "DELETE FROM \"cmall_order_kuaidi\" "
+  "WHERE \"object_id\"=$1";
+
+  void access::object_traits_impl< ::cmall_order, id_pgsql >::kuaidi_traits::
+  bind (pgsql::bind* b,
+        const pgsql::bind* id,
+        std::size_t id_size,
+        data_image_type& d)
+  {
+    using namespace pgsql;
+
+    statement_kind sk (statement_select);
+    ODB_POTENTIALLY_UNUSED (sk);
+
+    size_t n (0);
+
+    // object_id
+    //
+    if (id != 0)
+      std::memcpy (&b[n], id, id_size * sizeof (id[0]));
+    n += id_size;
+
+    // index
+    //
+    b[n].type = pgsql::bind::bigint;
+    b[n].buffer = &d.index_value;
+    b[n].is_null = &d.index_null;
+    n++;
+
+    // value
+    //
+    composite_value_traits< value_type, id_pgsql >::bind (
+      b + n, d.value_value, sk);
+  }
+
+  void access::object_traits_impl< ::cmall_order, id_pgsql >::kuaidi_traits::
+  grow (data_image_type& i,
+        bool* t)
+  {
+    bool grew (false);
+
+    // index
+    //
+    t[0UL] = 0;
+
+    // value
+    //
+    if (composite_value_traits< value_type, id_pgsql >::grow (
+          i.value_value, t + 1UL))
+      grew = true;
+
+    if (grew)
+      i.version++;
+  }
+
+  void access::object_traits_impl< ::cmall_order, id_pgsql >::kuaidi_traits::
+  init (data_image_type& i,
+        index_type* j,
+        const value_type& v)
+  {
+    using namespace pgsql;
+
+    statement_kind sk (statement_insert);
+    ODB_POTENTIALLY_UNUSED (sk);
+
+    bool grew (false);
+
+    // index
+    //
+    if (j != 0)
+    {
+      bool is_null (false);
+      pgsql::value_traits<
+          index_type,
+          pgsql::id_bigint >::set_image (
+        i.index_value, is_null, *j);
+      i.index_null = is_null;
+    }
+
+    // value
+    //
+    {
+      if (composite_value_traits< value_type, id_pgsql >::init (
+            i.value_value,
+            v,
+            sk))
+        grew = true;
+    }
+
+    if (grew)
+      i.version++;
+  }
+
+  void access::object_traits_impl< ::cmall_order, id_pgsql >::kuaidi_traits::
+  init (index_type& j,
+        value_type& v,
+        const data_image_type& i,
+        database* db)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+
+    // index
+    //
+    {
+      pgsql::value_traits<
+          index_type,
+          pgsql::id_bigint >::set_value (
+        j,
+        i.index_value,
+        i.index_null);
+    }
+
+    // value
+    //
+    {
+      composite_value_traits< value_type, id_pgsql >::init (
+        v,
+        i.value_value,
+        db);
+    }
+  }
+
+  void access::object_traits_impl< ::cmall_order, id_pgsql >::kuaidi_traits::
+  insert (index_type i, const value_type& v, void* d)
+  {
+    using namespace pgsql;
+
+    statements_type& sts (*static_cast< statements_type* > (d));
+    data_image_type& di (sts.data_image ());
+
+    init (di, &i, v);
+
+    if (sts.data_binding_test_version ())
+    {
+      const binding& id (sts.id_binding ());
+      bind (sts.data_bind (), id.bind, id.count, di);
+      sts.data_binding_update_version ();
+    }
+
+    if (!sts.insert_statement ().execute ())
+      throw object_already_persistent ();
+  }
+
+  bool access::object_traits_impl< ::cmall_order, id_pgsql >::kuaidi_traits::
+  select (index_type& i, value_type& v, void* d)
+  {
+    using namespace pgsql;
+    using pgsql::select_statement;
+
+    statements_type& sts (*static_cast< statements_type* > (d));
+    data_image_type& di (sts.data_image ());
+
+    init (i, v, di, &sts.connection ().database ());
+
+    select_statement& st (sts.select_statement ());
+    select_statement::result r (st.fetch ());
+
+    if (r == select_statement::truncated)
+    {
+      grow (di, sts.select_image_truncated ());
+
+      if (sts.data_binding_test_version ())
+      {
+        bind (sts.data_bind (), 0, sts.id_binding ().count, di);
+        sts.data_binding_update_version ();
+        st.refetch ();
+      }
+    }
+
+    return r != select_statement::no_data;
+  }
+
+  void access::object_traits_impl< ::cmall_order, id_pgsql >::kuaidi_traits::
+  delete_ (void* d)
+  {
+    using namespace pgsql;
+
+    statements_type& sts (*static_cast< statements_type* > (d));
+    sts.delete_statement ().execute ();
+  }
+
+  void access::object_traits_impl< ::cmall_order, id_pgsql >::kuaidi_traits::
+  persist (const container_type& c,
+           statements_type& sts)
+  {
+    using namespace pgsql;
+
+    functions_type& fs (sts.functions ());
+    fs.ordered_ = true;
+    container_traits_type::persist (c, fs);
+  }
+
+  void access::object_traits_impl< ::cmall_order, id_pgsql >::kuaidi_traits::
+  load (container_type& c,
+        statements_type& sts)
+  {
+    using namespace pgsql;
+    using pgsql::select_statement;
+
+    const binding& id (sts.id_binding ());
+
+    if (sts.data_binding_test_version ())
+    {
+      bind (sts.data_bind (), id.bind, id.count, sts.data_image ());
+      sts.data_binding_update_version ();
+    }
+
+    select_statement& st (sts.select_statement ());
+    st.execute ();
+    auto_result ar (st);
+    select_statement::result r (st.fetch ());
+
+    if (r == select_statement::truncated)
+    {
+      data_image_type& di (sts.data_image ());
+      grow (di, sts.select_image_truncated ());
+
+      if (sts.data_binding_test_version ())
+      {
+        bind (sts.data_bind (), 0, id.count, di);
+        sts.data_binding_update_version ();
+        st.refetch ();
+      }
+    }
+
+    bool more (r != select_statement::no_data);
+
+    functions_type& fs (sts.functions ());
+    fs.ordered_ = true;
+    container_traits_type::load (c, more, fs);
+  }
+
+  void access::object_traits_impl< ::cmall_order, id_pgsql >::kuaidi_traits::
+  update (const container_type& c,
+          statements_type& sts)
+  {
+    using namespace pgsql;
+
+    functions_type& fs (sts.functions ());
+    fs.ordered_ = true;
+    container_traits_type::update (c, fs);
+  }
+
+  void access::object_traits_impl< ::cmall_order, id_pgsql >::kuaidi_traits::
   erase (statements_type& sts)
   {
     using namespace pgsql;
@@ -6492,6 +6951,17 @@ namespace odb
         esc.bought_goods);
     }
 
+    // kuaidi
+    //
+    {
+      ::std::vector< ::cmall_kuaidi_info > const& v =
+        obj.kuaidi;
+
+      kuaidi_traits::persist (
+        v,
+        esc.kuaidi);
+    }
+
     callback (db,
               static_cast<const object_type&> (obj),
               callback_event::post_persist);
@@ -6576,6 +7046,17 @@ namespace odb
         esc.bought_goods);
     }
 
+    // kuaidi
+    //
+    {
+      ::std::vector< ::cmall_kuaidi_info > const& v =
+        obj.kuaidi;
+
+      kuaidi_traits::update (
+        v,
+        esc.kuaidi);
+    }
+
     callback (db, obj, callback_event::post_update);
     pointer_cache_traits::update (db, obj);
   }
@@ -6617,6 +7098,13 @@ namespace odb
     {
       bought_goods_traits::erase (
         esc.bought_goods);
+    }
+
+    // kuaidi
+    //
+    {
+      kuaidi_traits::erase (
+        esc.kuaidi);
     }
 
     if (sts.erase_statement ().execute () != 1)
@@ -6824,6 +7312,17 @@ namespace odb
       bought_goods_traits::load (
         v,
         esc.bought_goods);
+    }
+
+    // kuaidi
+    //
+    {
+      ::std::vector< ::cmall_kuaidi_info >& v =
+        obj.kuaidi;
+
+      kuaidi_traits::load (
+        v,
+        esc.kuaidi);
     }
   }
 
@@ -8767,6 +9266,7 @@ namespace odb
         {
           db.execute ("DROP TABLE IF EXISTS \"cmall_apply_for_mechant\" CASCADE");
           db.execute ("DROP TABLE IF EXISTS \"cmall_cart\" CASCADE");
+          db.execute ("DROP TABLE IF EXISTS \"cmall_order_kuaidi\" CASCADE");
           db.execute ("DROP TABLE IF EXISTS \"cmall_order_bought_goods\" CASCADE");
           db.execute ("DROP TABLE IF EXISTS \"cmall_order_recipient\" CASCADE");
           db.execute ("DROP TABLE IF EXISTS \"cmall_order\" CASCADE");
@@ -8918,6 +9418,19 @@ namespace odb
                       "  ON \"cmall_order_bought_goods\" (\"object_id\")");
           db.execute ("CREATE INDEX \"cmall_order_bought_goods_index_i\"\n"
                       "  ON \"cmall_order_bought_goods\" (\"index\")");
+          db.execute ("CREATE TABLE \"cmall_order_kuaidi\" (\n"
+                      "  \"object_id\" BIGINT NOT NULL,\n"
+                      "  \"kuaidihao\" BIGINT NOT NULL,\n"
+                      "  \"value_kuaidihao\" TEXT NOT NULL,\n"
+                      "  \"value_kuaidigongsi\" TEXT NOT NULL,\n"
+                      "  CONSTRAINT \"object_id_fk\"\n"
+                      "    FOREIGN KEY (\"object_id\")\n"
+                      "    REFERENCES \"cmall_order\" (\"id\")\n"
+                      "    ON DELETE CASCADE)");
+          db.execute ("CREATE INDEX \"cmall_order_kuaidi_object_id_i\"\n"
+                      "  ON \"cmall_order_kuaidi\" (\"object_id\")");
+          db.execute ("CREATE INDEX \"cmall_order_kuaidi_kuaidihao_i\"\n"
+                      "  ON \"cmall_order_kuaidi\" (\"kuaidihao\")");
           db.execute ("CREATE TABLE \"cmall_cart\" (\n"
                       "  \"id\" BIGSERIAL NOT NULL PRIMARY KEY,\n"
                       "  \"uid\" BIGINT NOT NULL,\n"
@@ -8952,7 +9465,7 @@ namespace odb
                       "  \"migration\" BOOLEAN NOT NULL)");
           db.execute ("INSERT INTO \"schema_version\" (\n"
                       "  \"name\", \"version\", \"migration\")\n"
-                      "  SELECT '', 16, FALSE\n"
+                      "  SELECT '', 17, FALSE\n"
                       "  WHERE NOT EXISTS (\n"
                       "    SELECT 1 FROM \"schema_version\" WHERE \"name\" = '')");
           return false;
@@ -9433,6 +9946,72 @@ namespace odb
     "",
     16ULL,
     &migrate_schema_16);
+
+  static bool
+  migrate_schema_17 (database& db, unsigned short pass, bool pre)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (pass);
+    ODB_POTENTIALLY_UNUSED (pre);
+
+    if (pre)
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          db.execute ("CREATE TABLE \"cmall_order_kuaidi\" (\n"
+                      "  \"object_id\" BIGINT NOT NULL,\n"
+                      "  \"kuaidihao\" BIGINT NOT NULL,\n"
+                      "  \"value_kuaidihao\" TEXT NOT NULL,\n"
+                      "  \"value_kuaidigongsi\" TEXT NOT NULL)");
+          db.execute ("CREATE INDEX \"cmall_order_kuaidi_object_id_i\"\n"
+                      "  ON \"cmall_order_kuaidi\" (\"object_id\")");
+          db.execute ("CREATE INDEX \"cmall_order_kuaidi_kuaidihao_i\"\n"
+                      "  ON \"cmall_order_kuaidi\" (\"kuaidihao\")");
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("ALTER TABLE \"cmall_order_kuaidi\"\n"
+                      "  ADD CONSTRAINT \"object_id_fk\"\n"
+                      "    FOREIGN KEY (\"object_id\")\n"
+                      "    REFERENCES \"cmall_order\" (\"id\")\n"
+                      "    ON DELETE CASCADE");
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"version\" = 17, \"migration\" = TRUE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+    else
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"migration\" = FALSE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  static const schema_catalog_migrate_entry
+  migrate_schema_entry_17_ (
+    id_pgsql,
+    "",
+    17ULL,
+    &migrate_schema_17);
 }
 
 #include <odb/post.hxx>

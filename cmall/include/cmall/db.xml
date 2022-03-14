@@ -1,4 +1,25 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
+  <changeset version="17">
+    <add-table name="cmall_order_kuaidi" kind="container">
+      <column name="object_id" type="BIGINT" null="false"/>
+      <column name="kuaidihao" type="BIGINT" null="false"/>
+      <column name="value_kuaidihao" type="TEXT" null="false"/>
+      <column name="value_kuaidigongsi" type="TEXT" null="false"/>
+      <foreign-key name="object_id_fk" on-delete="CASCADE">
+        <column name="object_id"/>
+        <references table="cmall_order">
+          <column name="id"/>
+        </references>
+      </foreign-key>
+      <index name="cmall_order_kuaidi_object_id_i">
+        <column name="object_id"/>
+      </index>
+      <index name="cmall_order_kuaidi_kuaidihao_i">
+        <column name="kuaidihao"/>
+      </index>
+    </add-table>
+  </changeset>
+
   <changeset version="16">
     <alter-table name="cmall_apply_for_mechant">
       <add-column name="approved" type="BOOLEAN" null="false" default="FALSE"/>
