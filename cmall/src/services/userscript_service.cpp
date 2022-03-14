@@ -80,8 +80,12 @@ namespace services
 
 #endif
 			child cp(io, search_path("node"), boost::process::args(script_arguments)
-				, std_in < nodejs_input, std_out > nodejs_output, start_dir("/tmp")
+				, std_in < nodejs_input, std_out > nodejs_output
+#ifdef _WIN32
+				, start_dir("C:\\")
+#endif
 #ifdef __linux
+				, start_dir("/tmp")
 				, boost::process::extend::on_exec_setup=[sk_parent=sk_pair[0], sk_child = sk_pair[1]](auto & exec) { ::close(sk_parent); sandbox::no_fd_leak(); sandbox::install_seccomp(sk_child); sandbox::drop_root(); }
 #endif
 			);
