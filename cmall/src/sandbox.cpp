@@ -1,5 +1,4 @@
 
-#include "sandbox.hpp"
 #include <boost/asio.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <iostream>
@@ -10,12 +9,14 @@
 
 #ifdef __linux__
 
+#include "sandbox.hpp"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/uio.h>
 #include <sys/socket.h>
 #include <unistd.h>
-
+#include <sys/mman.h>
 #include <seccomp.h>
 
 static int send_fd(int sock, int fd)
@@ -246,26 +247,38 @@ void sandbox::drop_root()
 
 void sandbox::no_fd_leak() { }
 
-boost::asio::awaitable<void> sandbox::seccomp_supervisor(int seccomp_notify_fd_)
+sandbox::supervisor::~supervisor()
+{
+
+}
+
+sandbox::supervisor::supervisor(boost::asio::posix::stream_descriptor&& fd, sandboxVFS vfs)
+	: seccomp_notify_fd(std::move(fd))
+	, vfs(vfs)
+{
+
+}
+
+boost::asio::awaitable<void> sandbox::supervisor::start_supervisor()
 {
 	auto this_executor = co_await boost::asio::this_coro::executor;
-	boost::asio::posix::stream_descriptor sec_notify_fd{ this_executor, seccomp_notify_fd_ };
-
 	boost::asio::cancellation_state cs = co_await boost::asio::this_coro::cancellation_state;
 
 	if (cs.slot().is_connected())
 	{
-		cs.slot().assign([&sec_notify_fd](boost::asio::cancellation_type_t) { sec_notify_fd.close(); });
+		cs.slot().assign([this](boost::asio::cancellation_type_t) { seccomp_notify_fd.close(); });
 	}
 
 	char path[8192];
 	char openat_param1[8193];
 
+	const long page_size = sysconf(_SC_PAGE_SIZE);
+
 	while (true)
 	{
-		co_await sec_notify_fd.async_wait(boost::asio::posix::stream_descriptor::wait_read, boost::asio::use_awaitable);
+		co_await seccomp_notify_fd.async_wait(boost::asio::posix::stream_descriptor::wait_read, boost::asio::use_awaitable);
 		pollfd onefd;
-		onefd.fd	 = seccomp_notify_fd_;
+		onefd.fd	 = seccomp_notify_fd.native_handle();
 		onefd.events = POLL_IN;
 
 		while (::poll(&onefd, 1, 1) == 1)
@@ -276,7 +289,7 @@ boost::asio::awaitable<void> sandbox::seccomp_supervisor(int seccomp_notify_fd_)
 			seccomp_notify_alloc(&req, &resp);
 
 			scoped_exit cleanup([=]() { ::seccomp_notify_free(req, resp); });
-			auto ret = seccomp_notify_receive(seccomp_notify_fd_, req);
+			auto ret = seccomp_notify_receive(seccomp_notify_fd.native_handle(), req);
 			if (ret != 0)
 			{
 				int e = errno;
@@ -294,7 +307,7 @@ boost::asio::awaitable<void> sandbox::seccomp_supervisor(int seccomp_notify_fd_)
 				{
 					// req->data.args[1] 是待打开的文件名. 但是, 这个指针是在待打开的进程里的, 所以
 					// 要使用跨进程 memcpy
-					if (seccomp_notify_id_valid(seccomp_notify_fd_, req->id) !=0)
+					if (seccomp_notify_id_valid(seccomp_notify_fd.native_handle(), req->id) !=0)
 						co_return;
 
 					struct iovec this_readbuf = { openat_param1, sizeof (openat_param1) - 1 };
@@ -304,36 +317,34 @@ boost::asio::awaitable<void> sandbox::seccomp_supervisor(int seccomp_notify_fd_)
 					std::string node_want_open = openat_param1;
 
 					int dirfd = static_cast<int>(req->data.args[0]);
+					long open_flag = req->data.args[2];
 
 					do
-					{
-						if (dirfd == AT_FDCWD && (req->data.args[2] == (O_RDONLY | O_CLOEXEC)))
+					{		
+						if ( (dirfd == AT_FDCWD && (open_flag == (O_RDONLY | O_CLOEXEC)))
+							&& (
+							node_want_open.starts_with("/usr")
+							|| node_want_open.starts_with("/lib")
+							|| node_want_open.starts_with("/etc/ld")
+							|| node_want_open.starts_with("/run")
+							|| node_want_open.starts_with("/etc/resolv.conf")
+							|| node_want_open.starts_with("/etc/localtime")
+							|| node_want_open.starts_with("/etc/ssl")
+							|| node_want_open.starts_with("/etc/host.conf")
+							|| node_want_open.starts_with("/etc/hosts")
+							|| node_want_open.starts_with("/sys/fs/cgroup/memory/")
+							|| node_want_open.starts_with("/proc/meminfo")
+							|| node_want_open.starts_with("/etc/nsswitch.conf")
+							|| node_want_open.starts_with("/etc/gai.conf")
+							|| node_want_open.starts_with("/dev/")))
 						{
-							if (node_want_open.starts_with("/usr")
-								|| node_want_open.starts_with("/lib")
-								|| node_want_open.starts_with("/etc/ld")
-								|| node_want_open.starts_with("/run")
-								|| node_want_open.starts_with("/etc/resolv.conf")
-								|| node_want_open.starts_with("/etc/localtime")
-								|| node_want_open.starts_with("/etc/ssl")
-								|| node_want_open.starts_with("/etc/host.conf")
-								|| node_want_open.starts_with("/etc/hosts")
-								|| node_want_open.starts_with("/sys/fs/cgroup/memory/")
-								|| node_want_open.starts_with("/proc/meminfo")
-								|| node_want_open.starts_with("/etc/nsswitch.conf")
-								|| node_want_open.starts_with("/etc/gai.conf")
-								|| node_want_open.starts_with("/dev/"))
-							{
-								LOG_DBG << "[seccomp] node wants to open file " << openat_param1 << " allowed";
-								resp->error = 0;
-								resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
-								break;
-							}
+							LOG_DBG << "[seccomp] node wants to open file " << openat_param1 << " allowed";
+							resp->error = 0;
+							resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
+							break;
 						}
-						else if ((dirfd == AT_FDCWD) && (req->data.args[2] == (O_RDONLY)))
-						{
-							if (true
-								|| node_want_open.starts_with("/etc/resolv.conf")
+						if ( ((dirfd == AT_FDCWD) && (open_flag == (O_RDONLY))) && (
+								 node_want_open.starts_with("/etc/resolv.conf")
 								|| node_want_open.starts_with("/etc/localtime")
 								|| node_want_open.starts_with("/etc/ssl")
 								|| node_want_open.starts_with("/etc/hosts")
@@ -341,16 +352,15 @@ boost::asio::awaitable<void> sandbox::seccomp_supervisor(int seccomp_notify_fd_)
 								|| node_want_open.starts_with("/etc/host.conf")
 								|| node_want_open.starts_with("/etc/nsswitch.conf")
 								|| node_want_open.starts_with("/etc/gai.conf")
-								|| node_want_open.starts_with("/dev/urandom"))
-							{
-								LOG_DBG << "[seccomp] node wants to open file O_RDONLY " << openat_param1 << " allowed";
-								resp->error = 0;
-								resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
-								break;
-							}
+								|| node_want_open.starts_with("/dev/urandom")))
+						{
+							LOG_DBG << "[seccomp] node wants to open file O_RDONLY " << openat_param1 << " allowed";
+							resp->error = 0;
+							resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
+							break;
 						}
-
-						if ((memcmp(openat_param1, "/dev/", 6) == 0) && (dirfd == AT_FDCWD))
+						
+						if (node_want_open.starts_with("/dev/") && (dirfd == AT_FDCWD))
 						{
 							LOG_DBG << "[seccomp] node wants to open dir /dev/ allowed";
 							resp->error = 0;
@@ -358,8 +368,7 @@ boost::asio::awaitable<void> sandbox::seccomp_supervisor(int seccomp_notify_fd_)
 							break;
 						}
 
-
-						if ((memcmp(openat_param1, "/dev/pts", 8) == 0) && (dirfd == AT_FDCWD))
+						if (node_want_open.starts_with("/dev/pts/") && (dirfd == AT_FDCWD))
 						{
 							LOG_DBG << "[seccomp] node wants to open dir /dev/pts/? allowed";
 							resp->error = 0;
@@ -367,7 +376,31 @@ boost::asio::awaitable<void> sandbox::seccomp_supervisor(int seccomp_notify_fd_)
 							break;
 						}
 
-						LOG_ERR << "[seccomp] node wants to open file " << openat_param1 << " but open denied";
+						if (dirfd == AT_FDCWD && vfs.contains(node_want_open))
+						{
+							auto file_content = vfs.at(node_want_open);
+				
+							struct seccomp_notif_addfd addfd;
+							addfd.id = req->id;
+							addfd.srcfd = memfd_create("/thescript.js", 0);
+							auto writed_bytes = write(addfd.srcfd, file_content.data(), file_content.size());
+							lseek(addfd.srcfd, 0, SEEK_SET);
+							addfd.newfd_flags = (open_flag & O_CLOEXEC )? O_CLOEXEC : 0;
+							addfd.newfd = 0;
+							addfd.flags = SECCOMP_ADDFD_FLAG_SEND;
+
+							resp->val = ioctl(seccomp_notify_fd.native_handle(), SECCOMP_IOCTL_NOTIF_ADDFD, &addfd);
+							resp->error = 0;
+							resp->flags = 0;
+							close(addfd.srcfd);
+
+							LOG_ERR << "[seccomp] node wants to open file " << openat_param1 << " satified with VFS";
+							break;;
+
+						}
+
+						if (resp->error != 0)
+							LOG_ERR << "[seccomp] node wants to open file " << openat_param1 << " but open denied";
 					}
 					while(false);
 				}break;
@@ -393,13 +426,11 @@ boost::asio::awaitable<void> sandbox::seccomp_supervisor(int seccomp_notify_fd_)
 							resp->error = 0;
 							resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
 							break;
-
 						}
 						// 拒绝 af_local
 						break;
 					}
-
-					if ((raw_socket[0] == AF_INET) && (addrlen == sizeof(sockaddr_in)))
+					else if ((raw_socket[0] == AF_INET) && (addrlen == sizeof(sockaddr_in)))
 					{
 						sockaddr_in * addr = reinterpret_cast<sockaddr_in *>(raw_socket.data());
 						auto destip = boost::asio::ip::make_address_v4(*
@@ -448,7 +479,10 @@ boost::asio::awaitable<void> sandbox::seccomp_supervisor(int seccomp_notify_fd_)
 					break;
 			}
 
-			ret = seccomp_notify_respond(seccomp_notify_fd_, resp);
+			if (resp->val!=0)
+				continue;
+
+			ret = seccomp_notify_respond(seccomp_notify_fd.native_handle(), resp);
 			if (ret != 0)
 				co_return;
 		}

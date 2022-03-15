@@ -62,65 +62,77 @@ namespace services
 		boost::asio::awaitable<std::string> run_script(std::string_view script_content, std::vector<std::string> script_arguments)
 		{
 			using namespace boost::process;
+			using boost::asio::local::stream_protocol;
+
+			sandbox::sandboxVFS vfs;
 
 			async_pipe nodejs_output(io);
 			async_pipe nodejs_input(io);
 
 			std::vector<std::string> node_args;
 
-			node_args.push_back("-");
+#ifdef __linux
+			stream_protocol::socket fd_recive_socket(io);
+			stream_protocol::socket fd_sending_socket(io);
+			boost::asio::local::connect_pair(fd_recive_socket, fd_sending_socket);
+
+			// 为了不 hook access/fstat 这些调用， 就用系统已经存在的，也必然存在的文件名.			
+			vfs.insert({"/proc/cmdline", script_content});
+			node_args.push_back("/proc/cmdline");
 
 			std::copy(script_arguments.begin(), script_arguments.end(), std::back_inserter(node_args));
 
-#ifdef __linux
-			int sk_pair[2] = {-1, -1};
-			if (socketpair(PF_LOCAL, SOCK_SEQPACKET|SOCK_CLOEXEC, 0, sk_pair) < 0)
-				throw boost::system::system_error(cmall::error::internal_server_error);
-			scoped_exit sk_pair_cleanup([=]()
-			{
-				::close(sk_pair[0]);
-				::close(sk_pair[1]);
-			});
-
+#elif defined(_WIN32)
+			node_args.push_back("-");
+			std::copy(script_arguments.begin(), script_arguments.end(), std::back_inserter(node_args));
 #endif
 			child cp(io, search_path("node"), boost::process::args(node_args)
-				, std_in < nodejs_input, std_out > nodejs_output
+				, std_out > nodejs_output, std_in < nodejs_input
 #ifdef _WIN32
-				, start_dir("C:\\")
+				, start_dir("C:\\") 
 #endif
 #ifdef __linux
-				, start_dir("/tmp")
-				, boost::process::extend::on_exec_setup=[sk_parent=sk_pair[0], sk_child = sk_pair[1]](auto & exec) { ::close(sk_parent); sandbox::no_fd_leak(); sandbox::install_seccomp(sk_child); sandbox::drop_root(); }
+				, start_dir("/tmp"),
+				boost::process::extend::on_exec_setup=[&fd_recive_socket, &fd_sending_socket](auto & exec)
+				{
+					fd_recive_socket.close();
+					sandbox::no_fd_leak();
+					sandbox::install_seccomp(fd_sending_socket.release());
+					sandbox::drop_root(); 
+				}
 #endif
 			);
 
 #ifdef __linux__
-			::close(sk_pair[1]);
-			int sec_comp_notify_fd = recv_fd(sk_pair[0]);
-			::close(sk_pair[0]);
-			sk_pair_cleanup.dismiss();
+			fd_sending_socket.close();
+			int sec_comp_notify_fd_ = recv_fd(fd_recive_socket.native_handle());
+			fd_recive_socket.close();
+
+			sandbox::supervisor supervisor(boost::asio::posix::stream_descriptor(co_await boost::asio::this_coro::executor, sec_comp_notify_fd_), vfs);
+
 			auto seccomp_supervisor_promise = boost::asio::co_spawn(co_await boost::asio::this_coro::executor,
-				sandbox::seccomp_supervisor(sec_comp_notify_fd), boost::asio::experimental::use_promise);
+				supervisor.start_supervisor(), boost::asio::experimental::use_promise);
 #endif
 			std::string out;
 			auto d_buffer = boost::asio::dynamic_buffer(out);
 
 			auto read_promis = boost::asio::async_read_until(nodejs_output, d_buffer, '\n', boost::asio::experimental::use_promise);
 
-			std::string drop_privalage = "try{chroot('/');process.setgid(65535); process.setuid(65535);}catch(e){}\n";
-
-			//co_await boost::asio::async_write(nodejs_input, boost::asio::buffer(drop_privalage), boost::asio::use_awaitable);
+#ifdef _WIN32
 			co_await boost::asio::async_write(nodejs_input, boost::asio::buffer(script_content), boost::asio::use_awaitable);
+#endif
 			nodejs_input.close();
 
 			boost::asio::basic_waitable_timer<time_clock::steady_clock>  t(co_await boost::asio::this_coro::executor);
+#ifdef _DEBUG
+			t.expires_from_now(std::chrono::seconds(200));
+#else
 			t.expires_from_now(std::chrono::seconds(20));
-
+#endif
 			auto out_size = co_await (
 				read_promis.async_wait(boost::asio::use_awaitable) || t.async_wait(boost::asio::use_awaitable)
 			);
 			out.resize(std::get<0>(out_size));
-
 			std::error_code stdec;
 			cp.wait_for(std::chrono::milliseconds(12), stdec);
 			if (cp.running())
