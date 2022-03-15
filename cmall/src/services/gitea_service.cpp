@@ -13,7 +13,6 @@
 
 #include <boost/asio/experimental/promise.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
-#include <unistd.h>
 
 using namespace boost::asio::experimental::awaitable_operators;
 
@@ -70,11 +69,12 @@ static boost::asio::awaitable<int> async_wait_child(boost::process::child& child
 
 #ifdef _WIN32
 
+#include <boost/asio/windows/object_handle.hpp>
 
 static boost::asio::awaitable<int> async_wait_child(boost::process::child& child)
 {
 	auto executor = co_await boost::asio::this_coro::executor;
-	windows::object_handle pidfd(executor, child.id());
+	boost::asio::windows::object_handle pidfd(executor, child.native_handle());
 
 	co_await pidfd.async_wait(boost::asio::use_awaitable);
 
