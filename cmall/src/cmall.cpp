@@ -37,6 +37,11 @@
 #pragma clang diagnostic pop
 #endif
 
+#ifdef _MSC_VER
+#	pragma warning(push)
+#	pragma warning(disable: 4244 4459)
+#endif // _MSC_VER
+
 #include "cmall/http_static_file_handle.hpp"
 #include "cmall/js_util.hpp"
 #include "magic_enum.hpp"
