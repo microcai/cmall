@@ -263,6 +263,7 @@ namespace cmall {
 
 		boost::asio::awaitable<int> render_git_repo_files(size_t connection_id, std::string merchant, std::string path_in_repo, boost::beast::tcp_stream& client, boost::beast::http::request<boost::beast::http::string_body>);
 		boost::asio::awaitable<int> render_goods_detail_content(size_t connection_id, std::string merchant, std::string goods_id, boost::beast::tcp_stream& client, int httpver, bool keepalive);
+		boost::asio::awaitable<int> invoke_user_callback_js(size_t connection_id, std::string merchant, std::string path, boost::beast::tcp_stream& client, int httpver, bool keepalive);
 		boost::asio::awaitable<void> do_ws_read(size_t connection_id, client_connection_ptr);
 		boost::asio::awaitable<void> do_ws_write(size_t connection_id, client_connection_ptr);
 

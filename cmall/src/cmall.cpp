@@ -263,6 +263,24 @@ namespace cmall
 		co_return 200;
 	}
 
+	boost::asio::awaitable<int> cmall_service::invoke_user_callback_js(size_t connection_id, std::string merchant, std::string path, boost::beast::tcp_stream& client, int httpver, bool keepalive)
+	{
+		auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
+		boost::system::error_code ec;
+		auto merchant_repo_ptr = get_merchant_git_repo(merchant_id, ec);
+
+		if (ec)
+			co_return 404;
+
+		std::string callback_js = co_await merchant_repo_ptr->get_file_content("scripts/callback.js", ec);
+		if (ec)
+			co_return 404;
+
+		// TODO 然后运行 callback.js
+		// this->script_runner.run_script(scallback_js, {});
+		co_return 401;
+	}
+
 	boost::asio::awaitable<void> cmall_service::do_ws_read(size_t connection_id, client_connection_ptr connection_ptr)
 	{
 		while (!m_abort)
@@ -1590,17 +1608,17 @@ namespace cmall
 					}
 					continue;
 				}
-				// 这个 /scriptcallback/${merchant}/${goods_id} 获取 富文本的商品描述.
+				// 这个 /scriptcallback/${merchant}/? 的调用, 都传给 scripts/callback.js.
 				else if ((req.method() == boost::beast::http::verb::post) && (target.starts_with("/scriptcallback")))
 				{
 					boost::match_results<std::string_view::const_iterator> w;
-					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/scriptcallback/([^/]+)/([^/]+)")))
+					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/scriptcallback/([0-9]+)/(.+)")))
 					{
 						std::string merhcant = w[1].str();
-						std::string goods_id = w[2].str();
+						std::string remains = w[2].str();
 
-						int status_code = co_await render_goods_detail_content(
-							connection_id, merhcant, goods_id, client_ptr->tcp_stream, req.version(), req.keep_alive());
+						int status_code = co_await invoke_user_callback_js(
+							connection_id, merhcant, remains, client_ptr->tcp_stream, req.version(), req.keep_alive());
 
 						if (status_code != 200)
 						{
