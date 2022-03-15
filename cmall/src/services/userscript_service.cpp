@@ -62,9 +62,6 @@ namespace services
 		boost::asio::awaitable<std::string> run_script(std::string_view script_content, std::vector<std::string> script_arguments)
 		{
 			using namespace boost::process;
-			using boost::asio::local::stream_protocol;
-
-			sandbox::sandboxVFS vfs;
 
 			async_pipe nodejs_output(io);
 			async_pipe nodejs_input(io);
@@ -72,8 +69,11 @@ namespace services
 			std::vector<std::string> node_args;
 
 #ifdef __linux
-			stream_protocol::socket fd_recive_socket(io);
-			stream_protocol::socket fd_sending_socket(io);
+			sandbox::sandboxVFS vfs;
+
+			using boost::asio::local::datagram_protocol;
+			datagram_protocol::socket fd_recive_socket(io);
+			datagram_protocol::socket fd_sending_socket(io);
 			boost::asio::local::connect_pair(fd_recive_socket, fd_sending_socket);
 
 			// 为了不 hook access/fstat 这些调用， 就用系统已经存在的，也必然存在的文件名.			
