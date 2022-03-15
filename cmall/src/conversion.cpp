@@ -108,6 +108,7 @@ inline namespace conversion
 	void tag_invoke(const value_from_tag&, value& jv, const cmall_apply_for_mechant& a)
 	{
 		jv = {
+			{ "apply_id", a.id_ },
 			{ "applicant_user_id", a.applicant_->uid_ },
 			{ "created_at", to_string(a.created_at_) },
 		};
