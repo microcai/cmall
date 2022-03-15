@@ -113,7 +113,6 @@ CREATE TABLE "cmall_merchant" (
   "name" TEXT NOT NULL,
   "state" SMALLINT NOT NULL,
   "desc" TEXT NULL,
-  "api_token" TEXT NULL,
   "gitea_password" TEXT NULL,
   "created_at" TIMESTAMP NULL,
   "updated_at" TIMESTAMP NULL,
@@ -239,7 +238,7 @@ CREATE INDEX "cmall_apply_for_mechant_applicant_i"
 
 INSERT INTO "schema_version" (
   "name", "version", "migration")
-  SELECT '', 18, FALSE
+  SELECT '', 19, FALSE
   WHERE NOT EXISTS (
     SELECT 1 FROM "schema_version" WHERE "name" = '');
 

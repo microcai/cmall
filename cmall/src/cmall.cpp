@@ -459,19 +459,29 @@ namespace cmall
 				}
 				else
 				{
-					cmall_merchant merchant;
-					if (co_await m_database.async_load<cmall_merchant>(odb::query<cmall_merchant>::api_token == api_token, merchant))
+					cmall_apptoken appid_info;
+					if (co_await m_database.async_load<cmall_apptoken>(odb::query<cmall_apptoken>::apptoken == api_token, appid_info))
 					{
+						this_client.session_info = std::make_shared<services::client_session>();
 						cmall_user db_user;
-						if (co_await m_database.async_load<cmall_user>(merchant.uid_, db_user))
+						if (co_await m_database.async_load<cmall_user>(appid_info.uid_, db_user))
 						{
-							this_client.session_info = std::make_shared<services::client_session>();
-							this_client.session_info->isMerchant = true;
 							this_client.session_info->user_info = db_user;
-							this_client.session_info->merchant_info = merchant;
-							reply_message["result"] = true;
 							break;
 						}
+						cmall_merchant db_merchant;
+						if (co_await m_database.async_load<cmall_merchant>(appid_info.uid_, db_merchant))
+						{
+							this_client.session_info->isMerchant = true;
+							this_client.session_info->merchant_info = db_merchant;
+						}
+						administrators db_admin;
+						if (co_await m_database.async_load<administrators>(appid_info.uid_, db_admin))
+						{
+							this_client.session_info->isAdmin = true;
+							this_client.session_info->admin_info = db_admin;
+						}
+						reply_message["result"] = true;
 					}
 
 					// TODO apitoken 机制不需要 session, 认证后, 直接通过

@@ -40,7 +40,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(8, 18, open)
+#pragma db model version(8, 19, open)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -161,8 +161,6 @@ struct cmall_merchant
 	uint8_t state_{ 0 }; // 状态, 正常/停用/封禁.
 
 	odb::nullable<std::string> desc_;
-
-	odb::nullable<std::string> api_token_;
 
 	odb::nullable<std::string> gitea_password;
 
