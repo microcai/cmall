@@ -21,7 +21,6 @@
 #include "cmall/misc.hpp"
 #include "httpd/acceptor.hpp"
 #include "utils/async_connect.hpp"
-#include "utils/scoped_exit.hpp"
 #include "utils/url_parser.hpp"
 
 #include "cmall/cmall.hpp"
@@ -263,7 +262,8 @@ namespace cmall
 		co_return 200;
 	}
 
-	boost::asio::awaitable<int> cmall_service::invoke_user_callback_js(size_t connection_id, std::string merchant, std::string path, boost::beast::tcp_stream& client, int httpver, bool keepalive)
+	boost::asio::awaitable<int> cmall_service::invoke_user_callback_js(size_t connection_id, std::string merchant, std::string path,
+		boost::beast::tcp_stream& client, std::string_view body, int httpver, bool keepalive)
 	{
 		auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
 		boost::system::error_code ec;
@@ -275,10 +275,23 @@ namespace cmall
 		std::string callback_js = co_await merchant_repo_ptr->get_file_content("scripts/callback.js", ec);
 		if (ec)
 			co_return 404;
+		std::map<std::string, std::string> script_env;
+
+		script_env.insert({"_PATH", path});
 
 		// TODO 然后运行 callback.js
-		// this->script_runner.run_script(scallback_js, {});
-		co_return 401;
+		std::string response_body = co_await script_runner.run_script(callback_js,
+			body, script_env, {});
+
+		ec = co_await httpd::send_string_response_body(client,
+			response_body,
+			httpd::make_http_last_modified(std::time(0) + 60),
+			"text/plain",
+			httpver,
+			keepalive);
+		if (ec)
+			throw boost::system::system_error(ec);
+		co_return 200;
 	}
 
 	boost::asio::awaitable<void> cmall_service::do_ws_read(size_t connection_id, client_connection_ptr connection_ptr)
@@ -1501,9 +1514,13 @@ namespace cmall
 		do
 		{
 			boost::beast::flat_buffer buffer;
-			request req;
+			boost::beast::http::request_parser<boost::beast::http::string_body> parser_;
 
-			co_await boost::beast::http::async_read(client_ptr->tcp_stream, buffer, req, boost::asio::use_awaitable);
+			parser_.body_limit(2000);
+
+			co_await boost::beast::http::async_read(client_ptr->tcp_stream, buffer, parser_, boost::asio::use_awaitable);
+			request req = parser_.release();
+
 			std::string_view target = req.target();
 
 			LOG_DBG << "coro: handle_accepted_client: [" << connection_id << "], got request on " << target;
@@ -1617,8 +1634,8 @@ namespace cmall
 						std::string merhcant = w[1].str();
 						std::string remains = w[2].str();
 
-						int status_code = co_await invoke_user_callback_js(
-							connection_id, merhcant, remains, client_ptr->tcp_stream, req.version(), req.keep_alive());
+						int status_code = co_await invoke_user_callback_js(connection_id, merhcant, remains,
+							 client_ptr->tcp_stream, req.body(), req.version(), req.keep_alive());
 
 						if (status_code != 200)
 						{

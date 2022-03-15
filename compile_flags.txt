@@ -4,6 +4,7 @@
 -DLIBODB_BOOST_STATIC_LIB
 -DLIBODB_PGSQL_STATIC_LIB
 -DLIBODB_BUILD2
+-D_DEBUG
 -Iodb_generated
 -Icmall/include
 -Iincubator/httpd/include

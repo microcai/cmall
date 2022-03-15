@@ -42,8 +42,6 @@
 
 #include <boost/date_time/c_local_time_adjustor.hpp>
 
-#include "utils/scoped_exit.hpp"
-
 #include "cmall/internal.hpp"
 
 #ifdef _MSC_VER

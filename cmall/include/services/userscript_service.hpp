@@ -2,6 +2,8 @@
 #pragma once
 
 #include <string>
+#include <vector>
+#include <map>
 #include <boost/asio.hpp>
 
 namespace services
@@ -13,9 +15,15 @@ namespace services
 		userscript(boost::asio::io_context& io);
 		~userscript();
 
-		// get userscript url.
 		boost::asio::awaitable<std::string> run_script(std::string_view script_file_content, std::vector<std::string> script_arguments);
-		// query userscript success.
+
+		// http_request_body 作为 stdin 输入. http header 在 scriptenv 里
+		// get/post 在 script_arguments 上 --metohd POST
+		boost::asio::awaitable<std::string> run_script(
+			std::string_view script_file_content,
+			std::string_view http_request_body,
+			std::map<std::string, std::string> scriptenv,
+			std::vector<std::string> script_arguments);
 
 	private:
 		const userscript_impl& impl() const;
