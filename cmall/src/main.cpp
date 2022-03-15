@@ -192,7 +192,7 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 		("db_port", po::value<unsigned short>(&db_port)->default_value(5432), "Database port.")
 		("db_user", po::value<std::string>(&db_user)->default_value("postgres"), "Database user.")
 		("db_passwd", po::value<std::string>(&db_passwd)->default_value("postgres"), "Database password.")
-		("template_dir", po::value<std::string>(&template_dir)->default_value(""), "gitea template dir")
+		("template_dir", po::value<std::string>(&template_dir)->default_value("/var/lib/gitea/example/shop.git"), "gitea template dir")
 		;
 
 	try
