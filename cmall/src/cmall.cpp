@@ -27,6 +27,7 @@
 #include "cmall/cmall.hpp"
 #include "cmall/database.hpp"
 #include "cmall/db.hpp"
+#include <odb/database.hxx>
 
 #ifdef __clang__
 #pragma clang diagnostic push
@@ -1267,33 +1268,43 @@ namespace cmall
 				if (!apply_id.has_value())
 					throw boost::system::system_error(cmall::error::invalid_params);
 
-				// TODO: 以下两个动作应在一个事务中
 				// 更新申请状态.
 				cmall_apply_for_mechant apply;
-				bool found = co_await m_database.async_load(apply_id.value(), apply);
-				if (!found)
-					throw boost::system::system_error(cmall::error::merchant_vanished);
-
-				apply.approved_ = true;
-				co_await m_database.async_update(apply);
-
-				// 创建商户.
-				auto gitea_password = gen_password();
 				cmall_merchant m;
-				m.uid_ = apply.applicant_->uid_;
-				m.name_ = apply.applicant_->name_;
-				m.state_ = to_underlying(merchant_state_t::normal);
-				m.gitea_password = gitea_password;
-				co_await m_database.async_add(m);
 
-				co_await boost::asio::co_spawn(background_task_thread_pool, [this, m, gitea_password]() mutable -> boost::asio::awaitable<void>
+				bool succeed = co_await m_database.async_transacton([&](const cmall_database::odb_transaction_ptr& tx) mutable -> boost::asio::awaitable<bool> {
+					auto& db = tx->database();
+
+					bool found = db.find(apply_id.value(), apply);
+					if (!found)
+						co_return false;
+					
+					apply.approved_ = true;
+					db.update(apply);
+
+					// 创建商户.
+					auto gitea_password = gen_password();
+					m.uid_ = apply.applicant_->uid_;
+					m.name_ = apply.applicant_->name_;
+					m.state_ = to_underlying(merchant_state_t::normal);
+					m.gitea_password = gitea_password;
+
+					db.persist(m);
+
+					co_return true;
+				});
+
+				if (succeed)
 				{
-					// 初始化仓库.
-					// TODO: 设置正确地址
-					std::string gitea_template_loaction = "/var/lib/gitea/template/product_template";
-					co_await gitea_service.init_user(m.uid_, gitea_password, gitea_template_loaction);
-					co_await load_merchant_git(m);
-				}, boost::asio::use_awaitable);
+					co_await boost::asio::co_spawn(background_task_thread_pool, [this, m]() mutable -> boost::asio::awaitable<void>
+					{
+						// 初始化仓库.
+						// TODO: 设置正确地址
+						std::string gitea_template_loaction = "/var/lib/gitea/template/product_template";
+						co_await gitea_service.init_user(m.uid_, m.gitea_password.get(), gitea_template_loaction);
+						co_await load_merchant_git(m);
+					}, boost::asio::use_awaitable);
+				}
 				reply_message["result"] = true;
 			}
 			break;

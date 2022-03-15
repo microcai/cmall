@@ -9,6 +9,7 @@
 
 #include <cstdint>
 #include <exception>
+#include <memory>
 #include <odb/database.hxx>
 #include <odb/schema-catalog.hxx>
 #include <odb/transaction.hxx>
@@ -74,6 +75,24 @@ namespace cmall
 
 	public:
 		void shutdown();
+
+
+		using odb_transaction_ptr = std::shared_ptr<odb::transaction>;
+
+		template <typename Op>
+		boost::asio::awaitable<bool> async_transacton(Op&& op)
+		{
+			return boost::asio::co_spawn(thread_pool, [this, op = std::forward<Op>(op)]() mutable -> boost::asio::awaitable<bool>
+			{
+				auto tx = std::make_shared<odb::transaction>(m_db->begin());
+				bool success = co_await op(tx);
+				if (success)
+					tx->commit();
+				else
+					tx->rollback();
+				co_return success;
+			}, boost::asio::use_awaitable);
+		}
 
 		template <typename T>
 		bool get(std::uint64_t id, T& ret)
@@ -312,6 +331,7 @@ namespace cmall
 				co_return get<T>(query, ret);
 			}, boost::asio::use_awaitable);
 		}
+
 		template <typename T>
 		boost::asio::awaitable<bool> async_load(const odb::query<T>& query, T& ret)
 		{
