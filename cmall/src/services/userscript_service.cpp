@@ -215,11 +215,15 @@ namespace services
 			std::string out;
 			auto d_buffer = boost::asio::dynamic_buffer(out);
 
-			auto read_promis = boost::asio::async_read_until(nodejs_output, d_buffer, '\n', boost::asio::experimental::use_promise);
+			nodejs_output.native_source();
 
-			auto stdin_feader = boost::asio::co_spawn(co_await boost::asio::this_coro::executor, [&]()-> boost::asio::awaitable<void>{
-				co_await boost::asio::async_write(nodejs_input, boost::asio::buffer(http_request_body), boost::asio::use_awaitable);
-				nodejs_input.close();
+			auto read_promis = boost::asio::async_read(nodejs_output, d_buffer,
+				boost::asio::transfer_all(),
+				boost::asio::experimental::use_promise);
+
+			auto stdin_feader = boost::asio::co_spawn(io, [&]()-> boost::asio::awaitable<void>{
+				co_await boost::asio::async_write(nodejs_input, boost::asio::buffer(http_request_body.data(), http_request_body.length()), boost::asio::use_awaitable);
+				nodejs_input.async_close();
 			}, boost::asio::experimental::use_promise);
 
 			boost::asio::basic_waitable_timer<time_clock::steady_clock>  t(co_await boost::asio::this_coro::executor);
