@@ -85,16 +85,16 @@ static boost::asio::awaitable<int> async_wait_child(boost::process::child& child
 
 namespace services
 {
+	static std::string gen_repo_user(std::uint64_t uid)
+	{
+		return std::format("m{}", uid);
+	}
+
 	struct gitea_impl
 	{
 		gitea_impl(boost::asio::io_context& io)
 			: io(io)
 		{}
-
-		std::string gen_repo_user(std::uint64_t uid)
-		{
-			return std::format("m{}", uid);
-		}
 
 		boost::asio::awaitable<bool> call_gitea_cli(const std::vector<std::string>& gitea_args)
 		{
