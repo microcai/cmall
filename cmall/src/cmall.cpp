@@ -1535,7 +1535,7 @@ namespace cmall
 					continue;
 				}
 
-				if (target.starts_with("/repos"))
+				else if (target.starts_with("/repos"))
 				{
 					boost::match_results<std::string_view::const_iterator> w;
 					if (boost::regex_match(
@@ -1560,7 +1560,7 @@ namespace cmall
 				}
 
 				// 这个 /goods/${merchant}/${goods_id} 获取 富文本的商品描述.
-				if (target.starts_with("/goods"))
+				else if (target.starts_with("/goods"))
 				{
 					boost::match_results<std::string_view::const_iterator> w;
 					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/goods/([^/]+)/([^/]+)")))
@@ -1582,6 +1582,30 @@ namespace cmall
 					}
 					continue;
 				}
+				// 这个 /scriptcallback/${merchant}/${goods_id} 获取 富文本的商品描述.
+				else if ((req.method() == boost::beast::http::verb::post) && (target.starts_with("/scriptcallback")))
+				{
+					boost::match_results<std::string_view::const_iterator> w;
+					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/scriptcallback/([^/]+)/([^/]+)")))
+					{
+						std::string merhcant = w[1].str();
+						std::string goods_id = w[2].str();
+
+						int status_code = co_await render_goods_detail_content(
+							connection_id, merhcant, goods_id, client_ptr->tcp_stream, req.version(), req.keep_alive());
+
+						if (status_code != 200)
+						{
+							co_await http_simple_error_page("ERRORED", status_code, req.version());
+						}
+					}
+					else
+					{
+						co_await http_simple_error_page("access denied", 401, req.version());
+					}
+					continue;
+				}
+
 
 				// 这里使用 zip 里打包的 angular 页面. 对不存在的地址其实直接替代性的返回 index.html 因此此
 				// api 绝对不返回 400. 如果解压内部 zip 发生错误, 会放回 500 错误代码.
