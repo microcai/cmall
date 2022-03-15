@@ -1,4 +1,17 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
+  <changeset version="18">
+    <add-table name="cmall_apptoken" kind="object">
+      <column name="apptoken" type="TEXT" null="false"/>
+      <column name="uid" type="BIGINT" null="false"/>
+      <primary-key>
+        <column name="apptoken"/>
+      </primary-key>
+      <index name="cmall_apptoken_uid_i">
+        <column name="uid"/>
+      </index>
+    </add-table>
+  </changeset>
+
   <changeset version="17">
     <add-table name="cmall_order_kuaidi" kind="container">
       <column name="object_id" type="BIGINT" null="false"/>

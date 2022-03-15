@@ -40,7 +40,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(8, 17, open)
+#pragma db model version(8, 18, open)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -136,6 +136,16 @@ enum class merchant_state_t
 	normal = 0,
 	disabled, // 停用.
 	banned, // 封禁.
+};
+
+#pragma db object
+struct cmall_apptoken
+{
+	#pragma db id
+	std::string apptoken;
+
+	#pragma db index
+	std::uint64_t uid_; // the token that the user belongs
 };
 
 // 商户表.

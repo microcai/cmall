@@ -181,6 +181,48 @@ namespace odb
     callback (database&, const object_type&, callback_event);
   };
 
+  // cmall_apptoken
+  //
+  template <>
+  struct class_traits< ::cmall_apptoken >
+  {
+    static const class_kind kind = class_object;
+  };
+
+  template <>
+  class access::object_traits< ::cmall_apptoken >
+  {
+    public:
+    typedef ::cmall_apptoken object_type;
+    typedef ::boost::shared_ptr< ::cmall_apptoken > pointer_type;
+    typedef odb::pointer_traits<pointer_type> pointer_traits;
+
+    static const bool polymorphic = false;
+
+    typedef ::std::string id_type;
+
+    static const bool auto_id = false;
+
+    static const bool abstract = false;
+
+    static id_type
+    id (const object_type&);
+
+    typedef
+    no_op_pointer_cache_traits<pointer_type>
+    pointer_cache_traits;
+
+    typedef
+    no_op_reference_cache_traits<object_type>
+    reference_cache_traits;
+
+    static void
+    callback (database&, object_type&, callback_event);
+
+    static void
+    callback (database&, const object_type&, callback_event);
+  };
+
   // cmall_merchant
   //
   template <>
@@ -1316,6 +1358,193 @@ namespace odb
   template <>
   class access::object_traits_impl< ::administrators, id_common >:
     public access::object_traits_impl< ::administrators, id_pgsql >
+  {
+  };
+
+  // cmall_apptoken
+  //
+  template <typename A>
+  struct query_columns< ::cmall_apptoken, id_pgsql, A >
+  {
+    // apptoken
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::std::string,
+        pgsql::id_string >::query_type,
+      pgsql::id_string >
+    apptoken_type_;
+
+    static const apptoken_type_ apptoken;
+
+    // uid
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::uint64_t,
+        pgsql::id_bigint >::query_type,
+      pgsql::id_bigint >
+    uid_type_;
+
+    static const uid_type_ uid;
+  };
+
+  template <typename A>
+  const typename query_columns< ::cmall_apptoken, id_pgsql, A >::apptoken_type_
+  query_columns< ::cmall_apptoken, id_pgsql, A >::
+  apptoken (A::table_name, "\"apptoken\"", 0);
+
+  template <typename A>
+  const typename query_columns< ::cmall_apptoken, id_pgsql, A >::uid_type_
+  query_columns< ::cmall_apptoken, id_pgsql, A >::
+  uid (A::table_name, "\"uid\"", 0);
+
+  template <typename A>
+  struct pointer_query_columns< ::cmall_apptoken, id_pgsql, A >:
+    query_columns< ::cmall_apptoken, id_pgsql, A >
+  {
+  };
+
+  template <>
+  class access::object_traits_impl< ::cmall_apptoken, id_pgsql >:
+    public access::object_traits< ::cmall_apptoken >
+  {
+    public:
+    struct id_image_type
+    {
+      details::buffer id_value;
+      std::size_t id_size;
+      bool id_null;
+
+      std::size_t version;
+    };
+
+    struct image_type
+    {
+      // apptoken
+      //
+      details::buffer apptoken_value;
+      std::size_t apptoken_size;
+      bool apptoken_null;
+
+      // uid_
+      //
+      long long uid_value;
+      bool uid_null;
+
+      std::size_t version;
+    };
+
+    struct extra_statement_cache_type;
+
+    using object_traits<object_type>::id;
+
+    static id_type
+    id (const image_type&);
+
+    static bool
+    grow (image_type&,
+          bool*);
+
+    static void
+    bind (pgsql::bind*,
+          image_type&,
+          pgsql::statement_kind);
+
+    static void
+    bind (pgsql::bind*, id_image_type&);
+
+    static bool
+    init (image_type&,
+          const object_type&,
+          pgsql::statement_kind);
+
+    static void
+    init (object_type&,
+          const image_type&,
+          database*);
+
+    static void
+    init (id_image_type&, const id_type&);
+
+    typedef pgsql::object_statements<object_type> statements_type;
+
+    typedef pgsql::query_base query_base_type;
+
+    static const std::size_t column_count = 2UL;
+    static const std::size_t id_column_count = 1UL;
+    static const std::size_t inverse_column_count = 0UL;
+    static const std::size_t readonly_column_count = 0UL;
+    static const std::size_t managed_optimistic_column_count = 0UL;
+
+    static const std::size_t separate_load_column_count = 0UL;
+    static const std::size_t separate_update_column_count = 0UL;
+
+    static const bool versioned = false;
+
+    static const char persist_statement[];
+    static const char find_statement[];
+    static const char update_statement[];
+    static const char erase_statement[];
+    static const char query_statement[];
+    static const char erase_query_statement[];
+
+    static const char table_name[];
+
+    static void
+    persist (database&, const object_type&);
+
+    static pointer_type
+    find (database&, const id_type&);
+
+    static bool
+    find (database&, const id_type&, object_type&);
+
+    static bool
+    reload (database&, object_type&);
+
+    static void
+    update (database&, const object_type&);
+
+    static void
+    erase (database&, const id_type&);
+
+    static void
+    erase (database&, const object_type&);
+
+    static result<object_type>
+    query (database&, const query_base_type&);
+
+    static unsigned long long
+    erase_query (database&, const query_base_type&);
+
+    static const char persist_statement_name[];
+    static const char find_statement_name[];
+    static const char update_statement_name[];
+    static const char erase_statement_name[];
+    static const char query_statement_name[];
+    static const char erase_query_statement_name[];
+
+    static const unsigned int persist_statement_types[];
+    static const unsigned int find_statement_types[];
+    static const unsigned int update_statement_types[];
+
+    public:
+    static bool
+    find_ (statements_type&,
+           const id_type*);
+
+    static void
+    load_ (statements_type&,
+           object_type&,
+           bool reload);
+  };
+
+  template <>
+  class access::object_traits_impl< ::cmall_apptoken, id_common >:
+    public access::object_traits_impl< ::cmall_apptoken, id_pgsql >
   {
   };
 
@@ -3213,6 +3442,8 @@ namespace odb
   query_columns< ::administrators, id_pgsql, A >::
   user (A::table_name, "\"user\"", 0);
 
+  // cmall_apptoken
+  //
   // cmall_merchant
   //
   // cmall_order

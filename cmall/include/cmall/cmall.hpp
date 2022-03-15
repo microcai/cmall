@@ -216,17 +216,13 @@ namespace cmall {
 		merchant_get_gitea_password,
 		merchant_reset_gitea_password,
 
+		admin_user_detail,
 		admin_user_list,
 		admin_user_ban,
-		admin_list_merchants,
 		admin_list_applicants,
-		admin_merchant_ban,
-		admin_product_list,
-		admin_product_withdraw,
-		admin_order_force_refund,
-
 		admin_approve_merchant,
 		admin_deny_applicant,
+		admin_list_merchants,
 		admin_disable_merchants,
 		admin_reenable_merchants,
 	};

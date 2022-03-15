@@ -16,6 +16,8 @@ DROP TABLE IF EXISTS "cmall_order" CASCADE;
 
 DROP TABLE IF EXISTS "cmall_merchant" CASCADE;
 
+DROP TABLE IF EXISTS "cmall_apptoken" CASCADE;
+
 DROP TABLE IF EXISTS "administrators" CASCADE;
 
 DROP TABLE IF EXISTS "cmall_user_recipients" CASCADE;
@@ -98,6 +100,13 @@ CREATE TABLE "administrators" (
     FOREIGN KEY ("user")
     REFERENCES "cmall_user" ("uid")
     INITIALLY DEFERRED);
+
+CREATE TABLE "cmall_apptoken" (
+  "apptoken" TEXT NOT NULL PRIMARY KEY,
+  "uid" BIGINT NOT NULL);
+
+CREATE INDEX "cmall_apptoken_uid_i"
+  ON "cmall_apptoken" ("uid");
 
 CREATE TABLE "cmall_merchant" (
   "uid" BIGINT NOT NULL PRIMARY KEY,
@@ -230,7 +239,7 @@ CREATE INDEX "cmall_apply_for_mechant_applicant_i"
 
 INSERT INTO "schema_version" (
   "name", "version", "migration")
-  SELECT '', 17, FALSE
+  SELECT '', 18, FALSE
   WHERE NOT EXISTS (
     SELECT 1 FROM "schema_version" WHERE "name" = '');
 

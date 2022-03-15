@@ -528,16 +528,13 @@ namespace cmall
 				co_await ensure_login(false, true);
 				co_return co_await handle_jsonrpc_merchant_api(connection_ptr, method.value(), params);
 				break;
+			case req_method::admin_user_detail:
 			case req_method::admin_user_list:
 			case req_method::admin_user_ban:
-			case req_method::admin_list_merchants:
 			case req_method::admin_list_applicants:
-			case req_method::admin_merchant_ban:
-			case req_method::admin_product_list:
-			case req_method::admin_product_withdraw:
-			case req_method::admin_order_force_refund:
 			case req_method::admin_approve_merchant:
 			case req_method::admin_deny_applicant:
+			case req_method::admin_list_merchants:
 			case req_method::admin_disable_merchants:
 			case req_method::admin_reenable_merchants:
 				co_await ensure_login(true);
@@ -1241,6 +1238,14 @@ namespace cmall
 
 		switch (method)
 		{
+			case req_method::admin_user_list:
+			case req_method::admin_user_ban:
+				break;
+			case req_method::admin_user_detail:
+			{
+				// TODO
+
+			}break;
 			case req_method::admin_list_merchants:
 			{
 				std::vector<cmall_merchant> all_merchants;
@@ -1254,13 +1259,6 @@ namespace cmall
 				co_await m_database.async_load_all(all_applicats);
 				reply_message["result"] = boost::json::value_from(all_applicats);
 			}break;
-			case req_method::admin_user_list:
-			case req_method::admin_user_ban:
-			case req_method::admin_merchant_ban:
-			case req_method::admin_product_list:
-			case req_method::admin_product_withdraw:
-			case req_method::admin_order_force_refund:
-			break;
 			case req_method::admin_approve_merchant:
 			{
 				auto apply_id_str = jsutil::json_accessor(params).get_string("apply_id");
