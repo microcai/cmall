@@ -1299,8 +1299,7 @@ namespace cmall
 					co_await boost::asio::co_spawn(background_task_thread_pool, [this, m]() mutable -> boost::asio::awaitable<void>
 					{
 						// 初始化仓库.
-						// TODO: 设置正确地址
-						std::string gitea_template_loaction = "/var/lib/gitea/template/product_template";
+						std::string gitea_template_loaction = m_config.gitea_template_location.string();
 						co_await gitea_service.init_user(m.uid_, m.gitea_password.get(), gitea_template_loaction);
 						co_await load_merchant_git(m);
 					}, boost::asio::use_awaitable);

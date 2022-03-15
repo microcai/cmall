@@ -177,6 +177,8 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 	std::string db_passwd;
 	unsigned short db_port;
 
+	std::string template_dir;
+
 	po::options_description desc("Options");
 	desc.add_options()
 		("help,h", "Help message.")
@@ -190,6 +192,7 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 		("db_port", po::value<unsigned short>(&db_port)->default_value(5432), "Database port.")
 		("db_user", po::value<std::string>(&db_user)->default_value("postgres"), "Database user.")
 		("db_passwd", po::value<std::string>(&db_passwd)->default_value("postgres"), "Database password.")
+		("template_dir", po::value<std::string>(&template_dir)->default_value(""), "gitea template dir")
 		;
 
 	try
@@ -235,6 +238,7 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 	cfg.dbcfg_ = dbcfg;
 	cfg.ws_listens_ = ws_listens;
 	cfg.session_cache_file = session_cache;
+	cfg.gitea_template_location = template_dir;
 
 	cmall::cmall_service xsrv(ios, cfg);
 
