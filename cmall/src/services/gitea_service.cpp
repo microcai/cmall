@@ -83,6 +83,17 @@ static boost::asio::awaitable<int> async_wait_child(boost::process::child& child
 
 #endif
 
+static std::string flaten_args(auto args)
+{
+	std::string cmdline;
+	for (auto arg : args)
+	{
+		cmdline += " ";
+		cmdline += arg;
+	}
+	return cmdline;
+}
+
 namespace services
 {
 	static std::string gen_repo_user(std::uint64_t uid)
@@ -100,6 +111,8 @@ namespace services
 		{
 			using namespace boost::process;
 
+			LOG_DBG << "executing gitea " << flaten_args(gitea_args);
+
 			child cp(io, search_path("gitea"), boost::process::args(gitea_args)
 			#ifdef BOOST_POSIX_API
 				, extend::on_exec_setup=[](auto& exec){
@@ -109,6 +122,9 @@ namespace services
 			);
 
 			int exit_code = co_await async_wait_child(cp);
+
+			LOG_DBG << "executing gitea return " << exit_code;
+
 			co_return exit_code == EXIT_SUCCESS;
 		}
 
