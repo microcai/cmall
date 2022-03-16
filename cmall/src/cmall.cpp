@@ -307,8 +307,21 @@ namespace cmall
 				}
 				boost::json::object replay_message;
 				// 未有 session 前， 先不并发处理 request，避免 客户端恶意并发 recover_session 把程序挂掉
-				replay_message = co_await handle_jsonrpc_call(connection_ptr, method, params);
-				replay_message.insert_or_assign("id", jv.at("id"));
+				try 
+				{
+					replay_message = co_await handle_jsonrpc_call(connection_ptr, method, params);
+				}
+				catch (boost::system::system_error& e)
+				{
+					replay_message["error"] = { { "code", e.code().value() }, { "message", e.code().message() } };
+				}
+				catch (std::exception& e)
+				{
+					LOG_ERR << e.what();
+					replay_message["error"] = { { "code", 502 }, { "message", "internal server error" } };
+				}
+				if (jv.as_object().contains("id"))
+					replay_message.insert_or_assign("id", jv.at("id"));
 				co_await websocket_write(*connection_ptr, jsutil::json_to_string(replay_message));
 				continue;
 			}
@@ -466,6 +479,13 @@ namespace cmall
 						if (co_await m_database.async_load<cmall_user>(appid_info.uid_, db_user))
 						{
 							this_client.session_info->user_info = db_user;
+							this_client.session_info->isAdmin = true;
+							this_client.session_info->isMerchant = false;
+							reply_message["result"] = {
+								{ "login", "success" },
+								{ "isMerchant", false },
+								{ "isAdmin", true },
+							};
 							break;
 						}
 						cmall_merchant db_merchant;
