@@ -18,6 +18,7 @@ using namespace boost::asio::experimental::awaitable_operators;
 #include "utils/timedmap.hpp"
 #include "utils/logging.hpp"
 #include "utils/scoped_exit.hpp"
+#include "utils/uawaitable.hpp"
 #include "cmall/error_code.hpp"
 #include "sandbox.hpp"
 
@@ -50,6 +51,32 @@ static int recv_fd(int sock)
 	return *((int *)CMSG_DATA(cmsg));
 }
 #endif
+
+template <typename MutableBuffers>
+boost::asio::awaitable<int> read_all_pipe_data(boost::process::async_pipe& pipe, MutableBuffers&& buffers)
+{
+	long total_transfred = 0;
+	boost::system::error_code ec;
+	do
+	{
+		auto buf = buffers.prepare(512);
+		auto bytes_transfered = co_await pipe.async_read_some(buf, asio_util::use_awaitable[ec]);
+		if (ec)
+		{
+			if (bytes_transfered > 0)
+			{
+				total_transfred += bytes_transfered;
+				buffers.commit(bytes_transfered);
+			}
+			co_return total_transfred;
+		}
+		if (bytes_transfered == 0)
+			co_return total_transfred;
+
+		total_transfred += bytes_transfered;
+		buffers.commit(bytes_transfered);
+	}while(true);
+}
 
 namespace services
 {
@@ -195,8 +222,8 @@ namespace services
 				, boost::process::extend::on_exec_setup=[&fd_recive_socket, &fd_sending_socket](auto & exec)
 				{
 					fd_recive_socket.close();
-					sandbox::no_fd_leak();
 					sandbox::install_seccomp(fd_sending_socket.release());
+					sandbox::no_fd_leak();
 					sandbox::drop_root();
 				}
 #endif
@@ -217,9 +244,7 @@ namespace services
 
 			nodejs_output.native_source();
 
-			auto read_promis = boost::asio::async_read(nodejs_output, d_buffer,
-				boost::asio::transfer_all(),
-				boost::asio::experimental::use_promise);
+			auto read_promis = boost::asio::co_spawn(io, read_all_pipe_data(nodejs_output, d_buffer), boost::asio::experimental::use_promise);
 
 			auto stdin_feader = boost::asio::co_spawn(io, [&]()-> boost::asio::awaitable<void>{
 				co_await boost::asio::async_write(nodejs_input, boost::asio::buffer(http_request_body.data(), http_request_body.length()), boost::asio::use_awaitable);
