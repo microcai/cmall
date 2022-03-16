@@ -98,7 +98,7 @@ namespace services
 		{
 			using namespace boost::process;
 
-			child cp(io, search_path("gitea"), args(gitea_args)
+			child cp(io, search_path("gitea"), boost::process::args(gitea_args)
 			#ifdef BOOST_POSIX_API
 				, extend::on_exec_setup=[](auto& exec){
 					::change_user("gitea");
@@ -131,7 +131,7 @@ namespace services
 				email
 			};
 
-			return call_gitea_cli(gitea_args);
+			co_return co_await call_gitea_cli(gitea_args);
 		}
 
 		boost::asio::awaitable<bool> create_repo(std::uint64_t uid, const std::string& template_dir)
@@ -149,7 +149,7 @@ namespace services
 				"shop"
 			};
 
-			return call_gitea_cli(gitea_args);
+			co_return co_await call_gitea_cli(gitea_args);
 		}
 
 		boost::asio::awaitable<bool> init_user(std::uint64_t uid, const std::string& password, const std::string& template_dir)
@@ -175,7 +175,7 @@ namespace services
 				"--password",
 				password
 			};
-			return call_gitea_cli(gitea_args);
+			co_return co_await call_gitea_cli(gitea_args);
 		}
 
 		boost::asio::io_context& io;
@@ -183,11 +183,11 @@ namespace services
 
 	boost::asio::awaitable<bool> gitea::init_user(std::uint64_t uid, const std::string& password, const std::string& template_dir)
 	{
-		return impl().init_user(uid, password, template_dir);
+		co_return co_await impl().init_user(uid, password, template_dir);
 	}
 	boost::asio::awaitable<bool> gitea::change_password(std::uint64_t uid, const std::string& password)
 	{
-		return impl().change_password(uid, password);
+		co_return co_await impl().change_password(uid, password);
 	}
 
 	gitea::gitea(boost::asio::io_context& io)
