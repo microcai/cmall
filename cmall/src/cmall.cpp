@@ -262,38 +262,6 @@ namespace cmall
 		co_return 200;
 	}
 
-	boost::asio::awaitable<int> cmall_service::invoke_user_callback_js(size_t connection_id, std::string merchant, std::string path,
-		boost::beast::tcp_stream& client, std::string_view body, int httpver, bool keepalive)
-	{
-		auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
-		boost::system::error_code ec;
-		auto merchant_repo_ptr = get_merchant_git_repo(merchant_id, ec);
-
-		if (ec)
-			co_return 404;
-
-		std::string callback_js = co_await merchant_repo_ptr->get_file_content("scripts/callback.js", ec);
-		if (ec)
-			co_return 404;
-		std::map<std::string, std::string> script_env;
-
-		script_env.insert({"_PATH", path});
-
-		// TODO 然后运行 callback.js
-		std::string response_body = co_await script_runner.run_script(callback_js,
-			body, script_env, {});
-
-		ec = co_await httpd::send_string_response_body(client,
-			response_body,
-			httpd::make_http_last_modified(std::time(0) + 60),
-			"text/plain",
-			httpver,
-			keepalive);
-		if (ec)
-			throw boost::system::system_error(ec);
-		co_return 200;
-	}
-
 	boost::asio::awaitable<void> cmall_service::do_ws_read(size_t connection_id, client_connection_ptr connection_ptr)
 	{
 		while (!m_abort)
@@ -1584,11 +1552,11 @@ namespace cmall
 					if (boost::regex_match(
 							target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/((images|css)/.+)")))
 					{
-						std::string merhcant = w[1].str();
+						std::string merchant = w[1].str();
 						std::string remains	 = w[2].str();
 
 						int status_code = co_await render_git_repo_files(
-							connection_id, merhcant, remains, client_ptr->tcp_stream, req);
+							connection_id, merchant, remains, client_ptr->tcp_stream, req);
 
 						if (status_code != 200)
 						{
@@ -1608,11 +1576,11 @@ namespace cmall
 					boost::match_results<std::string_view::const_iterator> w;
 					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/goods/([^/]+)/([^/]+)")))
 					{
-						std::string merhcant = w[1].str();
+						std::string merchant = w[1].str();
 						std::string goods_id = w[2].str();
 
 						int status_code = co_await render_goods_detail_content(
-							connection_id, merhcant, goods_id, client_ptr->tcp_stream, req.version(), req.keep_alive());
+							connection_id, merchant, goods_id, client_ptr->tcp_stream, req.version(), req.keep_alive());
 
 						if (status_code != 200)
 						{
@@ -1626,21 +1594,52 @@ namespace cmall
 					continue;
 				}
 				// 这个 /scriptcallback/${merchant}/? 的调用, 都传给 scripts/callback.js.
-				else if ((req.method() == boost::beast::http::verb::post) && (target.starts_with("/scriptcallback")))
+				else if (target.starts_with("/scriptcallback"))
 				{
 					boost::match_results<std::string_view::const_iterator> w;
 					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/scriptcallback/([0-9]+)/(.+)")))
 					{
-						std::string merhcant = w[1].str();
+						std::string merchant = w[1].str();
 						std::string remains = w[2].str();
 
-						int status_code = co_await invoke_user_callback_js(connection_id, merhcant, remains,
-							 client_ptr->tcp_stream, req.body(), req.version(), req.keep_alive());
+						auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
+						boost::system::error_code ec;
+						auto merchant_repo_ptr = get_merchant_git_repo(merchant_id, ec);
 
-						if (status_code != 200)
+						if (ec)
 						{
-							co_await http_simple_error_page("ERRORED", status_code, req.version());
+							co_await http_simple_error_page("ERRORED", 404, req.version());
+							continue;
 						}
+
+						std::string callback_js = co_await merchant_repo_ptr->get_file_content("scripts/callback.js", ec);
+						if (ec)
+						{
+							co_await http_simple_error_page("ERRORED", 404, req.version());
+							continue;
+						}
+
+						std::map<std::string, std::string> script_env;
+
+						for (auto& kv : req)
+						{
+							script_env.insert({std::string(kv.name_string()), std::string(kv.value())});
+						}
+						script_env.insert({"_METHOD", std::string(req.method_string())});
+						script_env.insert({"_PATH", remains});
+
+						// TODO 然后运行 callback.js
+						std::string response_body = co_await script_runner.run_script(callback_js,
+							req.body(), script_env, {});
+
+						ec = co_await httpd::send_string_response_body(client_ptr->tcp_stream,
+							response_body,
+							httpd::make_http_last_modified(std::time(0) + 60),
+							"text/plain",
+							req.version(),
+							keep_alive);
+						if (ec)
+							throw boost::system::system_error(ec);
 					}
 					else
 					{
