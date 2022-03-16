@@ -208,7 +208,7 @@ inline std::string gen_password(std::size_t len = 8)
 
 	thread_local std::mt19937 urng{ std::random_device{}() };
 
-	std::sample(chartable.begin(), chartable.end(), std::back_inserter(result), len, urng);
+	std::sample(chartable.begin(), chartable.end(), result.begin(), len, urng);
 
 	return result;
 }
