@@ -30,8 +30,18 @@ using namespace boost::asio::experimental::awaitable_operators;
 #include <sys/syscall.h>
 #include <unistd.h>
 
-static bool change_user(std::string_view name)
+struct unixuserinfo
 {
+	std::string username;
+	std::string homedir;
+	std::string shell;
+
+	int uid, gid;
+};
+
+static unixuserinfo get_unix_user_info(std::string_view name)
+{
+	unixuserinfo ret;
 	struct passwd pwd_storeage;
 	struct passwd *result;
 	std::vector<char> buf(sysconf(_SC_GETPW_R_SIZE_MAX) == -1 ? 16384 : sysconf(_SC_GETPW_R_SIZE_MAX));
@@ -39,17 +49,21 @@ static bool change_user(std::string_view name)
 	int ok = getpwnam_r(name.data(), &pwd_storeage, buf.data(), buf.capacity(), &result);
 	if (ok == 0)
 	{
-		setgid(result->pw_gid);
-		setuid(result->pw_uid);
-		setenv("HOME", result->pw_dir, 1);
-		std::filesystem::current_path(result->pw_dir);
-	}
-	else
-	{
-		throw std::runtime_error("gitea user not found, refuse to run gitea command");
+		ret.homedir = result->pw_dir;
+		ret.username = std::string(name);
+		ret.shell = result->pw_shell;
+		ret.uid = result->pw_uid;
+		ret.gid = result->pw_gid;
+		return ret;
 	}
 
-	return ok == 0;
+	throw boost::system::system_error(boost::asio::error::not_found);
+}
+
+static void change_user(int uid, int gid)
+{
+	setgid(gid);
+	setuid(uid);
 }
 
 
@@ -115,10 +129,17 @@ namespace services
 
 			LOG_DBG << "executing gitea " << flaten_args(gitea_args);
 
-			child cp(io, search_path("gitea"), boost::process::args(gitea_args)
+			boost::process::environment gitea_process_env = boost::this_process::environment();
+			auto gitea_userinfo = get_unix_user_info("gitea");
+
+			gitea_process_env.set("HOME", gitea_userinfo.homedir);
+			gitea_process_env.set("USER", "gitea");
+			gitea_process_env.set("LANG", "C");
+
+			child cp(io, search_path("gitea"), boost::process::args(gitea_args), gitea_process_env
 			#ifdef BOOST_POSIX_API
-				, extend::on_exec_setup=[](auto& exec){
-					::change_user("gitea");
+				, extend::on_exec_setup=[gitea_userinfo](auto& exec){
+					::change_user(gitea_userinfo.uid, gitea_userinfo.gid);
 				}
 			#endif
 			);
