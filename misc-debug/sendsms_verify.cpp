@@ -3,6 +3,6 @@
 
 int main(int argc, char* argv[])
 {
-    std::cout << "111111";
+    std::cout << "111111\n";
     return 0;
 }

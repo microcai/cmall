@@ -50,12 +50,13 @@ namespace services
 
 			std::string sended_smscode;
 
-			sended_smscode.resize(6);
+			auto d_buffer = boost::asio::dynamic_buffer(sended_smscode);
 
-			std::size_t sended_smscode_len = co_await boost::asio::async_read(ap, boost::asio::buffer(sended_smscode), boost::asio::use_awaitable);
-			sended_smscode.resize(sended_smscode_len);
+			auto read_sms_output = co_await boost::asio::async_read_until(ap, d_buffer, '\n', boost::asio::use_awaitable);
 
-			LOG_DBG << "sendsms_verify returned: " << sended_smscode;
+			boost::algorithm::trim_right_if(sended_smscode, boost::is_any_of(" \n\r"));
+
+			LOG_INFO << "sendsms_verify returned: " << sended_smscode;
 
 			verify_session ret;
 
