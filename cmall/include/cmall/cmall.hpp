@@ -76,6 +76,7 @@ namespace cmall {
 		boost::beast::tcp_stream tcp_stream;
 		int64_t connection_id_;
 		std::string remote_host_;
+		std::string x_real_ip;
 
 		std::optional<websocket_connection> ws_client;
 
@@ -96,7 +97,7 @@ namespace cmall {
 			boost::system::error_code ignore_ec;
 			auto& sock  = boost::beast::get_lowest_layer(tcp_stream).socket();
 			sock.close(ignore_ec);
-			LOG_DBG << (ws_client? "ws" : "http" ) <<  " client leave: " << connection_id_ << ", remote: " << remote_host_;
+			LOG_DBG << (ws_client? "ws" : "http" ) <<  " client leave: " << connection_id_ << ", remote: " << x_real_ip;
 		}
 
 		void close()

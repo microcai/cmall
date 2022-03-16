@@ -1506,6 +1506,25 @@ namespace cmall
 			co_await boost::beast::http::async_read(client_ptr->tcp_stream, buffer, parser_, boost::asio::use_awaitable);
 			request req = parser_.release();
 
+			// 这里是为了能提取到客户端的 IP 地址，即便服务本身运行在 nginx 的后面。
+			auto x_real_ip = req["x-real-ip"];
+			auto x_forwarded_for = req["x-forwarded-for"];
+			if (x_real_ip.empty())
+			{
+				client_ptr->x_real_ip = client_ptr->remote_host_;
+			}
+			else
+			{
+				client_ptr->x_real_ip = x_real_ip;
+			}
+
+			if (!x_forwarded_for.empty())
+			{
+				std::vector<std::string> x_forwarded_clients;
+				boost::split(x_forwarded_clients, x_forwarded_for, boost::is_any_of(", "));
+				client_ptr->x_real_ip = x_forwarded_clients[0];
+			}
+
 			std::string_view target = req.target();
 
 			LOG_DBG << "coro: handle_accepted_client: [" << connection_id << "], got request on " << target;
@@ -1518,7 +1537,7 @@ namespace cmall
 			// 处理 HTTP 请求.
 			else if (boost::beast::websocket::is_upgrade(req))
 			{
-				LOG_DBG << "ws client incoming: " << connection_id << ", remote: " << client_ptr->remote_host_;
+				LOG_DBG << "ws client incoming: " << connection_id << ", remote: " << client_ptr->x_real_ip;
 
 				if (!target.starts_with("/api"))
 				{
