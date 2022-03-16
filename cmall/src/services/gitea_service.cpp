@@ -140,14 +140,13 @@ namespace services
 			auto username = gen_repo_user(uid);
 
 			std::vector<std::string> gitea_args = {
-				"admin",
 				"restore-repo",
 				"--repo_dir",
 				template_dir,
 				"--owner_name",
 				username,
 				"--repo_name",
-				"goods1"
+				"shop"
 			};
 
 			return call_gitea_cli(gitea_args);

@@ -178,6 +178,7 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 	unsigned short db_port;
 
 	std::string template_dir;
+	std::string repo_root;
 
 	po::options_description desc("Options");
 	desc.add_options()
@@ -193,6 +194,7 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 		("db_user", po::value<std::string>(&db_user)->default_value("postgres"), "Database user.")
 		("db_passwd", po::value<std::string>(&db_passwd)->default_value("postgres"), "Database password.")
 		("template_dir", po::value<std::string>(&template_dir)->default_value("/var/lib/gitea/example/shop.git"), "gitea template dir")
+		("repo_root", po::value<std::string>(&repo_root)->default_value("/repos"), "gitea repo base dir")
 		;
 
 	try
@@ -239,6 +241,7 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 	cfg.ws_listens_ = ws_listens;
 	cfg.session_cache_file = session_cache;
 	cfg.gitea_template_location = template_dir;
+	cfg.repo_root = repo_root;
 
 	cmall::cmall_service xsrv(ios, cfg);
 

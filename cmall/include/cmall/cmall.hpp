@@ -46,6 +46,7 @@ namespace cmall {
 
 		std::filesystem::path session_cache_file;
 		std::filesystem::path gitea_template_location;
+		std::filesystem::path repo_root; // repos dir for gitea
 	};
 
 	using ws_stream = websocket::stream<boost::beast::tcp_stream>;
