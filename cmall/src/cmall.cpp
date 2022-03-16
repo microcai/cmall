@@ -479,13 +479,10 @@ namespace cmall
 						if (co_await m_database.async_load<cmall_user>(appid_info.uid_, db_user))
 						{
 							this_client.session_info->user_info = db_user;
-							this_client.session_info->isAdmin = true;
-							this_client.session_info->isMerchant = false;
-							reply_message["result"] = {
-								{ "login", "success" },
-								{ "isMerchant", false },
-								{ "isAdmin", true },
-							};
+						}
+						else
+						{
+							reply_message["result"] = { { "login", "failed" } };
 							break;
 						}
 						cmall_merchant db_merchant;
@@ -500,15 +497,15 @@ namespace cmall
 							this_client.session_info->isAdmin = true;
 							this_client.session_info->admin_info = db_admin;
 						}
-						reply_message["result"] = true;
+						reply_message["result"] = {
+							{ "login", "success" },
+							{ "isMerchant", this_client.session_info->isMerchant },
+							{ "isAdmin", this_client.session_info->isAdmin },
+						};
 					}
-
-					// TODO apitoken 机制不需要 session, 认证后, 直接通过
-					throw boost::system::system_error(cmall::error::not_implemented);
 				}
 			}
 			break;
-
 			case req_method::user_prelogin:
 			case req_method::user_login:
 			case req_method::user_islogin:
