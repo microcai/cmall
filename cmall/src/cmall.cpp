@@ -1226,7 +1226,7 @@ namespace cmall
 					reply_message["result"] = success;
 				}
 				else
-					throw boost::system::system_error(cmall::error::order_not_found);		
+					throw boost::system::system_error(cmall::error::order_not_found);
 			}
 			break;
 			case req_method::merchant_get_gitea_password:
@@ -1302,7 +1302,7 @@ namespace cmall
 					bool found = db.find(apply_id.value(), apply);
 					if (!found)
 						co_return false;
-					
+
 					apply.approved_ = true;
 					db.update(apply);
 
