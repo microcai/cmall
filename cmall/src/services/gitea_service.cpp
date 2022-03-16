@@ -41,6 +41,8 @@ static bool change_user(std::string_view name)
 	{
 		setgid(result->pw_gid);
 		setuid(result->pw_uid);
+		setenv("HOME", result->pw_dir, 1);
+		std::filesystem::current_path(result->pw_dir);
 	}
 	else
 	{
