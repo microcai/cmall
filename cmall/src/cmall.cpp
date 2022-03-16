@@ -1614,7 +1614,7 @@ namespace cmall
 				else if (target.starts_with("/scriptcallback"))
 				{
 					boost::match_results<std::string_view::const_iterator> w;
-					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/scriptcallback/([0-9]+)/(.+)")))
+					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/scriptcallback/([0-9]+)(/.+)")))
 					{
 						std::string merchant = w[1].str();
 						std::string remains = w[2].str();
