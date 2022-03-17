@@ -209,6 +209,7 @@ namespace cmall {
 		goods_list,
 		goods_detail,
 
+		merchant_info,
 		merchant_get_sold_order_detail,
 		merchant_sold_orders_mark_payed,
 		merchant_goods_list,

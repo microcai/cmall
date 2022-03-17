@@ -543,6 +543,7 @@ namespace cmall
 			case req_method::goods_detail:
 				co_return co_await handle_jsonrpc_goods_api(connection_ptr, method.value(), params);
 				break;
+			case req_method::merchant_info:
 			case req_method::merchant_get_sold_order_detail:
 			case req_method::merchant_sold_orders_mark_payed:
 			case req_method::merchant_goods_list:
@@ -1103,6 +1104,18 @@ namespace cmall
 
 		switch (method)
 		{
+			case req_method::merchant_info:
+			{
+				cmall_merchant m;
+				bool found = co_await m_database.async_load(this_merchant.uid_, m);
+				if (!found)
+					throw boost::system::system_error(cmall::error::merchant_vanished);
+				
+				this_client.session_info->merchant_info = m;
+				
+				reply_message["result"] = boost::json::value_from(m);
+			}
+			break;
 			case req_method::merchant_get_sold_order_detail:
 			{
 				auto orderid	   = jsutil::json_accessor(params).get_string("orderid");
@@ -1118,6 +1131,7 @@ namespace cmall
 				else
 					throw boost::system::system_error(cmall::error::order_not_found);
 			}
+			break;
 			case req_method::merchant_sold_orders_mark_payed:
 			{
 				auto orderid	   = jsutil::json_accessor(params).get_string("orderid");
