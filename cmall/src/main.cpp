@@ -1,8 +1,6 @@
 ﻿
 #include "io_context_pool.hpp"
 
-#include <iostream>
-#include <iterator>
 #include <algorithm>
 #include <functional>
 
@@ -35,7 +33,7 @@ namespace po = boost::program_options;
 #include "cmall/version.hpp"
 #include "cmall/internal.hpp"
 #include "cmall/cmall.hpp"
-
+#include "utils/uawaitable.hpp"
 
 static int platform_init()
 {
@@ -168,7 +166,7 @@ static boost::asio::awaitable<std::string> get_default_cache_dir()
 
 boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 {
-	std::vector<std::string> ws_listens;
+	std::vector<std::string> ws_listens, wss_listens;
 	std::string session_cache;
 
 	std::string db_name;
@@ -180,6 +178,8 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 	std::string template_dir;
 	std::string repo_root;
 
+	std::string cert_file, key_file;
+
 	po::options_description desc("Options");
 	desc.add_options()
 		("help,h", "Help message.")
@@ -188,6 +188,7 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 		("session_cache", po::value<std::string>(&session_cache)->default_value(co_await get_default_cache_dir()), "the dir for session cache")
 
 		("ws", po::value<std::vector<std::string>>(&ws_listens)->multitoken(), "For websocket server listen.")
+		("wss", po::value<std::vector<std::string>>(&wss_listens)->multitoken(), "For SSL websocket server listen.")
 		("db_name", po::value<std::string>(&db_name)->default_value("cmall"), "Database name.")
 		("db_host", po::value<std::string>(&db_host)->default_value(""), "Database host.")
 		("db_port", po::value<unsigned short>(&db_port)->default_value(5432), "Database port.")
@@ -195,6 +196,8 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 		("db_passwd", po::value<std::string>(&db_passwd)->default_value("postgres"), "Database password.")
 		("template_dir", po::value<std::string>(&template_dir)->default_value("/var/lib/gitea/example/shop.git"), "gitea template dir")
 		("repo_root", po::value<std::string>(&repo_root)->default_value("/repos"), "gitea repo base dir")
+		("cert", po::value<std::string>(&cert_file), "ssl cert file")
+		("key", po::value<std::string>(&key_file), "ssl private key file")
 		;
 
 	try
@@ -239,6 +242,7 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 
 	cfg.dbcfg_ = dbcfg;
 	cfg.ws_listens_ = ws_listens;
+	cfg.wss_listens_ = wss_listens;
 	cfg.session_cache_file = session_cache;
 	cfg.gitea_template_location = template_dir;
 	cfg.repo_root = repo_root;
@@ -249,6 +253,28 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 
 	if (!co_await xsrv.load_configs())
 		co_return EXIT_FAILURE;
+
+	// 初始化ws acceptors.
+	co_await xsrv.init_ws_acceptors();
+
+	if (!wss_listens.empty())
+	{
+		boost::system::error_code ec;
+
+		boost::asio::stream_file pem_cert(ios.get_io_context(), cert_file, boost::asio::file_base::read_only);
+		boost::asio::stream_file privatekey(ios.get_io_context(), key_file, boost::asio::file_base::read_only);
+
+		std::string cert_file_content;
+		std::string key_file_content;
+		auto cert_buf = boost::asio::dynamic_buffer(cert_file_content);
+		auto privatekey_buf = boost::asio::dynamic_buffer(key_file_content);
+
+		co_await boost::asio::async_read(pem_cert, cert_buf, boost::asio::transfer_all(), asio_util::use_awaitable[ec]);
+		co_await boost::asio::async_read(privatekey, privatekey_buf, boost::asio::transfer_all(), asio_util::use_awaitable[ec]);
+
+		// 初始化ws acceptors.
+		co_await xsrv.init_wss_acceptors(cert_file_content, key_file_content);
+	}
 
 	// 处理中止信号.
 	co_await(

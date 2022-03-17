@@ -70,6 +70,7 @@ namespace cmall
 		, payment_service(m_io_context)
 		, script_runner(m_io_context)
 		, gitea_service(m_io_context)
+		, sslctx_(boost::asio::ssl::context::tls_server)
 	{
 	}
 
@@ -163,14 +164,23 @@ namespace cmall
 
 	boost::asio::awaitable<void> cmall_service::run_httpd()
 	{
-		// 初始化ws acceptors.
-		co_await init_ws_acceptors();
-
 		constexpr int concurrent_accepter = 20;
 
-		co_await httpd::detail::map(m_ws_acceptors,
-			[concurrent_accepter](auto&& a) mutable -> boost::asio::awaitable<void>
-			{ return a.run_accept_loop(concurrent_accepter); });
+		std::vector<boost::asio::experimental::promise<void(std::exception_ptr)>> co_threads;
+
+		for (auto&& a: m_ws_acceptors)
+        {
+			co_threads.push_back(boost::asio::co_spawn(a.get_executor(), a.run_accept_loop(concurrent_accepter), boost::asio::experimental::use_promise));
+        }
+
+		for (auto&& a: m_wss_acceptors)
+        {
+			co_threads.push_back(boost::asio::co_spawn(a.get_executor(), a.run_accept_loop(concurrent_accepter), boost::asio::experimental::use_promise));
+        }
+
+        // 然后等待所有的协程工作完毕.
+        for (auto&& co : co_threads)
+            co_await co.async_wait(boost::asio::use_awaitable);
 	}
 
 	boost::asio::awaitable<bool> cmall_service::init_ws_acceptors()
@@ -197,6 +207,50 @@ namespace cmall
 			{
 				m_ws_acceptors.emplace_back(m_io_context, *this);
 				m_ws_acceptors.back().listen(wsd, ec);
+				if (ec)
+				{
+					co_return false;
+				}
+			}
+		}
+
+		co_return true;
+	}
+
+	boost::asio::awaitable<bool> cmall_service::init_wss_acceptors(std::string_view cert, std::string_view key)
+	{
+		sslctx_.set_options(boost::asio::ssl::context::default_workarounds | boost::asio::ssl::context::no_sslv2);
+
+		sslctx_.use_certificate_chain(boost::asio::buffer(cert.data(), cert.size()));
+
+		sslctx_.use_private_key(
+			boost::asio::buffer(key.data(), key.size()), boost::asio::ssl::context::file_format::pem);
+
+//		sslctx_.use_tmp_dh(boost::asio::buffer(dh.data(), dh.size()));
+
+
+		boost::system::error_code ec;
+
+		m_wss_acceptors.reserve(m_config.wss_listens_.size());
+
+		for (const auto& wsd : m_config.wss_listens_)
+		{
+			if constexpr (httpd::has_so_reuseport())
+			{
+				for (int io_index = 0; io_index < m_io_context_pool.pool_size(); io_index++)
+				{
+					m_wss_acceptors.emplace_back(m_io_context_pool.get_io_context(io_index), sslctx_, *this);
+					m_wss_acceptors.back().listen(wsd, ec);
+					if (ec)
+					{
+						co_return false;
+					}
+				}
+			}
+			else
+			{
+				m_wss_acceptors.emplace_back(m_io_context, sslctx_, *this);
+				m_wss_acceptors.back().listen(wsd, ec);
 				if (ec)
 				{
 					co_return false;
@@ -1492,6 +1546,14 @@ namespace cmall
 			return std::make_shared<client_connection>(io, connection_id);
 		else
 			return std::make_shared<client_connection>(m_io_context_pool.get_io_context(), connection_id);
+	}
+
+	client_connection_ptr cmall_service::make_shared_ssl_connection(const boost::asio::any_io_executor& io, std::int64_t connection_id)
+	{
+		if constexpr (httpd::has_so_reuseport())
+			return std::make_shared<client_connection>(io, sslctx_, connection_id);
+		else
+			return std::make_shared<client_connection>(m_io_context_pool.get_io_context(), sslctx_, connection_id);
 	}
 
 	boost::asio::awaitable<void> cmall_service::client_connected(client_connection_ptr client_ptr)

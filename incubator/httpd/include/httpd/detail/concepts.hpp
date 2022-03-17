@@ -47,6 +47,14 @@ namespace httpd::detail {
     };
 
     template <typename T>
+    concept is_httpsd_server = requires (T t)
+    {
+        is_asio_io_object<T>;
+        { &T::make_shared_ssl_connection }; // 有 make_shared_connection 成员
+        { &T::client_connected }; // 有 client_connected 成员
+        { &T::client_disconnected }; // 有 client_disconnected 成员
+    };
+        template <typename T>
     concept is_httpd_client = requires (T t)
     {
         is_asio_io_object<T>;

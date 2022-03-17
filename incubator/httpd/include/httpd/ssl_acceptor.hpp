@@ -10,6 +10,8 @@
 
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
+#include <boost/beast/ssl.hpp>
+
 #include <exception>
 #include <memory>
 #include <string>
@@ -21,9 +23,10 @@
 #include "detail/time_clock.hpp"
 
 #include "detail/wait_all.hpp"
-#include "detail/config.hpp"
 
 // 每线程一个 accept 的 多 socket accept 模式 适配器.
+
+#include "detail/config.hpp"
 
 namespace httpd
 {
@@ -31,38 +34,42 @@ namespace httpd
 	requires requires
 	{
 		detail::is_asio_io_object<ServiceClass>;
-		detail::is_httpd_server<ServiceClass>;
+		detail::is_httpsd_server<ServiceClass>;
 		// 访问 element_type 表明, AcceptedClientClass 必须得是一个智能指针类型.
 		detail::is_httpd_client<typename AcceptedClientClass::element_type>;
 	}
-	class acceptor
+	class ssl_acceptor
 	{
 		ServiceClass& executor_;
 		boost::asio::ip::tcp::acceptor accept_socket_;
+		boost::asio::ssl::context& sslctx;
 		std::unordered_map<std::size_t, AcceptedClientClass> all_client;
 		bool accepting = false;
 
 	public:
-		acceptor(const acceptor&) = delete;
-		explicit acceptor(acceptor&& o)
+		ssl_acceptor(const ssl_acceptor&) = delete;
+		explicit ssl_acceptor(ssl_acceptor&& o)
 			: executor_(o.executor_)
 			, accept_socket_(std::move(o.accept_socket_))
+			, sslctx(o.sslctx)
 			, accepting(o.accepting)
 		{
 			BOOST_ASSERT_MSG(!o.accepting, "cannot move a socket that has pending IO");
 		};
 
 		template <typename AnyExecutor>
-		explicit acceptor(AnyExecutor&& e, ServiceClass& executor)
+		explicit ssl_acceptor(AnyExecutor&& e, boost::asio::ssl::context& sslctx, ServiceClass& executor)
 			: executor_(executor)
 			, accept_socket_(e)
+			, sslctx(sslctx)
 		{
 		}
 
 		template <typename AnyExecutor>
-		explicit acceptor(AnyExecutor&& e, ServiceClass& executor, std::string listen_address)
+		explicit ssl_acceptor(AnyExecutor&& e, boost::asio::ssl::context& sslctx, ServiceClass& executor, std::string listen_address)
 			: executor_(executor)
 			, accept_socket_(e)
+			, sslctx(sslctx)
 		{
 			this->listen(listen_address);
 		}
@@ -232,7 +239,7 @@ namespace httpd
 
 				boost::system::error_code error;
 
-				auto client_ptr = executor_.make_shared_connection(get_executor(), connection_id);
+				auto client_ptr = executor_.make_shared_ssl_connection(get_executor(), connection_id);
 
 				co_await accept_socket_.async_accept(
 					client_ptr->socket(), boost::asio::redirect_error(boost::asio::use_awaitable, error));
@@ -253,6 +260,10 @@ namespace httpd
 				fcntl(fd, F_SETFD, flags);
 #endif
 				client_ptr->socket().set_option(boost::asio::socket_base::keep_alive(true), error);
+
+				auto & ssl_stream = std::get<boost::beast::ssl_stream<boost::beast::tcp_stream>>(client_ptr->tcp_stream);
+
+				co_await ssl_stream.async_handshake(boost::asio::ssl::stream_base::server, boost::asio::use_awaitable);
 
 				std::string remote_host;
 				auto endp = client_ptr->socket().remote_endpoint(error);

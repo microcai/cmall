@@ -35,13 +35,18 @@
 #include "services/gitea_service.hpp"
 
 #include "httpd/acceptor.hpp"
+#include "httpd/ssl_acceptor.hpp"
+
 #include "httpd/http_stream.hpp"
+
+#include "cmall/client_connection.hpp"
 
 namespace cmall {
 
 	struct server_config
 	{
 		std::vector<std::string> ws_listens_;
+		std::vector<std::string> wss_listens_;
 
 		cmall::db_config dbcfg_;
 
@@ -50,73 +55,6 @@ namespace cmall {
 		std::filesystem::path repo_root; // repos dir for gitea
 	};
 
-	using ws_stream = websocket::stream<boost::beast::tcp_stream>;
-
-	struct websocket_connection
-	{
-		websocket_connection(websocket_connection&& c) = delete;
-
-		websocket_connection(httpd::http_any_stream& tcp_stream_)
-			: ws_stream_(tcp_stream_)
-			, message_channel(tcp_stream_.get_executor(), 1)
-		{}
-
-		void close(auto connection_id)
-		{
-			LOG_DBG << "ws client close() called: [" << connection_id << "]";
-			message_channel.cancel();
-		}
-
-		websocket::stream<httpd::http_any_stream&> ws_stream_;
-		boost::asio::experimental::concurrent_channel<void(boost::system::error_code, std::string)> message_channel;
-	};
-
-	struct client_connection : boost::noncopyable
-	{
-		httpd::http_any_stream tcp_stream;
-
-		int64_t connection_id_;
-		std::string remote_host_;
-		std::string x_real_ip;
-
-		std::optional<websocket_connection> ws_client;
-
-		std::shared_ptr<services::client_session> session_info;
-
-		auto get_executor()
-		{
-			return tcp_stream.get_executor();
-		}
-
-		boost::asio::ip::tcp::socket& socket()
-		{
-			return tcp_stream.socket();
-		}
-
-		~client_connection()
-		{
-			tcp_stream.close();
-			LOG_DBG << (ws_client? "ws" : "http" ) <<  " client leave: " << connection_id_ << ", remote: " << x_real_ip;
-		}
-
-		void close()
-		{
-			if (ws_client)
-				ws_client->close(connection_id_);
-			tcp_stream.close();
-		}
-
-		template<typename Executor>
-		client_connection(Executor&& io, int64_t connection_id)
-			: tcp_stream(boost::beast::tcp_stream(std::forward<Executor>(io)))
-			, connection_id_(connection_id)
-		{
-		}
-
-	};
-
-	using client_connection_ptr = std::shared_ptr<client_connection>;
-	using client_connection_weakptr = std::weak_ptr<client_connection>;
 
 	inline int64_t client_connection_get_id(client_connection_ptr p)
 	{
@@ -243,6 +181,9 @@ namespace cmall {
 		~cmall_service();
 
 	public:
+		boost::asio::awaitable<bool> init_ws_acceptors();
+		boost::asio::awaitable<bool> init_wss_acceptors(std::string_view cert, std::string_view key);
+
 		boost::asio::awaitable<bool> load_configs();
 
 		boost::asio::awaitable<void> run_httpd();
@@ -256,10 +197,10 @@ namespace cmall {
 		std::shared_ptr<services::repo_products> get_merchant_git_repo(const cmall_merchant& merchant) const; // will throw if not found
 		std::shared_ptr<services::repo_products> get_merchant_git_repo(std::uint64_t merchant_uid) const; // will throw if not found
 
-		boost::asio::awaitable<bool> init_ws_acceptors();
 
 		// 这 3 个函数, 是 acceptor 需要的.
 		client_connection_ptr        make_shared_connection(const boost::asio::any_io_executor& io, std::int64_t connection_id);
+		client_connection_ptr        make_shared_ssl_connection(const boost::asio::any_io_executor& io, std::int64_t connection_id);
 		boost::asio::awaitable<void> client_connected(client_connection_ptr);
 		boost::asio::awaitable<void> client_disconnected(client_connection_ptr);
 
@@ -308,8 +249,13 @@ namespace cmall {
 		// ws 服务端相关.
 		std::shared_mutex active_users_mtx;
 		active_session_map active_users;
+
+		boost::asio::ssl::context sslctx_;
 		std::vector<httpd::acceptor<client_connection_ptr, cmall_service>> m_ws_acceptors;
-		friend class httpd::acceptor<client_connection_ptr, cmall_service>;
+		std::vector<httpd::ssl_acceptor<client_connection_ptr, cmall_service>> m_wss_acceptors;
 		std::atomic_bool m_abort{false};
+
+		friend class httpd::acceptor<client_connection_ptr, cmall_service>;
+		friend class httpd::ssl_acceptor<client_connection_ptr, cmall_service>;
 	};
 }
