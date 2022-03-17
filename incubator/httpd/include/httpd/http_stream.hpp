@@ -48,14 +48,14 @@ public:
     auto expires_after(auto expiry_time)
     {
         return std::visit([expiry_time](auto && realtype) mutable {
-            return realtype.expires_after(expiry_time);
+            return boost::beast::get_lowest_layer(realtype).expires_after(expiry_time);
         }, *this);
     }
 
     boost::asio::ip::tcp::socket& socket()
     {
         return std::visit([](auto && realtype) mutable -> boost::asio::ip::tcp::socket& {
-            return realtype.socket();
+            return boost::beast::get_lowest_layer(realtype).socket();
         }, *this);
     }
 
@@ -69,7 +69,7 @@ public:
 
 };
 
-typedef http_stream<boost::beast::tcp_stream> http_any_stream;
+typedef http_stream<boost::beast::tcp_stream, boost::beast::ssl_stream<boost::beast::tcp_stream>> http_any_stream;
 
 
 }
