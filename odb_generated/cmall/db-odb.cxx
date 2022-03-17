@@ -9191,12 +9191,12 @@ namespace odb
     // state_
     //
     {
-      ::uint8_t const& v =
+      ::approve_state_t const& v =
         o.state_;
 
       bool is_null (false);
       pgsql::value_traits<
-          ::uint8_t,
+          ::approve_state_t,
           pgsql::id_smallint >::set_image (
         i.state_value, is_null, v);
       i.state_null = is_null;
@@ -9325,11 +9325,11 @@ namespace odb
     // state_
     //
     {
-      ::uint8_t& v =
+      ::approve_state_t& v =
         o.state_;
 
       pgsql::value_traits<
-          ::uint8_t,
+          ::approve_state_t,
           pgsql::id_smallint >::set_value (
         v,
         i.state_value,

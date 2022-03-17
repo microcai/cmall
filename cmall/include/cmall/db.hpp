@@ -277,8 +277,8 @@ struct cmall_apply_for_mechant
 #pragma db index
 	std::shared_ptr<cmall_user> applicant_;
 
-#pragma db default(0)
-	uint8_t state_{0}; // 审批状态.
+#pragma db type("SMALLINT") default(0)
+	approve_state_t state_ { approve_state_t::waiting }; // 审批状态.
 
 	std::string ext_;
 

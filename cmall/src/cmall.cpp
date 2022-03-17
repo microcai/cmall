@@ -1320,10 +1320,11 @@ namespace cmall
 					bool found = db.find(apply_id, apply);
 					if (!found)
 						co_return false;
-					if (apply.state_ != to_underlying(approve_state_t::waiting))
+					if (apply.state_ != approve_state_t::waiting)
 						co_return false;
 
-					apply.state_ = to_underlying(approve_state_t::approved);
+					apply.state_ = approve_state_t::approved;
+					apply.deleted_at_ = boost::posix_time::second_clock::local_time();
 					db.update(apply);
 
 					// 创建商户.
@@ -1359,9 +1360,9 @@ namespace cmall
 					throw boost::system::system_error(cmall::error::invalid_params);
 
 				using query_t = odb::query<cmall_apply_for_mechant>;
-				auto query = query_t::id == apply_id && query_t::state == to_underlying(approve_state_t::waiting);
+				auto query = query_t::id == apply_id && query_t::state == approve_state_t::waiting;
 				co_await m_database.async_update<cmall_apply_for_mechant>(query, [reason](cmall_apply_for_mechant&& apply) mutable {
-					apply.state_ = to_underlying(approve_state_t::denied);
+					apply.state_ = approve_state_t::denied;
 					apply.ext_ = reason;
 					return apply;
 				});
