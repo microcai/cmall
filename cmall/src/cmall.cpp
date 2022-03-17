@@ -150,8 +150,7 @@ namespace cmall
 	{
 		std::vector<cmall_merchant> all_merchant;
 		using query_t = odb::query<cmall_merchant>;
-		auto query	  = (query_t::state == (uint8_t)to_underlying(merchant_state_t::normal))
-			&& (query_t::deleted_at.is_null());
+		auto query	  = query_t::deleted_at.is_null();
 		co_await m_database.async_load<cmall_merchant>(query, all_merchant);
 
 		for (cmall_merchant& merchant : all_merchant)
@@ -801,6 +800,11 @@ namespace cmall
 					boost::json::object goods_ref = goods_v.as_object();
 					auto merchant_id_of_goods	  = goods_ref["merchant_id"].as_int64();
 					auto goods_id_of_goods		  = jsutil::json_as_string(goods_ref["goods_id"].as_string(), "");
+					
+					cmall_merchant m;
+					bool found = co_await m_database.async_load(merchant_id_of_goods, m);
+					if (!found || m.state_ != to_underlying(merchant_state_t::normal))
+						continue;
 
 					boost::system::error_code ec;
 					services::product product_in_mall
