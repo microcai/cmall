@@ -121,7 +121,7 @@ namespace httpd
 			int flags = fcntl(fd, F_GETFD);
 			if (! (flags & FD_CLOEXEC))
 			{
-				flags |= FD_CLOEXEC;  
+				flags |= FD_CLOEXEC;
 				fcntl(fd, F_SETFD, flags);
 			}
 #endif
