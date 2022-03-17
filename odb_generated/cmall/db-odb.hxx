@@ -1582,7 +1582,7 @@ namespace odb
     typedef
     pgsql::query_column<
       pgsql::value_traits<
-        ::uint8_t,
+        ::merchant_state_t,
         pgsql::id_smallint >::query_type,
       pgsql::id_smallint >
     state_type_;

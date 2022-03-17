@@ -159,7 +159,8 @@ struct cmall_merchant
 #pragma db index
 	std::string name_; // 商户名称.
 
-	uint8_t state_{ 0 }; // 状态, 正常/停用/封禁.
+#pragma db type("SMALLINT")
+	merchant_state_t state_{ merchant_state_t::normal }; // 状态, 正常/停用/封禁.
 
 	odb::nullable<std::string> desc_;
 
