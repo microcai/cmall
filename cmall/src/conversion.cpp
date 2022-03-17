@@ -110,6 +110,7 @@ inline namespace conversion
 		jv = {
 			{ "apply_id", a.id_ },
 			{ "applicant_user_id", a.applicant_->uid_ },
+			{ "approved", a.approved_ },
 			{ "created_at", to_string(a.created_at_) },
 		};
 	}

@@ -1287,9 +1287,8 @@ namespace cmall
 			}break;
 			case req_method::admin_approve_merchant:
 			{
-				auto apply_id_str = jsutil::json_accessor(params).get_string("apply_id");
-				auto apply_id = parse_number<std::uint64_t>(apply_id_str);
-				if (!apply_id.has_value())
+				auto apply_id = jsutil::json_accessor(params).get("apply_id", -1).as_int64();
+				if (apply_id < 0)
 					throw boost::system::system_error(cmall::error::invalid_params);
 
 				// 更新申请状态.
@@ -1299,7 +1298,7 @@ namespace cmall
 				bool succeed = co_await m_database.async_transacton([&](const cmall_database::odb_transaction_ptr& tx) mutable -> boost::asio::awaitable<bool> {
 					auto& db = tx->database();
 
-					bool found = db.find(apply_id.value(), apply);
+					bool found = db.find(apply_id, apply);
 					if (!found)
 						co_return false;
 
@@ -1333,14 +1332,13 @@ namespace cmall
 			break;
 			case req_method::admin_deny_applicant:
 			{
-				auto apply_id_str = jsutil::json_accessor(params).get_string("apply_id");
-				auto apply_id = parse_number<std::uint64_t>(apply_id_str);
-				auto reason = jsutil::json_accessor(params).get_string("apply_id");
-				if (!apply_id.has_value())
+				auto apply_id = jsutil::json_accessor(params).get("apply_id", -1).as_int64();
+				auto reason = jsutil::json_accessor(params).get_string("reason");
+				if (apply_id < 0)
 					throw boost::system::system_error(cmall::error::invalid_params);
 
 				using query_t = odb::query<cmall_apply_for_mechant>;
-				auto query = query_t::id == apply_id.value() && query_t::approved == false;
+				auto query = query_t::id == apply_id && query_t::approved == false;
 				co_await m_database.async_update<cmall_apply_for_mechant>(query, [reason](cmall_apply_for_mechant&& apply) mutable {
 					apply.approved_ = false;
 					apply.ext_ = reason;
@@ -1361,8 +1359,14 @@ namespace cmall
 				std::vector<std::uint64_t> mids;
 				for (const auto& v : marr)
 				{
-					if (v.is_uint64())
-						mids.push_back(v.as_uint64());
+					if (v.is_int64())
+					{
+						auto mid = v.as_int64();
+						if (mid >= 0)
+						{
+							mids.push_back(mid);
+						}
+					}
 				}
 				if (!mids.empty())
 				{
