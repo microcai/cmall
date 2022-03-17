@@ -445,11 +445,8 @@ namespace cmall
 							// 如果是 merchant/admin 也载入他们的信息
 							if (co_await m_database.async_load<cmall_merchant>(this_client.session_info->user_info->uid_, merchant_user))
 							{
-								if (merchant_user.state_ == 0)
-								{
-									this_client.session_info->merchant_info = merchant_user;
-									this_client.session_info->isMerchant = true;
-								}
+								this_client.session_info->merchant_info = merchant_user;
+								this_client.session_info->isMerchant = true;
 							}
 							if (co_await m_database.async_load<administrators>(this_client.session_info->user_info->uid_, admin_user))
 							{
