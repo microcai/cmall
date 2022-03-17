@@ -1275,14 +1275,18 @@ namespace cmall
 			case req_method::admin_list_merchants:
 			{
 				std::vector<cmall_merchant> all_merchants;
-				co_await m_database.async_load_all(all_merchants);
+				using query_t = odb::query<cmall_merchant>;
+				auto query = query_t::deleted_at.is_null() + " order by " + query_t::created_at + " desc";
+				co_await m_database.async_load<cmall_merchant>(query, all_merchants);
 				reply_message["result"] = boost::json::value_from(all_merchants);
 			}
 			break;
 			case req_method::admin_list_applicants:
 			{
 				std::vector<cmall_apply_for_mechant> all_applicats;
-				co_await m_database.async_load_all(all_applicats);
+				using query_t = odb::query<cmall_apply_for_mechant>;
+				auto query = query_t::deleted_at.is_null() + " order by " + query_t::created_at + " desc";
+				co_await m_database.async_load<cmall_apply_for_mechant>(query, all_applicats);
 				reply_message["result"] = boost::json::value_from(all_applicats);
 			}break;
 			case req_method::admin_approve_merchant:
