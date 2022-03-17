@@ -3070,17 +3070,17 @@ namespace odb
 
     static const applicant_type_ applicant;
 
-    // approved
+    // state
     //
     typedef
     pgsql::query_column<
       pgsql::value_traits<
-        bool,
-        pgsql::id_boolean >::query_type,
-      pgsql::id_boolean >
-    approved_type_;
+        ::uint8_t,
+        pgsql::id_smallint >::query_type,
+      pgsql::id_smallint >
+    state_type_;
 
-    static const approved_type_ approved;
+    static const state_type_ state;
 
     // ext
     //
@@ -3142,9 +3142,9 @@ namespace odb
   applicant (A::table_name, "\"applicant\"", 0);
 
   template <typename A>
-  const typename pointer_query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::approved_type_
+  const typename pointer_query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::state_type_
   pointer_query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::
-  approved (A::table_name, "\"approved\"", 0);
+  state (A::table_name, "\"state\"", 0);
 
   template <typename A>
   const typename pointer_query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::ext_type_
@@ -3191,10 +3191,10 @@ namespace odb
       long long applicant_value;
       bool applicant_null;
 
-      // approved_
+      // state_
       //
-      bool approved_value;
-      bool approved_null;
+      short state_value;
+      bool state_null;
 
       // ext_
       //
@@ -3495,17 +3495,17 @@ namespace odb
 
     static const applicant_type_ applicant;
 
-    // approved
+    // state
     //
     typedef
     pgsql::query_column<
       pgsql::value_traits<
-        bool,
-        pgsql::id_boolean >::query_type,
-      pgsql::id_boolean >
-    approved_type_;
+        ::uint8_t,
+        pgsql::id_smallint >::query_type,
+      pgsql::id_smallint >
+    state_type_;
 
-    static const approved_type_ approved;
+    static const state_type_ state;
 
     // ext
     //
@@ -3567,9 +3567,9 @@ namespace odb
   applicant (A::table_name, "\"applicant\"", 0);
 
   template <typename A>
-  const typename query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::approved_type_
+  const typename query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::state_type_
   query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::
-  approved (A::table_name, "\"approved\"", 0);
+  state (A::table_name, "\"state\"", 0);
 
   template <typename A>
   const typename query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::ext_type_

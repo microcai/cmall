@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <vector>
 #include <sstream>
@@ -40,7 +41,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(8, 19, open)
+#pragma db model version(8, 21, open)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -258,6 +259,13 @@ struct cmall_cart
 };
 
 
+enum class approve_state_t
+{
+	waiting = 0, // 未审批, 等待审批.
+	approved, // 批准通过.
+	denied, // 未批准.
+};
+
 // 申请表.
 #pragma db object
 struct cmall_apply_for_mechant
@@ -268,8 +276,8 @@ struct cmall_apply_for_mechant
 #pragma db index
 	std::shared_ptr<cmall_user> applicant_;
 
-#pragma db default(false)
-	bool approved_{false};
+#pragma db default(0)
+	uint8_t state_{0}; // 审批状态.
 
 	std::string ext_;
 

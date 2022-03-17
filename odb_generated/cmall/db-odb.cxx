@@ -8947,7 +8947,7 @@ namespace odb
   persist_statement_types[] =
   {
     pgsql::int8_oid,
-    pgsql::bool_oid,
+    pgsql::int2_oid,
     pgsql::text_oid,
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
@@ -8964,7 +8964,7 @@ namespace odb
   update_statement_types[] =
   {
     pgsql::int8_oid,
-    pgsql::bool_oid,
+    pgsql::int2_oid,
     pgsql::text_oid,
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
@@ -9048,7 +9048,7 @@ namespace odb
     //
     t[1UL] = 0;
 
-    // approved_
+    // state_
     //
     t[2UL] = 0;
 
@@ -9103,11 +9103,11 @@ namespace odb
     b[n].is_null = &i.applicant_null;
     n++;
 
-    // approved_
+    // state_
     //
-    b[n].type = pgsql::bind::boolean_;
-    b[n].buffer = &i.approved_value;
-    b[n].is_null = &i.approved_null;
+    b[n].type = pgsql::bind::smallint;
+    b[n].buffer = &i.state_value;
+    b[n].is_null = &i.state_null;
     n++;
 
     // ext_
@@ -9188,18 +9188,18 @@ namespace odb
         i.applicant_null = true;
     }
 
-    // approved_
+    // state_
     //
     {
-      bool const& v =
-        o.approved_;
+      ::uint8_t const& v =
+        o.state_;
 
       bool is_null (false);
       pgsql::value_traits<
-          bool,
-          pgsql::id_boolean >::set_image (
-        i.approved_value, is_null, v);
-      i.approved_null = is_null;
+          ::uint8_t,
+          pgsql::id_smallint >::set_image (
+        i.state_value, is_null, v);
+      i.state_null = is_null;
     }
 
     // ext_
@@ -9322,18 +9322,18 @@ namespace odb
       }
     }
 
-    // approved_
+    // state_
     //
     {
-      bool& v =
-        o.approved_;
+      ::uint8_t& v =
+        o.state_;
 
       pgsql::value_traits<
-          bool,
-          pgsql::id_boolean >::set_value (
+          ::uint8_t,
+          pgsql::id_smallint >::set_value (
         v,
-        i.approved_value,
-        i.approved_null);
+        i.state_value,
+        i.state_null);
     }
 
     // ext_
@@ -9411,7 +9411,7 @@ namespace odb
   "INSERT INTO \"cmall_apply_for_mechant\" "
   "(\"id\", "
   "\"applicant\", "
-  "\"approved\", "
+  "\"state\", "
   "\"ext\", "
   "\"created_at\", "
   "\"updated_at\", "
@@ -9424,7 +9424,7 @@ namespace odb
   "SELECT "
   "\"cmall_apply_for_mechant\".\"id\", "
   "\"cmall_apply_for_mechant\".\"applicant\", "
-  "\"cmall_apply_for_mechant\".\"approved\", "
+  "\"cmall_apply_for_mechant\".\"state\", "
   "\"cmall_apply_for_mechant\".\"ext\", "
   "\"cmall_apply_for_mechant\".\"created_at\", "
   "\"cmall_apply_for_mechant\".\"updated_at\", "
@@ -9436,7 +9436,7 @@ namespace odb
   "UPDATE \"cmall_apply_for_mechant\" "
   "SET "
   "\"applicant\"=$1, "
-  "\"approved\"=$2, "
+  "\"state\"=$2, "
   "\"ext\"=$3, "
   "\"created_at\"=$4, "
   "\"updated_at\"=$5, "
@@ -9451,7 +9451,7 @@ namespace odb
   "SELECT\n"
   "\"cmall_apply_for_mechant\".\"id\",\n"
   "\"cmall_apply_for_mechant\".\"applicant\",\n"
-  "\"cmall_apply_for_mechant\".\"approved\",\n"
+  "\"cmall_apply_for_mechant\".\"state\",\n"
   "\"cmall_apply_for_mechant\".\"ext\",\n"
   "\"cmall_apply_for_mechant\".\"created_at\",\n"
   "\"cmall_apply_for_mechant\".\"updated_at\",\n"
@@ -10062,7 +10062,7 @@ namespace odb
           db.execute ("CREATE TABLE \"cmall_apply_for_mechant\" (\n"
                       "  \"id\" BIGSERIAL NOT NULL PRIMARY KEY,\n"
                       "  \"applicant\" BIGINT NULL,\n"
-                      "  \"approved\" BOOLEAN NOT NULL DEFAULT FALSE,\n"
+                      "  \"state\" SMALLINT NOT NULL DEFAULT 0,\n"
                       "  \"ext\" TEXT NOT NULL,\n"
                       "  \"created_at\" TIMESTAMP NULL,\n"
                       "  \"updated_at\" TIMESTAMP NULL,\n"
@@ -10083,7 +10083,7 @@ namespace odb
                       "  \"migration\" BOOLEAN NOT NULL)");
           db.execute ("INSERT INTO \"schema_version\" (\n"
                       "  \"name\", \"version\", \"migration\")\n"
-                      "  SELECT '', 19, FALSE\n"
+                      "  SELECT '', 21, FALSE\n"
                       "  WHERE NOT EXISTS (\n"
                       "    SELECT 1 FROM \"schema_version\" WHERE \"name\" = '')");
           return false;
@@ -10741,6 +10741,114 @@ namespace odb
     "",
     19ULL,
     &migrate_schema_19);
+
+  static bool
+  migrate_schema_20 (database& db, unsigned short pass, bool pre)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (pass);
+    ODB_POTENTIALLY_UNUSED (pre);
+
+    if (pre)
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"version\" = 20, \"migration\" = TRUE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+    else
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("ALTER TABLE \"cmall_apply_for_mechant\"\n"
+                      "  DROP COLUMN \"approved\"");
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"migration\" = FALSE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  static const schema_catalog_migrate_entry
+  migrate_schema_entry_20_ (
+    id_pgsql,
+    "",
+    20ULL,
+    &migrate_schema_20);
+
+  static bool
+  migrate_schema_21 (database& db, unsigned short pass, bool pre)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (pass);
+    ODB_POTENTIALLY_UNUSED (pre);
+
+    if (pre)
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          db.execute ("ALTER TABLE \"cmall_apply_for_mechant\"\n"
+                      "  ADD COLUMN \"state\" SMALLINT NOT NULL DEFAULT 0");
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"version\" = 21, \"migration\" = TRUE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+    else
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"migration\" = FALSE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  static const schema_catalog_migrate_entry
+  migrate_schema_entry_21_ (
+    id_pgsql,
+    "",
+    21ULL,
+    &migrate_schema_21);
 }
 
 #include <odb/post.hxx>

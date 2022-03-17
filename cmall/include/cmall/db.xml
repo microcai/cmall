@@ -1,4 +1,16 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
+  <changeset version="21">
+    <alter-table name="cmall_apply_for_mechant">
+      <add-column name="state" type="SMALLINT" null="false" default="0"/>
+    </alter-table>
+  </changeset>
+
+  <changeset version="20">
+    <alter-table name="cmall_apply_for_mechant">
+      <drop-column name="approved"/>
+    </alter-table>
+  </changeset>
+
   <changeset version="19">
     <alter-table name="cmall_merchant">
       <drop-column name="api_token"/>
