@@ -35,6 +35,7 @@
 #include "services/gitea_service.hpp"
 
 #include "httpd/acceptor.hpp"
+#include "httpd/http_stream.hpp"
 
 namespace cmall {
 
@@ -51,12 +52,11 @@ namespace cmall {
 
 	using ws_stream = websocket::stream<boost::beast::tcp_stream>;
 
-
 	struct websocket_connection
 	{
 		websocket_connection(websocket_connection&& c) = delete;
 
-		websocket_connection(boost::beast::tcp_stream& tcp_stream_)
+		websocket_connection(httpd::http_any_stream& tcp_stream_)
 			: ws_stream_(tcp_stream_)
 			, message_channel(tcp_stream_.get_executor(), 1)
 		{}
@@ -67,13 +67,14 @@ namespace cmall {
 			message_channel.cancel();
 		}
 
-		websocket::stream<boost::beast::tcp_stream&> ws_stream_;
+		websocket::stream<httpd::http_any_stream&> ws_stream_;
 		boost::asio::experimental::concurrent_channel<void(boost::system::error_code, std::string)> message_channel;
 	};
 
 	struct client_connection : boost::noncopyable
 	{
-		boost::beast::tcp_stream tcp_stream;
+		httpd::http_any_stream tcp_stream;
+
 		int64_t connection_id_;
 		std::string remote_host_;
 		std::string x_real_ip;
@@ -94,9 +95,7 @@ namespace cmall {
 
 		~client_connection()
 		{
-			boost::system::error_code ignore_ec;
-			auto& sock  = boost::beast::get_lowest_layer(tcp_stream).socket();
-			sock.close(ignore_ec);
+			tcp_stream.close();
 			LOG_DBG << (ws_client? "ws" : "http" ) <<  " client leave: " << connection_id_ << ", remote: " << x_real_ip;
 		}
 
@@ -104,12 +103,12 @@ namespace cmall {
 		{
 			if (ws_client)
 				ws_client->close(connection_id_);
-			boost::beast::close_socket(tcp_stream);
+			tcp_stream.close();
 		}
 
 		template<typename Executor>
 		client_connection(Executor&& io, int64_t connection_id)
-			: tcp_stream(std::forward<Executor>(io))
+			: tcp_stream(boost::beast::tcp_stream(std::forward<Executor>(io)))
 			, connection_id_(connection_id)
 		{
 		}
@@ -264,8 +263,8 @@ namespace cmall {
 		boost::asio::awaitable<void> client_connected(client_connection_ptr);
 		boost::asio::awaitable<void> client_disconnected(client_connection_ptr);
 
-		boost::asio::awaitable<int> render_git_repo_files(size_t connection_id, std::string merchant, std::string path_in_repo, boost::beast::tcp_stream& client, boost::beast::http::request<boost::beast::http::string_body>);
-		boost::asio::awaitable<int> render_goods_detail_content(size_t connection_id, std::string merchant, std::string goods_id, boost::beast::tcp_stream& client, int httpver, bool keepalive);
+		boost::asio::awaitable<int> render_git_repo_files(size_t connection_id, std::string merchant, std::string path_in_repo, httpd::http_any_stream& client, boost::beast::http::request<boost::beast::http::string_body>);
+		boost::asio::awaitable<int> render_goods_detail_content(size_t connection_id, std::string merchant, std::string goods_id, httpd::http_any_stream& client, int httpver, bool keepalive);
 		boost::asio::awaitable<void> do_ws_read(size_t connection_id, client_connection_ptr);
 		boost::asio::awaitable<void> do_ws_write(size_t connection_id, client_connection_ptr);
 

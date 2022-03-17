@@ -209,7 +209,7 @@ namespace cmall
 
 	// 从 git 仓库获取文件，没找到返回 0
 	boost::asio::awaitable<int> cmall_service::render_git_repo_files(size_t connection_id, std::string merchant,
-		std::string path_in_repo, boost::beast::tcp_stream& client,
+		std::string path_in_repo, httpd::http_any_stream& client,
 		boost::beast::http::request<boost::beast::http::string_body> req)
 	{
 		auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
@@ -239,7 +239,7 @@ namespace cmall
 
 	// 成功给用户返回内容, 返回 200. 如果没找到商品, 不要向 client 写任何数据, 直接放回 404, 由调用方统一返回错误页面.
 	boost::asio::awaitable<int> cmall_service::render_goods_detail_content(size_t connection_id, std::string merchant,
-		std::string goods_id, boost::beast::tcp_stream& client, int http_ver, bool keepalive)
+		std::string goods_id, httpd::http_any_stream& client, int http_ver, bool keepalive)
 	{
 		auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
 		boost::system::error_code ec;

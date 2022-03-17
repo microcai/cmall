@@ -5,7 +5,7 @@
 
 #include "httpd/httpd.hpp"
 
-boost::asio::awaitable<boost::system::error_code> httpd::send_string_response_body(boost::beast::tcp_stream& client,
+boost::asio::awaitable<boost::system::error_code> httpd::send_string_response_body(http_any_stream& client,
         std::string& res_body, std::string expires, std::string mime_types, int http_version, bool keepalive)
 {
     boost::beast::http::response<boost::beast::http::string_body> res{ boost::beast::http::status::ok, http_version };
