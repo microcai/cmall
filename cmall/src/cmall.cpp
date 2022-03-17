@@ -617,7 +617,7 @@ namespace cmall
 							// 如果是 merchant/admin 也载入他们的信息
 							if (co_await m_database.async_load<cmall_merchant>(user.uid_, merchant_user))
 							{
-								if (merchant_user.state_ == 0)
+								if (merchant_user.state_ == merchant_state_t::normal)
 								{
 									session_info.merchant_info = merchant_user;
 									session_info.isMerchant = true;
@@ -803,7 +803,7 @@ namespace cmall
 					
 					cmall_merchant m;
 					bool found = co_await m_database.async_load(merchant_id_of_goods, m);
-					if (!found || m.state_ != to_underlying(merchant_state_t::normal))
+					if (!found || (m.state_ != merchant_state_t::normal))
 						continue;
 
 					boost::system::error_code ec;
@@ -1046,8 +1046,8 @@ namespace cmall
 
 				std::vector<cmall_merchant> merchants;
 				using query_t = odb::query<cmall_merchant>;
-				auto query	  = query_t::state == (uint8_t) to_underlying(merchant_state_t::normal)
-					&& query_t::deleted_at.is_null();
+				auto query	  = (query_t::state == merchant_state_t::normal)
+					&& (query_t::deleted_at.is_null());
 				if (merchant_id.has_value())
 				{
 					query = query_t::uid == merchant_id.value() && query;
@@ -1330,7 +1330,7 @@ namespace cmall
 					auto gitea_password = gen_password();
 					m.uid_ = apply.applicant_->uid_;
 					m.name_ = apply.applicant_->name_;
-					m.state_ = to_underlying(merchant_state_t::normal);
+					m.state_ = merchant_state_t::normal;
 					m.gitea_password = gitea_password;
 					m.repo_path = m_config.repo_root / std::format("m{}", m.uid_)  / "shop.git";
 					db.persist(m);
@@ -1391,7 +1391,7 @@ namespace cmall
 				}
 				if (!mids.empty())
 				{
-					auto state = enable ? to_underlying(merchant_state_t::normal) : to_underlying(merchant_state_t::disabled);
+					auto state = enable ? merchant_state_t::normal : merchant_state_t::disabled;
 					using query_t = odb::query<cmall_merchant>;
 					auto query = query_t::uid.in_range(mids.begin(), mids.end());
 					co_await m_database.async_update<cmall_merchant>(query, [state](cmall_merchant&& m) mutable {
