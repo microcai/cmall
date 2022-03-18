@@ -1521,6 +1521,9 @@ namespace cmall
 		co_await httpd::detail::map(m_ws_acceptors,
 			[](auto&& a) mutable -> boost::asio::awaitable<void> { co_return co_await a.clean_shutdown(); });
 
+		co_await httpd::detail::map(m_wss_acceptors,
+			[](auto&& a) mutable -> boost::asio::awaitable<void> { co_return co_await a.clean_shutdown(); });
+
 		LOG_DBG << "cmall_service::close_all_ws() success!";
 	}
 
