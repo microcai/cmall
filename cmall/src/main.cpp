@@ -269,8 +269,11 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 		auto cert_buf = boost::asio::dynamic_buffer(cert_file_content);
 		auto privatekey_buf = boost::asio::dynamic_buffer(key_file_content);
 
-		co_await boost::asio::async_read(pem_cert, cert_buf, boost::asio::transfer_all(), asio_util::use_awaitable[ec]);
-		co_await boost::asio::async_read(privatekey, privatekey_buf, boost::asio::transfer_all(), asio_util::use_awaitable[ec]);
+		co_await (
+			co_await boost::asio::async_read(pem_cert, cert_buf, boost::asio::transfer_all(), asio_util::use_awaitable[ec])
+			&&
+			co_await boost::asio::async_read(privatekey, privatekey_buf, boost::asio::transfer_all(), asio_util::use_awaitable[ec])
+		);
 
 		// 初始化ws acceptors.
 		co_await xsrv.init_wss_acceptors(cert_file_content, key_file_content);
