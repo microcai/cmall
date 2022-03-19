@@ -6,7 +6,9 @@
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/associated_executor.hpp>
+
 using boost::asio::awaitable;
+using boost::asio::use_awaitable;
 
 namespace this_coro{
 
@@ -30,7 +32,7 @@ namespace detail {
 
 inline awaitable<void> coro_yield()
 {
-	co_await boost::asio::post(co_await boost::asio::this_coro::executor, boost::asio::use_awaitable);
+	co_await boost::asio::post(co_await boost::asio::this_coro::executor, use_awaitable);
 }
 
 template<typename Handler>

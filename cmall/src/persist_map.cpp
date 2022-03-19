@@ -23,6 +23,7 @@ using steady_timer = boost::asio::basic_waitable_timer<time_clock::steady_clock>
 
 using namespace mdbx;
 using boost::asio::awaitable;
+using boost::asio::use_awaitable;
 
 static env::operate_parameters get_default_operate_parameters()
 {
@@ -132,7 +133,7 @@ struct persist_map_impl
 				co_return;
 
 			timer_.expires_from_now(std::chrono::seconds(60));
-			co_await timer_.async_wait(boost::asio::use_awaitable);
+			co_await timer_.async_wait(use_awaitable);
 		}
 	}
 
@@ -151,7 +152,7 @@ struct persist_map_impl
 			{
 			}
 			co_return false;
-		}, boost::asio::use_awaitable);
+		}, use_awaitable);
 	}
 
 	awaitable<std::string> get(std::string_view key) const
@@ -164,7 +165,7 @@ struct persist_map_impl
 			t.commit();
 			co_return string_value;
 
-		}, boost::asio::use_awaitable);
+		}, use_awaitable);
 	}
 
 	awaitable<void> put(std::string_view key, std::string value, std::chrono::duration<int> lifetime)
@@ -181,7 +182,7 @@ struct persist_map_impl
 			t.commit();
 
 			co_return;
-		}, boost::asio::use_awaitable);
+		}, use_awaitable);
 	}
 };
 

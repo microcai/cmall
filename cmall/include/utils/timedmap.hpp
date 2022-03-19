@@ -23,6 +23,7 @@
 #include "coroyield.hpp"
 
 using boost::asio::awaitable;
+using boost::asio::use_awaitable;
 
 namespace utility
 {
@@ -137,7 +138,7 @@ namespace utility
 				boost::asio::basic_waitable_timer<time_clock::steady_clock> timer(co_await boost::asio::this_coro::executor);
 
 				timer.expires_from_now(diff);
-				co_await timer.async_wait(boost::asio::bind_cancellation_slot(shared_data->cancell_signal.slot(),  boost::asio::use_awaitable));
+				co_await timer.async_wait(boost::asio::bind_cancellation_slot(shared_data->cancell_signal.slot(),  use_awaitable));
 
 			}
 		}

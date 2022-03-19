@@ -22,6 +22,9 @@ using namespace boost::asio::experimental::awaitable_operators;
 #include "cmall/error_code.hpp"
 #include "sandbox.hpp"
 
+using boost::asio::use_awaitable;
+using boost::asio::experimental::use_promise;
+
 #ifdef __linux__
 
 #include <sys/socket.h>
@@ -103,7 +106,7 @@ namespace services
 			datagram_protocol::socket fd_sending_socket(io);
 			boost::asio::local::connect_pair(fd_recive_socket, fd_sending_socket);
 
-			// 为了不 hook access/fstat 这些调用， 就用系统已经存在的，也必然存在的文件名.			
+			// 为了不 hook access/fstat 这些调用， 就用系统已经存在的，也必然存在的文件名.
 			vfs.insert({"/proc/cmdline", script_content});
 			node_args.push_back("/proc/cmdline");
 
@@ -125,7 +128,7 @@ namespace services
 					fd_recive_socket.close();
 					sandbox::no_fd_leak();
 					sandbox::install_seccomp(fd_sending_socket.release());
-					sandbox::drop_root(); 
+					sandbox::drop_root();
 				}
 #endif
 			);
@@ -138,15 +141,15 @@ namespace services
 			sandbox::supervisor supervisor(boost::asio::posix::stream_descriptor(co_await boost::asio::this_coro::executor, sec_comp_notify_fd_), vfs);
 
 			auto seccomp_supervisor_promise = boost::asio::co_spawn(co_await boost::asio::this_coro::executor,
-				supervisor.start_supervisor(), boost::asio::experimental::use_promise);
+				supervisor.start_supervisor(), use_promise);
 #endif
 			std::string out;
 			auto d_buffer = boost::asio::dynamic_buffer(out);
 
-			auto read_promis = boost::asio::async_read_until(nodejs_output, d_buffer, '\n', boost::asio::experimental::use_promise);
+			auto read_promis = boost::asio::async_read_until(nodejs_output, d_buffer, '\n', use_promise);
 
 #ifdef _WIN32
-			co_await boost::asio::async_write(nodejs_input, boost::asio::buffer(script_content), boost::asio::use_awaitable);
+			co_await boost::asio::async_write(nodejs_input, boost::asio::buffer(script_content), use_awaitable);
 #endif
 			nodejs_input.close();
 
@@ -157,7 +160,7 @@ namespace services
 			t.expires_from_now(std::chrono::seconds(20));
 #endif
 			auto out_size = co_await (
-				read_promis.async_wait(boost::asio::use_awaitable) || t.async_wait(boost::asio::use_awaitable)
+				read_promis.async_wait(use_awaitable) || t.async_wait(use_awaitable)
 			);
 			out.resize(std::get<0>(out_size));
 			std::error_code stdec;
@@ -237,19 +240,19 @@ namespace services
 			sandbox::supervisor supervisor(boost::asio::posix::stream_descriptor(co_await boost::asio::this_coro::executor, sec_comp_notify_fd_), vfs);
 
 			auto seccomp_supervisor_promise = boost::asio::co_spawn(co_await boost::asio::this_coro::executor,
-				supervisor.start_supervisor(), boost::asio::experimental::use_promise);
+				supervisor.start_supervisor(), use_promise);
 #endif
 			std::string out;
 			auto d_buffer = boost::asio::dynamic_buffer(out);
 
 			nodejs_output.native_source();
 
-			auto read_promis = boost::asio::co_spawn(io, read_all_pipe_data(nodejs_output, d_buffer), boost::asio::experimental::use_promise);
+			auto read_promis = boost::asio::co_spawn(io, read_all_pipe_data(nodejs_output, d_buffer), use_promise);
 
 			auto stdin_feader = boost::asio::co_spawn(io, [&]()-> awaitable<void>{
-				co_await boost::asio::async_write(nodejs_input, boost::asio::buffer(http_request_body.data(), http_request_body.length()), boost::asio::use_awaitable);
+				co_await boost::asio::async_write(nodejs_input, boost::asio::buffer(http_request_body.data(), http_request_body.length()), use_awaitable);
 				nodejs_input.async_close();
-			}, boost::asio::experimental::use_promise);
+			}, use_promise);
 
 			boost::asio::basic_waitable_timer<time_clock::steady_clock>  t(co_await boost::asio::this_coro::executor);
 #ifdef _DEBUG
@@ -258,7 +261,7 @@ namespace services
 			t.expires_from_now(std::chrono::seconds(20));
 #endif
 			auto out_size = co_await (
-				read_promis.async_wait(boost::asio::use_awaitable) || t.async_wait(boost::asio::use_awaitable)
+				read_promis.async_wait(use_awaitable) || t.async_wait(use_awaitable)
 			);
 			out.resize(std::get<0>(out_size));
 			std::error_code stdec;

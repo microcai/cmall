@@ -8,6 +8,7 @@
 #include "utils/logging.hpp"
 
 using boost::asio::awaitable;
+using boost::asio::use_awaitable;
 
 #ifdef __linux__
 
@@ -278,7 +279,7 @@ awaitable<void> sandbox::supervisor::start_supervisor()
 
 	while (true)
 	{
-		co_await seccomp_notify_fd.async_wait(boost::asio::posix::stream_descriptor::wait_read, boost::asio::use_awaitable);
+		co_await seccomp_notify_fd.async_wait(boost::asio::posix::stream_descriptor::wait_read, use_awaitable);
 		pollfd onefd;
 		onefd.fd	 = seccomp_notify_fd.native_handle();
 		onefd.events = POLL_IN;
@@ -322,7 +323,7 @@ awaitable<void> sandbox::supervisor::start_supervisor()
 					long open_flag = req->data.args[2];
 
 					do
-					{		
+					{
 						if ( (dirfd == AT_FDCWD && (open_flag == (O_RDONLY | O_CLOEXEC)))
 							&& (
 							node_want_open.starts_with("/usr")
@@ -361,7 +362,7 @@ awaitable<void> sandbox::supervisor::start_supervisor()
 							resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
 							break;
 						}
-						
+
 						if (node_want_open.starts_with("/dev/") && (dirfd == AT_FDCWD))
 						{
 							LOG_DBG << "[seccomp] node wants to open dir /dev/ allowed";
@@ -381,7 +382,7 @@ awaitable<void> sandbox::supervisor::start_supervisor()
 						if (dirfd == AT_FDCWD && vfs.contains(node_want_open))
 						{
 							auto file_content = vfs.at(node_want_open);
-				
+
 							struct seccomp_notif_addfd addfd;
 							addfd.id = req->id;
 							addfd.srcfd = memfd_create("/thescript.js", 0);

@@ -9,6 +9,7 @@
 #include "utils/uawaitable.hpp"
 
 using boost::asio::awaitable;
+using boost::asio::use_awaitable;
 
 awaitable<int> cmall::http_handle_static_file(size_t connection_id, boost::beast::http::request<boost::beast::http::string_body>& req, httpd::http_any_stream& client)
 {
@@ -71,7 +72,7 @@ awaitable<int> cmall::http_handle_static_file(size_t connection_id, boost::beast
 		boost::beast::http::response_serializer<boost::beast::http::buffer_body, fields> sr{ res };
 		res.body().data = nullptr;
 		res.body().more = false;
-		co_await boost::beast::http::async_write(client, sr, boost::asio::use_awaitable);
+		co_await boost::beast::http::async_write(client, sr, use_awaitable);
 		co_return 200;
 	}
 
@@ -96,7 +97,7 @@ awaitable<int> cmall::http_handle_static_file(size_t connection_id, boost::beast
 	boost::system::error_code ec;
 	boost::beast::http::response_serializer<boost::beast::http::buffer_body, fields> sr{ res };
 
-	co_await boost::beast::http::async_write_header(client, sr, boost::asio::use_awaitable);
+	co_await boost::beast::http::async_write_header(client, sr, use_awaitable);
 
 	char buffer[2048];
 

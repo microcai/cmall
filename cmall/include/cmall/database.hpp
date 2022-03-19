@@ -41,6 +41,7 @@
 #include "utils/logging.hpp"
 
 using boost::asio::awaitable;
+using boost::asio::use_awaitable;
 
 namespace cmall
 {
@@ -93,7 +94,7 @@ namespace cmall
 				else
 					tx->rollback();
 				co_return success;
-			}, boost::asio::use_awaitable);
+			}, use_awaitable);
 		}
 
 		template <typename T>
@@ -320,7 +321,7 @@ namespace cmall
 			return boost::asio::co_spawn(thread_pool, [id, &value, this]()mutable -> awaitable<bool>
 			{
 				co_return get<T>(id, value);
-			}, boost::asio::use_awaitable);
+			}, use_awaitable);
 		}
 
 		template <typename T>
@@ -329,7 +330,7 @@ namespace cmall
 			return boost::asio::co_spawn(thread_pool, [this, query, &ret]() mutable -> awaitable<bool>
 			{
 				co_return get<T>(query, ret);
-			}, boost::asio::use_awaitable);
+			}, use_awaitable);
 		}
 
 		template <typename T>
@@ -338,7 +339,7 @@ namespace cmall
 			return boost::asio::co_spawn(thread_pool, [this, query, &ret]() mutable -> awaitable<bool>
 			{
 				co_return get<T>(query, ret);
-			}, boost::asio::use_awaitable);
+			}, use_awaitable);
 		}
 
 		template <typename T>
@@ -347,7 +348,7 @@ namespace cmall
 			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> awaitable<bool>
 			{
 				co_return add<T>(value);
-			}, boost::asio::use_awaitable);
+			}, use_awaitable);
 		}
 
 		template<typename T>
@@ -356,7 +357,7 @@ namespace cmall
 			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> awaitable<bool>
 			{
 				co_return update<T>(value);
-			}, boost::asio::use_awaitable);
+			}, use_awaitable);
 		}
 
 		template<typename T, typename UPDATER>
@@ -365,7 +366,7 @@ namespace cmall
 			return boost::asio::co_spawn(thread_pool, [id, updater = std::forward<UPDATER>(updater), this]()mutable -> awaitable<bool>
 			{
 				co_return update<T>(id, std::forward<UPDATER>(updater));
-			}, boost::asio::use_awaitable);
+			}, use_awaitable);
 		}
 
 		template<typename T, typename UPDATER>
@@ -374,7 +375,7 @@ namespace cmall
 			return boost::asio::co_spawn(thread_pool, [query, updater = std::forward<UPDATER>(updater), this]()mutable -> awaitable<bool>
 			{
 				co_return update<T>(query, std::forward<UPDATER>(updater));
-			}, boost::asio::use_awaitable);
+			}, use_awaitable);
 		}
 
 		template<typename T>
@@ -383,7 +384,7 @@ namespace cmall
 			return boost::asio::co_spawn(thread_pool, [id, this]()mutable -> awaitable<bool>
 			{
 				co_return hard_remove<T>(id);
-			}, boost::asio::use_awaitable);
+			}, use_awaitable);
 		}
 
 		template<SupportSoftDeletion T>
@@ -392,7 +393,7 @@ namespace cmall
 			return boost::asio::co_spawn(thread_pool, [id, this]()mutable -> awaitable<bool>
 			{
 				co_return soft_remove<T>(id);
-			}, boost::asio::use_awaitable);
+			}, use_awaitable);
 		}
 
 		template<SupportSoftDeletion T>
@@ -401,7 +402,7 @@ namespace cmall
 			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> awaitable<bool>
 			{
 				co_return soft_remove<T>(value);
-			}, boost::asio::use_awaitable);
+			}, use_awaitable);
 		}
 
 	private:

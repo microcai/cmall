@@ -9,6 +9,9 @@
 #include "utils/timedmap.hpp"
 #include "utils/logging.hpp"
 
+using boost::asio::awaitable;
+using boost::asio::use_awaitable;
+
 namespace services
 {
 	static std::string uuid_to_string(boost::uuids::uuid const& u)
@@ -52,7 +55,7 @@ namespace services
 
 			auto d_buffer = boost::asio::dynamic_buffer(sended_smscode);
 
-			co_await boost::asio::async_read_until(ap, d_buffer, '\n', boost::asio::use_awaitable);
+			co_await boost::asio::async_read_until(ap, d_buffer, '\n', use_awaitable);
 
 			boost::algorithm::trim_right_if(sended_smscode, boost::is_any_of(" \n\r"));
 

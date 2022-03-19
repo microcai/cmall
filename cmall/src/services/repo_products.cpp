@@ -26,6 +26,8 @@
 #include "./md_transpile.hpp"
 #include "cmall/error_code.hpp"
 
+using boost::asio::use_awaitable;
+
 namespace services
 {
 	struct repo_products_impl
@@ -265,7 +267,7 @@ namespace services
 	{
 		return boost::asio::co_spawn(thread_pool, [path, &ec, this]() mutable -> awaitable<std::string> {
 			co_return impl().get_file_content(path, ec);
-		}, boost::asio::use_awaitable);
+		}, use_awaitable);
 	}
 
 	// 从给定的 goods_id 找到商品定义.
@@ -277,7 +279,7 @@ namespace services
 			if (ec)
 				boost::throw_exception(boost::system::system_error(ec));
 			co_return ret;
-		}, boost::asio::use_awaitable);
+		}, use_awaitable);
 	}
 
 	// 从给定的 goods_id 找到商品定义.
@@ -285,7 +287,7 @@ namespace services
 	{
 		return boost::asio::co_spawn(thread_pool, [goods_id, &ec, this]() mutable -> awaitable<product> {
 			co_return impl().get_product(goods_id, ec);
-		}, boost::asio::use_awaitable);
+		}, use_awaitable);
 	}
 
 	awaitable<std::vector<product>> repo_products::get_products()
@@ -296,7 +298,7 @@ namespace services
 			if (ec)
 				boost::throw_exception(boost::system::system_error(ec));
 			co_return ret;
-		}, boost::asio::use_awaitable);
+		}, use_awaitable);
 	}
 
 	awaitable<std::string> repo_products::get_product_detail(std::string goods_id)
@@ -307,14 +309,14 @@ namespace services
 			if (ec)
 				boost::throw_exception(boost::system::system_error(ec));
 			co_return ret;
-		}, boost::asio::use_awaitable);
+		}, use_awaitable);
 	}
 
 	awaitable<std::string> repo_products::get_product_detail(std::string goods_id, boost::system::error_code& ec)
 	{
 		return boost::asio::co_spawn(thread_pool, [goods_id, &ec, this]() mutable -> awaitable<std::string> {
 			co_return impl().get_product_detail(goods_id, ec);
-		}, boost::asio::use_awaitable);
+		}, use_awaitable);
 	}
 
 	std::uint64_t repo_products::get_merchant_uid() const

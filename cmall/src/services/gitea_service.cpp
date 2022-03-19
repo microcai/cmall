@@ -23,6 +23,8 @@ using namespace boost::asio::experimental::awaitable_operators;
 #include "cmall/error_code.hpp"
 #include "utils/uawaitable.hpp"
 
+using boost::asio::use_awaitable;
+
 #ifdef BOOST_POSIX_API
 
 #include <sys/types.h>
@@ -74,7 +76,7 @@ static awaitable<int> async_wait_child(boost::process::child& child)
 
 	boost::asio::posix::stream_descriptor pidfd(executor, pidfd_);
 
-	co_await pidfd.async_wait(boost::asio::posix::stream_descriptor::wait_read, boost::asio::use_awaitable);
+	co_await pidfd.async_wait(boost::asio::posix::stream_descriptor::wait_read, use_awaitable);
 
 	int status = 0;
 	pid_t ret = waitpid(child.id(), &status, 0);
@@ -92,7 +94,7 @@ static awaitable<int> async_wait_child(boost::process::child& child)
 	auto executor = co_await boost::asio::this_coro::executor;
 	boost::asio::windows::object_handle pidfd(executor, child.native_handle());
 
-	co_await pidfd.async_wait(boost::asio::use_awaitable);
+	co_await pidfd.async_wait(use_awaitable);
 
 	co_return child.wait_for(std::chrono::milliseconds(2));
 }

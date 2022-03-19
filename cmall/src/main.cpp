@@ -287,7 +287,7 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 	co_await(
 		xsrv.run_httpd()
 			||
-		terminator_signal.async_wait(boost::asio::use_awaitable)
+		terminator_signal.async_wait(use_awaitable)
 	);
 
 	terminator_signal.clear();

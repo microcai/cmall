@@ -53,6 +53,8 @@
 #include "httpd/http_misc_helper.hpp"
 #include "httpd/httpd.hpp"
 
+using boost::asio::use_awaitable;
+
 namespace cmall
 {
 	using namespace std::chrono_literals;
@@ -185,7 +187,7 @@ namespace cmall
 
         // 然后等待所有的协程工作完毕.
         for (auto&& co : co_threads)
-            co_await co.async_wait(boost::asio::use_awaitable);
+            co_await co.async_wait(use_awaitable);
 	}
 
 	awaitable<bool> cmall_service::init_ws_acceptors()
@@ -344,7 +346,7 @@ namespace cmall
 		while (!m_abort)
 		{
 			boost::beast::multi_buffer buffer{ 4 * 1024 * 1024 }; // max multi_buffer size 4M.
-			co_await connection_ptr->ws_client->ws_stream_.async_read(buffer, boost::asio::use_awaitable);
+			co_await connection_ptr->ws_client->ws_stream_.async_read(buffer, use_awaitable);
 
 			auto body = boost::beast::buffers_to_string(buffer.data());
 
@@ -1425,7 +1427,7 @@ namespace cmall
 						std::string gitea_template_loaction = m_config.gitea_template_location.string();
 						co_await gitea_service.init_user(m.uid_, m.gitea_password.get(), gitea_template_loaction);
 						co_await load_merchant_git(m);
-					}, boost::asio::use_awaitable);
+					}, use_awaitable);
 				}
 				reply_message["result"] = true;
 			}
@@ -1516,19 +1518,19 @@ namespace cmall
 				steady_timer t(co_await boost::asio::this_coro::executor);
 				t.expires_from_now(std::chrono::seconds(15));
 				std::variant<std::monostate, std::string> awaited_result
-					= co_await (t.async_wait(boost::asio::use_awaitable)
-						|| message_deque.async_receive(boost::asio::use_awaitable));
+					= co_await (t.async_wait(use_awaitable)
+						|| message_deque.async_receive(use_awaitable));
 				if (awaited_result.index() == 0)
 				{
 					LOG_DBG << "coro: do_ws_write: [" << connection_id << "], send ping to client";
-					co_await ws.async_ping("", boost::asio::use_awaitable); // timed out
+					co_await ws.async_ping("", use_awaitable); // timed out
 				}
 				else
 				{
 					auto message = std::get<1>(awaited_result);
 					if (message.empty())
 						co_return;
-					co_await ws.async_write(boost::asio::buffer(message), boost::asio::use_awaitable);
+					co_await ws.async_write(boost::asio::buffer(message), use_awaitable);
 				}
 			}
 			catch (boost::system::system_error& e)
@@ -1565,7 +1567,7 @@ namespace cmall
 					connection_.ws_client->message_channel.try_send(boost::system::error_code(), message);
 					co_return;
 				},
-				boost::asio::use_awaitable);
+				use_awaitable);
 		}
 	}
 
@@ -1613,7 +1615,7 @@ namespace cmall
 			res.prepare_payload();
 
 			boost::beast::http::serializer<false, string_body, fields> sr{ res };
-			co_await boost::beast::http::async_write(client_ptr->tcp_stream, sr, boost::asio::use_awaitable);
+			co_await boost::beast::http::async_write(client_ptr->tcp_stream, sr, use_awaitable);
 			client_ptr->tcp_stream.close();
 		};
 
@@ -1626,7 +1628,7 @@ namespace cmall
 
 			parser_.body_limit(2000);
 
-			co_await boost::beast::http::async_read(client_ptr->tcp_stream, buffer, parser_, boost::asio::use_awaitable);
+			co_await boost::beast::http::async_read(client_ptr->tcp_stream, buffer, parser_, use_awaitable);
 			request req = parser_.release();
 
 			// 这里是为了能提取到客户端的 IP 地址，即便服务本身运行在 nginx 的后面。
@@ -1674,7 +1676,7 @@ namespace cmall
 				client_ptr->ws_client->ws_stream_.set_option(boost::beast::websocket::stream_base::decorator(
 					[](auto& res) { res.set(boost::beast::http::field::server, HTTPD_VERSION_STRING); }));
 
-				co_await client_ptr->ws_client->ws_stream_.async_accept(req, boost::asio::use_awaitable);
+				co_await client_ptr->ws_client->ws_stream_.async_accept(req, use_awaitable);
 
 				// 获取executor.
 				auto executor = client_ptr->tcp_stream.get_executor();

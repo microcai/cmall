@@ -29,6 +29,7 @@
 #include "detail/config.hpp"
 
 using boost::asio::awaitable;
+using boost::asio::use_awaitable;
 
 namespace httpd
 {
@@ -164,8 +165,7 @@ namespace httpd
 					}
 
 					co_await detail::wait_all(co_threads);
-				},
-				boost::asio::use_awaitable);
+				}, use_awaitable);
 #ifdef HTTPD_ENABLE_LOGGING
 			LOG_DBG << "accepting loop exited";
 #endif
@@ -187,7 +187,7 @@ namespace httpd
 				using timer = boost::asio::basic_waitable_timer<time_clock::steady_clock>;
 				timer t(get_executor());
 				t.expires_from_now(std::chrono::milliseconds(20));
-				co_await t.async_wait(boost::asio::use_awaitable);
+				co_await t.async_wait(use_awaitable);
 			}
 #ifdef HTTPD_ENABLE_LOGGING
 			LOG_DBG << "clean_shutdown exit";
@@ -209,7 +209,7 @@ namespace httpd
 				auto client_ptr = executor_.make_shared_unixsocket_connection(get_executor(), connection_id);
 
 				co_await accept_socket_.async_accept(
-					client_ptr->unix_socket(), boost::asio::redirect_error(boost::asio::use_awaitable, error));
+					client_ptr->unix_socket(), boost::asio::redirect_error(use_awaitable, error));
 
 				if (error == boost::asio::error::operation_aborted || error == boost::asio::error::bad_descriptor)
 				{
