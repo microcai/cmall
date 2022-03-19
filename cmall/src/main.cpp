@@ -166,7 +166,7 @@ static boost::asio::awaitable<std::string> get_default_cache_dir()
 
 boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 {
-	std::vector<std::string> ws_listens, wss_listens;
+	std::vector<std::string> ws_listens, wss_listens, ws_unix_listens;
 	std::string session_cache;
 
 	std::string db_name;
@@ -189,6 +189,7 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 
 		("ws", po::value<std::vector<std::string>>(&ws_listens)->multitoken(), "For websocket server listen.")
 		("wss", po::value<std::vector<std::string>>(&wss_listens)->multitoken(), "For SSL websocket server listen.")
+		("ws_unix", po::value<std::vector<std::string>>(&ws_unix_listens)->multitoken(), "For (unix socket) websocket server listen.")
 		("db_name", po::value<std::string>(&db_name)->default_value("cmall"), "Database name.")
 		("db_host", po::value<std::string>(&db_host)->default_value(""), "Database host.")
 		("db_port", po::value<unsigned short>(&db_port)->default_value(5432), "Database port.")
@@ -243,6 +244,7 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 	cfg.dbcfg_ = dbcfg;
 	cfg.ws_listens_ = ws_listens;
 	cfg.wss_listens_ = wss_listens;
+	cfg.ws_unix_listens_ = ws_unix_listens;
 	cfg.session_cache_file = session_cache;
 	cfg.gitea_template_location = template_dir;
 	cfg.repo_root = repo_root;
@@ -278,6 +280,8 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 		// 初始化ws acceptors.
 		co_await xsrv.init_wss_acceptors(cert_file_content, key_file_content);
 	}
+
+	co_await xsrv.init_ws_unix_acceptors();
 
 	// 处理中止信号.
 	co_await(

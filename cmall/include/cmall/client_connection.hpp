@@ -66,6 +66,11 @@ namespace cmall {
 			return tcp_stream.socket();
 		}
 
+		boost::asio::local::stream_protocol::socket& unix_socket()
+		{
+			return tcp_stream.unix_socket();
+		}
+
 		~client_connection()
 		{
 			tcp_stream.close();
@@ -91,6 +96,14 @@ namespace cmall {
 			: tcp_stream(boost::beast::ssl_stream<boost::beast::tcp_stream>(std::forward<Executor>(io), sslctx))
 			, connection_id_(connection_id)
 		{
+		}
+
+		template<typename Executor>
+		client_connection(Executor&& io, int64_t connection_id, int unix_stream)
+			: tcp_stream(httpd::unix_stream(std::forward<Executor>(io)))
+			, connection_id_(connection_id)
+		{
+			boost::ignore_unused(unix_stream);
 		}
 
 	};

@@ -2,10 +2,17 @@
 #pragma once
 
 #include <variant>
+
+#include <boost/asio/local/stream_protocol.hpp>
 #include <boost/beast.hpp>
 #include <boost/beast/ssl.hpp>
 
 namespace httpd {
+
+using unix_stream = boost::beast::basic_stream<
+    boost::asio::local::stream_protocol,
+    boost::asio::any_io_executor,
+    boost::beast::unlimited_rate_policy>;
 
 // 把 ssl 和 非 ssl 封成一个 variant.
 template <typename... StreamTypes>
@@ -55,7 +62,20 @@ public:
     boost::asio::ip::tcp::socket& socket()
     {
         return std::visit([](auto && realtype) mutable -> boost::asio::ip::tcp::socket& {
-            return boost::beast::get_lowest_layer(realtype).socket();
+            if constexpr (std::is_same_v<std::decay_t<decltype(realtype)>, httpd::unix_stream>)
+                throw std::runtime_error("not a tcp socket");
+            else
+                return boost::beast::get_lowest_layer(realtype).socket();
+        }, *this);
+    }
+
+    boost::asio::local::stream_protocol::socket& unix_socket()
+    {
+        return std::visit([](auto && realtype) mutable -> boost::asio::local::stream_protocol::socket& {
+            if constexpr (std::is_same_v<std::decay_t<decltype(realtype)>, httpd::unix_stream>)
+                return boost::beast::get_lowest_layer(realtype).socket();
+            else
+                throw std::runtime_error("not a tcp socket");
         }, *this);
     }
 
@@ -69,8 +89,7 @@ public:
 
 };
 
-typedef http_stream<boost::beast::tcp_stream, boost::beast::ssl_stream<boost::beast::tcp_stream>> http_any_stream;
-
+typedef http_stream<boost::beast::tcp_stream, boost::beast::ssl_stream<boost::beast::tcp_stream>, unix_stream> http_any_stream;
 
 }
 

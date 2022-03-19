@@ -36,6 +36,7 @@
 
 #include "httpd/acceptor.hpp"
 #include "httpd/ssl_acceptor.hpp"
+#include "httpd/unix_acceptor.hpp"
 
 #include "httpd/http_stream.hpp"
 
@@ -47,6 +48,7 @@ namespace cmall {
 	{
 		std::vector<std::string> ws_listens_;
 		std::vector<std::string> wss_listens_;
+		std::vector<std::string> ws_unix_listens_;
 
 		cmall::db_config dbcfg_;
 
@@ -183,6 +185,7 @@ namespace cmall {
 	public:
 		boost::asio::awaitable<bool> init_ws_acceptors();
 		boost::asio::awaitable<bool> init_wss_acceptors(std::string_view cert, std::string_view key);
+		boost::asio::awaitable<bool> init_ws_unix_acceptors();
 
 		boost::asio::awaitable<bool> load_configs();
 
@@ -201,6 +204,8 @@ namespace cmall {
 		// 这 3 个函数, 是 acceptor 需要的.
 		client_connection_ptr        make_shared_connection(const boost::asio::any_io_executor& io, std::int64_t connection_id);
 		client_connection_ptr        make_shared_ssl_connection(const boost::asio::any_io_executor& io, std::int64_t connection_id);
+		client_connection_ptr        make_shared_unixsocket_connection(const boost::asio::any_io_executor& io, std::int64_t connection_id);
+
 		boost::asio::awaitable<void> client_connected(client_connection_ptr);
 		boost::asio::awaitable<void> client_disconnected(client_connection_ptr);
 
@@ -253,9 +258,11 @@ namespace cmall {
 		boost::asio::ssl::context sslctx_;
 		std::vector<httpd::acceptor<client_connection_ptr, cmall_service>> m_ws_acceptors;
 		std::vector<httpd::ssl_acceptor<client_connection_ptr, cmall_service>> m_wss_acceptors;
+		std::vector<httpd::unix_acceptor<client_connection_ptr, cmall_service>> m_ws_unix_acceptors;
 		std::atomic_bool m_abort{false};
 
 		friend class httpd::acceptor<client_connection_ptr, cmall_service>;
 		friend class httpd::ssl_acceptor<client_connection_ptr, cmall_service>;
+		friend class httpd::unix_acceptor<client_connection_ptr, cmall_service>;
 	};
 }

@@ -178,6 +178,11 @@ namespace cmall
 			co_threads.push_back(boost::asio::co_spawn(a.get_executor(), a.run_accept_loop(concurrent_accepter), boost::asio::experimental::use_promise));
         }
 
+		for (auto&& a: m_ws_unix_acceptors)
+        {
+			co_threads.push_back(boost::asio::co_spawn(a.get_executor(), a.run_accept_loop(concurrent_accepter), boost::asio::experimental::use_promise));
+        }
+
         // 然后等待所有的协程工作完毕.
         for (auto&& co : co_threads)
             co_await co.async_wait(boost::asio::use_awaitable);
@@ -255,6 +260,25 @@ namespace cmall
 				{
 					co_return false;
 				}
+			}
+		}
+
+		co_return true;
+	}
+
+	boost::asio::awaitable<bool> cmall_service::init_ws_unix_acceptors()
+	{
+		boost::system::error_code ec;
+
+		m_ws_unix_acceptors.reserve(m_config.ws_unix_listens_.size());
+
+		for (const auto& wsd : m_config.ws_unix_listens_)
+		{
+			m_ws_unix_acceptors.emplace_back(m_io_context, *this);
+			m_ws_unix_acceptors.back().listen(wsd, ec);
+			if (ec)
+			{
+				co_return false;
 			}
 		}
 
@@ -360,7 +384,7 @@ namespace cmall
 				}
 				boost::json::object replay_message;
 				// 未有 session 前， 先不并发处理 request，避免 客户端恶意并发 recover_session 把程序挂掉
-				try 
+				try
 				{
 					replay_message = co_await handle_jsonrpc_call(connection_ptr, method, params);
 				}
@@ -854,7 +878,7 @@ namespace cmall
 					boost::json::object goods_ref = goods_v.as_object();
 					auto merchant_id_of_goods	  = goods_ref["merchant_id"].as_int64();
 					auto goods_id_of_goods		  = jsutil::json_as_string(goods_ref["goods_id"].as_string(), "");
-					
+
 					cmall_merchant m;
 					bool found = co_await m_database.async_load(merchant_id_of_goods, m);
 					if (!found || (m.state_ != merchant_state_t::normal))
@@ -1165,9 +1189,9 @@ namespace cmall
 				bool found = co_await m_database.async_load(this_merchant.uid_, m);
 				if (!found)
 					throw boost::system::system_error(cmall::error::merchant_vanished);
-				
+
 				this_client.session_info->merchant_info = m;
-				
+
 				reply_message["result"] = boost::json::value_from(m);
 			}
 			break;
@@ -1524,6 +1548,9 @@ namespace cmall
 		co_await httpd::detail::map(m_wss_acceptors,
 			[](auto&& a) mutable -> boost::asio::awaitable<void> { co_return co_await a.clean_shutdown(); });
 
+		co_await httpd::detail::map(m_ws_unix_acceptors,
+			[](auto&& a) mutable -> boost::asio::awaitable<void> { co_return co_await a.clean_shutdown(); });
+
 		LOG_DBG << "cmall_service::close_all_ws() success!";
 	}
 
@@ -1557,6 +1584,11 @@ namespace cmall
 			return std::make_shared<client_connection>(io, sslctx_, connection_id);
 		else
 			return std::make_shared<client_connection>(m_io_context_pool.get_io_context(), sslctx_, connection_id);
+	}
+
+	client_connection_ptr cmall_service::make_shared_unixsocket_connection(const boost::asio::any_io_executor& io, std::int64_t connection_id)
+	{
+		return std::make_shared<client_connection>(m_io_context_pool.get_io_context(), connection_id, 0);
 	}
 
 	boost::asio::awaitable<void> cmall_service::client_connected(client_connection_ptr client_ptr)
