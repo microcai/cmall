@@ -138,9 +138,9 @@ namespace gitpp {
 		{
 			friend class tree;
 			const tree* parent;
-			int index;
+			std::size_t index;
 
-			tree_iterator(const tree* parent, int index);
+			tree_iterator(const tree* parent, std::size_t index);
 
 		public:
 			bool operator ==  (const tree_iterator & other) const = default;
