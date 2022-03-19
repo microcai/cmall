@@ -86,21 +86,21 @@ namespace cmall {
 
 		template<typename Executor>
 		client_connection(Executor&& io, int64_t connection_id)
-			: tcp_stream(boost::beast::tcp_stream(std::forward<Executor>(io)))
+			: tcp_stream(std::in_place_type<boost::beast::tcp_stream>, std::forward<Executor>(io))
 			, connection_id_(connection_id)
 		{
 		}
 
 		template<typename Executor>
 		client_connection(Executor&& io, boost::asio::ssl::context& sslctx, int64_t connection_id)
-			: tcp_stream(boost::beast::ssl_stream<boost::beast::tcp_stream>(std::forward<Executor>(io), sslctx))
+			: tcp_stream(std::in_place_type<boost::beast::ssl_stream<boost::beast::tcp_stream>>, std::forward<Executor>(io), sslctx)
 			, connection_id_(connection_id)
 		{
 		}
 
 		template<typename Executor>
 		client_connection(Executor&& io, int64_t connection_id, int unix_stream)
-			: tcp_stream(httpd::unix_stream(std::forward<Executor>(io)))
+			: tcp_stream(std::in_place_type<httpd::unix_stream>, std::forward<Executor>(io))
 			, connection_id_(connection_id)
 		{
 			boost::ignore_unused(unix_stream);
