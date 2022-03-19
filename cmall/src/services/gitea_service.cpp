@@ -23,7 +23,7 @@ using namespace boost::asio::experimental::awaitable_operators;
 #include "cmall/error_code.hpp"
 #include "utils/uawaitable.hpp"
 
-#ifdef __linux__
+#ifdef BOOST_POSIX_API
 
 #include <sys/types.h>
 #include <pwd.h>
@@ -128,17 +128,17 @@ namespace services
 			using namespace boost::process;
 
 			LOG_DBG << "executing gitea " << flaten_args(gitea_args);
-
+#ifdef BOOST_POSIX_API
 			boost::process::environment gitea_process_env = boost::this_process::environment();
 			auto gitea_userinfo = get_unix_user_info("gitea");
 
 			gitea_process_env.set("HOME", gitea_userinfo.homedir);
 			gitea_process_env.set("USER", "gitea");
 			gitea_process_env.set("LANG", "C");
-
-			child cp(io, search_path("gitea"), boost::process::args(gitea_args), gitea_process_env
+#endif
+			child cp(io, search_path("gitea"), boost::process::args(gitea_args)
 			#ifdef BOOST_POSIX_API
-				, extend::on_exec_setup=[gitea_userinfo](auto& exec){
+				, gitea_process_env, extend::on_exec_setup=[gitea_userinfo](auto& exec){
 					::change_user(gitea_userinfo.uid, gitea_userinfo.gid);
 				}
 			#endif
