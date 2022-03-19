@@ -53,14 +53,14 @@ static int recv_fd(int sock)
 #endif
 
 template <typename MutableBuffers>
-boost::asio::awaitable<int> read_all_pipe_data(boost::process::async_pipe& pipe, MutableBuffers&& buffers)
+boost::asio::awaitable<std::size_t> read_all_pipe_data(boost::process::async_pipe& pipe, MutableBuffers&& buffers)
 {
-	long total_transfred = 0;
+	std::size_t total_transfred = 0;
 	boost::system::error_code ec;
 	do
 	{
 		auto buf = buffers.prepare(512);
-		auto bytes_transfered = co_await pipe.async_read_some(buf, asio_util::use_awaitable[ec]);
+		std::size_t bytes_transfered = co_await pipe.async_read_some(buf, asio_util::use_awaitable[ec]);
 		if (ec)
 		{
 			if (bytes_transfered > 0)
@@ -95,7 +95,7 @@ namespace services
 
 			std::vector<std::string> node_args;
 
-#ifdef __linux
+#ifdef __linux__
 			sandbox::sandboxVFS vfs;
 
 			using boost::asio::local::datagram_protocol;
@@ -116,9 +116,9 @@ namespace services
 			child cp(io, search_path("node"), boost::process::args(node_args)
 				, std_out > nodejs_output, std_in < nodejs_input
 #ifdef _WIN32
-				, start_dir("C:\\") 
+				, start_dir("C:\\")
 #endif
-#ifdef __linux
+#ifdef __linux__
 				, start_dir("/tmp"),
 				boost::process::extend::on_exec_setup=[&fd_recive_socket, &fd_sending_socket](auto & exec)
 				{
@@ -205,7 +205,7 @@ namespace services
 			free(tmpfile_name_);
 
 			std::ofstream tmp_ofstream(tmpfile_name);
-			tmp_ofstream.write(script_file_content.begin(), script_file_content.length());
+			tmp_ofstream.write(script_file_content.data(), script_file_content.length());
 			tmp_ofstream.close();
 
 			scoped_exit cleanup([tmpfile_name](){
