@@ -29,7 +29,7 @@ namespace detail {
 
 inline boost::asio::awaitable<void> coro_yield()
 {
-	return boost::asio::async_initiate<decltype(boost::asio::use_awaitable), void(boost::system::error_code)>(detail::initiate_coro_yield_op{}, boost::asio::use_awaitable);
+	co_await boost::asio::post(co_await boost::asio::this_coro::executor, boost::asio::use_awaitable);
 }
 
 template<typename Handler>
