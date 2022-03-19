@@ -42,6 +42,8 @@
 
 #include "cmall/client_connection.hpp"
 
+using boost::asio::awaitable;
+
 namespace cmall {
 
 	struct server_config
@@ -183,18 +185,15 @@ namespace cmall {
 		~cmall_service();
 
 	public:
-		boost::asio::awaitable<bool> init_ws_acceptors();
-		boost::asio::awaitable<bool> init_wss_acceptors(std::string_view cert, std::string_view key);
-		boost::asio::awaitable<bool> init_ws_unix_acceptors();
-
-		boost::asio::awaitable<bool> load_configs();
-
-		boost::asio::awaitable<void> run_httpd();
-
-		boost::asio::awaitable<void> stop();
+		awaitable<bool> init_ws_acceptors();
+		awaitable<bool> init_wss_acceptors(std::string_view cert, std::string_view key);
+		awaitable<bool> init_ws_unix_acceptors();
+		awaitable<bool> load_configs();
+		awaitable<void> run_httpd();
+		awaitable<void> stop();
 
 	private:
-		boost::asio::awaitable<bool> load_merchant_git(const cmall_merchant& merchant); // false if no git repo for merchant
+		awaitable<bool> load_merchant_git(const cmall_merchant& merchant); // false if no git repo for merchant
 		std::shared_ptr<services::repo_products> get_merchant_git_repo(std::uint64_t merchant_uid, boost::system::error_code& ec) const;
 		std::shared_ptr<services::repo_products> get_merchant_git_repo(const cmall_merchant& merchant, boost::system::error_code& ec) const;
 		std::shared_ptr<services::repo_products> get_merchant_git_repo(const cmall_merchant& merchant) const; // will throw if not found
@@ -206,29 +205,29 @@ namespace cmall {
 		client_connection_ptr        make_shared_ssl_connection(const boost::asio::any_io_executor& io, std::int64_t connection_id);
 		client_connection_ptr        make_shared_unixsocket_connection(const boost::asio::any_io_executor& io, std::int64_t connection_id);
 
-		boost::asio::awaitable<void> client_connected(client_connection_ptr);
-		boost::asio::awaitable<void> client_disconnected(client_connection_ptr);
+		awaitable<void> client_connected(client_connection_ptr);
+		awaitable<void> client_disconnected(client_connection_ptr);
 
-		boost::asio::awaitable<int> render_git_repo_files(size_t connection_id, std::string merchant, std::string path_in_repo, httpd::http_any_stream& client, boost::beast::http::request<boost::beast::http::string_body>);
-		boost::asio::awaitable<int> render_goods_detail_content(size_t connection_id, std::string merchant, std::string goods_id, httpd::http_any_stream& client, int httpver, bool keepalive);
-		boost::asio::awaitable<void> do_ws_read(size_t connection_id, client_connection_ptr);
-		boost::asio::awaitable<void> do_ws_write(size_t connection_id, client_connection_ptr);
+		awaitable<int> render_git_repo_files(size_t connection_id, std::string merchant, std::string path_in_repo, httpd::http_any_stream& client, boost::beast::http::request<boost::beast::http::string_body>);
+		awaitable<int> render_goods_detail_content(size_t connection_id, std::string merchant, std::string goods_id, httpd::http_any_stream& client, int httpver, bool keepalive);
+		awaitable<void> do_ws_read(size_t connection_id, client_connection_ptr);
+		awaitable<void> do_ws_write(size_t connection_id, client_connection_ptr);
 
-		boost::asio::awaitable<void> close_all_ws();
+		awaitable<void> close_all_ws();
 
-		boost::asio::awaitable<void> websocket_write(client_connection& connection_, std::string message);
+		awaitable<void> websocket_write(client_connection& connection_, std::string message);
 
-		boost::asio::awaitable<boost::json::object> handle_jsonrpc_call(client_connection_ptr, const std::string& method, boost::json::object params);
+		awaitable<boost::json::object> handle_jsonrpc_call(client_connection_ptr, const std::string& method, boost::json::object params);
 
-		boost::asio::awaitable<boost::json::object> handle_jsonrpc_user_api(client_connection_ptr, const req_method method, boost::json::object params);
-		boost::asio::awaitable<boost::json::object> handle_jsonrpc_order_api(client_connection_ptr, const req_method method, boost::json::object params);
-		boost::asio::awaitable<boost::json::object> handle_jsonrpc_cart_api(client_connection_ptr, const req_method method, boost::json::object params);
-		boost::asio::awaitable<boost::json::object> handle_jsonrpc_goods_api(client_connection_ptr, const req_method method, boost::json::object params);
+		awaitable<boost::json::object> handle_jsonrpc_user_api(client_connection_ptr, const req_method method, boost::json::object params);
+		awaitable<boost::json::object> handle_jsonrpc_order_api(client_connection_ptr, const req_method method, boost::json::object params);
+		awaitable<boost::json::object> handle_jsonrpc_cart_api(client_connection_ptr, const req_method method, boost::json::object params);
+		awaitable<boost::json::object> handle_jsonrpc_goods_api(client_connection_ptr, const req_method method, boost::json::object params);
 
-		boost::asio::awaitable<boost::json::object> handle_jsonrpc_merchant_api(client_connection_ptr, const req_method method, boost::json::object params);
-		boost::asio::awaitable<boost::json::object> handle_jsonrpc_admin_api(client_connection_ptr, const req_method method, boost::json::object params);
+		awaitable<boost::json::object> handle_jsonrpc_merchant_api(client_connection_ptr, const req_method method, boost::json::object params);
+		awaitable<boost::json::object> handle_jsonrpc_admin_api(client_connection_ptr, const req_method method, boost::json::object params);
 
-		boost::asio::awaitable<void> send_notify_message(std::uint64_t uid_, const std::string&, std::int64_t exclude_connection);
+		awaitable<void> send_notify_message(std::uint64_t uid_, const std::string&, std::int64_t exclude_connection);
 
 		// round robing for acceptor.
 		auto& get_executor(){ return m_io_context_pool.get_io_context(); }

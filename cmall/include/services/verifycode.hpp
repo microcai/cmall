@@ -4,6 +4,8 @@
 #include <memory>
 #include <boost/asio.hpp>
 
+using boost::asio::awaitable;
+
 namespace services
 {
 	struct verify_session_access;
@@ -38,11 +40,11 @@ namespace services
 		~verifycode();
 
 		// send verifycode, returns verify session.
-		boost::asio::awaitable<verify_session> send_verify_code(std::string telephone);
-		boost::asio::awaitable<verify_session> send_verify_code(std::string telephone, boost::system::error_code& ec);
+		awaitable<verify_session> send_verify_code(std::string telephone);
+		awaitable<verify_session> send_verify_code(std::string telephone, boost::system::error_code& ec);
 
 		// verify the user input verify_code against verify_session
-		boost::asio::awaitable<bool> verify_verify_code(std::string verify_code, verify_session verify_session_tag);
+		awaitable<bool> verify_verify_code(std::string verify_code, verify_session verify_session_tag);
 
 	private:
 		const verifycode_impl& impl() const;

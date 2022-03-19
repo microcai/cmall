@@ -76,7 +76,7 @@ namespace cmall
 
 	cmall_service::~cmall_service() { LOG_DBG << "~cmall_service()"; }
 
-	boost::asio::awaitable<void> cmall_service::stop()
+	awaitable<void> cmall_service::stop()
 	{
 		m_abort = true;
 
@@ -90,7 +90,7 @@ namespace cmall
 	}
 
 	// false if no git repo for merchant
-	boost::asio::awaitable<bool> cmall_service::load_merchant_git(const cmall_merchant& merchant)
+	awaitable<bool> cmall_service::load_merchant_git(const cmall_merchant& merchant)
 	{
 		if (services::repo_products::is_git_repo(merchant.repo_path))
 		{
@@ -147,7 +147,7 @@ namespace cmall
 		return * it;
 	}
 
-	boost::asio::awaitable<bool> cmall_service::load_configs()
+	awaitable<bool> cmall_service::load_configs()
 	{
 		std::vector<cmall_merchant> all_merchant;
 		using query_t = odb::query<cmall_merchant>;
@@ -162,7 +162,7 @@ namespace cmall
 		co_return true;
 	}
 
-	boost::asio::awaitable<void> cmall_service::run_httpd()
+	awaitable<void> cmall_service::run_httpd()
 	{
 		constexpr int concurrent_accepter = 20;
 
@@ -188,7 +188,7 @@ namespace cmall
             co_await co.async_wait(boost::asio::use_awaitable);
 	}
 
-	boost::asio::awaitable<bool> cmall_service::init_ws_acceptors()
+	awaitable<bool> cmall_service::init_ws_acceptors()
 	{
 		boost::system::error_code ec;
 
@@ -222,7 +222,7 @@ namespace cmall
 		co_return true;
 	}
 
-	boost::asio::awaitable<bool> cmall_service::init_wss_acceptors(std::string_view cert, std::string_view key)
+	awaitable<bool> cmall_service::init_wss_acceptors(std::string_view cert, std::string_view key)
 	{
 		sslctx_.set_options(boost::asio::ssl::context::default_workarounds | boost::asio::ssl::context::no_sslv2);
 
@@ -266,7 +266,7 @@ namespace cmall
 		co_return true;
 	}
 
-	boost::asio::awaitable<bool> cmall_service::init_ws_unix_acceptors()
+	awaitable<bool> cmall_service::init_ws_unix_acceptors()
 	{
 		boost::system::error_code ec;
 
@@ -286,7 +286,7 @@ namespace cmall
 	}
 
 	// 从 git 仓库获取文件，没找到返回 0
-	boost::asio::awaitable<int> cmall_service::render_git_repo_files(size_t connection_id, std::string merchant,
+	awaitable<int> cmall_service::render_git_repo_files(size_t connection_id, std::string merchant,
 		std::string path_in_repo, httpd::http_any_stream& client,
 		boost::beast::http::request<boost::beast::http::string_body> req)
 	{
@@ -316,7 +316,7 @@ namespace cmall
 	}
 
 	// 成功给用户返回内容, 返回 200. 如果没找到商品, 不要向 client 写任何数据, 直接放回 404, 由调用方统一返回错误页面.
-	boost::asio::awaitable<int> cmall_service::render_goods_detail_content(size_t connection_id, std::string merchant,
+	awaitable<int> cmall_service::render_goods_detail_content(size_t connection_id, std::string merchant,
 		std::string goods_id, httpd::http_any_stream& client, int http_ver, bool keepalive)
 	{
 		auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
@@ -339,7 +339,7 @@ namespace cmall
 		co_return 200;
 	}
 
-	boost::asio::awaitable<void> cmall_service::do_ws_read(size_t connection_id, client_connection_ptr connection_ptr)
+	awaitable<void> cmall_service::do_ws_read(size_t connection_id, client_connection_ptr connection_ptr)
 	{
 		while (!m_abort)
 		{
@@ -406,7 +406,7 @@ namespace cmall
 			// 每个请求都单开线程处理
 			boost::asio::co_spawn(
 				connection_ptr->get_executor(),
-				[this, connection_ptr, method, params, jv]() -> boost::asio::awaitable<void>
+				[this, connection_ptr, method, params, jv]() -> awaitable<void>
 				{
 					boost::json::object replay_message;
 					try
@@ -433,7 +433,7 @@ namespace cmall
 		}
 	}
 
-	boost::asio::awaitable<boost::json::object> cmall_service::handle_jsonrpc_call(
+	awaitable<boost::json::object> cmall_service::handle_jsonrpc_call(
 		client_connection_ptr connection_ptr, const std::string& methodstr, boost::json::object params)
 	{
 		client_connection& this_client = *connection_ptr;
@@ -446,7 +446,7 @@ namespace cmall
 		}
 
 		auto ensure_login
-			= [&](bool check_admin = false, bool check_merchant = false) mutable -> boost::asio::awaitable<void>
+			= [&](bool check_admin = false, bool check_merchant = false) mutable -> awaitable<void>
 		{
 			if (!this_client.session_info->user_info)
 				throw boost::system::system_error(error::login_required);
@@ -647,7 +647,7 @@ namespace cmall
 		co_return reply_message;
 	}
 
-	boost::asio::awaitable<boost::json::object> cmall_service::handle_jsonrpc_user_api(
+	awaitable<boost::json::object> cmall_service::handle_jsonrpc_user_api(
 		client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
 	{
 		client_connection& this_client = *connection_ptr;
@@ -837,7 +837,7 @@ namespace cmall
 		co_return reply_message;
 	}
 
-	boost::asio::awaitable<boost::json::object> cmall_service::handle_jsonrpc_order_api(
+	awaitable<boost::json::object> cmall_service::handle_jsonrpc_order_api(
 		client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
 	{
 		client_connection& this_client = *connection_ptr;
@@ -987,7 +987,7 @@ namespace cmall
 		co_return reply_message;
 	}
 
-	boost::asio::awaitable<boost::json::object> cmall_service::handle_jsonrpc_cart_api(
+	awaitable<boost::json::object> cmall_service::handle_jsonrpc_cart_api(
 		client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
 	{
 		client_connection& this_client = *connection_ptr;
@@ -1106,7 +1106,7 @@ namespace cmall
 		co_return reply_message;
 	}
 
-	boost::asio::awaitable<boost::json::object> cmall_service::handle_jsonrpc_goods_api(
+	awaitable<boost::json::object> cmall_service::handle_jsonrpc_goods_api(
 		client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
 	{
 		client_connection& this_client = *connection_ptr;
@@ -1173,7 +1173,7 @@ namespace cmall
 		co_return reply_message;
 	}
 
-	boost::asio::awaitable<boost::json::object> cmall_service::handle_jsonrpc_merchant_api(client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
+	awaitable<boost::json::object> cmall_service::handle_jsonrpc_merchant_api(client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
 	{
 		client_connection& this_client = *connection_ptr;
 		boost::json::object reply_message;
@@ -1347,7 +1347,7 @@ namespace cmall
 		co_return reply_message;
 	}
 
-	boost::asio::awaitable<boost::json::object> cmall_service::handle_jsonrpc_admin_api(client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
+	awaitable<boost::json::object> cmall_service::handle_jsonrpc_admin_api(client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
 	{
 		client_connection& this_client = *connection_ptr;
 		boost::json::object reply_message;
@@ -1392,7 +1392,7 @@ namespace cmall
 				cmall_apply_for_mechant apply;
 				cmall_merchant m;
 
-				bool succeed = co_await m_database.async_transacton([&](const cmall_database::odb_transaction_ptr& tx) mutable -> boost::asio::awaitable<bool> {
+				bool succeed = co_await m_database.async_transacton([&](const cmall_database::odb_transaction_ptr& tx) mutable -> awaitable<bool> {
 					auto& db = tx->database();
 
 					bool found = db.find(apply_id, apply);
@@ -1419,7 +1419,7 @@ namespace cmall
 
 				if (succeed)
 				{
-					co_await boost::asio::co_spawn(background_task_thread_pool, [this, m]() mutable -> boost::asio::awaitable<void>
+					co_await boost::asio::co_spawn(background_task_thread_pool, [this, m]() mutable -> awaitable<void>
 					{
 						// 初始化仓库.
 						std::string gitea_template_loaction = m_config.gitea_template_location.string();
@@ -1488,7 +1488,7 @@ namespace cmall
 		co_return reply_message;
 	}
 
-	boost::asio::awaitable<void> cmall_service::send_notify_message(
+	awaitable<void> cmall_service::send_notify_message(
 		std::uint64_t uid_, const std::string& msg, std::int64_t exclude_connection_id)
 	{
 		std::vector<client_connection_ptr> active_user_connections;
@@ -1503,7 +1503,7 @@ namespace cmall
 			co_await websocket_write(*c, msg);
 	}
 
-	boost::asio::awaitable<void> cmall_service::do_ws_write(size_t connection_id, client_connection_ptr connection_ptr)
+	awaitable<void> cmall_service::do_ws_write(size_t connection_id, client_connection_ptr connection_ptr)
 	{
 		auto& message_deque = connection_ptr->ws_client->message_channel;
 		auto& ws			= connection_ptr->ws_client->ws_stream_;
@@ -1540,27 +1540,27 @@ namespace cmall
 			}
 	}
 
-	boost::asio::awaitable<void> cmall_service::close_all_ws()
+	awaitable<void> cmall_service::close_all_ws()
 	{
 		co_await httpd::detail::map(m_ws_acceptors,
-			[](auto&& a) mutable -> boost::asio::awaitable<void> { co_return co_await a.clean_shutdown(); });
+			[](auto&& a) mutable -> awaitable<void> { co_return co_await a.clean_shutdown(); });
 
 		co_await httpd::detail::map(m_wss_acceptors,
-			[](auto&& a) mutable -> boost::asio::awaitable<void> { co_return co_await a.clean_shutdown(); });
+			[](auto&& a) mutable -> awaitable<void> { co_return co_await a.clean_shutdown(); });
 
 		co_await httpd::detail::map(m_ws_unix_acceptors,
-			[](auto&& a) mutable -> boost::asio::awaitable<void> { co_return co_await a.clean_shutdown(); });
+			[](auto&& a) mutable -> awaitable<void> { co_return co_await a.clean_shutdown(); });
 
 		LOG_DBG << "cmall_service::close_all_ws() success!";
 	}
 
-	boost::asio::awaitable<void> cmall_service::websocket_write(client_connection& connection_, std::string message)
+	awaitable<void> cmall_service::websocket_write(client_connection& connection_, std::string message)
 	{
 		if (connection_.ws_client)
 		{
 			co_await boost::asio::co_spawn(
 				connection_.get_executor(),
-				[&connection_, message]() mutable -> boost::asio::awaitable<void>
+				[&connection_, message]() mutable -> awaitable<void>
 				{
 					connection_.ws_client->message_channel.try_send(boost::system::error_code(), message);
 					co_return;
@@ -1591,7 +1591,7 @@ namespace cmall
 		return std::make_shared<client_connection>(m_io_context_pool.get_io_context(), connection_id, 0);
 	}
 
-	boost::asio::awaitable<void> cmall_service::client_connected(client_connection_ptr client_ptr)
+	awaitable<void> cmall_service::client_connected(client_connection_ptr client_ptr)
 	{
 		using string_body = boost::beast::http::string_body;
 		using fields	  = boost::beast::http::fields;
@@ -1603,7 +1603,7 @@ namespace cmall
 		bool keep_alive = false;
 
 		auto http_simple_error_page
-			= [&client_ptr](auto body, auto status_code, unsigned version) mutable -> boost::asio::awaitable<void>
+			= [&client_ptr](auto body, auto status_code, unsigned version) mutable -> awaitable<void>
 		{
 			response res{ static_cast<boost::beast::http::status>(status_code), version };
 			res.set(boost::beast::http::field::server, HTTPD_VERSION_STRING);
@@ -1824,7 +1824,7 @@ namespace cmall
 		LOG_DBG << "handle_accepted_client: HTTP connection closed : " << connection_id;
 	}
 
-	boost::asio::awaitable<void> cmall_service::client_disconnected(client_connection_ptr c)
+	awaitable<void> cmall_service::client_disconnected(client_connection_ptr c)
 	{
 		std::unique_lock<std::shared_mutex> l(active_users_mtx);
 		active_users.get<1>().erase(c->connection_id_);

@@ -6,6 +6,8 @@
 #include <map>
 #include <boost/asio.hpp>
 
+using boost::asio::awaitable;
+
 namespace services
 {
 	struct userscript_impl;
@@ -15,11 +17,11 @@ namespace services
 		userscript(boost::asio::io_context& io);
 		~userscript();
 
-		boost::asio::awaitable<std::string> run_script(std::string_view script_file_content, std::vector<std::string> script_arguments);
+		awaitable<std::string> run_script(std::string_view script_file_content, std::vector<std::string> script_arguments);
 
 		// http_request_body 作为 stdin 输入. http header 在 scriptenv 里
 		// get/post 在 script_arguments 上 --metohd POST
-		boost::asio::awaitable<std::string> run_script(
+		awaitable<std::string> run_script(
 			std::string_view script_file_content,
 			std::string_view http_request_body,
 			std::map<std::string, std::string> scriptenv,

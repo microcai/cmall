@@ -8,6 +8,8 @@
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/posix/stream_descriptor.hpp>
 
+using boost::asio::awaitable;
+
 namespace sandbox
 {
     void install_seccomp(int notifyfd);
@@ -24,7 +26,7 @@ namespace sandbox
         supervisor(boost::asio::posix::stream_descriptor&& fd, sandboxVFS vfs);
         ~supervisor();
 
-        boost::asio::awaitable<void> start_supervisor();
+        awaitable<void> start_supervisor();
 
     private:
         boost::asio::posix::stream_descriptor seccomp_notify_fd;

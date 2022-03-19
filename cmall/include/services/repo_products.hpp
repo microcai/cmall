@@ -11,9 +11,10 @@
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
 
+using boost::asio::awaitable;
+
 namespace services
 {
-
 	struct product
 	{
 		// 商品 ID, 实质上是商品描述文件的文件名.
@@ -45,17 +46,17 @@ namespace services
 		repo_products(boost::asio::thread_pool& executor, std::uint64_t merchant_id, std::filesystem::path repo_path);
 		~repo_products();
 
-		boost::asio::awaitable<std::string> get_file_content(std::filesystem::path path, boost::system::error_code& ec);
+		awaitable<std::string> get_file_content(std::filesystem::path path, boost::system::error_code& ec);
 
 		// 扫描用户仓库, 返回找到的商品定义.
-		boost::asio::awaitable<std::vector<product>> get_products();
+		awaitable<std::vector<product>> get_products();
 
 		// 从给定的 goods_id 找到商品定义.
-		boost::asio::awaitable<product> get_product(std::string goods_id, boost::system::error_code& ec);
-		boost::asio::awaitable<product> get_product(std::string goods_id);
+		awaitable<product> get_product(std::string goods_id, boost::system::error_code& ec);
+		awaitable<product> get_product(std::string goods_id);
 
-		boost::asio::awaitable<std::string> get_product_detail(std::string goods_id);
-		boost::asio::awaitable<std::string> get_product_detail(std::string goods_id, boost::system::error_code& ec);
+		awaitable<std::string> get_product_detail(std::string goods_id);
+		awaitable<std::string> get_product_detail(std::string goods_id, boost::system::error_code& ec);
 
 		std::uint64_t get_merchant_uid() const;
 

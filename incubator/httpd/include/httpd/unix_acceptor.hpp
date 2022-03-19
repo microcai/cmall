@@ -28,6 +28,8 @@
 
 #include "detail/config.hpp"
 
+using boost::asio::awaitable;
+
 namespace httpd
 {
 	template <typename AcceptedClientClass, typename ServiceClass, typename Execotor = boost::asio::any_io_executor>
@@ -136,7 +138,7 @@ namespace httpd
 			std::filesystem::permissions(listen_address, std::filesystem::perms::all);
 		}
 
-		boost::asio::awaitable<void> run_accept_loop(int number_of_concurrent_acceptor)
+		awaitable<void> run_accept_loop(int number_of_concurrent_acceptor)
 		{
 			boost::asio::cancellation_state cs = co_await boost::asio::this_coro::cancellation_state;
 
@@ -149,7 +151,7 @@ namespace httpd
 
 			co_await boost::asio::co_spawn(
 				get_executor(),
-				[number_of_concurrent_acceptor, this]() mutable -> boost::asio::awaitable<void>
+				[number_of_concurrent_acceptor, this]() mutable -> awaitable<void>
 				{
 					std::vector<boost::asio::experimental::promise<void(std::exception_ptr)>> co_threads;
 					// 避免 object 发生移动.
@@ -169,7 +171,7 @@ namespace httpd
 #endif
 		}
 
-		boost::asio::awaitable<void> clean_shutdown()
+		awaitable<void> clean_shutdown()
 		{
 			for (auto& ws : all_client)
 			{
@@ -194,7 +196,7 @@ namespace httpd
 		}
 
 	private:
-		boost::asio::awaitable<void> accept_loop()
+		awaitable<void> accept_loop()
 		{
 			static std::atomic_size_t id{ 0 };
 

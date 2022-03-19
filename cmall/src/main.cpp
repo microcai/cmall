@@ -147,7 +147,7 @@ static std::string version_info()
 	return oss.str();
 }
 
-static boost::asio::awaitable<std::string> get_default_cache_dir()
+static awaitable<std::string> get_default_cache_dir()
 {
 #ifndef WIN32
 	if (::access("/var/lib/cmall", W_OK | R_OK | X_OK) ==  0)
@@ -164,7 +164,7 @@ static boost::asio::awaitable<std::string> get_default_cache_dir()
 	co_return ".";
 }
 
-boost::asio::awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
+awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 {
 	std::vector<std::string> ws_listens, wss_listens, ws_unix_listens;
 	std::string session_cache;

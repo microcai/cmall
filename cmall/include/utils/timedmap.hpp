@@ -22,9 +22,10 @@
 #include "time_clock.hpp"
 #include "coroyield.hpp"
 
+using boost::asio::awaitable;
+
 namespace utility
 {
-
 	template<typename value_type, typename key_type>
 	requires requires {
 		std::is_trivially_constructible<key_type>::value;
@@ -105,7 +106,7 @@ namespace utility
 		}
 
 	private:
-		boost::asio::awaitable<void> pruge_thread(std::chrono::milliseconds lifetime, std::shared_ptr<some_shared_data> shared_data)
+		awaitable<void> pruge_thread(std::chrono::milliseconds lifetime, std::shared_ptr<some_shared_data> shared_data)
 		{
 			co_await this_coro::coro_yield();
 			while (! shared_data->stop_flag)

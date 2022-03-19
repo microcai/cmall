@@ -67,7 +67,7 @@ static void change_user(int uid, int gid)
 }
 
 
-static boost::asio::awaitable<int> async_wait_child(boost::process::child& child)
+static awaitable<int> async_wait_child(boost::process::child& child)
 {
 	auto executor = co_await boost::asio::this_coro::executor;
 	int pidfd_ = syscall(SYS_pidfd_open, child.id(), 0);
@@ -87,7 +87,7 @@ static boost::asio::awaitable<int> async_wait_child(boost::process::child& child
 
 #include <boost/asio/windows/object_handle.hpp>
 
-static boost::asio::awaitable<int> async_wait_child(boost::process::child& child)
+static awaitable<int> async_wait_child(boost::process::child& child)
 {
 	auto executor = co_await boost::asio::this_coro::executor;
 	boost::asio::windows::object_handle pidfd(executor, child.native_handle());
@@ -123,7 +123,7 @@ namespace services
 			: io(io)
 		{}
 
-		boost::asio::awaitable<bool> call_gitea_cli(std::vector<std::string> gitea_args)
+		awaitable<bool> call_gitea_cli(std::vector<std::string> gitea_args)
 		{
 			using namespace boost::process;
 
@@ -151,7 +151,7 @@ namespace services
 			co_return exit_code == EXIT_SUCCESS;
 		}
 
-		boost::asio::awaitable<bool> create_user(std::uint64_t uid, std::string password)
+		awaitable<bool> create_user(std::uint64_t uid, std::string password)
 		{
 			// 创建用户.
 			auto username = gen_repo_user(uid);
@@ -172,7 +172,7 @@ namespace services
 			co_return co_await call_gitea_cli(gitea_args);
 		}
 
-		boost::asio::awaitable<bool> create_repo(std::uint64_t uid, std::string template_dir)
+		awaitable<bool> create_repo(std::uint64_t uid, std::string template_dir)
 		{
 			// 创建模板仓库.
 			auto username = gen_repo_user(uid);
@@ -190,7 +190,7 @@ namespace services
 			co_return co_await call_gitea_cli(gitea_args);
 		}
 
-		boost::asio::awaitable<bool> init_user(std::uint64_t uid, std::string password, std::string template_dir)
+		awaitable<bool> init_user(std::uint64_t uid, std::string password, std::string template_dir)
 		{
 			bool ok = co_await create_user(uid, password);
 			if (ok)
@@ -200,7 +200,7 @@ namespace services
 			co_return ok;
 		}
 
-		boost::asio::awaitable<bool> change_password(std::uint64_t uid, std::string password)
+		awaitable<bool> change_password(std::uint64_t uid, std::string password)
 		{
 			auto username = gen_repo_user(uid);
 
@@ -219,11 +219,12 @@ namespace services
 		boost::asio::io_context& io;
 	};
 
-	boost::asio::awaitable<bool> gitea::init_user(std::uint64_t uid, std::string password, std::string template_dir)
+	awaitable<bool> gitea::init_user(std::uint64_t uid, std::string password, std::string template_dir)
 	{
 		co_return co_await impl().init_user(uid, password, template_dir);
 	}
-	boost::asio::awaitable<bool> gitea::change_password(std::uint64_t uid, std::string password)
+
+	awaitable<bool> gitea::change_password(std::uint64_t uid, std::string password)
 	{
 		co_return co_await impl().change_password(uid, password);
 	}

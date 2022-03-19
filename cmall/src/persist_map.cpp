@@ -22,6 +22,7 @@ using steady_timer = boost::asio::basic_waitable_timer<time_clock::steady_clock>
 #include "utils/logging.hpp"
 
 using namespace mdbx;
+using boost::asio::awaitable;
 
 static env::operate_parameters get_default_operate_parameters()
 {
@@ -70,7 +71,7 @@ struct persist_map_impl
 		timer_.cancel(ignore_ec);
 		runners.join();
 	}
-	boost::asio::awaitable<void> background_task()
+	awaitable<void> background_task()
 	{
 		co_await this_coro::coro_yield();
 
@@ -135,9 +136,9 @@ struct persist_map_impl
 		}
 	}
 
-	boost::asio::awaitable<bool> has_key(std::string_view key) const
+	awaitable<bool> has_key(std::string_view key) const
 	{
-		co_return co_await boost::asio::co_spawn(runners, [this, key]() mutable -> boost::asio::awaitable<bool>
+		co_return co_await boost::asio::co_spawn(runners, [this, key]() mutable -> awaitable<bool>
 		{
 			try
 			{
@@ -153,9 +154,9 @@ struct persist_map_impl
 		}, boost::asio::use_awaitable);
 	}
 
-	boost::asio::awaitable<std::string> get(std::string_view key) const
+	awaitable<std::string> get(std::string_view key) const
 	{
-		co_return co_await boost::asio::co_spawn(runners, [this, key]() mutable -> boost::asio::awaitable<std::string>
+		co_return co_await boost::asio::co_spawn(runners, [this, key]() mutable -> awaitable<std::string>
 		{
 			txn_managed t = mdbx_env.start_read();
 			mdbx::slice v = t.get(mdbx_default_map, mdbx::slice(key));
@@ -166,13 +167,13 @@ struct persist_map_impl
 		}, boost::asio::use_awaitable);
 	}
 
-	boost::asio::awaitable<void> put(std::string_view key, std::string value, std::chrono::duration<int> lifetime)
+	awaitable<void> put(std::string_view key, std::string value, std::chrono::duration<int> lifetime)
 	{
 		std::time_t _expire_time;
 		std::time(&_expire_time);
 		_expire_time += lifetime.count();
 
-		co_await boost::asio::co_spawn(runners, [this, key, _expire_time, value = std::move(value)]() mutable -> boost::asio::awaitable<void>
+		co_await boost::asio::co_spawn(runners, [this, key, _expire_time, value = std::move(value)]() mutable -> awaitable<void>
 		{
 			txn_managed t = mdbx_env.start_write();
 			t.put(mdbx_default_map, mdbx::slice(key), mdbx::slice(value), upsert);
@@ -195,17 +196,17 @@ persist_map::persist_map(std::filesystem::path persist_file)
 	std::construct_at<persist_map_impl>(reinterpret_cast<persist_map_impl*>(obj_stor.data()), persist_file);
 }
 
-boost::asio::awaitable<bool> persist_map::has_key(std::string_view key) const
+awaitable<bool> persist_map::has_key(std::string_view key) const
 {
 	co_return co_await impl().has_key(key);
 }
 
-boost::asio::awaitable<std::string> persist_map::get(std::string_view key) const
+awaitable<std::string> persist_map::get(std::string_view key) const
 {
 	co_return co_await impl().get(key);
 }
 
-boost::asio::awaitable<void> persist_map::put(std::string_view key, std::string value, std::chrono::duration<int> lifetime)
+awaitable<void> persist_map::put(std::string_view key, std::string value, std::chrono::duration<int> lifetime)
 {
 	co_return co_await impl().put(key, value, lifetime);
 }

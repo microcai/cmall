@@ -2,9 +2,11 @@
 #pragma once
 
 #include "boost/asio/awaitable.hpp"
+
+using boost::asio::awaitable;
+
 namespace cmall::vendor
 {
-
 	struct sms_config
 	{
 	};
@@ -16,7 +18,7 @@ namespace cmall::vendor
 		~sms() { }
 
 	public:
-		boost::asio::awaitable<bool> send(const std::string& phone, std::any t) {
+		awaitable<bool> send(const std::string& phone, std::any t) {
 			co_return false;
 		};
 	};

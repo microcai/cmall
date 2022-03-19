@@ -53,7 +53,7 @@ static int recv_fd(int sock)
 #endif
 
 template <typename MutableBuffers>
-boost::asio::awaitable<std::size_t> read_all_pipe_data(boost::process::async_pipe& pipe, MutableBuffers&& buffers)
+awaitable<std::size_t> read_all_pipe_data(boost::process::async_pipe& pipe, MutableBuffers&& buffers)
 {
 	std::size_t total_transfred = 0;
 	boost::system::error_code ec;
@@ -86,7 +86,7 @@ namespace services
 			: io(io)
 		{}
 
-		boost::asio::awaitable<std::string> run_script(std::string_view script_content, std::vector<std::string> script_arguments)
+		awaitable<std::string> run_script(std::string_view script_content, std::vector<std::string> script_arguments)
 		{
 			using namespace boost::process;
 
@@ -170,7 +170,7 @@ namespace services
 			co_return out;
 		}
 
-		boost::asio::awaitable<std::string> run_script(std::string_view script_file_content, std::string_view http_request_body,
+		awaitable<std::string> run_script(std::string_view script_file_content, std::string_view http_request_body,
 			std::map<std::string, std::string> scriptenv, std::vector<std::string> script_arguments)
 		{
 			using namespace boost::process;
@@ -246,7 +246,7 @@ namespace services
 
 			auto read_promis = boost::asio::co_spawn(io, read_all_pipe_data(nodejs_output, d_buffer), boost::asio::experimental::use_promise);
 
-			auto stdin_feader = boost::asio::co_spawn(io, [&]()-> boost::asio::awaitable<void>{
+			auto stdin_feader = boost::asio::co_spawn(io, [&]()-> awaitable<void>{
 				co_await boost::asio::async_write(nodejs_input, boost::asio::buffer(http_request_body.data(), http_request_body.length()), boost::asio::use_awaitable);
 				nodejs_input.async_close();
 			}, boost::asio::experimental::use_promise);
@@ -274,12 +274,12 @@ namespace services
 		boost::asio::io_context& io;
 	};
 
-	boost::asio::awaitable<std::string> userscript::run_script(std::string_view script_file_content, std::vector<std::string> script_arguments)
+	awaitable<std::string> userscript::run_script(std::string_view script_file_content, std::vector<std::string> script_arguments)
 	{
 		return impl().run_script(script_file_content, script_arguments);
 	}
 
-	boost::asio::awaitable<std::string> userscript::run_script(
+	awaitable<std::string> userscript::run_script(
 			std::string_view script_file_content,
 			std::string_view http_request_body,
 			std::map<std::string, std::string> scriptenv,

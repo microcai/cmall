@@ -7,6 +7,8 @@
 
 #include "utils/logging.hpp"
 
+using boost::asio::awaitable;
+
 #ifdef __linux__
 
 #include "sandbox.hpp"
@@ -259,7 +261,7 @@ sandbox::supervisor::supervisor(boost::asio::posix::stream_descriptor&& fd, sand
 
 }
 
-boost::asio::awaitable<void> sandbox::supervisor::start_supervisor()
+awaitable<void> sandbox::supervisor::start_supervisor()
 {
 	auto this_executor = co_await boost::asio::this_coro::executor;
 	boost::asio::cancellation_state cs = co_await boost::asio::this_coro::cancellation_state;

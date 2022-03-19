@@ -40,6 +40,8 @@
 #include "odb/traits.hxx"
 #include "utils/logging.hpp"
 
+using boost::asio::awaitable;
+
 namespace cmall
 {
 	struct db_config
@@ -80,9 +82,9 @@ namespace cmall
 		using odb_transaction_ptr = std::shared_ptr<odb::transaction>;
 
 		template <typename Op>
-		boost::asio::awaitable<bool> async_transacton(Op&& op)
+		awaitable<bool> async_transacton(Op&& op)
 		{
-			return boost::asio::co_spawn(thread_pool, [this, op = std::forward<Op>(op)]() mutable -> boost::asio::awaitable<bool>
+			return boost::asio::co_spawn(thread_pool, [this, op = std::forward<Op>(op)]() mutable -> awaitable<bool>
 			{
 				auto tx = std::make_shared<odb::transaction>(m_db->begin());
 				bool success = co_await op(tx);
@@ -186,7 +188,6 @@ namespace cmall
 						new_value.updated_at_ = now;
 						m_db->update(new_value);
 					}
-						
 					t.commit();
 					return true;
 				});
@@ -205,7 +206,6 @@ namespace cmall
 						T new_value = updater(std::move(i));
 						m_db->update(new_value);
 					}
-						
 					t.commit();
 					return true;
 				});
@@ -309,96 +309,96 @@ namespace cmall
 
 	public:
 		template <typename T> requires SupportSoftDeletion<T>
-		boost::asio::awaitable<bool> async_load_all(std::vector<T> & value)
+		awaitable<bool> async_load_all(std::vector<T> & value)
 		{
 			co_return co_await async_load<T>( odb::query<T>::deleted_at.is_null(), value);
 		}
 
 		template <typename T>
-		boost::asio::awaitable<bool> async_load(std::uint64_t id, T& value)
+		awaitable<bool> async_load(std::uint64_t id, T& value)
 		{
-			return boost::asio::co_spawn(thread_pool, [id, &value, this]()mutable -> boost::asio::awaitable<bool>
+			return boost::asio::co_spawn(thread_pool, [id, &value, this]()mutable -> awaitable<bool>
 			{
 				co_return get<T>(id, value);
 			}, boost::asio::use_awaitable);
 		}
 
 		template <typename T>
-		boost::asio::awaitable<bool> async_load(const odb::query<T>& query, std::vector<T>& ret)
+		awaitable<bool> async_load(const odb::query<T>& query, std::vector<T>& ret)
 		{
-			return boost::asio::co_spawn(thread_pool, [this, query, &ret]() mutable -> boost::asio::awaitable<bool>
+			return boost::asio::co_spawn(thread_pool, [this, query, &ret]() mutable -> awaitable<bool>
 			{
 				co_return get<T>(query, ret);
 			}, boost::asio::use_awaitable);
 		}
 
 		template <typename T>
-		boost::asio::awaitable<bool> async_load(const odb::query<T>& query, T& ret)
+		awaitable<bool> async_load(const odb::query<T>& query, T& ret)
 		{
-			return boost::asio::co_spawn(thread_pool, [this, query, &ret]() mutable -> boost::asio::awaitable<bool>
+			return boost::asio::co_spawn(thread_pool, [this, query, &ret]() mutable -> awaitable<bool>
 			{
 				co_return get<T>(query, ret);
 			}, boost::asio::use_awaitable);
 		}
 
 		template <typename T>
-		boost::asio::awaitable<bool> async_add(T& value)
+		awaitable<bool> async_add(T& value)
 		{
-			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> awaitable<bool>
 			{
 				co_return add<T>(value);
 			}, boost::asio::use_awaitable);
 		}
 
 		template<typename T>
-		boost::asio::awaitable<bool> async_update(T& value)
+		awaitable<bool> async_update(T& value)
 		{
-			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> awaitable<bool>
 			{
 				co_return update<T>(value);
 			}, boost::asio::use_awaitable);
 		}
 
 		template<typename T, typename UPDATER>
-		boost::asio::awaitable<bool> async_update(const typename odb::object_traits<T>::id_type id, UPDATER && updater)
+		awaitable<bool> async_update(const typename odb::object_traits<T>::id_type id, UPDATER && updater)
 		{
-			return boost::asio::co_spawn(thread_pool, [id, updater = std::forward<UPDATER>(updater), this]()mutable -> boost::asio::awaitable<bool>
+			return boost::asio::co_spawn(thread_pool, [id, updater = std::forward<UPDATER>(updater), this]()mutable -> awaitable<bool>
 			{
 				co_return update<T>(id, std::forward<UPDATER>(updater));
 			}, boost::asio::use_awaitable);
 		}
 
 		template<typename T, typename UPDATER>
-		boost::asio::awaitable<bool> async_update(const odb::query<T>& query, UPDATER && updater)
+		awaitable<bool> async_update(const odb::query<T>& query, UPDATER && updater)
 		{
-			return boost::asio::co_spawn(thread_pool, [query, updater = std::forward<UPDATER>(updater), this]()mutable -> boost::asio::awaitable<bool>
+			return boost::asio::co_spawn(thread_pool, [query, updater = std::forward<UPDATER>(updater), this]()mutable -> awaitable<bool>
 			{
 				co_return update<T>(query, std::forward<UPDATER>(updater));
 			}, boost::asio::use_awaitable);
 		}
 
 		template<typename T>
-		boost::asio::awaitable<bool> async_hard_remove(std::uint64_t id)
+		awaitable<bool> async_hard_remove(std::uint64_t id)
 		{
-			return boost::asio::co_spawn(thread_pool, [id, this]()mutable -> boost::asio::awaitable<bool>
+			return boost::asio::co_spawn(thread_pool, [id, this]()mutable -> awaitable<bool>
 			{
 				co_return hard_remove<T>(id);
 			}, boost::asio::use_awaitable);
 		}
 
 		template<SupportSoftDeletion T>
-		boost::asio::awaitable<bool> async_soft_remove(std::uint64_t id)
+		awaitable<bool> async_soft_remove(std::uint64_t id)
 		{
-			return boost::asio::co_spawn(thread_pool, [id, this]()mutable -> boost::asio::awaitable<bool>
+			return boost::asio::co_spawn(thread_pool, [id, this]()mutable -> awaitable<bool>
 			{
 				co_return soft_remove<T>(id);
 			}, boost::asio::use_awaitable);
 		}
 
 		template<SupportSoftDeletion T>
-		boost::asio::awaitable<bool> async_soft_remove(T& value)
+		awaitable<bool> async_soft_remove(T& value)
 		{
-			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> boost::asio::awaitable<bool>
+			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> awaitable<bool>
 			{
 				co_return soft_remove<T>(value);
 			}, boost::asio::use_awaitable);

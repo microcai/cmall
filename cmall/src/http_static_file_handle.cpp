@@ -8,7 +8,9 @@
 
 #include "utils/uawaitable.hpp"
 
-boost::asio::awaitable<int> cmall::http_handle_static_file(size_t connection_id, boost::beast::http::request<boost::beast::http::string_body>& req, httpd::http_any_stream& client)
+using boost::asio::awaitable;
+
+awaitable<int> cmall::http_handle_static_file(size_t connection_id, boost::beast::http::request<boost::beast::http::string_body>& req, httpd::http_any_stream& client)
 {
 	unzFile zip_file = ::unzOpen2_64("internel_bundled_exe", &exe_bundled_file_ops);
 	std::shared_ptr<void> auto_cleanup((void*)zip_file, unzClose);

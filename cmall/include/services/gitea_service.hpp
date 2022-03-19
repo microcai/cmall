@@ -5,6 +5,8 @@
 #include <boost/asio.hpp>
 #include <boost/date_time/posix_time/ptime.hpp>
 
+using boost::asio::awaitable;
+
 namespace services
 {
 	struct gitea_impl;
@@ -15,9 +17,9 @@ namespace services
 		~gitea();
 
 		// 生成用户.
-		boost::asio::awaitable<bool> init_user(std::uint64_t uid, std::string password, std::string template_dir);
+		awaitable<bool> init_user(std::uint64_t uid, std::string password, std::string template_dir);
 		// 修改密码
-		boost::asio::awaitable<bool> change_password(std::uint64_t uid, std::string password);
+		awaitable<bool> change_password(std::uint64_t uid, std::string password);
 
 	private:
 		const gitea_impl& impl() const;

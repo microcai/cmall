@@ -42,7 +42,7 @@ namespace services
 		{}
 
 		// send verifycode, returns verify session.
-		boost::asio::awaitable<verify_session> send_verify_code(std::string telephone, boost::system::error_code& ec)
+		awaitable<verify_session> send_verify_code(std::string telephone, boost::system::error_code& ec)
 		{
 			boost::process::async_pipe ap(io);
 
@@ -73,7 +73,7 @@ namespace services
 		}
 
 		// verify the user input verify_code against verify_session
-		boost::asio::awaitable<bool> verify_verify_code(std::string verify_code, verify_session verify_session_tag)
+		awaitable<bool> verify_verify_code(std::string verify_code, verify_session verify_session_tag)
 		{
 			co_return verify_code_stor.get(verify_session_access::as_string(verify_session_tag)) == verify_code;
 		}
@@ -84,12 +84,12 @@ namespace services
 	};
 
 	// send verifycode, returns verify session.
-	boost::asio::awaitable<verify_session> verifycode::send_verify_code(std::string telephone, boost::system::error_code& ec)
+	awaitable<verify_session> verifycode::send_verify_code(std::string telephone, boost::system::error_code& ec)
 	{
 		return impl().send_verify_code(telephone, ec);
 	}
 
-	boost::asio::awaitable<verify_session> verifycode::send_verify_code(std::string telephone)
+	awaitable<verify_session> verifycode::send_verify_code(std::string telephone)
 	{
 		boost::system::error_code ec;
 		auto ret = co_await impl().send_verify_code(telephone, ec);
@@ -103,7 +103,7 @@ namespace services
 	}
 
 	// verify the user input verify_code against verify_session
-	boost::asio::awaitable<bool> verifycode::verify_verify_code(std::string verify_code, verify_session verify_session_tag)
+	awaitable<bool> verifycode::verify_verify_code(std::string verify_code, verify_session verify_session_tag)
 	{
 		return impl().verify_verify_code(verify_code, verify_session_tag);
 	}

@@ -28,7 +28,7 @@ namespace services
 			: nodejs(io)
 		{}
 
-		boost::asio::awaitable<payment_url> get_payurl(std::string_view script_content, std::string orderid, int nthTry, std::string order_amount, std::string paymentmethod)
+		awaitable<payment_url> get_payurl(std::string_view script_content, std::string orderid, int nthTry, std::string order_amount, std::string paymentmethod)
 		{
 			payment_url ret;
 
@@ -47,7 +47,7 @@ namespace services
 	};
 
 	// verify the user input verify_code against verify_session
-	boost::asio::awaitable<payment_url> payment::get_payurl(std::string_view script_content, std::string orderid, int nthTry, std::string order_amount, std::string paymentmethod)
+	awaitable<payment_url> payment::get_payurl(std::string_view script_content, std::string orderid, int nthTry, std::string order_amount, std::string paymentmethod)
 	{
 		return impl().get_payurl(script_content, orderid, nthTry, order_amount, paymentmethod);
 	}

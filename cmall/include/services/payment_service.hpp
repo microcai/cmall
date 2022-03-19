@@ -5,6 +5,8 @@
 #include <boost/asio.hpp>
 #include <boost/date_time/posix_time/ptime.hpp>
 
+using boost::asio::awaitable;
+
 namespace services
 {
 	struct payment_url {
@@ -19,7 +21,7 @@ namespace services
 		~payment();
 
 		// get payment url.
-		boost::asio::awaitable<payment_url> get_payurl(std::string_view script_content, std::string orderid, int nthTry, std::string order_amount, std::string paymentmethod);
+		awaitable<payment_url> get_payurl(std::string_view script_content, std::string orderid, int nthTry, std::string order_amount, std::string paymentmethod);
 
 	private:
 		const payment_impl& impl() const;
