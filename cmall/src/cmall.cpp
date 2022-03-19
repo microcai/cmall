@@ -1411,7 +1411,7 @@ namespace cmall
 					m.name_ = apply.applicant_->name_;
 					m.state_ = merchant_state_t::normal;
 					m.gitea_password = gitea_password;
-					m.repo_path = m_config.repo_root / std::format("m{}", m.uid_)  / "shop.git";
+					m.repo_path = std::filesystem::path(m_config.repo_root / std::format("m{}", m.uid_)  / "shop.git").string();
 					db.persist(m);
 
 					co_return true;
@@ -1586,7 +1586,7 @@ namespace cmall
 			return std::make_shared<client_connection>(m_io_context_pool.get_io_context(), sslctx_, connection_id);
 	}
 
-	client_connection_ptr cmall_service::make_shared_unixsocket_connection(const boost::asio::any_io_executor& io, std::int64_t connection_id)
+	client_connection_ptr cmall_service::make_shared_unixsocket_connection(const boost::asio::any_io_executor&, std::int64_t connection_id)
 	{
 		return std::make_shared<client_connection>(m_io_context_pool.get_io_context(), connection_id, 0);
 	}
