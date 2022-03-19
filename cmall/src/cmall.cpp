@@ -1630,6 +1630,7 @@ namespace cmall
 
 			co_await boost::beast::http::async_read(client_ptr->tcp_stream, buffer, parser_, use_awaitable);
 			request req = parser_.release();
+			keep_alive = req.keep_alive();
 
 			// 这里是为了能提取到客户端的 IP 地址，即便服务本身运行在 nginx 的后面。
 			auto x_real_ip = req["x-real-ip"];
@@ -1819,7 +1820,7 @@ namespace cmall
 					co_await http_simple_error_page("internal server error", status_code, req.version());
 				}
 
-				keep_alive = !req.need_eof();
+				keep_alive &= !req.need_eof();
 			}
 		} while (keep_alive && (!m_abort));
 
