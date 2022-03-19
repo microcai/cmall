@@ -143,8 +143,7 @@ namespace gitpp {
 			tree_iterator(const tree* parent, int index);
 
 		public:
-			bool operator ==  (const tree_iterator & other) const;
-			bool operator !=  (const tree_iterator & other) const;
+			bool operator ==  (const tree_iterator & other) const = default;
 
 			tree_iterator& operator++();
 

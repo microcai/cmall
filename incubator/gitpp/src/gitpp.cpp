@@ -90,22 +90,11 @@ gitpp::tree::tree_iterator::tree_iterator(const tree* parent, int index)
 {
 }
 
-bool gitpp::tree::tree_iterator::operator==(const gitpp::tree::tree_iterator& other) const
-{
-	return (index == other.index && parent == other.parent);
-}
-
-bool gitpp::tree::tree_iterator::operator!=(const gitpp::tree::tree_iterator& other) const
-{
-	return ((index != other.index) || (parent != other.parent));
-}
-
 gitpp::tree::tree_iterator& gitpp::tree::tree_iterator::operator++()
 {
 	++ index;
 	return *this;
 }
-
 
 gitpp::tree_entry gitpp::tree::tree_iterator::operator*()
 {
