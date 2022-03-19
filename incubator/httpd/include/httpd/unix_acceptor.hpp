@@ -36,7 +36,7 @@ namespace httpd
 		detail::is_asio_io_object<ServiceClass>;
 		detail::is_httpsd_server<ServiceClass>;
 		// 访问 element_type 表明, AcceptedClientClass 必须得是一个智能指针类型.
-		detail::is_httpd_client<typename AcceptedClientClass::element_type>;
+		detail::is_unix_socket_httpd_client<typename AcceptedClientClass::element_type>;
 	}
 	class unix_acceptor
 	{
