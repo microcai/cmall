@@ -1823,6 +1823,14 @@ namespace cmall
 			}
 		} while (keep_alive && (!m_abort));
 
+		if (m_abort)
+			co_return;
+
+		if (!keep_alive)
+		{
+			co_await client_ptr->tcp_stream.async_teardown(boost::beast::role_type::server, use_awaitable);
+		}
+
 		LOG_DBG << "handle_accepted_client: HTTP connection closed : " << connection_id;
 	}
 

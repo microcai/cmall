@@ -4,6 +4,7 @@
 #include <variant>
 
 #include <boost/asio/local/stream_protocol.hpp>
+#include <boost/asio/async_result.hpp>
 #include <boost/beast.hpp>
 #include <boost/beast/ssl.hpp>
 
@@ -80,13 +81,15 @@ public:
     }
 
     template<class TeardownHandler>
-    void async_teardown(boost::beast::role_type role, TeardownHandler&& handler)
+    auto async_teardown(boost::beast::role_type role, TeardownHandler&& handler)
     {
-        std::visit([role, handler = std::forward<TeardownHandler>(handler)](auto&& realtype) mutable {
-            boost::beast::async_teardown(role, realtype, std::forward<TeardownHandler>(handler));
-        }, *this);
+        return boost::asio::async_initiate<TeardownHandler, void(const boost::system::error_code&)>(
+            [role, this](auto&& handler) mutable {
+                return std::visit([role, handler = std::move(handler)](auto&& realtype) mutable {
+                    boost::beast::async_teardown(role, realtype, std::move(handler));
+                }, *this);
+            }, handler);
     }
-
 };
 
 typedef http_stream<boost::beast::tcp_stream, boost::beast::ssl_stream<boost::beast::tcp_stream>, unix_stream> http_any_stream;
