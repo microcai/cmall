@@ -84,7 +84,7 @@ gitpp::tree::tree_iterator gitpp::tree::end() const
 	return tree_iterator(this, git_tree_entrycount(native_handle()));
 }
 
-gitpp::tree::tree_iterator::tree_iterator(const tree* parent, int index)
+gitpp::tree::tree_iterator::tree_iterator(const tree* parent, std::size_t index)
 	: parent(parent)
 	, index(index)
 {
