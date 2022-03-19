@@ -1,4 +1,4 @@
-﻿
+
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -52,7 +52,7 @@ namespace services
 
 			auto d_buffer = boost::asio::dynamic_buffer(sended_smscode);
 
-			auto read_sms_output = co_await boost::asio::async_read_until(ap, d_buffer, '\n', boost::asio::use_awaitable);
+			co_await boost::asio::async_read_until(ap, d_buffer, '\n', boost::asio::use_awaitable);
 
 			boost::algorithm::trim_right_if(sended_smscode, boost::is_any_of(" \n\r"));
 
