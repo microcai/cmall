@@ -33,6 +33,7 @@
 #include "services/repo_products.hpp"
 #include "services/userscript_service.hpp"
 #include "services/gitea_service.hpp"
+#include "services/search_service.hpp"
 
 #include "httpd/acceptor.hpp"
 #include "httpd/ssl_acceptor.hpp"
@@ -246,6 +247,7 @@ namespace cmall {
 		services::payment payment_service;
 		services::userscript script_runner;
 		services::gitea gitea_service;
+		services::search search_service;
 
 		mutable std::shared_mutex merchant_repos_mtx;
 		loaded_merchant_map merchant_repos;

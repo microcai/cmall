@@ -72,6 +72,7 @@ namespace cmall
 		, payment_service(m_io_context)
 		, script_runner(m_io_context)
 		, gitea_service(m_io_context)
+		, search_service(background_task_thread_pool)
 		, sslctx_(boost::asio::ssl::context::tls_server)
 	{
 	}
