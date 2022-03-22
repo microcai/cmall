@@ -63,8 +63,8 @@ struct goods_description {
 			title = other.title;
 		if (price.empty())
 			price = other.price;
-		if (picture.empty())
-			picture = other.picture;
+		picture += other.picture;
+		keywording += other.keywording;
 		if (description.empty())
 			description = other.description;
 
@@ -111,11 +111,11 @@ struct goods_description_grammer : qi::grammar<Iterator, goods_description()>
 
 		document_sperator = qi::lit("---") >> newline;
 
-		title_line = qi::lit("title") >> * qi::space >> ':' >> *qi::space >> value [ qi::_val = qi::_1 ] >> newline;
-		price_line = qi::lit("price") >> * qi::space >> ':' >> *qi::space >> value [ qi::_val = qi::_1 ] >> newline;
-		description_line = qi::lit("description") >> * qi::space >> ':' >> *qi::space >> value [ qi::_val = qi::_1 ] >> newline;
-		picture_line = qi::lit("picture") >> * qi::space >> ':' >> *qi::space >> value [ qi::_val = qi::_1 ] >> newline;
-		keyword_line = qi::lit("keyword") >> * qi::space >> ':' >> *qi::space >> value [ qi::_val = qi::_1 ] >> newline;
+		title_line		 = qi::lit("title") >> *qi::space >> ':' >> *qi::space >> value[qi::_val = qi::_1] >> newline;
+		price_line		 = qi::lit("price") >> *qi::space >> ':' >> *qi::space >> value[qi::_val = qi::_1] >> newline;
+		description_line = qi::lit("description") >> *qi::space >> ':' >> *qi::space >> value[qi::_val = qi::_1] >> newline;
+		picture_line	 = qi::lit("picture") >> *qi::space >> ':' >> *qi::space >> value[qi::_val = qi::_1] >> newline;
+		keyword_line	 = qi::lit("keyword") >> *qi::space >> ':' >> *qi::space >> value[qi::_val = qi::_1] >> newline;
 
 		pair_line = key [ at_c<0>(qi::_val) = qi::_1 ] >> ':' >> *qi::space >> value [ at_c<1>(qi::_val) = qi::_1 ] >> newline;
 		key = qi::lexeme[ +(qi::char_ - ':' - '-' - ' ') ];
