@@ -51,6 +51,7 @@ struct goods_description {
 	std::string title;
 	std::string price;
 	magic_vector<std::string> picture;
+	magic_vector<std::string> keywording;
 	std::string description;
 
 	magic_vector<KV> rest_meta;
@@ -85,6 +86,7 @@ BOOST_FUSION_ADAPT_STRUCT(
 	(std::string, price)
 	(std::string, description)
 	(magic_vector<std::string>, picture)
+	(magic_vector<std::string>, keywording)
 	(magic_vector<KV>, rest_meta)
 )
 
@@ -100,7 +102,12 @@ struct goods_description_grammer : qi::grammar<Iterator, goods_description()>
 
 		lines = line [ qi::_val = qi::_1 ] >> *( line [ qi::_val = qi::_1 ] );
 
-		line = title_line  [ at_c<0>(qi::_val) = qi::_1 ] | price_line  [ at_c<1>(qi::_val) = qi::_1 ] | description_line  [ at_c<2>(qi::_val) = qi::_1 ] | picture_line [ at_c<3>(qi::_val) += qi::_1 ] | pair_line [ at_c<4>(qi::_val) += qi::_1 ];
+		line = title_line  [ at_c<0>(qi::_val) = qi::_1 ]
+			| price_line  [ at_c<1>(qi::_val) = qi::_1 ]
+			| description_line  [ at_c<2>(qi::_val) = qi::_1 ]
+			| picture_line [ at_c<3>(qi::_val) += qi::_1 ]
+			| keyword_line [ at_c<4>(qi::_val) += qi::_1 ]
+			| pair_line [ at_c<5>(qi::_val) += qi::_1 ];
 
 		document_sperator = qi::lit("---") >> newline;
 
@@ -108,6 +115,7 @@ struct goods_description_grammer : qi::grammar<Iterator, goods_description()>
 		price_line = qi::lit("price") >> * qi::space >> ':' >> *qi::space >> value [ qi::_val = qi::_1 ] >> newline;
 		description_line = qi::lit("description") >> * qi::space >> ':' >> *qi::space >> value [ qi::_val = qi::_1 ] >> newline;
 		picture_line = qi::lit("picture") >> * qi::space >> ':' >> *qi::space >> value [ qi::_val = qi::_1 ] >> newline;
+		keyword_line = qi::lit("keyword") >> * qi::space >> ':' >> *qi::space >> value [ qi::_val = qi::_1 ] >> newline;
 
 		pair_line = key [ at_c<0>(qi::_val) = qi::_1 ] >> ':' >> *qi::space >> value [ at_c<1>(qi::_val) = qi::_1 ] >> newline;
 		key = qi::lexeme[ +(qi::char_ - ':' - '-' - ' ') ];
@@ -125,7 +133,7 @@ struct goods_description_grammer : qi::grammar<Iterator, goods_description()>
 
 	qi::rule<Iterator, std::string()> key, value;
 
-	qi::rule<Iterator, std::string()> title_line, price_line, description_line, picture_line;
+	qi::rule<Iterator, std::string()> title_line, price_line, description_line, picture_line, keyword_line;
 };
 
 inline std::optional<goods_description> parse_goods_metadata(const std::string_view& document) noexcept
