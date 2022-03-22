@@ -84,21 +84,8 @@ namespace services
 
 	struct search_impl
 	{
-		search_impl(boost::asio::thread_pool& executor)
-			: executor(executor)
-			, indexer(boost::asio::co_spawn(executor, background_indexer(), use_promise))
+		void add_merchant_unlocked(std::vector<product> products)
 		{
-		}
-
-		awaitable<void> background_indexer();
-
-		awaitable<void> add_merchant(std::shared_ptr<repo_products> repo)
-		{
-			// TODO, 是加入到 background_indexer 的列队里慢慢建索引，还是直接干，反正是个 awaitable
-			auto products = co_await repo->get_products();
-
-			std::unique_lock<std::shared_mutex> l(dbmtx);
-
 			auto &goods_ref_containr = indexdb.get<tags::goods_ref>();
 
 			for (auto& p : products)
@@ -114,7 +101,15 @@ namespace services
 					goods_ref_containr.insert(item);
 				}
 			}
+		}
 
+		awaitable<void> add_merchant(std::shared_ptr<repo_products> repo)
+		{
+			auto products = co_await repo->get_products();
+
+			std::unique_lock<std::shared_mutex> l(dbmtx);
+
+			add_merchant_unlocked(products);
 			co_return;
 		}
 
@@ -124,6 +119,8 @@ namespace services
 
 			std::map<goods_ref, double> result_ranking;
 
+			std::shared_lock<std::shared_mutex> l(dbmtx);
+
 			auto &keyword_ref_containr = indexdb.get<tags::key_word>();
 
 			auto keyword_result = keyword_ref_containr.equal_range(search_string);
@@ -132,6 +129,8 @@ namespace services
 			{
 				result_ranking[item.target] += item.ranke;
 			}
+
+			l.unlock();
 
 			std::vector<std::pair<goods_ref, double>> vectored_result;
 			for (auto & i : result_ranking)
@@ -150,20 +149,27 @@ namespace services
 		}
 
 		awaitable<void> remove_merchant(std::uint64_t);
-		awaitable<void> reindex_merchant(std::shared_ptr<repo_products>);
 
-		boost::asio::thread_pool& executor;
+		awaitable<void> reload_merchant(std::shared_ptr<repo_products> repo)
+		{
+			auto products = co_await repo->get_products();
 
-		boost::asio::experimental::promise<void(std::exception_ptr)> indexer;
+			std::unique_lock<std::shared_mutex> l(dbmtx);
+
+			indexdb.get<tags::merchant_id>().erase(repo->get_merchant_uid());
+
+			add_merchant_unlocked(products);
+			co_return;
+		}
 
 		mutable std::shared_mutex dbmtx;
 		keywords_database indexdb;
 	};
 
-	search::search(boost::asio::thread_pool& executor)
+	search::search()
 	{
 		static_assert(sizeof(obj_stor) >= sizeof(search_impl));
-		std::construct_at(reinterpret_cast<search_impl*>(obj_stor.data()), executor);
+		std::construct_at(reinterpret_cast<search_impl*>(obj_stor.data()));
 	}
 
 	search::~search()
@@ -174,6 +180,11 @@ namespace services
 	awaitable<void> search::add_merchant(std::shared_ptr<repo_products> merchant_repos)
 	{
 		return impl().add_merchant(merchant_repos);
+	}
+
+	awaitable<void> search::reload_merchant(std::shared_ptr<repo_products> repo)
+	{
+		return impl().reload_merchant(repo);
 	}
 
 	awaitable<std::vector<goods_ref>> search::search_goods(std::string q)
@@ -190,10 +201,4 @@ namespace services
 	{
 		return *reinterpret_cast<search_impl*>(obj_stor.data());
 	}
-
-	awaitable<void> search_impl::background_indexer()
-	{
-		co_return;
-	}
-
 }

@@ -190,7 +190,7 @@ namespace cmall {
 		awaitable<bool> init_ws_acceptors();
 		awaitable<bool> init_wss_acceptors(std::string_view cert, std::string_view key);
 		awaitable<bool> init_ws_unix_acceptors();
-		awaitable<bool> load_configs();
+		awaitable<bool> load_repos();
 		awaitable<void> run_httpd();
 		awaitable<void> stop();
 
@@ -201,6 +201,7 @@ namespace cmall {
 		std::shared_ptr<services::repo_products> get_merchant_git_repo(const cmall_merchant& merchant) const; // will throw if not found
 		std::shared_ptr<services::repo_products> get_merchant_git_repo(std::uint64_t merchant_uid) const; // will throw if not found
 
+		awaitable<void> repo_push_check(std::weak_ptr<services::repo_products>);
 
 		// 这 3 个函数, 是 acceptor 需要的.
 		client_connection_ptr        make_shared_connection(const boost::asio::any_io_executor& io, std::int64_t connection_id);
@@ -262,6 +263,7 @@ namespace cmall {
 		std::vector<httpd::ssl_acceptor<client_connection_ptr, cmall_service>> m_wss_acceptors;
 		std::vector<httpd::unix_acceptor<client_connection_ptr, cmall_service>> m_ws_unix_acceptors;
 		std::atomic_bool m_abort{false};
+		boost::asio::cancellation_signal m_abort_signal;
 
 		friend class httpd::acceptor<client_connection_ptr, cmall_service>;
 		friend class httpd::ssl_acceptor<client_connection_ptr, cmall_service>;

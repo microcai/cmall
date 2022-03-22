@@ -22,10 +22,11 @@ namespace services
 	class search
 	{
 	public:
-		search(boost::asio::thread_pool& executor);
+		search();
 		~search();
 
 		awaitable<void> add_merchant(std::shared_ptr<repo_products>);
+		awaitable<void> reload_merchant(std::shared_ptr<repo_products>);
 
 		awaitable<std::vector<goods_ref>> search_goods(std::string search_string);
 

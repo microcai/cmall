@@ -72,7 +72,6 @@ namespace cmall
 		, payment_service(m_io_context)
 		, script_runner(m_io_context)
 		, gitea_service(m_io_context)
-		, search_service(background_task_thread_pool)
 		, sslctx_(boost::asio::ssl::context::tls_server)
 	{
 	}
@@ -82,6 +81,8 @@ namespace cmall
 	awaitable<void> cmall_service::stop()
 	{
 		m_abort = true;
+
+		m_abort_signal.emit(boost::asio::cancellation_type::all);
 
 		LOG_DBG << "close all ws...";
 		co_await close_all_ws();
@@ -102,7 +103,11 @@ namespace cmall
 			std::unique_lock<std::shared_mutex> l(merchant_repos_mtx);
 			merchant_repos.get<tag::merchant_uid_tag>().erase(merchant.uid_);
 			merchant_repos.get<tag::merchant_uid_tag>().insert(repo);
-			boost::asio::co_spawn(background_task_thread_pool, search_service.add_merchant(repo), boost::asio::detached);
+			boost::asio::co_spawn(background_task_thread_pool, [this, repo]() mutable -> awaitable<void>
+			{
+				co_await search_service.add_merchant(repo);
+				co_await repo_push_check(std::move(repo));
+			}, boost::asio::bind_cancellation_slot(m_abort_signal.slot(), boost::asio::detached));
 			co_return true;
 		}
 		else
@@ -151,7 +156,25 @@ namespace cmall
 		return * it;
 	}
 
-	awaitable<bool> cmall_service::load_configs()
+	awaitable<void> cmall_service::repo_push_check(std::weak_ptr<services::repo_products> repo_)
+	{
+		while(!m_abort)
+		{
+			steady_timer timer(co_await boost::asio::this_coro::executor);
+			timer.expires_from_now(20s);
+			co_await timer.async_wait(use_awaitable);
+			auto repo = repo_.lock();
+			if (repo)
+			{
+				if (co_await repo->check_repo_changed())
+				{
+					co_await search_service.reload_merchant(repo);
+				}
+			}
+		}
+	}
+
+	awaitable<bool> cmall_service::load_repos()
 	{
 		std::vector<cmall_merchant> all_merchant;
 		using query_t = odb::query<cmall_merchant>;

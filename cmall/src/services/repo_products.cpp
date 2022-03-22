@@ -37,9 +37,7 @@ namespace services
 			, git_repo(repo_path)
 			, merchant_id(merchant_id)
 		{
-			gitpp::reference git_head = git_repo.head();
-
-			// auto tree = git_repo.get_tree(git_head.target());
+			last_checked_master_sha1 = git_repo.head().target();
 		}
 
 		template<typename WalkHandler>
@@ -260,6 +258,14 @@ namespace services
 			return ret;
 		}
 
+		awaitable<bool> check_repo_changed()
+		{
+			auto old_value = last_checked_master_sha1;
+			last_checked_master_sha1 = git_repo.head().target();
+			co_return last_checked_master_sha1 != old_value;
+		}
+
+		gitpp::oid last_checked_master_sha1;
 		std::filesystem::path repo_path;
 		gitpp::repo git_repo;
 		std::uint64_t merchant_id;
@@ -324,6 +330,11 @@ namespace services
 	std::uint64_t repo_products::get_merchant_uid() const
 	{
 		return impl().merchant_id;
+	}
+
+	awaitable<bool> repo_products::check_repo_changed()
+	{
+		return impl().check_repo_changed();
 	}
 
 	repo_products::repo_products(boost::asio::thread_pool& executor, std::uint64_t merchant_id, std::filesystem::path repo_path)

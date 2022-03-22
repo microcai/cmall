@@ -42,10 +42,19 @@ namespace gitpp {
 			return &oid_;
 		}
 
+		oid ()
+		{
+			memset(&oid_, 0, sizeof (oid_));
+		}
+
 		explicit oid(const git_oid* git_oid_)
 		{
 			memcpy(&oid_, git_oid_, sizeof (oid_));
 		}
+
+		bool operator == (const oid& other) const;
+
+		oid& operator = (const oid& other);
 
 		std::string as_sha1_string() const;
 

@@ -68,6 +68,8 @@ namespace services
 
 		std::uint64_t get_merchant_uid() const;
 
+		awaitable<bool> check_repo_changed();
+
 	private:
 		boost::asio::thread_pool& thread_pool;
 

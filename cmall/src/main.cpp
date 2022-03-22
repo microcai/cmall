@@ -253,7 +253,7 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 
 	using namespace boost::asio::experimental::awaitable_operators;
 
-	if (!co_await xsrv.load_configs())
+	if (!co_await xsrv.load_repos())
 		co_return EXIT_FAILURE;
 
 	// 初始化ws acceptors.

@@ -188,6 +188,17 @@ bool gitpp::is_git_repo(std::filesystem::path dir)
 	return false;
 }
 
+bool gitpp::oid::operator==(const oid& other) const
+{
+	return memcmp(&oid_, &other.oid_, sizeof (oid_)) == 0;
+}
+
+gitpp::oid& gitpp::oid::operator = (const oid& other)
+{
+	memcpy(&oid_, &other.oid_, sizeof (oid_));
+	return *this;
+}
+
 std::string gitpp::oid::as_sha1_string() const
 {
 	std::string ret;
