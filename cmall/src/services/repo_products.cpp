@@ -129,6 +129,8 @@ namespace services
 				for (auto pic_url : result->picture)
 					founded.pics.push_back(correct_url(pic_url));
 				founded.merchant_id = merchant_id;
+				for (auto & keywording : result->keywording)
+					founded.keywords.push_back({.keyword = keywording, .rank = 1.0});
 				return founded;
 			}
 
