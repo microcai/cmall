@@ -617,6 +617,7 @@ namespace cmall
 				co_return co_await handle_jsonrpc_order_api(connection_ptr, method.value(), params);
 				break;
 
+			case req_method::search_goods:
 			case req_method::goods_list:
 			case req_method::goods_detail:
 				co_return co_await handle_jsonrpc_goods_api(connection_ptr, method.value(), params);
@@ -1120,6 +1121,22 @@ namespace cmall
 
 		switch (method)
 		{
+			case req_method::search_goods:
+			{
+				auto q	 = jsutil::json_accessor(params).get_string("q");
+				auto search_result = co_await search_service.search_goods(q);
+
+				// then transform goods_ref to products
+				std::vector<services::product> final_result;
+				for (goods_ref gr : search_result)
+				{
+					final_result.push_back(
+						co_await get_merchant_git_repo(gr.merchant_id)->get_product(gr.goods_id)
+					);
+				}
+
+				reply_message["result"] = boost::json::value_from(final_result);
+			}break;
 			case req_method::goods_list:
 			{
 				// 列出 商品, 根据参数决定是首页还是商户

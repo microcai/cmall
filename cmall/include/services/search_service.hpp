@@ -11,6 +11,13 @@ using boost::asio::awaitable;
 
 namespace services
 {
+	struct goods_ref
+	{
+		std::uint64_t merchant_id;
+		std::string goods_id;
+	};
+
+
 	struct search_impl;
 	class search
 	{
@@ -19,6 +26,8 @@ namespace services
 		~search();
 
 		awaitable<void> add_merchant(std::shared_ptr<repo_products>);
+
+		awaitable<std::vector<goods_ref>> search_goods(std::string search_string);
 
 	private:
 		const search_impl& impl() const;

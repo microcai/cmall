@@ -35,17 +35,17 @@ using boost::asio::awaitable;
 
 namespace services
 {
+
+	bool operator < (const goods_ref & a , const goods_ref & b)
+	{
+		return a.merchant_id < b.merchant_id && a.goods_id < b.goods_id;
+	}
+
 	namespace tags{
 		struct goods_ref{};
 		struct merchant_id{};
 		struct key_word{};
 	}
-
-	struct goods_ref
-	{
-		std::uint64_t merchant_id;
-		std::string goods_id;
-	};
 
 	struct keyword_index_item
 	{
@@ -118,6 +118,37 @@ namespace services
 			co_return;
 		}
 
+		awaitable<std::vector<goods_ref>> search_goods(std::string search_string)
+		{
+			std::vector<goods_ref> result;
+
+			std::map<goods_ref, double> result_ranking;
+
+			auto &keyword_ref_containr = indexdb.get<tags::key_word>();
+
+			auto keyword_result = keyword_ref_containr.equal_range(search_string);
+
+			for (const auto& item : boost::make_iterator_range(keyword_result.first, keyword_result.second) )
+			{
+				result_ranking[item.target] += item.ranke;
+			}
+
+			std::vector<std::pair<goods_ref, double>> vectored_result;
+			for (auto & i : result_ranking)
+				vectored_result.push_back(i);
+
+			sort(vectored_result.begin(), vectored_result.end(), [](auto & a, auto& b){ return b.second < a.second; });
+
+			for (int i=0; i < 10; i++)
+			{
+				if (i < vectored_result.size())
+					result.push_back(vectored_result[i].first);
+				else break;
+			}
+
+			co_return result;
+		}
+
 		awaitable<void> remove_merchant(std::uint64_t);
 		awaitable<void> reindex_merchant(std::shared_ptr<repo_products>);
 
@@ -143,6 +174,11 @@ namespace services
 	awaitable<void> search::add_merchant(std::shared_ptr<repo_products> merchant_repos)
 	{
 		return impl().add_merchant(merchant_repos);
+	}
+
+	awaitable<std::vector<goods_ref>> search::search_goods(std::string q)
+	{
+		return impl().search_goods(q);
 	}
 
 	const search_impl& search::impl() const

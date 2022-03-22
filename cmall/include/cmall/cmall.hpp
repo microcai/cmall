@@ -148,6 +148,7 @@ namespace cmall {
 
 		order_get_pay_url,
 
+		search_goods,
 		goods_list,
 		goods_detail,
 
