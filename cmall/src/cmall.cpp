@@ -168,6 +168,7 @@ namespace cmall
 			{
 				if (co_await repo->check_repo_changed())
 				{
+					LOG_DBG << "repo git HEAD changed!";
 					co_await search_service.reload_merchant(repo);
 				}
 			}
