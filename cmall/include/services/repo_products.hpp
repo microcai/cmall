@@ -15,6 +15,12 @@ using boost::asio::awaitable;
 
 namespace services
 {
+	struct product_keyword
+	{
+		std::string keyword;
+		double rank;
+	};
+
 	struct product
 	{
 		// 商品 ID, 实质上是商品描述文件的文件名.
@@ -32,6 +38,8 @@ namespace services
 		std::string git_version;
 
 		std::uint64_t merchant_id;
+
+		std::vector<product_keyword> keywords;
 	};
 
 	struct repo_products_impl;

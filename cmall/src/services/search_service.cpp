@@ -47,7 +47,7 @@ namespace services
 		std::string goods_id;
 	};
 
-	struct keywords_row
+	struct keyword_index_item
 	{
 		std::string key_word;
 		double ranke;
@@ -55,29 +55,28 @@ namespace services
 
 		std::uint64_t merchant_id() const { return target.merchant_id; }
 		std::string_view goods_id() const { return target.goods_id; }
-
 	};
 
 	typedef boost::multi_index::multi_index_container<
-		keywords_row,
+		keyword_index_item,
 		boost::multi_index::indexed_by<
-			boost::multi_index::ordered_unique<
+			boost::multi_index::hashed_non_unique<
 				boost::multi_index::tag<tags::goods_ref>,
 				boost::multi_index::composite_key<
-					keywords_row,
-					boost::multi_index::const_mem_fun<keywords_row, std::uint64_t, &keywords_row::merchant_id>,
-					boost::multi_index::const_mem_fun<keywords_row, std::string_view, &keywords_row::goods_id>
+					keyword_index_item,
+					boost::multi_index::const_mem_fun<keyword_index_item, std::uint64_t, &keyword_index_item::merchant_id>,
+					boost::multi_index::const_mem_fun<keyword_index_item, std::string_view, &keyword_index_item::goods_id>
 				>
 			>,
 			boost::multi_index::hashed_non_unique<
 				boost::multi_index::tag<tags::key_word>,
 				boost::multi_index::member<
-					keywords_row, std::string, &keywords_row::key_word
+					keyword_index_item, std::string, &keyword_index_item::key_word
 				>
 			>,
 			boost::multi_index::hashed_non_unique<
 				boost::multi_index::tag<tags::merchant_id>,
-				boost::multi_index::const_mem_fun<keywords_row, std::uint64_t, &keywords_row::merchant_id>
+				boost::multi_index::const_mem_fun<keyword_index_item, std::uint64_t, &keyword_index_item::merchant_id>
 			>
 		>
 	> keywords_database;
@@ -93,7 +92,32 @@ namespace services
 
 		awaitable<void> background_indexer();
 
-		awaitable<void> add_merchant(std::shared_ptr<repo_products>);
+		awaitable<void> add_merchant(std::shared_ptr<repo_products> repo)
+		{
+			// TODO, 是加入到 background_indexer 的列队里慢慢建索引，还是直接干，反正是个 awaitable
+			auto products = co_await repo->get_products();
+
+			std::unique_lock<std::shared_mutex> l(dbmtx);
+
+			auto &goods_ref_containr = indexdb.get<tags::goods_ref>();
+
+			for (auto& p : products)
+			{
+				keyword_index_item item;
+
+				item.target = { .merchant_id = p.merchant_id, .goods_id = p.product_id };
+
+				for (auto& keyword : p.keywords)
+				{
+					item.key_word = keyword.keyword;
+					item.ranke = keyword.rank;
+					goods_ref_containr.insert(item);
+				}
+			}
+
+			co_return;
+		}
+
 		awaitable<void> remove_merchant(std::uint64_t);
 		awaitable<void> reindex_merchant(std::shared_ptr<repo_products>);
 
@@ -101,6 +125,7 @@ namespace services
 
 		boost::asio::experimental::promise<void(std::exception_ptr)> indexer;
 
+		mutable std::shared_mutex dbmtx;
 		keywords_database indexdb;
 	};
 
@@ -113,6 +138,11 @@ namespace services
 	search::~search()
 	{
 		std::destroy_at(reinterpret_cast<search_impl*>(obj_stor.data()));
+	}
+
+	awaitable<void> search::add_merchant(std::shared_ptr<repo_products> merchant_repos)
+	{
+		return impl().add_merchant(merchant_repos);
 	}
 
 	const search_impl& search::impl() const

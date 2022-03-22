@@ -102,6 +102,7 @@ namespace cmall
 			std::unique_lock<std::shared_mutex> l(merchant_repos_mtx);
 			merchant_repos.get<tag::merchant_uid_tag>().erase(merchant.uid_);
 			merchant_repos.get<tag::merchant_uid_tag>().insert(repo);
+			boost::asio::co_spawn(background_task_thread_pool, search_service.add_merchant(repo), boost::asio::detached);
 			co_return true;
 		}
 		else
