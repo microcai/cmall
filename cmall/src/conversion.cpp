@@ -43,7 +43,7 @@ inline namespace conversion
 		jv = {
 			{ "uid", m.uid_ },
 			{ "name", m.name_ },
-			{ "state", m.state_ },
+			{ "state", to_underlying(m.state_) },
 			{ "desc", m.desc_.null() ? "" : m.desc_.get() },
 			{ "created_at", ::to_string(m.created_at_) },
 		};
@@ -111,7 +111,7 @@ inline namespace conversion
 			{ "apply_id", a.id_ },
 			{ "applicant_user_id", a.applicant_->uid_ },
 			{ "applicant_user_phone", a.applicant_->active_phone },
-			{ "state", a.state_ },
+			{ "state", to_underlying(a.state_) },
 			{ "created_at", to_string(a.created_at_) },
 			{ "updated_at", to_string(a.updated_at_) },
 		};
