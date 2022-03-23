@@ -1437,7 +1437,7 @@ namespace cmall
 			{
 				std::vector<cmall_apply_for_mechant> all_applicats;
 				using query_t = odb::query<cmall_apply_for_mechant>;
-				auto query = query_t::deleted_at.is_null() + " order by " + query_t::created_at + " desc";
+				auto query = " order by " + query_t::created_at + " desc";
 				co_await m_database.async_load<cmall_apply_for_mechant>(query, all_applicats);
 				reply_message["result"] = boost::json::value_from(all_applicats);
 			}break;
