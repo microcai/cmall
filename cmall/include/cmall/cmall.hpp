@@ -129,6 +129,7 @@ namespace cmall {
 		user_islogin,
 		user_info,
 		user_apply_merchant,
+		user_apply_info, // 审核状态.
 
 		user_list_recipient_address,
 		user_add_recipient_address,

@@ -17,6 +17,7 @@
 #include <vector>
 #include <iterator>
 
+#include "boost/json/value_from.hpp"
 #include "cmall/error_code.hpp"
 #include "cmall/misc.hpp"
 #include "httpd/acceptor.hpp"
@@ -616,6 +617,7 @@ namespace cmall
 				break;
 			case req_method::user_info:
 			case req_method::user_apply_merchant:
+			case req_method::user_apply_info:
 			case req_method::user_list_recipient_address:
 			case req_method::user_add_recipient_address:
 			case req_method::user_modify_receipt_address:
@@ -803,6 +805,18 @@ namespace cmall
 				co_await m_database.async_add(apply);
 
 				reply_message["result"] = true;
+			}
+			break;
+			case req_method::user_apply_info:
+			{
+				auto uid = session_info.user_info->uid_;
+
+				std::vector<cmall_apply_for_mechant> applys;
+				using query_t = odb::query<cmall_apply_for_mechant>;
+				auto query = query_t::applicant->uid == uid && query_t::deleted_at.is_null() + " order by " + query_t::created_at + " desc";
+				co_await m_database.async_load<cmall_apply_for_mechant>(query, applys);
+
+				reply_message["result"] = boost::json::value_from(applys);
 			}
 			break;
 			case req_method::user_list_recipient_address:
