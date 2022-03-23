@@ -33,6 +33,17 @@ namespace services
 		bool isMerchant = false;
 		std::string verify_telephone;
 		std::optional<verify_session> verify_session_cookie;
+
+		void clear()
+		{
+			user_info.reset();
+			merchant_info.reset();
+			admin_info.reset();
+			isAdmin = false;
+			isMerchant = false;
+			verify_telephone.clear();
+			verify_session_cookie.reset();
+		}
 	};
 
 	struct persist_session_impl;

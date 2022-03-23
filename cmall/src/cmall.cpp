@@ -772,7 +772,7 @@ namespace cmall
 					std::unique_lock<std::shared_mutex> l(active_users_mtx);
 					active_users.get<1>().erase(connection_ptr->connection_id_);
 				}
-				this_client.session_info->user_info = {};
+				this_client.session_info->clear();
 				co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info);
 				reply_message["result"] = { "status", "success" };
 			}
