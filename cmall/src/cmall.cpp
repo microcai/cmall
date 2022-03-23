@@ -1485,6 +1485,10 @@ namespace cmall
 						co_await gitea_service.init_user(m.uid_, m.gitea_password.get(), gitea_template_loaction);
 						co_await load_merchant_git(m);
 					}, use_awaitable);
+
+					co_await send_notify_message(apply_id, R"---({{"topic":"status_updated"}})---",
+						this_client.connection_id_);
+
 				}
 				reply_message["result"] = true;
 			}
