@@ -61,6 +61,55 @@ namespace httpd {
 		return time_buf;
 	}
 
+	std::string decodeURIComponent(std::string_view str)
+	{
+		std::string result;
+
+		auto start = str.cbegin();
+		auto end = str.cend();
+
+		for (; start != end; ++start)
+		{
+			char c = *start;
+			if (c == '%')
+			{
+				auto first = std::next(start);
+				if (first == end)
+					throw std::invalid_argument("URI malformed");
+
+				auto second = std::next(first);
+				if (second == end)
+					throw std::invalid_argument("URI malformed");
+
+				if (isdigit(*first))
+					c = *first - '0';
+				else if (*first >= 'A' && *first <= 'F')
+					c = *first - 'A' + 10;
+				else if (*first >= 'a' && *first <= 'f')
+					c = *first - 'a' + 10;
+				else
+					throw std::invalid_argument("URI malformed");
+
+				c <<= 4;
+
+				if (isdigit(*second))
+					c += *second - '0';
+				else if (*second >= 'A' && *second <= 'F')
+					c += *second - 'A' + 10;
+				else if (*second >= 'a' && *second <= 'f')
+					c += *second - 'a' + 10;
+				else
+					throw std::invalid_argument("URI malformed");
+
+				std::advance(start, 2);
+			}
+
+			result += c;
+		}
+
+		return result;
+	}
+
 	// this is a clone of 'struct tm' but with all fields we don't need or use cut out.
 	typedef struct {
 		int tm_sec;

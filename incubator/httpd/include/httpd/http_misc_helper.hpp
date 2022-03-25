@@ -15,4 +15,5 @@ namespace httpd {
 	std::string make_http_last_modified(std::time_t t);
 	bool parse_gmt_time_fmt(std::string_view date_str, time_t* output);
 	time_t dos2unixtime(unsigned long dostime);
+	std::string decodeURIComponent(std::string_view str);
 }

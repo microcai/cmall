@@ -1253,9 +1253,10 @@ namespace cmall
 			}
 			break;
 			case req_method::goods_detail:
+			try
 			{
 				auto merchant_id = jsutil::json_accessor(params).get("merchant_id", -1).as_int64();
-				auto goods_id	 = jsutil::json_accessor(params).get_string("goods_id");
+				auto goods_id	 = httpd::decodeURIComponent(jsutil::json_accessor(params).get_string("goods_id"));
 
 				if (goods_id.empty())
 					throw boost::system::system_error(cmall::error::invalid_params);
@@ -1264,6 +1265,10 @@ namespace cmall
 
 				// 获取商品信息, 注意这个不是商品描述, 而是商品 标题, 价格, 和缩略图. 用在商品列表页面.
 				reply_message["result"] = boost::json::value_from(product);
+			}
+			catch(std::invalid_argument&)
+			{
+				throw boost::system::system_error(error::invalid_params);
 			}
 			break;
 			default:
