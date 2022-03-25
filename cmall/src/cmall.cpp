@@ -1624,6 +1624,11 @@ namespace cmall
 
 	promise<void(std::exception_ptr)> cmall_service::websocket_write(client_connection_ptr clientptr, std::string message)
 	{
+		// 本来 co_await co_spawn 就好，但是 gcc 上有 bug, 会崩
+		// 所以返回 promise 然后在 promise 上 wait 就不会崩了.
+		// 那为啥要在外面await 而不是这里 await 掉，是发现了新的情况.
+		// 循环 for (c : all_client) promises.push_back(websocket_write(c, 'msg')); 的时候， 可以收集 promise
+		// 然后 wait_all_promise(promises);
 		if (clientptr->ws_client)
 		{
 		 	return boost::asio::co_spawn(
