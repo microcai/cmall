@@ -395,7 +395,7 @@ namespace cmall
 				if (jv.as_object().contains("id"))
 					reply_message["id"] = jv.at("id");
 				reply_message["error"] = { { "code", -32600 }, { "message", "Invalid Request" } };
-				co_await websocket_write(*connection_ptr, jsutil::json_to_string(reply_message));
+				co_await websocket_write(connection_ptr, jsutil::json_to_string(reply_message));
 				continue;
 			}
 
@@ -428,7 +428,7 @@ namespace cmall
 				}
 				if (jv.as_object().contains("id"))
 					replay_message.insert_or_assign("id", jv.at("id"));
-				co_await websocket_write(*connection_ptr, jsutil::json_to_string(replay_message));
+				co_await websocket_write(connection_ptr, jsutil::json_to_string(replay_message));
 				continue;
 			}
 
@@ -456,7 +456,7 @@ namespace cmall
 					// 将 id 字段原原本本的还回去, 客户端就可以根据 返回的 id 找到原来发的请求
 					if (jv.as_object().contains("id"))
 						replay_message.insert_or_assign("id", jv.at("id"));
-					co_await websocket_write(*connection_ptr, jsutil::json_to_string(replay_message));
+					co_await websocket_write(connection_ptr, jsutil::json_to_string(replay_message));
 				},
 				boost::asio::detached);
 		}
@@ -1563,7 +1563,7 @@ namespace cmall
 			}
 		}
 		for (auto c : active_user_connections)
-			co_await websocket_write(*c, msg);
+			co_await websocket_write(c, msg);
 	}
 
 	awaitable<void> cmall_service::do_ws_write(size_t connection_id, client_connection_ptr connection_ptr)
@@ -1617,15 +1617,15 @@ namespace cmall
 		LOG_DBG << "cmall_service::close_all_ws() success!";
 	}
 
-	awaitable<void> cmall_service::websocket_write(client_connection& connection_, std::string message)
+	awaitable<void> cmall_service::websocket_write(client_connection_ptr connection_, std::string message)
 	{
-		if (connection_.ws_client)
+		if (connection_->ws_client)
 		{
 			co_await boost::asio::co_spawn(
-				connection_.get_executor(),
-				[&connection_, message]() mutable -> awaitable<void>
+				connection_->get_executor(),
+				[connection_, message = std::move(message)]() mutable -> awaitable<void>
 				{
-					connection_.ws_client->message_channel.try_send(boost::system::error_code(), message);
+					connection_->ws_client->message_channel.try_send(boost::system::error_code(), message);
 					co_return;
 				},
 				use_awaitable);

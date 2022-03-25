@@ -121,7 +121,7 @@ struct goods_description_grammer : qi::grammar<Iterator, goods_description()>
 		pair_line = key [ at_c<0>(qi::_val) = qi::_1 ] >> ':' >> *qi::space >> value [ at_c<1>(qi::_val) = qi::_1 ] >> newline;
 		key = qi::lexeme[ +(qi::char_ - ':' - '-' - ' ') ];
 		value = qi::lexeme[ +(qi::char_ - '\n') ];
-		values = token[qi::_val += qi::_1] >> * (+qi::space >> token [qi::_val += qi::_1]);
+		values = token[qi::_val += qi::_1] >> * (+qi::lit(' ') >> token [qi::_val += qi::_1]);
 
 		token = qi::lexeme[ +(qi::char_ - '\n' - ' ') ];
 

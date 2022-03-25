@@ -219,7 +219,7 @@ namespace cmall {
 
 		awaitable<void> close_all_ws();
 
-		awaitable<void> websocket_write(client_connection& connection_, std::string message);
+		awaitable<void> websocket_write(client_connection_ptr, std::string message);
 
 		awaitable<boost::json::object> handle_jsonrpc_call(client_connection_ptr, const std::string& method, boost::json::object params);
 
