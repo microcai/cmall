@@ -137,6 +137,7 @@ namespace std {
 #endif
 
 #include <zlib.h>
+#include <minizip/unzip.h>
 
 #include <odb/forward.hxx>
 #include <odb/traits.hxx>
