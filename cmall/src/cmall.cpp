@@ -1,39 +1,13 @@
 
 #include "stdafx.hpp"
-#include <boost/asio.hpp>
-#include <boost/asio/awaitable.hpp>
-
-#include <boost/date_time.hpp>
-#include <boost/json.hpp>
-#include <boost/regex.hpp>
-#include <boost/scope_exit.hpp>
-#include <cstddef>
-#include <iterator>
-#include <mutex>
-#include <shared_mutex>
-#include <string>
-#include <vector>
-#include <iterator>
 
 #include "boost/json/value_from.hpp"
 #include "cmall/error_code.hpp"
 #include "cmall/misc.hpp"
-#include "utils/async_connect.hpp"
-#include "utils/url_parser.hpp"
 
 #include "cmall/cmall.hpp"
 #include "cmall/database.hpp"
 #include "cmall/db.hpp"
-#include <odb/database.hxx>
-
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wexpansion-to-defined"
-#endif
-
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
 #ifdef _MSC_VER
 #	pragma warning(push)

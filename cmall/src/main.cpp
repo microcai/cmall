@@ -2,11 +2,6 @@
 #include "stdafx.hpp"
 #include "io_context_pool.hpp"
 
-#include <algorithm>
-#include <functional>
-
-#include <boost/asio/experimental/awaitable_operators.hpp>
-
 #ifdef __linux__
 #  include <sys/resource.h>
 #  include <systemd/sd-daemon.h>

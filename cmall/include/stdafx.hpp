@@ -1,7 +1,6 @@
 
 #pragma once
 
-
 #include <boost/asio.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
@@ -9,6 +8,10 @@
 
 #include <boost/beast.hpp>
 #include <boost/beast/ssl.hpp>
+#include <boost/beast/websocket.hpp>
+
+#include <boost/circular_buffer.hpp>
+
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/multi_index/global_fun.hpp>
@@ -22,6 +25,8 @@
 #include <boost/multi_index/tag.hpp>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/algorithm/string/find.hpp>
 
 #include <boost/json.hpp>
 
@@ -40,14 +45,22 @@
 #include <boost/nowide/convert.hpp>
 #include <boost/process.hpp>
 #include <boost/process/extend.hpp>
+#include <boost/scope_exit.hpp>
+#include <boost/core/ignore_unused.hpp>
 
 #include <boost/regex.hpp>
 
 #include <boost/variant2.hpp>
+#include <boost/smart_ptr/local_shared_ptr.hpp>
+#include <boost/smart_ptr/make_local_shared.hpp>
+#include <boost/signals2.hpp>
 
 #include <algorithm>
+#include <any>
 #include <chrono>
 #include <clocale>
+#include <concepts>
+#include <exception>
 
 #include <filesystem>
 #include <fstream>
@@ -56,28 +69,29 @@
 #include <iostream>
 #include <iterator>
 
-#include <optional>
 #include <list>
 #include <map>
 #include <memory>
 #include <mutex>
+#include <numeric>
 #include <utility>
+#include <optional>
 #include <random>
 #include <set>
+#include <shared_mutex>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <system_error>
-
-#include <vector>
-#include <version>
+#include <type_traits>
 
 #include <thread>
 #include <tuple>
 #include <unordered_map>
-
-#include <cstring>
-#include <ctime>
-#include <cstdlib>
+#include <unordered_set>
+#include <variant>
+#include <vector>
+#include <version>
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -122,3 +136,16 @@ namespace std {
 
 #include <odb/pgsql/database.hxx>
 #include <odb/pgsql/traits.hxx>
+
+#ifdef __linux__
+#  include <sys/resource.h>
+#  include <systemd/sd-daemon.h>
+#  include <sys/utsname.h>
+#elif _WIN32
+#  ifndef WIN32_LEAN_AND_MEAN
+#    define WIN32_LEAN_AND_MEAN
+#  endif
+#  include <fcntl.h>
+#  include <io.h>
+#  include <windows.h>
+#endif
