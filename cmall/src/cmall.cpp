@@ -1533,7 +1533,6 @@ namespace cmall
 		std::vector<promise<void(std::exception_ptr)>> writers;
 		for (auto c : active_user_connections)
 			 writers.push_back(websocket_write(c, msg));
-	
 		co_await httpd::wait_all(writers);
 	}
 
@@ -1543,11 +1542,23 @@ namespace cmall
 		auto& ws			= connection_ptr->ws_client->ws_stream_;
 
 		using namespace boost::asio::experimental::awaitable_operators;
+		steady_timer t(co_await boost::asio::this_coro::executor);
+
+		boost::asio::cancellation_state cs = co_await boost::asio::this_coro::cancellation_state;
+
+		if (cs.slot().is_connected())
+		{
+			cs.slot().assign([&message_deque, &t](boost::asio::cancellation_type_t) mutable
+			{
+				boost::system::error_code ignore_ec;
+				t.cancel(ignore_ec);
+				message_deque.cancel();
+			});
+		}
 
 		while (!m_abort)
 			try
 			{
-				steady_timer t(co_await boost::asio::this_coro::executor);
 				t.expires_from_now(std::chrono::seconds(15));
 				std::variant<std::monostate, std::string> awaited_result
 					= co_await (t.async_wait(use_awaitable)
@@ -1733,7 +1744,7 @@ namespace cmall
 
 				co_await (
 					// 启动读写协程.
-					do_ws_read(connection_id, client_ptr) && do_ws_write(connection_id, client_ptr));
+					do_ws_read(connection_id, client_ptr) || do_ws_write(connection_id, client_ptr));
 				LOG_DBG << "handle_accepted_client, " << connection_id << ", connection exit.";
 				co_return;
 			}
