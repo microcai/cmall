@@ -175,12 +175,10 @@ namespace cmall
 
 		while (!m_abort)
 		{
-			co_await inotify_file.async_wait(boost::asio::posix::descriptor_base::wait_read, use_awaitable);
+			co_await inotify_file.async_read_some(boost::asio::buffer(readbuf), use_awaitable);
 
 			do
 			{
-				read(inotify_file.native_handle(), readbuf.data(), sizeof readbuf);
-
 				steady_timer timer(co_await boost::asio::this_coro::executor);
 				timer.expires_from_now(1s);
 
@@ -189,8 +187,11 @@ namespace cmall
 				auto awaited_result = co_await (
 					timer.async_wait(use_awaitable)
 						||
-					inotify_file.async_wait(boost::asio::posix::descriptor_base::wait_read, use_awaitable)
+					inotify_file.async_read_some(boost::asio::buffer(readbuf), use_awaitable)
 				);
+
+				// 只有持续 1s 左右的时间 git 仓库没有产生 inotify 消息，才认为 git 完成了动作.
+				// 不然就继续读取 inotify 获取消息.
 
 				if (awaited_result.index() == 0)
 				{
@@ -205,7 +206,7 @@ namespace cmall
 			{
 				if (co_await repo->check_repo_changed())
 				{
-					LOG_DBG << "repo git HEAD changed!";
+					LOG_DBG << std::format("repo {} git HEAD changed!", repo->repo_path().string());
 					co_await search_service.reload_merchant(repo);
 				}
 			}
