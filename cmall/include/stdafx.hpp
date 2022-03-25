@@ -154,6 +154,8 @@ namespace std {
 #  include <sys/resource.h>
 #  include <systemd/sd-daemon.h>
 #  include <sys/utsname.h>
+#  include <fcntl.h>            /* Definition of O_* constants */
+#  include <sys/inotify.h>
 #elif _WIN32
 #  ifndef WIN32_LEAN_AND_MEAN
 #    define WIN32_LEAN_AND_MEAN

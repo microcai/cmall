@@ -71,6 +71,8 @@ namespace services
 
 		awaitable<bool> check_repo_changed();
 
+		std::filesystem::path repo_path() const;
+
 	private:
 		boost::asio::thread_pool& thread_pool;
 

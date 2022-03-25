@@ -35,9 +35,9 @@ namespace services
 {
 	struct repo_products_impl
 	{
-		repo_products_impl(std::uint64_t merchant_id, std::filesystem::path repo_path)
-			: repo_path(repo_path)
-			, git_repo(repo_path)
+		repo_products_impl(std::uint64_t merchant_id, std::filesystem::path repo_path_)
+			: repo_path_(repo_path_)
+			, git_repo(repo_path_)
 			, merchant_id(merchant_id)
 		{
 			last_checked_master_sha1 = git_repo.head().target();
@@ -268,8 +268,13 @@ namespace services
 			co_return last_checked_master_sha1 != old_value;
 		}
 
+		std::filesystem::path repo_path() const
+		{
+			return repo_path_;
+		}
+
 		gitpp::oid last_checked_master_sha1;
-		std::filesystem::path repo_path;
+		std::filesystem::path repo_path_;
 		gitpp::repo git_repo;
 		std::uint64_t merchant_id;
 	};
@@ -338,6 +343,11 @@ namespace services
 	awaitable<bool> repo_products::check_repo_changed()
 	{
 		return impl().check_repo_changed();
+	}
+
+	std::filesystem::path repo_products::repo_path() const
+	{
+		return impl().repo_path();
 	}
 
 	repo_products::repo_products(boost::asio::thread_pool& executor, std::uint64_t merchant_id, std::filesystem::path repo_path)
