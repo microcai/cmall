@@ -23,8 +23,6 @@
 #  include <sys/utsname.h>
 #endif
 
-#include <boost/program_options.hpp>
-namespace po = boost::program_options;
 
 #include "cmall/version.hpp"
 #include "cmall/internal.hpp"

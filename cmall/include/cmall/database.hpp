@@ -22,15 +22,8 @@
 #include <vector>
 
 #include <boost/asio.hpp>
-
-#include "boost/asio/async_result.hpp"
-#include "boost/asio/awaitable.hpp"
-#include "boost/asio/co_spawn.hpp"
-#include "boost/asio/use_awaitable.hpp"
-#include "boost/date_time/posix_time/posix_time_types.hpp"
-#include "boost/date_time/posix_time/ptime.hpp"
-#include "boost/system/detail/error_code.hpp"
-#include "boost/system/system_error.hpp"
+#include <boost/date_time/posix_time/ptime.hpp>
+#include <boost/system/system_error.hpp>
 #include "cmall/db-odb.hxx"
 
 #include "cmall/db.hpp"

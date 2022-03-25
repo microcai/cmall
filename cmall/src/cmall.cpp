@@ -26,10 +26,6 @@
 #include "httpd/httpd.hpp"
 #include "httpd/wait_all.hpp"
 
-using boost::asio::use_awaitable;
-using boost::asio::experimental::promise;
-using boost::asio::experimental::use_promise;
-
 namespace cmall
 {
 	using namespace std::chrono_literals;

@@ -11,7 +11,6 @@
 #include <memory>
 #include <string>
 #include <boost/asio.hpp>
-#include <boost/filesystem.hpp>
 
 using boost::asio::awaitable;
 

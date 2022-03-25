@@ -6,6 +6,12 @@
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/experimental/promise.hpp>
 
+using boost::asio::experimental::use_promise;
+using boost::asio::experimental::promise;
+
+using boost::asio::use_awaitable;
+using boost::asio::awaitable;
+
 #include <boost/beast.hpp>
 #include <boost/beast/ssl.hpp>
 #include <boost/beast/websocket.hpp>
@@ -54,6 +60,9 @@
 #include <boost/smart_ptr/local_shared_ptr.hpp>
 #include <boost/smart_ptr/make_local_shared.hpp>
 #include <boost/signals2.hpp>
+
+#include <boost/program_options.hpp>
+namespace po = boost::program_options;
 
 #include <algorithm>
 #include <any>
@@ -129,6 +138,8 @@ namespace std {
 
 #include <zlib.h>
 
+#include <odb/forward.hxx>
+#include <odb/traits.hxx>
 #include <odb/database.hxx>
 #include <odb/query.hxx>
 #include <odb/schema-catalog.hxx>
