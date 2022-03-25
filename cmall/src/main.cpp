@@ -247,6 +247,8 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 	// 初始化ws acceptors.
 	co_await xsrv.init_ws_acceptors();
 
+	#if defined(BOOST_WINDOWS_API) || defined (BOOST_ASIO_HAS_IO_URING)
+
 	if (!wss_listens.empty())
 	{
 		boost::system::error_code ec;
@@ -268,6 +270,7 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 		// 初始化ws acceptors.
 		co_await xsrv.init_wss_acceptors(cert_file_content, key_file_content);
 	}
+	#endif
 
 	co_await xsrv.init_ws_unix_acceptors();
 
