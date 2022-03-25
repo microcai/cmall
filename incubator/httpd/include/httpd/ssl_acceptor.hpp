@@ -31,6 +31,9 @@
 
 namespace httpd
 {
+	using boost::asio::experimental::promise;
+	using boost::asio::experimental::use_promise;
+
 	template <typename AcceptedClientClass, typename ServiceClass, typename Execotor = boost::asio::any_io_executor>
 	requires requires
 	{
@@ -187,14 +190,14 @@ namespace httpd
 				get_executor(),
 				[number_of_concurrent_acceptor, this]() mutable -> boost::asio::awaitable<void>
 				{
-					std::vector<boost::asio::experimental::promise<void(std::exception_ptr)>> co_threads;
+					std::vector<promise<void(std::exception_ptr)>> co_threads;
 					// 避免 object 发生移动.
 					co_threads.reserve(number_of_concurrent_acceptor);
 
 					for (int i = 0; i < number_of_concurrent_acceptor; i++)
 					{
 						co_threads.emplace_back(boost::asio::co_spawn(
-							this->get_executor(), accept_loop(), boost::asio::experimental::use_promise));
+							this->get_executor(), accept_loop(), use_promise));
 					}
 
 					co_await detail::wait_all(co_threads);

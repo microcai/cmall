@@ -21,7 +21,7 @@ public:
     using variant<StreamTypes...>::variant;
     typedef boost::asio::any_io_executor executor_type;
 
-    boost::asio::any_io_executor get_executor()
+    auto get_executor()
     {
         return visit([](auto && realtype) mutable {
             return realtype.get_executor();
