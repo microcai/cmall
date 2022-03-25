@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (C) 2019 Jack.
 //
 // Author: jack
@@ -30,7 +30,7 @@ public:
 	/// Get an io_context to use for a client.
 	boost::asio::io_context& get_io_context();
 
-	boost::asio::io_context& get_io_context(int index);
+	boost::asio::io_context& get_io_context(std::size_t index);
 
 	/// Get main_io_context_ to use.
 	boost::asio::io_context& server_io_context();

@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (C) 2019 Jack.
 //
 // Author: jack
@@ -66,7 +66,7 @@ boost::asio::io_context& io_context_pool::get_io_context()
 	return io_context;
 }
 
-boost::asio::io_context& io_context_pool::get_io_context(int index)
+boost::asio::io_context& io_context_pool::get_io_context(std::size_t index)
 {
 	boost::asio::io_context& io_context = *io_contexts_[index];
 	return io_context;

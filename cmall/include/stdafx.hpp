@@ -1,7 +1,6 @@
 
 #pragma once
 
-#include <boost/algorithm/string.hpp>
 
 #include <boost/asio.hpp>
 #include <boost/asio/co_spawn.hpp>
@@ -22,6 +21,7 @@
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/tag.hpp>
 
+#include <boost/algorithm/string.hpp>
 
 #include <boost/json.hpp>
 
@@ -42,6 +42,8 @@
 #include <boost/process/extend.hpp>
 
 #include <boost/regex.hpp>
+
+#include <boost/variant2.hpp>
 
 #include <algorithm>
 #include <chrono>

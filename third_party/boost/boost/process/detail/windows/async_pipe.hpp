@@ -92,6 +92,10 @@ public:
         close(ec);
     }
 
+	auto get_executor() {
+		return _source.get_executor();
+	}
+
     template<class CharT, class Traits = std::char_traits<CharT>>
     inline explicit operator basic_pipe<CharT, Traits>() const;
 
