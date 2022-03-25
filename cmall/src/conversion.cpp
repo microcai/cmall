@@ -1,5 +1,4 @@
-
-#include <boost/json.hpp>
+#include "stdafx.hpp"
 
 #include "cmall/internal.hpp"
 #include "cmall/misc.hpp"

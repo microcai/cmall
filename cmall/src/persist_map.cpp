@@ -1,8 +1,6 @@
 ﻿
-#include <iostream>
-#include <list>
-#include <filesystem>
-#include <thread>
+#include "stdafx.hpp"
+
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/use_awaitable.hpp>

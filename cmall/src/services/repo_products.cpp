@@ -1,4 +1,6 @@
 
+#include "stdafx.hpp"
+
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -12,8 +14,9 @@
 #include "boost/asio/execution_context.hpp"
 #include "boost/asio/thread_pool.hpp"
 #include "boost/asio/use_awaitable.hpp"
-#include "boost/regex/v5/regex.hpp"
-#include "boost/regex/v5/regex_match.hpp"
+
+#include <boost/regex.hpp>
+
 #include "boost/system/detail/error_code.hpp"
 #include "boost/system/system_error.hpp"
 #include "boost/throw_exception.hpp"

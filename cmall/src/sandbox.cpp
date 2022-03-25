@@ -1,4 +1,6 @@
 
+
+#include "stdafx.hpp"
 #include <boost/asio.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <iostream>

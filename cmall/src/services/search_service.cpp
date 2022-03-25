@@ -1,4 +1,6 @@
 
+#include "stdafx.hpp"
+
 #include <chrono>
 #include <boost/asio.hpp>
 

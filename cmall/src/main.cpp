@@ -1,4 +1,5 @@
 ﻿
+#include "stdafx.hpp"
 #include "io_context_pool.hpp"
 
 #include <algorithm>

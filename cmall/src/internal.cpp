@@ -5,10 +5,7 @@
 // Email:  jack.wgm at gmail dot com
 //
 
-#include <iostream>
-#include <iterator>
-#include <algorithm>
-#include <random>
+#include "stdafx.hpp"
 
 #ifdef __linux__
 

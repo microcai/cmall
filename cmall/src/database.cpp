@@ -1,4 +1,6 @@
 
+#include "stdafx.hpp"
+
 #include "utils/logging.hpp"
 
 #include "cmall/database.hpp"

@@ -1,4 +1,6 @@
 
+#include "stdafx.hpp"
+
 #include "cmall/error_code.hpp"
 
 const boost::system::error_category& cmall::error::error_category()

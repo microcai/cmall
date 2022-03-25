@@ -5,6 +5,8 @@
 // Email:  jack.wgm at gmail dot com
 //
 
+#include "stdafx.hpp"
+
 #include "cmall/internal.hpp"
 #include "io_context_pool.hpp"
 
