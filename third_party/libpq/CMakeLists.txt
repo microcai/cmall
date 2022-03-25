@@ -9,6 +9,8 @@ include(CheckCSourceCompiles)
 
 find_package(Threads)
 
+list(APPEND CMAKE_MESSAGE_INDENT "libpq: ")
+
 ALIGNOF(double C DOUBLE)
 
 ALIGNOF(short C SHORT)
@@ -233,3 +235,5 @@ else()
 endif()
 
 target_compile_definitions(libpq PRIVATE -DPG_VERSION_NUM=140101)
+
+list(POP_BACK CMAKE_MESSAGE_INDENT)
