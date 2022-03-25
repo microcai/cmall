@@ -34,13 +34,11 @@ add_executable(cmall ${cmall_SRCS}
 	${EMBED_SITE_OUTPUTS}
 )
 
-target_precompile_headers(cmall PRIVATE
-
-  "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/include/stdafx.hpp>"
-
-)
-
 target_link_libraries(cmall gitpp httpd)
+
+target_precompile_headers(cmall PUBLIC
+  "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/include/stdafx.hpp>"
+)
 
 if (SECCOMP_FOUND)
 	target_link_libraries(cmall ${SECCOMP_LIBRARY})
