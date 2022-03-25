@@ -75,6 +75,21 @@ static int platform_init()
 #else
 	set_thread_name("mainthread");
 #endif
+
+#ifdef __linux__
+	// 把 EXE 自己所在的目录也放入 PATH 搜索路径.
+	std::vector<std::string> searchpath;
+	std::string path_env = getenv("PATH");
+	std::string self_dir = std::filesystem::read_symlink("/proc/self/exe").parent_path().string();
+
+	boost::algorithm::split(searchpath, path_env, boost::is_any_of(":"));
+
+	if (std::find(searchpath.begin(), searchpath.end(), self_dir) == searchpath.end())
+	{
+		path_env = path_env + ":" + self_dir;
+		setenv("PATH", path_env.c_str(), 1);
+	}
+#endif
 	return 0;
 }
 
