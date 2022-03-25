@@ -20,10 +20,14 @@ using namespace boost::asio::experimental::awaitable_operators;
 #include "utils/logging.hpp"
 #include "cmall/error_code.hpp"
 
+using boost::asio::awaitable;
+
 namespace services
 {
 	struct payment_impl
 	{
+		services::userscript nodejs;
+
 		payment_impl(boost::asio::io_context& io)
 			: nodejs(io)
 		{}
@@ -37,13 +41,15 @@ namespace services
 				throw boost::system::system_error(cmall::error::no_payment_script_supplyed);
 			}
 
-			ret.uri = co_await nodejs.run_script(script_content, {"--order-id", orderid, "--order-amount", order_amount, "--method", paymentmethod});
+			using namespace std::string_literals;
+
+			std::vector<std::string> script_arg = {"--order-id"s, orderid, "--order-amount"s, order_amount, "--method"s, paymentmethod};
+
+			ret.uri = co_await nodejs.run_script(script_content, script_arg);
 			if (!ret.uri.empty())
 				ret.uri.pop_back();
 			co_return ret;
 		}
-
-		services::userscript nodejs;
 	};
 
 	// verify the user input verify_code against verify_session
