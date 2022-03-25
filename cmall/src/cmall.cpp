@@ -127,13 +127,81 @@ namespace cmall
 
 	awaitable<void> cmall_service::repo_push_check(std::weak_ptr<services::repo_products> repo_)
 	{
+	#ifndef __linux__
 		while(!m_abort)
 		{
 			steady_timer timer(co_await boost::asio::this_coro::executor);
 			timer.expires_from_now(20s);
 			co_await timer.async_wait(use_awaitable);
 			auto repo = repo_.lock();
-			if (repo)
+			if (!repo)
+				co_return;
+			if (co_await repo->check_repo_changed())
+			{
+				LOG_DBG << "repo git HEAD changed!";
+				co_await search_service.reload_merchant(repo);
+			}
+		}
+	#else
+
+		boost::asio::posix::stream_descriptor inotify_file(co_await boost::asio::this_coro::executor, inotify_init1(IN_CLOEXEC));
+
+		{
+			auto repo = repo_.lock();
+			if (!repo)
+				co_return;
+			auto repo_dirname = std::filesystem::absolute(repo->repo_path()).string();
+			int ret = inotify_add_watch(inotify_file.native_handle(),  repo_dirname.c_str(), IN_CLOSE_WRITE|IN_MODIFY|IN_OPEN);
+			if (ret < 0)
+			{
+				LOG_ERR << "add watch failed for"  << repo->repo_path().string();
+			}
+		}
+
+		boost::asio::cancellation_state cs = co_await boost::asio::this_coro::cancellation_state;
+		if (m_abort)
+			co_return;
+
+		if (cs.slot().is_connected())
+		{
+			cs.slot().assign([&inotify_file](boost::asio::cancellation_type_t) mutable
+			{
+				boost::system::error_code ignore_ec;
+				inotify_file.close(ignore_ec);
+			});
+		}
+
+		std::array<char, 1000> readbuf;
+
+		while (!m_abort)
+		{
+			co_await inotify_file.async_wait(boost::asio::posix::descriptor_base::wait_read, use_awaitable);
+
+			do
+			{
+				read(inotify_file.native_handle(), readbuf.data(), sizeof readbuf);
+
+				steady_timer timer(co_await boost::asio::this_coro::executor);
+				timer.expires_from_now(1s);
+
+				using namespace boost::asio::experimental::awaitable_operators;
+
+				auto awaited_result = co_await (
+					timer.async_wait(use_awaitable)
+						||
+					inotify_file.async_wait(boost::asio::posix::descriptor_base::wait_read, use_awaitable)
+				);
+
+				if (awaited_result.index() == 0)
+				{
+					break;
+				}
+
+			}while(!m_abort);
+
+			auto repo = repo_.lock();
+			if (!repo)
+				co_return;
 			{
 				if (co_await repo->check_repo_changed())
 				{
@@ -142,6 +210,10 @@ namespace cmall
 				}
 			}
 		}
+
+
+	#endif
+
 	}
 
 	awaitable<bool> cmall_service::load_repos()
