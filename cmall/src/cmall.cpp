@@ -1617,15 +1617,15 @@ namespace cmall
 		LOG_DBG << "cmall_service::close_all_ws() success!";
 	}
 
-	awaitable<void> cmall_service::websocket_write(client_connection_ptr connection_, std::string message)
+	awaitable<void> cmall_service::websocket_write(client_connection_ptr clientptr, std::string message)
 	{
-		if (connection_->ws_client)
+		if (clientptr->ws_client)
 		{
 			co_await boost::asio::co_spawn(
-				connection_->get_executor(),
-				[connection_, message = std::move(message)]() mutable -> awaitable<void>
+				clientptr->get_executor(),
+				[clientptr = std::move(clientptr), message = std::move(message)]() mutable -> awaitable<void>
 				{
-					connection_->ws_client->message_channel.try_send(boost::system::error_code(), message);
+					clientptr->ws_client->message_channel.try_send(boost::system::error_code(), message);
 					co_return;
 				},
 				use_awaitable);
