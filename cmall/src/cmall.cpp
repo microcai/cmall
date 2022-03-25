@@ -20,7 +20,6 @@
 #include "boost/json/value_from.hpp"
 #include "cmall/error_code.hpp"
 #include "cmall/misc.hpp"
-#include "httpd/acceptor.hpp"
 #include "utils/async_connect.hpp"
 #include "utils/url_parser.hpp"
 
@@ -53,8 +52,11 @@
 
 #include "httpd/http_misc_helper.hpp"
 #include "httpd/httpd.hpp"
+#include "httpd/wait_all.hpp"
 
 using boost::asio::use_awaitable;
+using boost::asio::experimental::promise;
+using boost::asio::experimental::use_promise;
 
 namespace cmall
 {
@@ -195,21 +197,21 @@ namespace cmall
 	{
 		constexpr int concurrent_accepter = 20;
 
-		std::vector<boost::asio::experimental::promise<void(std::exception_ptr)>> co_threads;
+		std::vector<promise<void(std::exception_ptr)>> co_threads;
 
 		for (auto&& a: m_ws_acceptors)
         {
-			co_threads.push_back(boost::asio::co_spawn(a.get_executor(), a.run_accept_loop(concurrent_accepter), boost::asio::experimental::use_promise));
+			co_threads.push_back(boost::asio::co_spawn(a.get_executor(), a.run_accept_loop(concurrent_accepter), use_promise));
         }
 
 		for (auto&& a: m_wss_acceptors)
         {
-			co_threads.push_back(boost::asio::co_spawn(a.get_executor(), a.run_accept_loop(concurrent_accepter), boost::asio::experimental::use_promise));
+			co_threads.push_back(boost::asio::co_spawn(a.get_executor(), a.run_accept_loop(concurrent_accepter), use_promise));
         }
 
 		for (auto&& a: m_ws_unix_acceptors)
         {
-			co_threads.push_back(boost::asio::co_spawn(a.get_executor(), a.run_accept_loop(concurrent_accepter), boost::asio::experimental::use_promise));
+			co_threads.push_back(boost::asio::co_spawn(a.get_executor(), a.run_accept_loop(concurrent_accepter), use_promise));
         }
 
         // 然后等待所有的协程工作完毕.
@@ -395,7 +397,7 @@ namespace cmall
 				if (jv.as_object().contains("id"))
 					reply_message["id"] = jv.at("id");
 				reply_message["error"] = { { "code", -32600 }, { "message", "Invalid Request" } };
-				co_await websocket_write(connection_ptr, jsutil::json_to_string(reply_message));
+				co_await websocket_write(connection_ptr, jsutil::json_to_string(reply_message)).async_wait(use_awaitable);
 				continue;
 			}
 
@@ -428,7 +430,7 @@ namespace cmall
 				}
 				if (jv.as_object().contains("id"))
 					replay_message.insert_or_assign("id", jv.at("id"));
-				co_await websocket_write(connection_ptr, jsutil::json_to_string(replay_message));
+				co_await websocket_write(connection_ptr, jsutil::json_to_string(replay_message)).async_wait(use_awaitable);
 				continue;
 			}
 
@@ -456,7 +458,7 @@ namespace cmall
 					// 将 id 字段原原本本的还回去, 客户端就可以根据 返回的 id 找到原来发的请求
 					if (jv.as_object().contains("id"))
 						replay_message.insert_or_assign("id", jv.at("id"));
-					co_await websocket_write(connection_ptr, jsutil::json_to_string(replay_message));
+					co_await websocket_write(connection_ptr, jsutil::json_to_string(replay_message)).async_wait(use_awaitable);
 				},
 				boost::asio::detached);
 		}
@@ -1562,8 +1564,11 @@ namespace cmall
 				active_user_connections.push_back(c);
 			}
 		}
+		std::vector<promise<void(std::exception_ptr)>> writers;
 		for (auto c : active_user_connections)
-			co_await websocket_write(c, msg);
+			 writers.push_back(websocket_write(c, msg));
+	
+		co_await httpd::wait_all(writers);
 	}
 
 	awaitable<void> cmall_service::do_ws_write(size_t connection_id, client_connection_ptr connection_ptr)
@@ -1617,19 +1622,20 @@ namespace cmall
 		LOG_DBG << "cmall_service::close_all_ws() success!";
 	}
 
-	awaitable<void> cmall_service::websocket_write(client_connection_ptr clientptr, std::string message)
+	promise<void(std::exception_ptr)> cmall_service::websocket_write(client_connection_ptr clientptr, std::string message)
 	{
 		if (clientptr->ws_client)
 		{
-			co_await boost::asio::co_spawn(
+		 	return boost::asio::co_spawn(
 				clientptr->get_executor(),
-				[clientptr = std::move(clientptr), message = std::move(message)]() mutable -> awaitable<void>
+				[clientptr, message = std::move(message)]() mutable -> awaitable<void>
 				{
 					clientptr->ws_client->message_channel.try_send(boost::system::error_code(), message);
 					co_return;
 				},
-				use_awaitable);
+				use_promise);
 		}
+		throw std::runtime_error("write ws message on non-ws socket");
 	}
 
 	client_connection_ptr cmall_service::make_shared_connection(

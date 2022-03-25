@@ -20,6 +20,7 @@
 
 #include <boost/asio/experimental/concurrent_channel.hpp>
 #include <boost/asio/experimental/channel.hpp>
+#include <boost/asio/experimental/promise.hpp>
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <vector>
@@ -44,6 +45,7 @@
 #include "cmall/client_connection.hpp"
 
 using boost::asio::awaitable;
+using boost::asio::experimental::promise;
 
 namespace cmall {
 
@@ -219,7 +221,7 @@ namespace cmall {
 
 		awaitable<void> close_all_ws();
 
-		awaitable<void> websocket_write(client_connection_ptr, std::string message);
+		promise<void(std::exception_ptr)> websocket_write(client_connection_ptr, std::string message);
 
 		awaitable<boost::json::object> handle_jsonrpc_call(client_connection_ptr, const std::string& method, boost::json::object params);
 
