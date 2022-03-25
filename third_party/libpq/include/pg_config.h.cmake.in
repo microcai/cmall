@@ -821,7 +821,7 @@
 #undef PG_MINORVERSION_NUM
 
 /* Define to best printf format archetype, usually gnu_printf if available. */
-#undef PG_PRINTF_ATTRIBUTE
+#cmakedefine PG_PRINTF_ATTRIBUTE @PG_PRINTF_ATTRIBUTE@
 
 /* Define to 1 to use <stdbool.h> to define type bool. */
 #define PG_USE_STDBOOL HAVE_STDBOOL_H

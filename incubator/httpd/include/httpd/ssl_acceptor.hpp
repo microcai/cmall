@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <boost/variant/get.hpp>
 #include <iostream>
 #include <mutex>
 #if __has_include("utils/logging.hpp")
@@ -261,7 +262,7 @@ namespace httpd
 #endif
 				client_ptr->socket().set_option(boost::asio::socket_base::keep_alive(true), error);
 
-				auto & ssl_stream = std::get<boost::beast::ssl_stream<boost::beast::tcp_stream>>(client_ptr->tcp_stream);
+				auto & ssl_stream = boost::variant2::get<boost::beast::ssl_stream<boost::beast::tcp_stream>>(client_ptr->tcp_stream);
 
 				co_await ssl_stream.async_handshake(boost::asio::ssl::stream_base::server, boost::asio::use_awaitable);
 

@@ -227,7 +227,7 @@ namespace cmall
 		{
 			if constexpr (httpd::has_so_reuseport())
 			{
-				for (int io_index = 0; io_index < m_io_context_pool.pool_size(); io_index++)
+				for (std::size_t io_index = 0; io_index < m_io_context_pool.pool_size(); io_index++)
 				{
 					m_ws_acceptors.emplace_back(m_io_context_pool.get_io_context(io_index), *this);
 					m_ws_acceptors.back().listen(wsd, ec);
@@ -271,7 +271,7 @@ namespace cmall
 		{
 			if constexpr (httpd::has_so_reuseport())
 			{
-				for (int io_index = 0; io_index < m_io_context_pool.pool_size(); io_index++)
+				for (std::size_t io_index = 0; io_index < m_io_context_pool.pool_size(); io_index++)
 				{
 					m_wss_acceptors.emplace_back(m_io_context_pool.get_io_context(io_index), sslctx_, *this);
 					m_wss_acceptors.back().listen(wsd, ec);
@@ -825,7 +825,7 @@ namespace cmall
 				co_await m_database.async_load<cmall_user>(session_info.user_info->uid_, *(session_info.user_info));
 				cmall_user& user_info = *(session_info.user_info);
 				boost::json::array recipients_array;
-				for (int i = 0; i < user_info.recipients.size(); i++)
+				for (std::size_t i = 0; i < user_info.recipients.size(); i++)
 				{
 					auto jsobj				= boost::json::value_from(user_info.recipients[i]);
 					jsobj.as_object()["id"] = i;

@@ -134,6 +134,12 @@ if (HAVE_UNISTD_H)
 	add_definitions(-DHAVE_UNISTD_H)
 endif()
 
+if (MSVC)
+unset(PG_PRINTF_ATTRIBUTE )
+else()
+set(PG_PRINTF_ATTRIBUTE gnu_printf)
+endif()
+
 add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE -D_WINSOCK_DEPRECATED_NO_WARNINGS -DHAVE_INET_ATON -DFRONTEND)
 include_directories(include)
 

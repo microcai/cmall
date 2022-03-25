@@ -1,6 +1,7 @@
 ﻿
 #pragma once
 
+#include <optional>
 #include <memory>
 #include <filesystem>
 #include <chrono>

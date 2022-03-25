@@ -138,7 +138,7 @@ namespace services
 
 			sort(vectored_result.begin(), vectored_result.end(), [](auto & a, auto& b){ return b.second < a.second; });
 
-			for (int i=0; i < 10; i++)
+			for (std::size_t i=0; i < 10; i++)
 			{
 				if (i < vectored_result.size())
 					result.push_back(vectored_result[i].first);

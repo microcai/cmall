@@ -1,4 +1,5 @@
 
+#include <cstring>
 #include "gitpp/gitpp.hpp"
 #include "git2/oid.h"
 

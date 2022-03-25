@@ -1,31 +1,29 @@
 
 #pragma once
 
-#include <variant>
+#include <boost/variant2.hpp>
 
-#include <boost/asio/local/stream_protocol.hpp>
-#include <boost/asio/async_result.hpp>
+#include <boost/asio.hpp>
 #include <boost/beast.hpp>
 #include <boost/beast/ssl.hpp>
 
 namespace httpd {
 
-using unix_stream = boost::beast::basic_stream<
-    boost::asio::local::stream_protocol,
-    boost::asio::any_io_executor,
-    boost::beast::unlimited_rate_policy>;
+using namespace boost::variant2;
+
+typedef boost::beast::basic_stream<boost::asio::local::stream_protocol> unix_stream;
 
 // 把 ssl 和 非 ssl 封成一个 variant.
 template <typename... StreamTypes>
-class http_stream : public std::variant<StreamTypes...>
+class http_stream : public variant<StreamTypes...>
 {
 public:
-    using std::variant<StreamTypes...>::variant;
+    using variant<StreamTypes...>::variant;
     typedef boost::asio::any_io_executor executor_type;
 
-    auto get_executor()
+    boost::asio::any_io_executor get_executor()
     {
-        return std::visit([](auto && realtype) mutable {
+        return visit([](auto && realtype) mutable {
             return realtype.get_executor();
         }, *this);
     }
@@ -33,7 +31,7 @@ public:
     template<typename MutableBufferSequence, typename H>
     auto async_read_some(const MutableBufferSequence& b, H&& handler)
     {
-        return std::visit([&b, handler = std::forward<H>(handler)](auto && realtype) mutable {
+        return visit([&b, handler = std::forward<H>(handler)](auto && realtype) mutable -> void {
             return realtype.async_read_some(b, std::forward<H>(handler));
         }, *this);
     }
@@ -41,28 +39,28 @@ public:
     template<typename ConstBufferSequence, typename H>
     auto async_write_some(const ConstBufferSequence& b, H&& handler)
     {
-        return std::visit([&b, handler = std::forward<H>(handler)](auto && realtype) mutable {
+        visit([&b, handler = std::forward<H>(handler)](auto && realtype) mutable -> void {
             return realtype.async_write_some(b, std::forward<H>(handler));
         }, *this);
     }
 
     auto close()
     {
-        return std::visit([](auto && realtype) mutable {
+        return visit([](auto && realtype) mutable {
             return boost::beast::get_lowest_layer(realtype).close();
         }, *this);
     }
 
     auto expires_after(auto expiry_time)
     {
-        return std::visit([expiry_time](auto && realtype) mutable {
+        return visit([expiry_time](auto && realtype) mutable {
             return boost::beast::get_lowest_layer(realtype).expires_after(expiry_time);
         }, *this);
     }
 
     boost::asio::ip::tcp::socket& socket()
     {
-        return std::visit([](auto && realtype) mutable -> boost::asio::ip::tcp::socket& {
+        return visit([](auto && realtype) mutable -> boost::asio::ip::tcp::socket& {
             if constexpr (std::is_same_v<std::decay_t<decltype(realtype)>, httpd::unix_stream>)
                 throw std::runtime_error("not a tcp socket");
             else
@@ -72,7 +70,7 @@ public:
 
     boost::asio::local::stream_protocol::socket& unix_socket()
     {
-        return std::visit([](auto && realtype) mutable -> boost::asio::local::stream_protocol::socket& {
+        return visit([](auto && realtype) mutable -> boost::asio::local::stream_protocol::socket& {
             if constexpr (std::is_same_v<std::decay_t<decltype(realtype)>, httpd::unix_stream>)
                 return boost::beast::get_lowest_layer(realtype).socket();
             else
@@ -85,7 +83,7 @@ public:
     {
         return boost::asio::async_initiate<TeardownHandler, void(const boost::system::error_code&)>(
             [role, this](auto&& handler) mutable {
-                return std::visit([role, handler = std::move(handler)](auto&& realtype) mutable {
+                return visit([role, handler = std::move(handler)](auto&& realtype) mutable {
                     boost::beast::async_teardown(role, realtype, std::move(handler));
                 }, *this);
             }, handler);
