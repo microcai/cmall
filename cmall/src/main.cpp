@@ -1,28 +1,7 @@
 ﻿
 #include "stdafx.hpp"
+
 #include "io_context_pool.hpp"
-
-#ifdef __linux__
-#  include <sys/resource.h>
-#  include <systemd/sd-daemon.h>
-
-# ifndef HAVE_UNAME
-#  define HAVE_UNAME
-# endif
-
-#elif _WIN32
-#  ifndef WIN32_LEAN_AND_MEAN
-#    define WIN32_LEAN_AND_MEAN
-#  endif
-#  include <fcntl.h>
-#  include <io.h>
-#  include <windows.h>
-#endif
-
-#ifdef HAVE_UNAME
-#  include <sys/utsname.h>
-#endif
-
 
 #include "cmall/version.hpp"
 #include "cmall/internal.hpp"

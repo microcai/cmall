@@ -145,7 +145,8 @@ namespace std {
 #include <odb/query.hxx>
 #include <odb/schema-catalog.hxx>
 #include <odb/transaction.hxx>
-
+#include <odb/section.hxx>
+#include <odb/nullable.hxx>
 #include <odb/pgsql/database.hxx>
 #include <odb/pgsql/traits.hxx>
 
@@ -161,3 +162,5 @@ namespace std {
 #  include <io.h>
 #  include <windows.h>
 #endif
+
+#include "magic_enum.hpp"
