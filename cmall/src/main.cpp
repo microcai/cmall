@@ -89,7 +89,7 @@ static std::string version_info()
 	os_name = "Windows (32bit)";
 #endif // _WIN64
 
-#elif defined(HAVE_UNAME)
+#elif defined(__linux__)
 	utsname un;
 	uname(&un);
 	os_name = un.sysname;
