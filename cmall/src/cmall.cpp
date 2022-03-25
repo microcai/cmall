@@ -1866,7 +1866,7 @@ namespace cmall
 					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/goods/([^/]+)/([^/]+)")))
 					{
 						std::string merchant = w[1].str();
-						std::string goods_id = w[2].str();
+						std::string goods_id = httpd::decodeURIComponent(w[2].str());
 
 						int status_code = co_await render_goods_detail_content(
 							connection_id, merchant, goods_id, client_ptr->tcp_stream, req.version(), req.keep_alive());
