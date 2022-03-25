@@ -34,6 +34,8 @@ add_executable(cmall ${cmall_SRCS}
 	${EMBED_SITE_OUTPUTS}
 )
 
+target_precompile_headers(cmall PRIVATE include/stdafx.hpp)
+
 target_link_libraries(cmall gitpp httpd)
 
 if (SECCOMP_FOUND)
