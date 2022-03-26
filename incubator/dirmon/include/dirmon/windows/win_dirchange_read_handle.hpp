@@ -39,7 +39,11 @@ namespace dirmon::detail {
 			// register for cancellation.
 			if (slot.is_connected())
 			{
-				slot.assign([handle_ = this->native_handle()](auto type) mutable { boost::ignore_unused(type); ::CancelIo(handle_); });
+				slot.assign([handle_ = this->native_handle(), the_op = op.get()](auto type) mutable
+				{
+					if (boost::asio::cancellation_type::none != type)
+						::CancelIoEx(handle_, the_op);
+				});
 			}
 
 			auto buffer = boost::asio::detail::buffer_sequence_adapter<
