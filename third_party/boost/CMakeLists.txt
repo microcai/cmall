@@ -317,6 +317,30 @@ list(APPEND BOOST_FIBER_SRC
 )
 endif()
 
+set(BOOST_TEST_SRC
+	libs/test/src/compiler_log_formatter.cpp
+	libs/test/src/cpp_main.cpp
+	libs/test/src/debug.cpp
+	libs/test/src/decorator.cpp
+	libs/test/src/execution_monitor.cpp
+	libs/test/src/framework.cpp
+	libs/test/src/junit_log_formatter.cpp
+	libs/test/src/plain_report_formatter.cpp
+	libs/test/src/progress_monitor.cpp
+	libs/test/src/results_collector.cpp
+	libs/test/src/results_reporter.cpp
+	libs/test/src/test_framework_init_observer.cpp
+	libs/test/src/test_main.cpp
+	libs/test/src/test_tools.cpp
+	libs/test/src/test_tree.cpp
+	libs/test/src/unit_test_log.cpp
+	libs/test/src/unit_test_main.cpp
+	libs/test/src/unit_test_monitor.cpp
+	libs/test/src/unit_test_parameters.cpp
+	libs/test/src/xml_log_formatter.cpp
+	libs/test/src/xml_report_formatter.cpp
+)
+
 set(BOOST_SRCS ${BOOST_ATOMIC_SRC})
 
 add_library(boost_header INTERFACE)
@@ -373,33 +397,6 @@ add_library(Boost::chrono ALIAS boost_chrono_static)
 else()
 add_library(boost_chrono_dll SHARED ${BOOST_CHRONO_SRC})
 add_library(Boost::chrono ALIAS boost_chrono_dll)
-endif()
-
-if (Boost_USE_STATIC_LIBS)
-add_library(boost_asio_static STATIC asio.cpp)
-add_library(Boost::asio ALIAS boost_asio_static)
-target_compile_definitions(boost_asio_static PUBLIC -DBOOST_ASIO_SEPARATE_COMPILATION)
-if (OpenSSL_FOUND)
-	target_link_libraries(boost_asio_static ${OpenSSL_LIBRARIES})
-endif()
-
-else()
-add_library(boost_asio_dll SHARED asio.cpp)
-add_library(Boost::asio ALIAS boost_asio_dll)
-target_compile_definitions(boost_asio_dll PUBLIC -DBOOST_ASIO_DYN_LINK -DBOOST_ASIO_SEPARATE_COMPILATION)
-if (OpenSSL_FOUND)
-	target_link_libraries(boost_asio_dll ${OpenSSL_LIBRARIES})
-endif()
-endif()
-
-if (Boost_USE_STATIC_LIBS)
-add_library(boost_beast_static STATIC beast.cpp)
-add_library(Boost::beast ALIAS boost_beast_static)
-target_compile_definitions(boost_asio_static PUBLIC -DBOOST_BEAST_SEPARATE_COMPILATION)
-else()
-add_library(boost_beast_dll SHARED beast.cpp)
-add_library(Boost::beast ALIAS boost_beast_dll)
-target_compile_definitions(boost_beast_dll PUBLIC -DBOOST_BEAST_SEPARATE_COMPILATION)
 endif()
 
 if(Boost_USE_STATIC_LIBS)
@@ -497,6 +494,44 @@ if (USE_BOOST_FIBER)
 	endif()
 endif()
 
+if(Boost_USE_STATIC_LIBS)
+	add_library(boost_test_static STATIC ${BOOST_TEST_SRC})
+	add_library(Boost::test ALIAS boost_test_static)
+else()
+	add_library(boost_test_dll SHARED ${BOOST_TEST_SRC})
+	add_library(Boost::test ALIAS boost_test_dll)
+endif()
+
+
+if (Boost_USE_STATIC_LIBS)
+add_library(boost_asio_static STATIC asio.cpp)
+add_library(Boost::asio ALIAS boost_asio_static)
+target_compile_definitions(boost_asio_static PUBLIC -DBOOST_ASIO_SEPARATE_COMPILATION)
+if (OpenSSL_FOUND)
+	target_compile_definitions(boost_asio_static PRIVATE -DHAVE_OPENSSL)
+	target_link_libraries(boost_asio_static ${OpenSSL_LIBRARIES})
+endif()
+
+else()
+add_library(boost_asio_dll SHARED asio.cpp)
+add_library(Boost::asio ALIAS boost_asio_dll)
+target_compile_definitions(boost_asio_dll PUBLIC -DBOOST_ASIO_DYN_LINK -DBOOST_ASIO_SEPARATE_COMPILATION)
+if (OpenSSL_FOUND)
+	target_compile_definitions(boost_asio_dll PRIVATE -DHAVE_OPENSSL)
+	target_link_libraries(boost_asio_dll ${OpenSSL_LIBRARIES})
+endif()
+endif()
+
+if (Boost_USE_STATIC_LIBS)
+add_library(boost_beast_static STATIC beast.cpp)
+add_library(Boost::beast ALIAS boost_beast_static)
+target_compile_definitions(boost_asio_static PUBLIC -DBOOST_BEAST_SEPARATE_COMPILATION)
+else()
+add_library(boost_beast_dll SHARED beast.cpp)
+add_library(Boost::beast ALIAS boost_beast_dll)
+target_compile_definitions(boost_beast_dll PUBLIC -DBOOST_BEAST_SEPARATE_COMPILATION)
+endif()
+
 target_include_directories(boost_header INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_compile_definitions(boost_header INTERFACE -DBOOST_ALL_NO_LIB -DBOOST_ALL_STATIC_LINK -DBOOST_THREAD_USE_LIB)
@@ -510,6 +545,13 @@ target_compile_definitions(boost_json_static PUBLIC -DBOOST_JSON_SOURCE -DBOOST_
 target_compile_definitions(boost_json_static PRIVATE -DBOOST_JSON_SOURCE -DBOOST_JSON_STATIC_LINK)
 
 if(Boost_USE_STATIC_LIBS)
+	target_compile_definitions(boost_test_static PUBLIC -DBOOST_TEST_STATIC_LINK)
+else()
+	target_compile_definitions(boost_test_static PUBLIC -DBOOST_TEST_DYN_LINK)
+endif()
+
+if(Boost_USE_STATIC_LIBS)
+	target_link_libraries(boost_test_static boost_header)
 	target_link_libraries(boost_atomic_static boost_header)
 	if(USE_BOOST_SERIALIZATION)
 		target_link_libraries(boost_serialization_static boost_header)
@@ -526,16 +568,16 @@ endif()
 	if(USE_BOOST_LOCALE)
 		target_link_libraries(boost_locale_static boost_header)
 	endif()
-
-	target_link_libraries(boost_asio_static boost_thread_static)
-	target_link_libraries(boost_beast_static boost_asio_static)
 	target_link_libraries(boost_date_time_static boost_chrono_static boost_header)
 	target_link_libraries(boost_regex_static boost_header)
 	target_link_libraries(boost_timer_static boost_chrono_static boost_header)
 	target_link_libraries(boost_exception_static boost_header)
 	target_link_libraries(boost_random_static boost_header)
 	target_link_libraries(boost_program_options_static boost_filesystem_static boost_header)
+	target_link_libraries(boost_asio_static boost_thread_static)
+	target_link_libraries(boost_beast_static boost_asio_static)
 else()
+	target_link_libraries(boost_test_dll boost_header)
 	target_link_libraries(boost_atomic_dll boost_header)
 	if(USE_BOOST_SERIALIZATION)
 		target_link_libraries(boost_serialization_dll boost_header)
@@ -552,14 +594,14 @@ endif()
 	if(USE_BOOST_LOCALE)
 		target_link_libraries(boost_locale_dll boost_header)
 	endif()
-	target_link_libraries(boost_asio_dll boost_thread_dll)
-	target_link_libraries(boost_beast_dll boost_asio_dll)
 	target_link_libraries(boost_date_time_dll boost_chrono_static boost_header)
 	target_link_libraries(boost_regex_dll boost_header)
 	target_link_libraries(boost_timer_dll boost_chrono_static boost_header)
 	target_link_libraries(boost_exception_dll boost_header)
 	target_link_libraries(boost_random_dll boost_header)
 	target_link_libraries(boost_program_options_dll boost_filesystem_static boost_header)
+	target_link_libraries(boost_asio_dll boost_thread_dll)
+	target_link_libraries(boost_beast_dll boost_asio_dll)
 endif()
 
 if(WIN32)
@@ -594,6 +636,8 @@ set(BOOST_LIBRARIES
 	Boost::program_options
 	Boost::locale
 	Boost::asio
+	Boost::beast
+	Boost::test
 PARENT_SCOPE)
 
 if(Boost_USE_STATIC_LIBS)
@@ -621,7 +665,9 @@ endif()
 	set_target_properties(boost_exception_static PROPERTIES FOLDER "third_party/boost")
 	set_target_properties(boost_random_static PROPERTIES FOLDER "third_party/boost")
 	set_target_properties(boost_program_options_static PROPERTIES FOLDER "third_party/boost")
+	set_target_properties(boost_test_static PROPERTIES FOLDER "third_party/boost")
 else()
+	set_target_properties(boost_test_dll PROPERTIES FOLDER "third_party/boost")
 	set_target_properties(boost_atomic_dll PROPERTIES FOLDER "third_party/boost")
 	if(USE_BOOST_SERIALIZATION)
 		set_target_properties(boost_serialization_dll PROPERTIES FOLDER "third_party/boost")
@@ -643,4 +689,5 @@ else()
 	set_target_properties(boost_exception_dll PROPERTIES FOLDER "third_party/boost")
 	set_target_properties(boost_random_dll PROPERTIES FOLDER "third_party/boost")
 	set_target_properties(boost_program_options_dll PROPERTIES FOLDER "third_party/boost")
+	set_target_properties(boost_test_dll PROPERTIES FOLDER "third_party/boost")
 endif()
