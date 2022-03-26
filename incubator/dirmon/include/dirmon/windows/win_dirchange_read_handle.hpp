@@ -33,7 +33,7 @@ namespace dirmon::detail {
 		template<typename MutableBufferSequence, typename Handler>
 		auto async_read_some(const MutableBufferSequence& b, Handler&& h)
 		{
-			boost::asio::async_initiate<Handler, void(boost::system::error_code, std::size_t)>([this](auto&& handler, auto&& b) mutable
+			return boost::asio::async_initiate<Handler, void(boost::system::error_code, std::size_t)>([this](auto&& handler, auto&& b) mutable
 				{
 					this->async_read_some_impl(b, std::move(handler));
 				}, h, b);
@@ -45,16 +45,16 @@ namespace dirmon::detail {
 		auto async_read_some_impl(const MutableBufferSequence& buffers, Handler&& handler)
 		{
 			// Allocate and construct an operation to wrap the handler.
-			typedef win_iocp_handle_read_op<
+			typedef boost::asio::detail::win_iocp_handle_read_op<
 				MutableBufferSequence, Handler, IoExecutor> op;
 			typename op::ptr p = { boost::asio::detail::addressof(handler),
 			  op::ptr::allocate(handler), 0 };
-			boost::asio::detail::operation* o = p.p = new (p.v) op(buffers, handler, iocp_service_);
+			boost::asio::detail::operation* o = p.p = new (p.v) op(buffers, handler, dir_read_handle.get_executor());
 
 			BOOST_ASIO_HANDLER_CREATION((iocp_service_.context(), *p.p, "handle", &impl,
 				reinterpret_cast<uintmax_t>(impl.handle_), "async_read_some"));
 
-			start_read_op(buffer_sequence_adapter<boost::asio::mutable_buffer,
+			start_read_op(boost::asio::detail::buffer_sequence_adapter<boost::asio::mutable_buffer,
 				MutableBufferSequence>::first(buffers), o);
 			p.v = p.p = 0;
 		}
