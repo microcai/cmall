@@ -333,7 +333,6 @@ target_include_directories(boost_atomic_dll PRIVATE libs/atomic/src)
 add_library(Boost::atomic ALIAS boost_atomic_dll)
 endif()
 
-
 if(USE_BOOST_SERIALIZATION)
 	if(Boost_USE_STATIC_LIBS)
 		add_library(boost_serialization_static STATIC ${BOOST_SERIALIZATION_SRC})
@@ -375,6 +374,17 @@ else()
 add_library(boost_chrono_dll SHARED ${BOOST_CHRONO_SRC})
 add_library(Boost::chrono ALIAS boost_chrono_dll)
 endif()
+
+if (Boost_USE_STATIC_LIBS)
+add_library(boost_asio_static STATIC asio.cpp)
+add_library(Boost::asio ALIAS boost_asio_static)
+target_compile_definitions(boost_asio_static PUBLIC -DBOOST_ASIO_SEPARATE_COMPILATION)
+else()
+add_library(boost_asio_dll SHARED asio.cpp)
+add_library(Boost::asio ALIAS boost_asio_dll)
+target_compile_definitions(boost_asio_static PUBLIC -DBOOST_ASIO_DYN_LINK -DBOOST_ASIO_SEPARATE_COMPILATION)
+endif()
+
 
 if(Boost_USE_STATIC_LIBS)
 add_library(boost_filesystem_static STATIC ${BOOST_FILESYSTEM_SRC})
@@ -500,6 +510,8 @@ endif()
 	if(USE_BOOST_LOCALE)
 		target_link_libraries(boost_locale_static boost_header)
 	endif()
+
+	target_link_libraries(boost_asio_static boost_thread_static)
 	target_link_libraries(boost_date_time_static boost_chrono_static boost_header)
 	target_link_libraries(boost_regex_static boost_header)
 	target_link_libraries(boost_timer_static boost_chrono_static boost_header)
@@ -523,6 +535,7 @@ endif()
 	if(USE_BOOST_LOCALE)
 		target_link_libraries(boost_locale_dll boost_header)
 	endif()
+	target_link_libraries(boost_asio_dll boost_thread_dll)
 	target_link_libraries(boost_date_time_dll boost_chrono_static boost_header)
 	target_link_libraries(boost_regex_dll boost_header)
 	target_link_libraries(boost_timer_dll boost_chrono_static boost_header)
@@ -562,10 +575,12 @@ set(BOOST_LIBRARIES
 	Boost::random
 	Boost::program_options
 	Boost::locale
+	Boost::asio
 PARENT_SCOPE)
 
 if(Boost_USE_STATIC_LIBS)
 	set_target_properties(boost_atomic_static PROPERTIES FOLDER "third_party/boost")
+	set_target_properties(boost_asio_static PROPERTIES FOLDER "third_party/boost")
 	if(USE_BOOST_SERIALIZATION)
 		set_target_properties(boost_serialization_static PROPERTIES FOLDER "third_party/boost")
 	endif()
