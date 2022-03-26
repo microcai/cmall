@@ -23,15 +23,20 @@ namespace dirmon {
 			std::array<char, 4096> buf;
 			auto bytes_transferred = co_await m_dirhandle.async_read_some(boost::asio::buffer(buf), boost::asio::use_awaitable);
 
-			FILE_NOTIFY_INFORMATION* file_notify_info = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(buf.data());
-
-			while (file_notify_info->NextEntryOffset != 0)
+			if (bytes_transferred >= sizeof(FILE_NOTIFY_INFORMATION))
 			{
-				dir_change_notify c;
+				for (FILE_NOTIFY_INFORMATION* file_notify_info = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(buf.data());;
+					file_notify_info = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(reinterpret_cast<char*>(file_notify_info) + file_notify_info->NextEntryOffset)
+				)
+				{
+					dir_change_notify c;
 
-				c.file_name = boost::nowide::narrow(file_notify_info->FileName, file_notify_info->FileNameLength);
+					c.file_name = boost::nowide::narrow(file_notify_info->FileName, file_notify_info->FileNameLength);
 
-				ret.push_back(c);
+					ret.push_back(c);
+					if (file_notify_info->NextEntryOffset ==0)
+						break;
+				}
 			}
 
 			co_return ret;
