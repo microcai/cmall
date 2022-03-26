@@ -30,6 +30,45 @@ namespace dirmon::detail {
 
 	private:
 
+		// Helper class used to implement per operation cancellation.
+		class iocp_op_cancellation : public boost::asio::detail::operation
+		{
+		public:
+			iocp_op_cancellation(HANDLE h, boost::asio::detail::operation* target)
+				: boost::asio::detail::operation(&iocp_op_cancellation::do_complete),
+				handle_(h),
+				target_(target)
+			{
+			}
+
+			static void do_complete(void* owner, boost::asio::detail::operation* base,
+				const boost::system::error_code& result_ec,
+				std::size_t bytes_transferred)
+			{
+				iocp_op_cancellation* o = static_cast<iocp_op_cancellation*>(base);
+				o->target_->complete(owner, result_ec, bytes_transferred);
+			}
+
+			void operator()(boost::asio::cancellation_type_t type)
+			{
+#if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600)
+				if (!!(type &
+					(boost::asio::cancellation_type::terminal
+						| boost::asio::cancellation_type::partial
+						| boost::asio::cancellation_type::total)))
+				{
+					::CancelIoEx(handle_, this);
+				}
+#else // defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600)
+				(void)type;
+#endif // defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600)
+			}
+
+		private:
+			HANDLE handle_;
+			boost::asio::detail::operation* target_;
+		};
+
 		template<typename MutableBufferSequence, typename Handler>
 		auto async_read_some_impl(const MutableBufferSequence& buffers, Handler&& handler)
 		{
@@ -43,7 +82,7 @@ namespace dirmon::detail {
 
 			// Optionally register for per-operation cancellation.
 			if (slot.is_connected())
-				o = &slot.template emplace<boost::asio::detail::iocp_op_cancellation>(impl.handle_, o);
+				o = &slot.template emplace<iocp_op_cancellation>(this->native_handle(), o);
 
 			start_read_op(boost::asio::detail::buffer_sequence_adapter<boost::asio::mutable_buffer,
 				MutableBufferSequence>::first(buffers), o);
