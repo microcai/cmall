@@ -1,6 +1,9 @@
 ﻿
 #include "stdafx.hpp"
 
+#include <boost/program_options.hpp>
+namespace po = boost::program_options;
+
 #include "io_context_pool.hpp"
 
 #include "cmall/version.hpp"

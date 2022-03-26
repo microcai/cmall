@@ -61,9 +61,6 @@ using boost::asio::awaitable;
 #include <boost/smart_ptr/make_local_shared.hpp>
 #include <boost/signals2.hpp>
 
-#include <boost/program_options.hpp>
-namespace po = boost::program_options;
-
 #include <algorithm>
 #include <any>
 #include <chrono>
