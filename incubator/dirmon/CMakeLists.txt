@@ -12,4 +12,4 @@ set_target_properties(dirmon PROPERTIES FOLDER "libs")
 
 add_executable(dirmon_test test.cpp)
 
-target_link_libraries(dirmon_test dirmon Boost::thread)
+target_link_libraries(dirmon_test dirmon Boost::asio)
