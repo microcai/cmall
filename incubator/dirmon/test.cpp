@@ -10,7 +10,7 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, boost::asio::io_conte
 
 	for (auto& c : changed_list)
 	{
-		std::cout << "got change. filename: " << c.file_name;
+		std::cout << "got change. filename: " << c.file_name << "\n";
 	}
 
 	co_return 0;
