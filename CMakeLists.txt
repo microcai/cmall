@@ -316,6 +316,7 @@ link_libraries(
 		Boost::json
 		Boost::timer
 		Boost::asio
+		Boost::beast
 
 		libodb
 		libodb-pgsql
