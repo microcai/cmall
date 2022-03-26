@@ -14,7 +14,7 @@ namespace dirmon {
 	public:
 		template<typename ExecutionContext>
 		windows_dirmon(ExecutionContext&& e, std::string dirname)
-			: m_dirhandle(std::forward(e), dirname)
+			: m_dirhandle(std::forward<ExecutionContext>(e), dirname)
 		{}
 
 		boost::asio::awaitable<std::vector<dir_change_notify>> async_wait_dirchange()

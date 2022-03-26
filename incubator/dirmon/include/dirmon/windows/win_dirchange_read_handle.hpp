@@ -12,8 +12,7 @@ namespace dirmon::detail {
 	public:
 		template<typename ExecutionContext>
 		basic_win_dirchange_read_handle(ExecutionContext&& context, std::string dirname)
-			: boost::asio::windows::basic_overlapped_handle<IoExecutor>(std::forward(context), CreateFileW(boost::nowide::widen(dirname).c_str(), FILE_LIST_DIRECTORY, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, NULL))
-			, iocp_service_(boost::asio::use_service<boost::asio::detail::win_iocp_io_context>(context))
+			: boost::asio::windows::basic_overlapped_handle<IoExecutor>(std::forward<ExecutionContext>(context), CreateFileW(boost::nowide::widen(dirname).c_str(), FILE_LIST_DIRECTORY, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, NULL))
 		{
 		}
 
@@ -93,6 +92,9 @@ namespace dirmon::detail {
 
 		void start_read_op(const boost::asio::mutable_buffer& buffer, boost::asio::detail::operation* op)
 		{
+			boost::asio::detail::win_iocp_io_context& iocp_service_ =
+				boost::asio::use_service<boost::asio::detail::win_iocp_io_context>(this->impl_.get_service().context());
+
 			DWORD bytes_transferred = 0;
 			op->Offset = 0;
 			op->OffsetHigh = 0;
@@ -110,9 +112,6 @@ namespace dirmon::detail {
 				iocp_service_.on_pending(op);
 			}
 		}
-
-	protected:
-		boost::asio::detail::win_iocp_io_context& iocp_service_;
 	};
 
 	using win_dirchange_read_handle = basic_win_dirchange_read_handle<boost::asio::any_io_executor>;
