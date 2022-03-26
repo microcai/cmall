@@ -156,7 +156,7 @@ namespace cmall
 		{
 			co_await git_monitor.async_wait_dirchange();
 
-			do
+			while(!m_abort)
 			{
 				steady_timer timer(co_await boost::asio::this_coro::executor);
 				timer.expires_from_now(1s);
@@ -169,6 +169,8 @@ namespace cmall
 					git_monitor.async_wait_dirchange()
 				);
 
+				if (m_abort) co_return;
+
 				// 只有持续 1s 左右的时间 git 仓库没有产生 inotify 消息，才认为 git 完成了动作.
 				// 不然就继续读取 inotify 获取消息.
 
@@ -176,8 +178,9 @@ namespace cmall
 				{
 					break;
 				}
+			}
 
-			}while(!m_abort);
+			if (m_abort) co_return;
 
 			auto repo = repo_.lock();
 			if (!repo)
@@ -186,6 +189,7 @@ namespace cmall
 				if (co_await repo->check_repo_changed())
 				{
 					LOG_DBG << std::format("repo {} git HEAD changed!", repo->repo_path().string());
+					if (m_abort) co_return;
 					co_await search_service.reload_merchant(repo);
 				}
 			}
