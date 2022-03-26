@@ -7,7 +7,7 @@
 namespace dirmon::detail {
 
 	template<typename IoExecutor = boost::asio::any_io_executor>
-	class basic_win_dirchange_read_handle
+	class basic_win_dirchange_read_handle : public boost::asio::windows::basic_overlapped_handle<IoExecutor>
 	{
 
 		struct read_op
@@ -22,9 +22,9 @@ namespace dirmon::detail {
 
 	public:
 		template<typename ExecutionContext>
-		basic_win_dirchange_read_handle(ExecutionContext&& context)
-			: iocp_service_(boost::asio::use_service<boost::asio::detail::win_iocp_io_context>(context))
-			, dir_read_handle(context)
+		basic_win_dirchange_read_handle(ExecutionContext& context)
+			: boost::asio::windows::basic_overlapped_handle<IoExecutor>(context)
+			, iocp_service_(boost::asio::use_service<boost::asio::detail::win_iocp_io_context>(context))
 		{
 		}
 
@@ -49,7 +49,7 @@ namespace dirmon::detail {
 				MutableBufferSequence, Handler, IoExecutor> op;
 			typename op::ptr p = { boost::asio::detail::addressof(handler),
 			  op::ptr::allocate(handler), 0 };
-			boost::asio::detail::operation* o = p.p = new (p.v) op(buffers, handler, dir_read_handle.get_executor());
+			boost::asio::detail::operation* o = p.p = new (p.v) op(buffers, handler, this->get_executor());
 
 			start_read_op(boost::asio::detail::buffer_sequence_adapter<boost::asio::mutable_buffer,
 				MutableBufferSequence>::first(buffers), o);
@@ -63,7 +63,7 @@ namespace dirmon::detail {
 			DWORD bytes_transferred = 0;
 			op->Offset = 0;
 			op->OffsetHigh = 0;
-			BOOL ok = ::ReadDirectoryChangesW(dir_read_handle.native_handle(), buffer.data(),
+			BOOL ok = ::ReadDirectoryChangesW(this->native_handle(), buffer.data(),
 				static_cast<DWORD>(buffer.size()), TRUE, FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME
 					, &bytes_transferred, op, NULL);
 			DWORD last_error = ::GetLastError();
@@ -80,7 +80,6 @@ namespace dirmon::detail {
 
 	protected:
 		boost::asio::detail::win_iocp_io_context& iocp_service_;
-		boost::asio::windows::overlapped_handle dir_read_handle;
 	};
 
 	using win_dirchange_read_handle = basic_win_dirchange_read_handle<boost::asio::any_io_executor>;

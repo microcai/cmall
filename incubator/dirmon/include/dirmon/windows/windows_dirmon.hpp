@@ -3,6 +3,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/asio/windows/overlapped_handle.hpp>
+#include <boost/asio/awaitable.hpp>
 #include <boost/nowide/convert.hpp>
 #include "win_dirchange_read_handle.hpp"
 #include "../change_notify.hpp"
@@ -12,7 +13,7 @@ namespace dirmon {
 	{
 	public:
 		template<typename ExecutionContext>
-		windows_dirmon(ExecutionContext&& e)
+		windows_dirmon(ExecutionContext& e)
 			: m_dirhandle(e)
 		{}
 

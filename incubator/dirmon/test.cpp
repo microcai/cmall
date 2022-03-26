@@ -1,7 +1,8 @@
 
 #include "dirmon/dirmon.hpp"
+#include <iostream>
 
-awaitable<int> co_main(int argc, char** argv, boost::asio::io_context& io)
+boost::asio::awaitable<int> co_main(int argc, char** argv, boost::asio::io_context& io)
 {
 	dirmon::dirmon monitor(io);
 
