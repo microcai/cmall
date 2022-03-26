@@ -4,7 +4,7 @@
 
 boost::asio::awaitable<int> co_main(int argc, char** argv, boost::asio::io_context& io)
 {
-	dirmon::dirmon monitor(io);
+	dirmon::dirmon monitor(io, ".");
 
 	auto changed_list = co_await monitor.async_wait_dirchange();
 
