@@ -34,7 +34,7 @@ add_executable(cmall ${cmall_SRCS}
 	${EMBED_SITE_OUTPUTS}
 )
 
-target_link_libraries(cmall gitpp httpd)
+target_link_libraries(cmall gitpp httpd dirmon)
 
 target_precompile_headers(cmall PUBLIC
   "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/include/stdafx.hpp>"

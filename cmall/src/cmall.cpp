@@ -23,6 +23,7 @@
 #include "httpd/http_misc_helper.hpp"
 #include "httpd/httpd.hpp"
 #include "httpd/wait_all.hpp"
+#include "dirmon/dirmon.hpp"
 
 namespace cmall
 {
@@ -127,36 +128,16 @@ namespace cmall
 
 	awaitable<void> cmall_service::repo_push_check(std::weak_ptr<services::repo_products> repo_)
 	{
-	#ifndef __linux__
-		while(!m_abort)
-		{
-			steady_timer timer(co_await boost::asio::this_coro::executor);
-			timer.expires_from_now(20s);
-			co_await timer.async_wait(use_awaitable);
-			auto repo = repo_.lock();
-			if (!repo)
-				co_return;
-			if (co_await repo->check_repo_changed())
-			{
-				LOG_DBG << "repo git HEAD changed!";
-				co_await search_service.reload_merchant(repo);
-			}
-		}
-	#else
-
-		boost::asio::posix::stream_descriptor inotify_file(co_await boost::asio::this_coro::executor, inotify_init1(IN_CLOEXEC));
+		std::string repo_dir;
 
 		{
 			auto repo = repo_.lock();
 			if (!repo)
 				co_return;
-			auto repo_dirname = std::filesystem::absolute(repo->repo_path()).string();
-			int ret = inotify_add_watch(inotify_file.native_handle(),  repo_dirname.c_str(), IN_CLOSE_WRITE|IN_MODIFY|IN_OPEN);
-			if (ret < 0)
-			{
-				LOG_ERR << "add watch failed for"  << repo->repo_path().string();
-			}
+			repo_dir = repo->repo_path().string();
 		}
+
+		dirmon::dirmon git_monitor(co_await boost::asio::this_coro::executor, repo_dir);
 
 		boost::asio::cancellation_state cs = co_await boost::asio::this_coro::cancellation_state;
 		if (m_abort)
@@ -164,18 +145,16 @@ namespace cmall
 
 		if (cs.slot().is_connected())
 		{
-			cs.slot().assign([&inotify_file](boost::asio::cancellation_type_t) mutable
+			cs.slot().assign([&git_monitor](boost::asio::cancellation_type_t) mutable
 			{
 				boost::system::error_code ignore_ec;
-				inotify_file.close(ignore_ec);
+				git_monitor.close(ignore_ec);
 			});
 		}
 
-		std::array<char, 1000> readbuf;
-
 		while (!m_abort)
 		{
-			co_await inotify_file.async_read_some(boost::asio::buffer(readbuf), use_awaitable);
+			co_await git_monitor.async_wait_dirchange();
 
 			do
 			{
@@ -187,7 +166,7 @@ namespace cmall
 				auto awaited_result = co_await (
 					timer.async_wait(use_awaitable)
 						||
-					inotify_file.async_read_some(boost::asio::buffer(readbuf), use_awaitable)
+					git_monitor.async_wait_dirchange()
 				);
 
 				// 只有持续 1s 左右的时间 git 仓库没有产生 inotify 消息，才认为 git 完成了动作.
@@ -211,10 +190,6 @@ namespace cmall
 				}
 			}
 		}
-
-
-	#endif
-
 	}
 
 	awaitable<bool> cmall_service::load_repos()

@@ -42,6 +42,11 @@ namespace dirmon {
 			co_return ret;
 		}
 
+		void close(boost::system::error_code ec)
+		{
+			m_dirhandle.close(ec);
+		}
+
 		detail::win_dirchange_read_handle m_dirhandle;
 	};
 }

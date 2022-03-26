@@ -44,12 +44,17 @@ namespace dirmon::detail {
 		template<typename MutableBufferSequence, typename Handler>
 		auto async_read_some_impl(const MutableBufferSequence& buffers, Handler&& handler)
 		{
+			auto slot = boost::asio::get_associated_cancellation_slot(handler);
 			// Allocate and construct an operation to wrap the handler.
 			typedef boost::asio::detail::win_iocp_handle_read_op<
 				MutableBufferSequence, Handler, IoExecutor> op;
 			typename op::ptr p = { boost::asio::detail::addressof(handler),
 			  op::ptr::allocate(handler), 0 };
 			boost::asio::detail::operation* o = p.p = new (p.v) op(buffers, handler, this->get_executor());
+
+			// Optionally register for per-operation cancellation.
+			if (slot.is_connected())
+				o = &slot.template emplace<boost::asio::detail::iocp_op_cancellation>(impl.handle_, o);
 
 			start_read_op(boost::asio::detail::buffer_sequence_adapter<boost::asio::mutable_buffer,
 				MutableBufferSequence>::first(buffers), o);
