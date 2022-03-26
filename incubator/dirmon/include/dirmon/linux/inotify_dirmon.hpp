@@ -33,9 +33,12 @@ namespace dirmon {
 					file_notify_info = reinterpret_cast<inotify_event*>(reinterpret_cast<char*>(file_notify_info) + sizeof(inotify_event)+file_notify_info->len)
 				)
 				{
-					dir_change_notify c;
-					c.file_name = std::string(file_notify_info->name, file_notify_info->len -1);
-					ret.push_back(c);
+					if (file_notify_info->len > 0)
+					{
+						dir_change_notify c;
+						c.file_name = std::string(file_notify_info->name, file_notify_info->len -1);
+						ret.push_back(c);
+					}
 				}
 			}
 
