@@ -31,7 +31,7 @@ namespace dirmon {
 				{
 					dir_change_notify c;
 
-					c.file_name = boost::nowide::narrow(file_notify_info->FileName, file_notify_info->FileNameLength);
+					c.file_name = boost::nowide::narrow(file_notify_info->FileName, file_notify_info->FileNameLength/2);
 
 					ret.push_back(c);
 					if (file_notify_info->NextEntryOffset ==0)
