@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <boost/core/ignore_unused.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/windows/overlapped_handle.hpp>
 
@@ -28,90 +29,42 @@ namespace dirmon::detail {
 		}
 
 	private:
-
-		// Helper class used to implement per operation cancellation.
-		class iocp_op_cancellation : public boost::asio::detail::operation
-		{
-		public:
-			iocp_op_cancellation(HANDLE h, boost::asio::detail::operation* target)
-				: boost::asio::detail::operation(&iocp_op_cancellation::do_complete),
-				handle_(h),
-				target_(target)
-			{
-			}
-
-			static void do_complete(void* owner, boost::asio::detail::operation* base,
-				const boost::system::error_code& result_ec,
-				std::size_t bytes_transferred)
-			{
-				iocp_op_cancellation* o = static_cast<iocp_op_cancellation*>(base);
-				o->target_->complete(owner, result_ec, bytes_transferred);
-			}
-
-			void operator()(boost::asio::cancellation_type_t type)
-			{
-#if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600)
-				if (!!(type &
-					(boost::asio::cancellation_type::terminal
-						| boost::asio::cancellation_type::partial
-						| boost::asio::cancellation_type::total)))
-				{
-					::CancelIoEx(handle_, this);
-				}
-#else // defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600)
-				(void)type;
-#endif // defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600)
-			}
-
-		private:
-			HANDLE handle_;
-			boost::asio::detail::operation* target_;
-		};
-
 		template<typename MutableBufferSequence, typename Handler>
 		auto async_read_some_impl(const MutableBufferSequence& buffers, Handler&& handler)
 		{
 			auto slot = boost::asio::get_associated_cancellation_slot(handler);
-			// Allocate and construct an operation to wrap the handler.
-			typedef boost::asio::detail::win_iocp_handle_read_op<
-				MutableBufferSequence, Handler, IoExecutor> op;
-			typename op::ptr p = { boost::asio::detail::addressof(handler),
-			  op::ptr::allocate(handler), 0 };
-			boost::asio::detail::operation* o = p.p = new (p.v) op(buffers, handler, this->get_executor());
 
-			// Optionally register for per-operation cancellation.
+			boost::asio::windows::overlapped_ptr op(this->get_executor(), std::move(handler));
+
+			// register for cancellation.
 			if (slot.is_connected())
-				o = &slot.template emplace<iocp_op_cancellation>(this->native_handle(), o);
+			{
+				slot.assign([handle_ = this->native_handle()](auto type) mutable { boost::ignore_unused(type); ::CancelIo(handle_); });
+			}
 
-			start_read_op(boost::asio::detail::buffer_sequence_adapter<boost::asio::mutable_buffer,
-				MutableBufferSequence>::first(buffers), o);
-			p.v = p.p = 0;
-		}
-
-	private:
-
-		void start_read_op(const boost::asio::mutable_buffer& buffer, boost::asio::detail::operation* op)
-		{
-			boost::asio::detail::win_iocp_io_context& iocp_service_ =
-				boost::asio::use_service<boost::asio::detail::win_iocp_io_context>(this->impl_.get_service().context());
+			auto buffer = boost::asio::detail::buffer_sequence_adapter<
+				boost::asio::mutable_buffer, MutableBufferSequence>::first(buffers);
 
 			DWORD bytes_transferred = 0;
-			op->Offset = 0;
-			op->OffsetHigh = 0;
+			op.get()->Offset = 0;
+			op.get()->OffsetHigh = 0;
 			BOOL ok = ::ReadDirectoryChangesW(this->native_handle(), buffer.data(),
 				static_cast<DWORD>(buffer.size()), TRUE, FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME
-					, &bytes_transferred, op, NULL);
+				, &bytes_transferred, op.get(), NULL);
 			DWORD last_error = ::GetLastError();
 			if (!ok && last_error != ERROR_IO_PENDING
 				&& last_error != ERROR_MORE_DATA)
 			{
-				iocp_service_.on_completion(op, last_error, bytes_transferred);
+				boost::system::error_code ec{ static_cast<int>(last_error), boost::system::system_category() };
+				op.complete(ec, bytes_transferred);
 			}
 			else
 			{
-				iocp_service_.on_pending(op);
+				op.release();
 			}
+
 		}
+
 	};
 
 	using win_dirchange_read_handle = basic_win_dirchange_read_handle<boost::asio::any_io_executor>;
