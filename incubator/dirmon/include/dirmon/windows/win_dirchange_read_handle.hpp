@@ -9,21 +9,10 @@ namespace dirmon::detail {
 	template<typename IoExecutor = boost::asio::any_io_executor>
 	class basic_win_dirchange_read_handle : public boost::asio::windows::basic_overlapped_handle<IoExecutor>
 	{
-
-		struct read_op
-		{
-
-			void operator()()
-			{
-
-			}
-		};
-
-
 	public:
 		template<typename ExecutionContext>
-		basic_win_dirchange_read_handle(ExecutionContext& context, std::string dirname)
-			: boost::asio::windows::basic_overlapped_handle<IoExecutor>(context, CreateFileW(boost::nowide::widen(dirname).c_str(), FILE_LIST_DIRECTORY, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, NULL))
+		basic_win_dirchange_read_handle(ExecutionContext&& context, std::string dirname)
+			: boost::asio::windows::basic_overlapped_handle<IoExecutor>(std::forward(context), CreateFileW(boost::nowide::widen(dirname).c_str(), FILE_LIST_DIRECTORY, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, NULL))
 			, iocp_service_(boost::asio::use_service<boost::asio::detail::win_iocp_io_context>(context))
 		{
 		}

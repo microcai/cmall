@@ -12,7 +12,7 @@ namespace dirmon {
 		file_modification,
 		file_rename,
 	};
-	
+
 	struct dir_change_notify
 	{
 		dir_change_type_t change_type;
