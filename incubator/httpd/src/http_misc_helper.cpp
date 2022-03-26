@@ -5,6 +5,7 @@
 
 #include <string_view>
 #include <string>
+#include <stdexcept>
 #include <map>
 
 #include "httpd/http_misc_helper.hpp"
