@@ -51,9 +51,6 @@ namespace dirmon::detail {
 			  op::ptr::allocate(handler), 0 };
 			boost::asio::detail::operation* o = p.p = new (p.v) op(buffers, handler, dir_read_handle.get_executor());
 
-			BOOST_ASIO_HANDLER_CREATION((iocp_service_.context(), *p.p, "handle", &impl,
-				reinterpret_cast<uintmax_t>(impl.handle_), "async_read_some"));
-
 			start_read_op(boost::asio::detail::buffer_sequence_adapter<boost::asio::mutable_buffer,
 				MutableBufferSequence>::first(buffers), o);
 			p.v = p.p = 0;
