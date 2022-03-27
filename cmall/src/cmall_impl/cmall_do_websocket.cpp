@@ -107,22 +107,9 @@ awaitable<void> cmall::cmall_service::do_ws_write(size_t connection_id, client_c
 {
 	auto& message_deque = connection_ptr->ws_client->message_channel;
 	auto& ws			= connection_ptr->ws_client->ws_stream_;
+	auto& t = connection_ptr->ws_client->message_channel_timer;
 
 	using namespace boost::asio::experimental::awaitable_operators;
-	steady_timer t(co_await boost::asio::this_coro::executor);
-
-	boost::asio::cancellation_state cs = co_await boost::asio::this_coro::cancellation_state;
-
-	if (cs.slot().is_connected())
-	{
-		cs.slot().assign(
-			[&message_deque, &t](boost::asio::cancellation_type_t) mutable
-			{
-				boost::system::error_code ignore_ec;
-				t.cancel(ignore_ec);
-				message_deque.cancel();
-			});
-	}
 
 	while (!m_abort)
 	{

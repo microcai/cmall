@@ -20,7 +20,7 @@
 #include "httpd/acceptor.hpp"
 #include "httpd/http_stream.hpp"
 
-
+#include "utils/time_clock.hpp"
 namespace cmall {
 
 	using ws_stream = websocket::stream<boost::beast::tcp_stream>;
@@ -31,16 +31,20 @@ namespace cmall {
 
 		websocket_connection(httpd::http_any_stream& tcp_stream_)
 			: ws_stream_(tcp_stream_)
+			, message_channel_timer(tcp_stream_.get_executor())
 			, message_channel(tcp_stream_.get_executor(), 1)
 		{}
 
 		void close(auto connection_id)
 		{
 			LOG_DBG << "ws client close() called: [" << connection_id << "]";
-			message_channel.cancel();
+			boost::system::error_code ignore_ec;
+			message_channel.close();
+			message_channel_timer.cancel(ignore_ec);
 		}
 
 		websocket::stream<httpd::http_any_stream&> ws_stream_;
+		steady_timer message_channel_timer;
 		boost::asio::experimental::concurrent_channel<void(boost::system::error_code, std::string)> message_channel;
 	};
 

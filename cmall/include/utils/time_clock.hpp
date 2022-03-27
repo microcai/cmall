@@ -177,5 +177,6 @@ namespace time_clock {
 		}
 #endif
 	};
-
 }
+
+using steady_timer = boost::asio::basic_waitable_timer<time_clock::steady_clock>;

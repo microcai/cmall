@@ -108,7 +108,6 @@ namespace multiprecision = boost::multiprecision;
 #pragma warning(pop)
 
 #include "utils/time_clock.hpp"
-using steady_timer = boost::asio::basic_waitable_timer<time_clock::steady_clock>;
 
 #pragma warning(push)
 #pragma warning(disable: 4267)
