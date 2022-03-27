@@ -214,7 +214,7 @@ namespace cmall {
 		awaitable<void> client_connected(client_connection_ptr);
 		awaitable<void> client_disconnected(client_connection_ptr);
 
-		awaitable<int> render_git_repo_files(size_t connection_id, std::string merchant, std::string path_in_repo, httpd::http_any_stream& client, unsigned req_version, bool keep_alive);
+		awaitable<int> render_git_repo_files(size_t connection_id, std::string merchant, std::string path_in_repo, httpd::http_any_stream& client, boost::beast::http::request<boost::beast::http::string_body>);
 		awaitable<int> render_goods_detail_content(size_t connection_id, std::string merchant, std::string goods_id, httpd::http_any_stream& client, int httpver, bool keepalive);
 		awaitable<void> do_ws_read(size_t connection_id, client_connection_ptr);
 		awaitable<void> do_ws_write(size_t connection_id, client_connection_ptr);
