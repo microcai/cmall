@@ -138,19 +138,6 @@ namespace cmall
 
 		dirmon::dirmon git_monitor(co_await boost::asio::this_coro::executor, repo_dir);
 
-		boost::asio::cancellation_state cs = co_await boost::asio::this_coro::cancellation_state;
-		if (m_abort)
-			co_return;
-
-		if (cs.slot().is_connected())
-		{
-			cs.slot().assign([&git_monitor](boost::asio::cancellation_type_t) mutable
-			{
-				boost::system::error_code ignore_ec;
-				git_monitor.close(ignore_ec);
-			});
-		}
-
 		while (!m_abort)
 		{
 			co_await git_monitor.async_wait_dirchange();
@@ -158,7 +145,7 @@ namespace cmall
 			while(!m_abort)
 			{
 				steady_timer timer(co_await boost::asio::this_coro::executor);
-				timer.expires_from_now(1s);
+				timer.expires_from_now(2s);
 
 				using namespace boost::asio::experimental::awaitable_operators;
 
@@ -170,7 +157,7 @@ namespace cmall
 
 				if (m_abort) co_return;
 
-				// 只有持续 1s 左右的时间 git 仓库没有产生 inotify 消息，才认为 git 完成了动作.
+				// 只有持续 2s 左右的时间 git 仓库没有产生 inotify 消息，才认为 git 完成了动作.
 				// 不然就继续读取 inotify 获取消息.
 
 				if (awaited_result.index() == 0)
