@@ -21,6 +21,7 @@ file(GLOB cmall_SRCS
 
 	src/*.cpp
 	src/services/*
+	src/cmall_impl/*
 
 )
 
