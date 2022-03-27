@@ -201,14 +201,14 @@ namespace cmall
 		};
 
 		LOG_DBG << "coro created: handle_accepted_client( " << connection_id << ")";
-		char pre_allocated_buffer[10000];
+		char pre_allocated_buffer[6000];
 
 		do
 		{
 
 			fields_alloc<char> alloc_{pre_allocated_buffer, sizeof pre_allocated_buffer};
 
-			boost::beast::static_buffer<8000> buffer;
+			boost::beast::static_buffer<5000> buffer;
 			boost::beast::http::request_parser<boost::beast::http::string_body, fields_alloc<char>> parser_(std::piecewise_construct, std::make_tuple(), std::make_tuple(alloc_));
 
 			parser_.body_limit(2000);
