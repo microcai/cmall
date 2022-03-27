@@ -335,8 +335,7 @@ namespace cmall
 
 	// 从 git 仓库获取文件，没找到返回 0
 	awaitable<int> cmall_service::render_git_repo_files(size_t connection_id, std::string merchant,
-		std::string path_in_repo, httpd::http_any_stream& client,
-		boost::beast::http::request<boost::beast::http::string_body> req)
+		std::string path_in_repo, httpd::http_any_stream& client, unsigned req_version, bool keep_alive)
 	{
 		auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
 
@@ -356,8 +355,8 @@ namespace cmall
 			res_body,
 			httpd::make_http_last_modified(std::time(0) + 60),
 			httpd::get_mime_type_from_extension(std::filesystem::path(path_in_repo).extension().string()),
-			req.version(),
-			req.keep_alive());
+			req_version,
+			keep_alive);
 		if (ec)
 			throw boost::system::system_error(ec);
 		co_return 200;
