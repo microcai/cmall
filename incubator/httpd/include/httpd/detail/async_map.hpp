@@ -29,7 +29,7 @@ namespace httpd::detail {
             }
             else
             {
-			    co_threads.push_back(boost::asio::co_spawn(co_await boost::asio::this_coro::executor, func, use_promise));
+			    co_threads.push_back(boost::asio::co_spawn(co_await boost::asio::this_coro::executor, func(a), use_promise));
             }
         }
 
