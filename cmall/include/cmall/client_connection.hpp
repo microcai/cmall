@@ -56,9 +56,6 @@ namespace cmall {
 
 		std::shared_ptr<services::client_session> session_info;
 
-		// for use with static_alloc
-		char pre_allocated_buffer[6000];
-
 		auto get_executor()
 		{
 			return tcp_stream.get_executor();
