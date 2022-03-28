@@ -155,7 +155,8 @@ elseif (ANDROID)
 	set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 else()
 	if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+		add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-stdlib=libc++>)
+		add_link_options(-stdlib=libc++)
 
 		CHECK_LINKER_FLAG(CXX -rtlib=compiler-rt -unwindlib=libunwind COMPILER_RT_SUPPORTED)
 
