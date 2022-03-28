@@ -144,13 +144,13 @@ namespace cmall
 
 			while(!m_abort)
 			{
-				steady_timer timer(co_await boost::asio::this_coro::executor);
+				awaitable_timer timer(co_await boost::asio::this_coro::executor);
 				timer.expires_from_now(2s);
 
 				using namespace boost::asio::experimental::awaitable_operators;
 
 				auto awaited_result = co_await (
-					timer.async_wait(use_awaitable)
+					timer.async_wait()
 						||
 					git_monitor.async_wait_dirchange()
 				);

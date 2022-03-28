@@ -21,6 +21,7 @@
 #include "httpd/http_stream.hpp"
 
 #include "utils/time_clock.hpp"
+
 namespace cmall {
 
 	using ws_stream = websocket::stream<boost::beast::tcp_stream>;
@@ -44,7 +45,7 @@ namespace cmall {
 		}
 
 		websocket::stream<httpd::http_any_stream&> ws_stream_;
-		steady_timer message_channel_timer;
+		awaitable_timer message_channel_timer;
 		boost::asio::experimental::concurrent_channel<void(boost::system::error_code, std::string)> message_channel;
 	};
 

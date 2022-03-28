@@ -179,4 +179,4 @@ namespace time_clock {
 	};
 }
 
-using steady_timer = boost::asio::basic_waitable_timer<time_clock::steady_clock>;
+using awaitable_timer = boost::asio::use_awaitable_t<>::as_default_on_t<boost::asio::basic_waitable_timer<time_clock::steady_clock>>;

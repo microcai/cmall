@@ -37,7 +37,7 @@ static env::operate_parameters get_default_operate_parameters()
 struct persist_map_impl
 {
 	mutable boost::asio::thread_pool runners;
-	steady_timer timer_;
+	awaitable_timer timer_;
 	env_managed mdbx_env;
 	map_handle mdbx_default_map;
 	map_handle mdbx_lifetime_map;
@@ -131,7 +131,7 @@ struct persist_map_impl
 				co_return;
 
 			timer_.expires_from_now(std::chrono::seconds(60));
-			co_await timer_.async_wait(use_awaitable);
+			co_await timer_.async_wait();
 		}
 	}
 

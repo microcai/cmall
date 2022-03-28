@@ -155,14 +155,11 @@ namespace services
 #endif
 			nodejs_input.close();
 
-			boost::asio::basic_waitable_timer<time_clock::steady_clock>  t(co_await boost::asio::this_coro::executor);
-#ifdef _DEBUG
-			t.expires_from_now(std::chrono::seconds(200));
-#else
+			awaitable_timer  t(co_await boost::asio::this_coro::executor);
 			t.expires_from_now(std::chrono::seconds(20));
-#endif
+
 			auto out_size = co_await (
-				read_promis.async_wait(use_awaitable) || t.async_wait(use_awaitable)
+				read_promis.async_wait(use_awaitable) || t.async_wait()
 			);
 			out.resize(std::get<0>(out_size));
 			std::error_code stdec;
@@ -256,14 +253,14 @@ namespace services
 				nodejs_input.async_close();
 			}, use_promise);
 
-			boost::asio::basic_waitable_timer<time_clock::steady_clock>  t(co_await boost::asio::this_coro::executor);
+			awaitable_timer  t(co_await boost::asio::this_coro::executor);
 #ifdef _DEBUG
 			t.expires_from_now(std::chrono::seconds(200));
 #else
 			t.expires_from_now(std::chrono::seconds(20));
 #endif
 			auto out_size = co_await (
-				read_promis.async_wait(use_awaitable) || t.async_wait(use_awaitable)
+				read_promis.async_wait(use_awaitable) || t.async_wait()
 			);
 			out.resize(std::get<0>(out_size));
 			std::error_code stdec;

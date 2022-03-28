@@ -115,7 +115,7 @@ awaitable<void> cmall::cmall_service::do_ws_write(size_t connection_id, client_c
 	{
 		t.expires_from_now(std::chrono::seconds(15));
 		std::variant<std::monostate, std::string> awaited_result
-			= co_await (t.async_wait(use_awaitable) || message_deque.async_receive(use_awaitable));
+			= co_await (t.async_wait() || message_deque.async_receive(use_awaitable));
 		if (awaited_result.index() == 0)
 		{
 			LOG_DBG << "coro: do_ws_write: [" << connection_id << "], send ping to client";

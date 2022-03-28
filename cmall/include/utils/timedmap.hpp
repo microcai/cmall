@@ -23,8 +23,6 @@
 #include "coroyield.hpp"
 
 using boost::asio::awaitable;
-using boost::asio::use_awaitable;
-
 namespace utility
 {
 	template<typename value_type, typename key_type>
@@ -72,7 +70,8 @@ namespace utility
 		timedmap(Executor&& io, std::chrono::milliseconds lifetime)
 			: shared_data_(std::make_shared<some_shared_data>())
 		{
-			boost::asio::co_spawn(io, pruge_thread(lifetime, shared_data_), boost::asio::detached);
+			boost::asio::co_spawn(io, pruge_thread(lifetime, shared_data_),
+				boost::asio::bind_cancellation_slot(shared_data_->cancell_signal.slot(),boost::asio::detached));
 		}
 
 		~timedmap()
@@ -135,11 +134,10 @@ namespace utility
 				if (shared_data->stop_flag)
 					co_return;
 
-				boost::asio::basic_waitable_timer<time_clock::steady_clock> timer(co_await boost::asio::this_coro::executor);
+				awaitable_timer timer(co_await boost::asio::this_coro::executor);
 
 				timer.expires_from_now(diff);
-				co_await timer.async_wait(boost::asio::bind_cancellation_slot(shared_data->cancell_signal.slot(),  use_awaitable));
-
+				co_await timer.async_wait();
 			}
 		}
 
