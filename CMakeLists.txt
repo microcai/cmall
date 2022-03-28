@@ -27,11 +27,12 @@ math(EXPR VERSION_MAJOR "${VERSION_YEAR} - 2022")
 math(EXPR VERSION_MINOR "${VERSION_MONTH_YEAR}")
 math(EXPR VERSION_TINY "${VERSION_DAY_YEAR}")
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/cmake")
+
 include(CheckCXXCompilerFlag)
 include(CheckLibraryExists)
 include(CheckCXXSymbolExists)
-
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/cmake")
+include(CheckCXXLinkerFlag)
 
 option(ENABLE_BUILD_WERROR "All warnings being treated as errors" ON)
 
@@ -47,7 +48,6 @@ option(ENABLE_TCMALLOC_STATIC "Build with Tcmalloc support" OFF)
 option(ENABLE_JEMALLOC_STATIC "Build with Jemalloc support" OFF)
 option(ENABLE_LLD "build using lld" OFF)
 option(ENABLE_MOLD "build using mold" OFF)
-option(ENABLE_COMPILER_RT "build using compiler-rt" OFF)
 option(USE_BUNDLED_ODB_FILE "build using pre generated odb file" OFF)
 option(ENABLE_IOURING "build with liburing" ON)
 option(ENABLE_LTO "enable LTO support" OFF)
@@ -96,7 +96,7 @@ CHECK_CXX_COMPILER_FLAG(-fcoroutines COMPILER_HAS_FCOROUTINES)
 
 if (COMPILER_HAS_VISIBILITY_INLINE_HIDDEN)
 	# C 不能使用这个 flag. gcc 会报错
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden")
+	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fvisibility-inlines-hidden>)
 endif()
 
 if (COMPILER_HAS_VISIBILITY_HIDDEN)
@@ -108,7 +108,7 @@ if (COMPILER_HAS_COLOR)
 endif()
 
 if (COMPILER_HAS_FCOROUTINES)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcoroutines")
+	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fcoroutines>)
 endif()
 
 if (MSVC)
@@ -132,18 +132,11 @@ if (MSVC)
 		-D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
 	)
 
-	add_definitions(
-		-DBOOST_ALL_STATIC_LINK
-		-DBOOST_THREAD_USE_LIB
-		-DBOOST_FILESYSTEM_STATIC_LINK
-		-DBOOST_USE_WINAPI_VERSION=0x0601
-	)
-
 	add_compile_options(/IGNORE:4267,4244,4005)
 
 	add_compile_options(/bigobj /MP /Zc:__cplusplus)
 	MESSAGE(STATUS "Using parallel compiling (/MP)")
-	set(CMAKE_CXX_STACK_SIZE "100000000") #set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:100000000")
+	set(CMAKE_CXX_STACK_SIZE "100000000")
 	MESSAGE(STATUS "Set stack size: 100000000")
 
 elseif(WIN32)
@@ -158,18 +151,16 @@ elseif(WIN32)
 		-D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
 	)
 
-	add_definitions(
-		-DBOOST_ALL_STATIC_LINK
-		-DBOOST_THREAD_USE_LIB
-		-DBOOST_FILESYSTEM_STATIC_LINK
-		-DBOOST_USE_WINAPI_VERSION=0x0601
-	)
 elseif (ANDROID)
 	set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 else()
 	if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-		if (ENABLE_COMPILER_RT)
+
+		CHECK_LINKER_FLAG(CXX -rtlib=compiler-rt COMPILER_RT_SUPPORTED)
+
+		if (COMPILER_RT_SUPPORTED)
+			message(STATUS "clang supports compiler-rt, use it")
 			add_link_options(-rtlib=compiler-rt)
 		endif()
 	endif()
