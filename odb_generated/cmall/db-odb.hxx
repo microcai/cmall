@@ -49,6 +49,8 @@
 #include <odb/no-op-cache-traits.hxx>
 #include <odb/result.hxx>
 #include <odb/simple-object-result.hxx>
+#include <odb/view-image.hxx>
+#include <odb/view-result.hxx>
 
 #include <odb/details/unused.hxx>
 #include <odb/details/shared-ptr.hxx>
@@ -389,6 +391,25 @@ namespace odb
 
     static void
     callback (database&, const object_type&, callback_event);
+  };
+
+  // max_application_seq
+  //
+  template <>
+  struct class_traits< ::max_application_seq >
+  {
+    static const class_kind kind = class_view;
+  };
+
+  template <>
+  class access::view_traits< ::max_application_seq >
+  {
+    public:
+    typedef ::max_application_seq view_type;
+    typedef ::boost::shared_ptr< ::max_application_seq > pointer_type;
+
+    static void
+    callback (database&, view_type&, callback_event);
   };
 }
 
@@ -3070,6 +3091,18 @@ namespace odb
 
     static const applicant_type_ applicant;
 
+    // seq
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        long unsigned int,
+        pgsql::id_bigint >::query_type,
+      pgsql::id_bigint >
+    seq_type_;
+
+    static const seq_type_ seq;
+
     // state
     //
     typedef
@@ -3142,6 +3175,11 @@ namespace odb
   applicant (A::table_name, "\"applicant\"", 0);
 
   template <typename A>
+  const typename pointer_query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::seq_type_
+  pointer_query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::
+  seq (A::table_name, "\"seq\"", 0);
+
+  template <typename A>
   const typename pointer_query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::state_type_
   pointer_query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::
   state (A::table_name, "\"state\"", 0);
@@ -3190,6 +3228,11 @@ namespace odb
       //
       long long applicant_value;
       bool applicant_null;
+
+      // seq
+      //
+      long long seq_value;
+      bool seq_null;
 
       // state_
       //
@@ -3261,7 +3304,7 @@ namespace odb
 
     typedef pgsql::query_base query_base_type;
 
-    static const std::size_t column_count = 7UL;
+    static const std::size_t column_count = 8UL;
     static const std::size_t id_column_count = 1UL;
     static const std::size_t inverse_column_count = 0UL;
     static const std::size_t readonly_column_count = 0UL;
@@ -3333,6 +3376,60 @@ namespace odb
   template <>
   class access::object_traits_impl< ::cmall_apply_for_mechant, id_common >:
     public access::object_traits_impl< ::cmall_apply_for_mechant, id_pgsql >
+  {
+  };
+
+  // max_application_seq
+  //
+  template <>
+  class access::view_traits_impl< ::max_application_seq, id_pgsql >:
+    public access::view_traits< ::max_application_seq >
+  {
+    public:
+    struct image_type
+    {
+      // last_seq
+      //
+      long long last_seq_value;
+      bool last_seq_null;
+
+      std::size_t version;
+    };
+
+    typedef pgsql::view_statements<view_type> statements_type;
+
+    typedef pgsql::query_base query_base_type;
+    struct query_columns;
+
+    static const bool versioned = false;
+
+    static bool
+    grow (image_type&,
+          bool*);
+
+    static void
+    bind (pgsql::bind*,
+          image_type&);
+
+    static void
+    init (view_type&,
+          const image_type&,
+          database*);
+
+    static const std::size_t column_count = 1UL;
+
+    static query_base_type
+    query_statement (const query_base_type&);
+
+    static result<view_type>
+    query (database&, const query_base_type&);
+
+    static const char query_statement_name[];
+  };
+
+  template <>
+  class access::view_traits_impl< ::max_application_seq, id_common >:
+    public access::view_traits_impl< ::max_application_seq, id_pgsql >
   {
   };
 
@@ -3495,6 +3592,18 @@ namespace odb
 
     static const applicant_type_ applicant;
 
+    // seq
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        long unsigned int,
+        pgsql::id_bigint >::query_type,
+      pgsql::id_bigint >
+    seq_type_;
+
+    static const seq_type_ seq;
+
     // state
     //
     typedef
@@ -3567,6 +3676,11 @@ namespace odb
   applicant (A::table_name, "\"applicant\"", 0);
 
   template <typename A>
+  const typename query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::seq_type_
+  query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::
+  seq (A::table_name, "\"seq\"", 0);
+
+  template <typename A>
   const typename query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::state_type_
   query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::
   state (A::table_name, "\"state\"", 0);
@@ -3590,6 +3704,16 @@ namespace odb
   const typename query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::deleted_at_type_
   query_columns< ::cmall_apply_for_mechant, id_pgsql, A >::
   deleted_at (A::table_name, "\"deleted_at\"", 0);
+
+  // max_application_seq
+  //
+  struct access::view_traits_impl< ::max_application_seq, id_pgsql >::query_columns:
+    odb::pointer_query_columns<
+      ::cmall_apply_for_mechant,
+      id_pgsql,
+      odb::access::object_traits_impl< ::cmall_apply_for_mechant, id_pgsql > >
+  {
+  };
 }
 
 #include "cmall/db-odb.ihh"

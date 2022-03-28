@@ -1,4 +1,17 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
+  <changeset version="22">
+    <alter-table name="cmall_apply_for_mechant">
+      <add-column name="seq" type="BIGINT" null="true"/>
+      <add-index name="cmall_apply_for_mechant_seq_i">
+        <column name="seq"/>
+      </add-index>
+      <add-index name="unique seq_applicant_id" type="UNIQUE">
+        <column name="applicant"/>
+        <column name="seq"/>
+      </add-index>
+    </alter-table>
+  </changeset>
+
   <changeset version="21">
     <alter-table name="cmall_apply_for_mechant">
       <add-column name="state" type="SMALLINT" null="false" default="0"/>

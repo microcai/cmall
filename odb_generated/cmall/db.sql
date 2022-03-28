@@ -223,6 +223,7 @@ CREATE INDEX "cmall_cart_uid_i"
 CREATE TABLE "cmall_apply_for_mechant" (
   "id" BIGSERIAL NOT NULL PRIMARY KEY,
   "applicant" BIGINT NULL,
+  "seq" BIGINT NULL,
   "state" SMALLINT NOT NULL DEFAULT 0,
   "ext" TEXT NOT NULL,
   "created_at" TIMESTAMP NULL,
@@ -236,9 +237,17 @@ CREATE TABLE "cmall_apply_for_mechant" (
 CREATE INDEX "cmall_apply_for_mechant_applicant_i"
   ON "cmall_apply_for_mechant" ("applicant");
 
+CREATE INDEX "cmall_apply_for_mechant_seq_i"
+  ON "cmall_apply_for_mechant" ("seq");
+
+CREATE UNIQUE INDEX "unique seq_applicant_id"
+  ON "cmall_apply_for_mechant" (
+    "applicant",
+    "seq");
+
 INSERT INTO "schema_version" (
   "name", "version", "migration")
-  SELECT '', 21, FALSE
+  SELECT '', 22, FALSE
   WHERE NOT EXISTS (
     SELECT 1 FROM "schema_version" WHERE "name" = '');
 

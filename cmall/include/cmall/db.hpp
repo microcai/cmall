@@ -41,7 +41,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(8, 21, open)
+#pragma db model version(8, 22, open)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -277,6 +277,10 @@ struct cmall_apply_for_mechant
 #pragma db index
 	std::shared_ptr<cmall_user> applicant_;
 
+#pragma db index
+	odb::nullable<std::uint64_t> seq;
+#pragma db index ("unique seq_applicant_id") unique members(applicant_, seq)
+
 #pragma db type("SMALLINT") default(0)
 	approve_state_t state_ { approve_state_t::waiting }; // 审批状态.
 
@@ -285,4 +289,11 @@ struct cmall_apply_for_mechant
 	boost::posix_time::ptime created_at_{ boost::posix_time::second_clock::local_time() };
 	boost::posix_time::ptime updated_at_{ boost::posix_time::second_clock::local_time() };
 	odb::nullable<boost::posix_time::ptime> deleted_at_;
+};
+
+#pragma db view object(cmall_apply_for_mechant)
+struct max_application_seq
+{
+	#pragma db column("max(" + cmall_apply_for_mechant::seq +")")
+	odb::nullable<std::uint64_t> last_seq;
 };

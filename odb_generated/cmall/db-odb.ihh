@@ -237,6 +237,18 @@ namespace odb
     ODB_POTENTIALLY_UNUSED (x);
     ODB_POTENTIALLY_UNUSED (e);
   }
+
+  // max_application_seq
+  //
+
+  inline
+  void access::view_traits< ::max_application_seq >::
+  callback (database& db, view_type& x, callback_event e)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (x);
+    ODB_POTENTIALLY_UNUSED (e);
+  }
 }
 
 namespace odb
@@ -494,5 +506,8 @@ namespace odb
     ODB_POTENTIALLY_UNUSED (sts);
     ODB_POTENTIALLY_UNUSED (obj);
   }
+
+  // max_application_seq
+  //
 }
 

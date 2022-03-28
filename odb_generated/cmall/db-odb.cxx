@@ -20,9 +20,11 @@
 #include <odb/pgsql/statement.hxx>
 #include <odb/pgsql/statement-cache.hxx>
 #include <odb/pgsql/simple-object-statements.hxx>
+#include <odb/pgsql/view-statements.hxx>
 #include <odb/pgsql/container-statements.hxx>
 #include <odb/pgsql/exceptions.hxx>
 #include <odb/pgsql/simple-object-result.hxx>
+#include <odb/pgsql/view-result.hxx>
 
 namespace odb
 {
@@ -8947,6 +8949,7 @@ namespace odb
   persist_statement_types[] =
   {
     pgsql::int8_oid,
+    pgsql::int8_oid,
     pgsql::int2_oid,
     pgsql::text_oid,
     pgsql::timestamp_oid,
@@ -8963,6 +8966,7 @@ namespace odb
   const unsigned int access::object_traits_impl< ::cmall_apply_for_mechant, id_pgsql >::
   update_statement_types[] =
   {
+    pgsql::int8_oid,
     pgsql::int8_oid,
     pgsql::int2_oid,
     pgsql::text_oid,
@@ -9048,13 +9052,17 @@ namespace odb
     //
     t[1UL] = 0;
 
-    // state_
+    // seq
     //
     t[2UL] = 0;
 
+    // state_
+    //
+    t[3UL] = 0;
+
     // ext_
     //
-    if (t[3UL])
+    if (t[4UL])
     {
       i.ext_value.capacity (i.ext_size);
       grew = true;
@@ -9062,15 +9070,15 @@ namespace odb
 
     // created_at_
     //
-    t[4UL] = 0;
+    t[5UL] = 0;
 
     // updated_at_
     //
-    t[5UL] = 0;
+    t[6UL] = 0;
 
     // deleted_at_
     //
-    t[6UL] = 0;
+    t[7UL] = 0;
 
     return grew;
   }
@@ -9101,6 +9109,13 @@ namespace odb
     b[n].type = pgsql::bind::bigint;
     b[n].buffer = &i.applicant_value;
     b[n].is_null = &i.applicant_null;
+    n++;
+
+    // seq
+    //
+    b[n].type = pgsql::bind::bigint;
+    b[n].buffer = &i.seq_value;
+    b[n].is_null = &i.seq_null;
     n++;
 
     // state_
@@ -9186,6 +9201,20 @@ namespace odb
       }
       else
         i.applicant_null = true;
+    }
+
+    // seq
+    //
+    {
+      ::odb::nullable< long unsigned int > const& v =
+        o.seq;
+
+      bool is_null (true);
+      pgsql::value_traits<
+          ::odb::nullable< long unsigned int >,
+          pgsql::id_bigint >::set_image (
+        i.seq_value, is_null, v);
+      i.seq_null = is_null;
     }
 
     // state_
@@ -9322,6 +9351,20 @@ namespace odb
       }
     }
 
+    // seq
+    //
+    {
+      ::odb::nullable< long unsigned int >& v =
+        o.seq;
+
+      pgsql::value_traits<
+          ::odb::nullable< long unsigned int >,
+          pgsql::id_bigint >::set_value (
+        v,
+        i.seq_value,
+        i.seq_null);
+    }
+
     // state_
     //
     {
@@ -9411,19 +9454,21 @@ namespace odb
   "INSERT INTO \"cmall_apply_for_mechant\" "
   "(\"id\", "
   "\"applicant\", "
+  "\"seq\", "
   "\"state\", "
   "\"ext\", "
   "\"created_at\", "
   "\"updated_at\", "
   "\"deleted_at\") "
   "VALUES "
-  "(DEFAULT, $1, $2, $3, $4, $5, $6) "
+  "(DEFAULT, $1, $2, $3, $4, $5, $6, $7) "
   "RETURNING \"id\"";
 
   const char access::object_traits_impl< ::cmall_apply_for_mechant, id_pgsql >::find_statement[] =
   "SELECT "
   "\"cmall_apply_for_mechant\".\"id\", "
   "\"cmall_apply_for_mechant\".\"applicant\", "
+  "\"cmall_apply_for_mechant\".\"seq\", "
   "\"cmall_apply_for_mechant\".\"state\", "
   "\"cmall_apply_for_mechant\".\"ext\", "
   "\"cmall_apply_for_mechant\".\"created_at\", "
@@ -9436,12 +9481,13 @@ namespace odb
   "UPDATE \"cmall_apply_for_mechant\" "
   "SET "
   "\"applicant\"=$1, "
-  "\"state\"=$2, "
-  "\"ext\"=$3, "
-  "\"created_at\"=$4, "
-  "\"updated_at\"=$5, "
-  "\"deleted_at\"=$6 "
-  "WHERE \"id\"=$7";
+  "\"seq\"=$2, "
+  "\"state\"=$3, "
+  "\"ext\"=$4, "
+  "\"created_at\"=$5, "
+  "\"updated_at\"=$6, "
+  "\"deleted_at\"=$7 "
+  "WHERE \"id\"=$8";
 
   const char access::object_traits_impl< ::cmall_apply_for_mechant, id_pgsql >::erase_statement[] =
   "DELETE FROM \"cmall_apply_for_mechant\" "
@@ -9451,6 +9497,7 @@ namespace odb
   "SELECT\n"
   "\"cmall_apply_for_mechant\".\"id\",\n"
   "\"cmall_apply_for_mechant\".\"applicant\",\n"
+  "\"cmall_apply_for_mechant\".\"seq\",\n"
   "\"cmall_apply_for_mechant\".\"state\",\n"
   "\"cmall_apply_for_mechant\".\"ext\",\n"
   "\"cmall_apply_for_mechant\".\"created_at\",\n"
@@ -9856,6 +9903,138 @@ namespace odb
 
     return st.execute ();
   }
+
+  // max_application_seq
+  //
+
+  const char access::view_traits_impl< ::max_application_seq, id_pgsql >::
+  query_statement_name[] = "query_max_application_seq";
+
+  bool access::view_traits_impl< ::max_application_seq, id_pgsql >::
+  grow (image_type& i,
+        bool* t)
+  {
+    ODB_POTENTIALLY_UNUSED (i);
+    ODB_POTENTIALLY_UNUSED (t);
+
+    bool grew (false);
+
+    // last_seq
+    //
+    t[0UL] = 0;
+
+    return grew;
+  }
+
+  void access::view_traits_impl< ::max_application_seq, id_pgsql >::
+  bind (pgsql::bind* b,
+        image_type& i)
+  {
+    using namespace pgsql;
+
+    pgsql::statement_kind sk (statement_select);
+    ODB_POTENTIALLY_UNUSED (sk);
+
+    std::size_t n (0);
+
+    // last_seq
+    //
+    b[n].type = pgsql::bind::bigint;
+    b[n].buffer = &i.last_seq_value;
+    b[n].is_null = &i.last_seq_null;
+    n++;
+  }
+
+  void access::view_traits_impl< ::max_application_seq, id_pgsql >::
+  init (view_type& o,
+        const image_type& i,
+        database* db)
+  {
+    ODB_POTENTIALLY_UNUSED (o);
+    ODB_POTENTIALLY_UNUSED (i);
+    ODB_POTENTIALLY_UNUSED (db);
+
+    // last_seq
+    //
+    {
+      ::odb::nullable< long unsigned int >& v =
+        o.last_seq;
+
+      pgsql::value_traits<
+          ::odb::nullable< long unsigned int >,
+          pgsql::id_bigint >::set_value (
+        v,
+        i.last_seq_value,
+        i.last_seq_null);
+    }
+  }
+
+  access::view_traits_impl< ::max_application_seq, id_pgsql >::query_base_type
+  access::view_traits_impl< ::max_application_seq, id_pgsql >::
+  query_statement (const query_base_type& q)
+  {
+    query_base_type r (
+      "SELECT "
+      "max(\"cmall_apply_for_mechant\".\"seq\") ");
+
+    r += "FROM \"cmall_apply_for_mechant\"";
+
+    if (!q.empty ())
+    {
+      r += " ";
+      r += q.clause_prefix ();
+      r += q;
+    }
+
+    return r;
+  }
+
+  result< access::view_traits_impl< ::max_application_seq, id_pgsql >::view_type >
+  access::view_traits_impl< ::max_application_seq, id_pgsql >::
+  query (database&, const query_base_type& q)
+  {
+    using namespace pgsql;
+    using odb::details::shared;
+    using odb::details::shared_ptr;
+
+    pgsql::connection& conn (
+      pgsql::transaction::current ().connection ());
+    statements_type& sts (
+      conn.statement_cache ().find_view<view_type> ());
+
+    image_type& im (sts.image ());
+    binding& imb (sts.image_binding ());
+
+    if (im.version != sts.image_version () || imb.version == 0)
+    {
+      bind (imb.bind, im);
+      sts.image_version (im.version);
+      imb.version++;
+    }
+
+    const query_base_type& qs (query_statement (q));
+    qs.init_parameters ();
+    shared_ptr<select_statement> st (
+      new (shared) select_statement (
+        sts.connection (),
+        query_statement_name,
+        qs.clause (),
+        false,
+        true,
+        qs.parameter_types (),
+        qs.parameter_count (),
+        qs.parameters_binding (),
+        imb));
+
+    st->execute ();
+    st->deallocate ();
+
+    shared_ptr< odb::view_result_impl<view_type> > r (
+      new (shared) pgsql::view_result_impl<view_type> (
+        qs, st, sts, 0));
+
+    return result<view_type> (r);
+  }
 }
 
 namespace odb
@@ -10062,6 +10241,7 @@ namespace odb
           db.execute ("CREATE TABLE \"cmall_apply_for_mechant\" (\n"
                       "  \"id\" BIGSERIAL NOT NULL PRIMARY KEY,\n"
                       "  \"applicant\" BIGINT NULL,\n"
+                      "  \"seq\" BIGINT NULL,\n"
                       "  \"state\" SMALLINT NOT NULL DEFAULT 0,\n"
                       "  \"ext\" TEXT NOT NULL,\n"
                       "  \"created_at\" TIMESTAMP NULL,\n"
@@ -10073,6 +10253,12 @@ namespace odb
                       "    INITIALLY DEFERRED)");
           db.execute ("CREATE INDEX \"cmall_apply_for_mechant_applicant_i\"\n"
                       "  ON \"cmall_apply_for_mechant\" (\"applicant\")");
+          db.execute ("CREATE INDEX \"cmall_apply_for_mechant_seq_i\"\n"
+                      "  ON \"cmall_apply_for_mechant\" (\"seq\")");
+          db.execute ("CREATE UNIQUE INDEX \"unique seq_applicant_id\"\n"
+                      "  ON \"cmall_apply_for_mechant\" (\n"
+                      "    \"applicant\",\n"
+                      "    \"seq\")");
           return true;
         }
         case 2:
@@ -10083,7 +10269,7 @@ namespace odb
                       "  \"migration\" BOOLEAN NOT NULL)");
           db.execute ("INSERT INTO \"schema_version\" (\n"
                       "  \"name\", \"version\", \"migration\")\n"
-                      "  SELECT '', 21, FALSE\n"
+                      "  SELECT '', 22, FALSE\n"
                       "  WHERE NOT EXISTS (\n"
                       "    SELECT 1 FROM \"schema_version\" WHERE \"name\" = '')");
           return false;
@@ -10849,6 +11035,66 @@ namespace odb
     "",
     21ULL,
     &migrate_schema_21);
+
+  static bool
+  migrate_schema_22 (database& db, unsigned short pass, bool pre)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (pass);
+    ODB_POTENTIALLY_UNUSED (pre);
+
+    if (pre)
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          db.execute ("ALTER TABLE \"cmall_apply_for_mechant\"\n"
+                      "  ADD COLUMN \"seq\" BIGINT NULL");
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("CREATE INDEX \"cmall_apply_for_mechant_seq_i\"\n"
+                      "  ON \"cmall_apply_for_mechant\" (\"seq\")");
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"version\" = 22, \"migration\" = TRUE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+    else
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("CREATE UNIQUE INDEX \"unique seq_applicant_id\"\n"
+                      "  ON \"cmall_apply_for_mechant\" (\n"
+                      "    \"applicant\",\n"
+                      "    \"seq\")");
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"migration\" = FALSE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  static const schema_catalog_migrate_entry
+  migrate_schema_entry_22_ (
+    id_pgsql,
+    "",
+    22ULL,
+    &migrate_schema_22);
 }
 
 #include <odb/post.hxx>
