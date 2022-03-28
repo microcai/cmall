@@ -53,7 +53,8 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
             cmall_apply_for_mechant apply;
             cmall_merchant m;
 
-            bool succeed = co_await m_database.async_transacton([&](const cmall_database::odb_transaction_ptr& tx) mutable -> awaitable<bool> {
+            bool succeed = co_await m_database.async_transacton([&](const cmall_database::odb_transaction_ptr& tx) mutable -> awaitable<bool>
+            {
                 auto& db = tx->database();
 
                 bool found = db.find(apply_id, apply);
