@@ -158,9 +158,9 @@ else()
 		add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-stdlib=libc++>)
 		add_link_options(-stdlib=libc++)
 
-		CHECK_LINKER_FLAG(CXX -rtlib=compiler-rt -unwindlib=libunwind COMPILER_RT_SUPPORTED)
+		CHECK_LINKER_FLAG(CXX "-rtlib=compiler-rt -unwindlib=libunwind" IS_COMPILER_RT_SUPPORTED)
 
-		if (COMPILER_RT_SUPPORTED)
+		if (IS_COMPILER_RT_SUPPORTED)
 			message(STATUS "clang supports compiler-rt, use it")
 			add_link_options(-rtlib=compiler-rt -unwindlib=libunwind)
 		endif()
