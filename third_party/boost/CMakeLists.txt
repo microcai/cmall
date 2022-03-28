@@ -533,9 +533,11 @@ target_compile_definitions(boost_beast_dll PUBLIC -DBOOST_BEAST_SEPARATE_COMPILA
 endif()
 
 target_include_directories(boost_header INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
-
 target_compile_definitions(boost_header INTERFACE -DBOOST_ALL_NO_LIB -DBOOST_ALL_STATIC_LINK -DBOOST_THREAD_USE_LIB)
+
 target_compile_definitions(boost_thread_static PRIVATE -DBOOST_THREAD_BUILD_LIB)
+target_compile_definitions(boost_thread_static INTERFACE -DBOOST_THREAD_USE_LIB)
+
 target_compile_definitions(boost_context_static PUBLIC -DBOOST_ALL_NO_LIB -DBOOST_ALL_STATIC_LINK)
 target_compile_definitions(boost_context_static PRIVATE -DBOOST_CONTEXT_EXPORT)
 
@@ -606,6 +608,7 @@ endif()
 
 if(WIN32)
 	target_compile_definitions(boost_header INTERFACE -DWIN32_LEAN_AND_MEAN -DNOMINMAX)
+	target_compile_definitions(boost_header PUBLIC -DBOOST_USE_WINAPI_VERSION=0x0601)
 	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 		target_compile_definitions(boost_header INTERFACE -DBOOST_SP_USE_STD_ATOMIC -DBOOST_USE_WINDOWS_H)
 		set_property(SOURCE libs/locale/src/shared/message.cpp APPEND PROPERTY CMAKE_CXX_FLAGS "-O0")
