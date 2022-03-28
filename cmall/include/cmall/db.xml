@@ -24,129 +24,7 @@
     </alter-table>
   </changeset>
 
-  <changeset version="19">
-    <alter-table name="cmall_merchant">
-      <drop-column name="api_token"/>
-    </alter-table>
-  </changeset>
-
-  <changeset version="18">
-    <add-table name="cmall_apptoken" kind="object">
-      <column name="apptoken" type="TEXT" null="false"/>
-      <column name="uid" type="BIGINT" null="false"/>
-      <primary-key>
-        <column name="apptoken"/>
-      </primary-key>
-      <index name="cmall_apptoken_uid_i">
-        <column name="uid"/>
-      </index>
-    </add-table>
-  </changeset>
-
-  <changeset version="17">
-    <add-table name="cmall_order_kuaidi" kind="container">
-      <column name="object_id" type="BIGINT" null="false"/>
-      <column name="kuaidihao" type="BIGINT" null="false"/>
-      <column name="value_kuaidihao" type="TEXT" null="false"/>
-      <column name="value_kuaidigongsi" type="TEXT" null="false"/>
-      <foreign-key name="object_id_fk" on-delete="CASCADE">
-        <column name="object_id"/>
-        <references table="cmall_order">
-          <column name="id"/>
-        </references>
-      </foreign-key>
-      <index name="cmall_order_kuaidi_object_id_i">
-        <column name="object_id"/>
-      </index>
-      <index name="cmall_order_kuaidi_kuaidihao_i">
-        <column name="kuaidihao"/>
-      </index>
-    </add-table>
-  </changeset>
-
-  <changeset version="16">
-    <alter-table name="cmall_apply_for_mechant">
-      <add-column name="approved" type="BOOLEAN" null="false" default="FALSE"/>
-    </alter-table>
-  </changeset>
-
-  <changeset version="15">
-    <alter-table name="cmall_merchant">
-      <drop-column name="verified"/>
-    </alter-table>
-  </changeset>
-
-  <changeset version="14">
-    <alter-table name="cmall_merchant">
-      <add-column name="gitea_password" type="TEXT" null="true"/>
-    </alter-table>
-  </changeset>
-
-  <changeset version="13">
-    <alter-table name="cmall_order">
-      <add-column name="snap_git_version" type="TEXT" null="false" default="''"/>
-      <add-index name="cmall_order_snap_git_version_i">
-        <column name="snap_git_version"/>
-      </add-index>
-      <drop-column name="currency_rate"/>
-    </alter-table>
-  </changeset>
-
-  <changeset version="12">
-    <alter-table name="cmall_order">
-      <add-column name="seller" type="BIGINT" null="false"/>
-      <add-index name="cmall_order_seller_i">
-        <column name="seller"/>
-      </add-index>
-    </alter-table>
-  </changeset>
-
-  <changeset version="11">
-    <alter-table name="cmall_merchant">
-      <add-column name="api_token" type="TEXT" null="true"/>
-    </alter-table>
-  </changeset>
-
-  <changeset version="10">
-    <add-table name="administrators" kind="object">
-      <column name="uid" type="BIGINT" null="false"/>
-      <column name="user" type="BIGINT" null="true"/>
-      <primary-key auto="true">
-        <column name="uid"/>
-      </primary-key>
-      <foreign-key name="user_fk" deferrable="DEFERRED">
-        <column name="user"/>
-        <references table="cmall_user">
-          <column name="uid"/>
-        </references>
-      </foreign-key>
-    </add-table>
-  </changeset>
-
-  <changeset version="9">
-    <add-table name="cmall_apply_for_mechant" kind="object">
-      <column name="id" type="BIGINT" null="false"/>
-      <column name="applicant" type="BIGINT" null="true"/>
-      <column name="ext" type="TEXT" null="false"/>
-      <column name="created_at" type="TIMESTAMP" null="true"/>
-      <column name="updated_at" type="TIMESTAMP" null="true"/>
-      <column name="deleted_at" type="TIMESTAMP" null="true"/>
-      <primary-key auto="true">
-        <column name="id"/>
-      </primary-key>
-      <foreign-key name="applicant_fk" deferrable="DEFERRED">
-        <column name="applicant"/>
-        <references table="cmall_user">
-          <column name="uid"/>
-        </references>
-      </foreign-key>
-      <index name="cmall_apply_for_mechant_applicant_i">
-        <column name="applicant"/>
-      </index>
-    </add-table>
-  </changeset>
-
-  <model version="8">
+  <model version="19">
     <table name="cmall_config" kind="object">
       <column name="id" type="BIGINT" null="false"/>
       <primary-key auto="true">
@@ -217,13 +95,13 @@
     <table name="cmall_merchant" kind="object">
       <column name="uid" type="BIGINT" null="false"/>
       <column name="name" type="TEXT" null="false"/>
-      <column name="verified" type="BOOLEAN" null="false"/>
       <column name="state" type="SMALLINT" null="false"/>
       <column name="desc" type="TEXT" null="true"/>
       <column name="created_at" type="TIMESTAMP" null="true"/>
       <column name="updated_at" type="TIMESTAMP" null="true"/>
       <column name="deleted_at" type="TIMESTAMP" null="true"/>
       <column name="repo_path" type="TEXT" null="false"/>
+      <column name="gitea_password" type="TEXT" null="true"/>
       <primary-key>
         <column name="uid"/>
       </primary-key>
@@ -236,7 +114,6 @@
       <column name="oid" type="TEXT" null="false"/>
       <column name="buyer" type="BIGINT" null="false"/>
       <column name="price" type="NUMERIC" null="false"/>
-      <column name="currency_rate" type="numeric" null="false" default="'1'"/>
       <column name="pay_amount" type="numeric" null="false" default="'0'"/>
       <column name="stage" type="SMALLINT" null="false"/>
       <column name="payed_at" type="TIMESTAMP" null="true"/>
@@ -245,6 +122,8 @@
       <column name="created_at" type="TIMESTAMP" null="true"/>
       <column name="updated_at" type="TIMESTAMP" null="true"/>
       <column name="deleted_at" type="TIMESTAMP" null="true"/>
+      <column name="seller" type="BIGINT" null="false"/>
+      <column name="snap_git_version" type="TEXT" null="false" default="''"/>
       <primary-key auto="true">
         <column name="id"/>
       </primary-key>
@@ -253,6 +132,12 @@
       </index>
       <index name="cmall_order_buyer_i">
         <column name="buyer"/>
+      </index>
+      <index name="cmall_order_seller_i">
+        <column name="seller"/>
+      </index>
+      <index name="cmall_order_snap_git_version_i">
+        <column name="snap_git_version"/>
       </index>
     </table>
     <table name="cmall_order_recipient" kind="container">
@@ -313,6 +198,68 @@
         <column name="id"/>
       </primary-key>
       <index name="cmall_cart_uid_i">
+        <column name="uid"/>
+      </index>
+    </table>
+    <table name="cmall_apply_for_mechant" kind="object">
+      <column name="id" type="BIGINT" null="false"/>
+      <column name="applicant" type="BIGINT" null="true"/>
+      <column name="ext" type="TEXT" null="false"/>
+      <column name="created_at" type="TIMESTAMP" null="true"/>
+      <column name="updated_at" type="TIMESTAMP" null="true"/>
+      <column name="deleted_at" type="TIMESTAMP" null="true"/>
+      <column name="approved" type="BOOLEAN" null="false" default="FALSE"/>
+      <primary-key auto="true">
+        <column name="id"/>
+      </primary-key>
+      <foreign-key name="applicant_fk" deferrable="DEFERRED">
+        <column name="applicant"/>
+        <references table="cmall_user">
+          <column name="uid"/>
+        </references>
+      </foreign-key>
+      <index name="cmall_apply_for_mechant_applicant_i">
+        <column name="applicant"/>
+      </index>
+    </table>
+    <table name="administrators" kind="object">
+      <column name="uid" type="BIGINT" null="false"/>
+      <column name="user" type="BIGINT" null="true"/>
+      <primary-key auto="true">
+        <column name="uid"/>
+      </primary-key>
+      <foreign-key name="user_fk" deferrable="DEFERRED">
+        <column name="user"/>
+        <references table="cmall_user">
+          <column name="uid"/>
+        </references>
+      </foreign-key>
+    </table>
+    <table name="cmall_order_kuaidi" kind="container">
+      <column name="object_id" type="BIGINT" null="false"/>
+      <column name="kuaidihao" type="BIGINT" null="false"/>
+      <column name="value_kuaidihao" type="TEXT" null="false"/>
+      <column name="value_kuaidigongsi" type="TEXT" null="false"/>
+      <foreign-key name="object_id_fk" on-delete="CASCADE">
+        <column name="object_id"/>
+        <references table="cmall_order">
+          <column name="id"/>
+        </references>
+      </foreign-key>
+      <index name="cmall_order_kuaidi_object_id_i">
+        <column name="object_id"/>
+      </index>
+      <index name="cmall_order_kuaidi_kuaidihao_i">
+        <column name="kuaidihao"/>
+      </index>
+    </table>
+    <table name="cmall_apptoken" kind="object">
+      <column name="apptoken" type="TEXT" null="false"/>
+      <column name="uid" type="BIGINT" null="false"/>
+      <primary-key>
+        <column name="apptoken"/>
+      </primary-key>
+      <index name="cmall_apptoken_uid_i">
         <column name="uid"/>
       </index>
     </table>
