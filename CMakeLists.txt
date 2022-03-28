@@ -157,11 +157,11 @@ else()
 	if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 
-		CHECK_LINKER_FLAG(CXX -rtlib=compiler-rt COMPILER_RT_SUPPORTED)
+		CHECK_LINKER_FLAG(CXX -rtlib=compiler-rt -unwindlib=libunwind COMPILER_RT_SUPPORTED)
 
 		if (COMPILER_RT_SUPPORTED)
 			message(STATUS "clang supports compiler-rt, use it")
-			add_link_options(-rtlib=compiler-rt)
+			add_link_options(-rtlib=compiler-rt -unwindlib=libunwind)
 		endif()
 	endif()
 endif()
