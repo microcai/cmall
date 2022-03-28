@@ -127,7 +127,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 			if (co_await m_database.async_load<cmall_merchant>(uid, m))
 			{
 				// already a merchant
-				throw boost::system::system_error(cmall::error::already_exist);
+				throw boost::system::system_error(cmall::error::already_a_merchant);
 			}
 
 			using query_t = odb::query<cmall_apply_for_mechant>;
@@ -135,7 +135,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 			cmall_apply_for_mechant apply;
 			max_application_seq max_seq;
 			if (co_await m_database.async_load<max_application_seq>(
-					query_t::applicant->uid == session_info.user_info->uid_, max_seq))
+					query_t::applicant == session_info.user_info->uid_, max_seq))
 			{
                 if (max_seq.last_seq.null())
                     apply.seq = 0;
@@ -148,7 +148,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 			}
 
 			auto query = (query_t::applicant->uid == session_info.user_info->uid_
-				&& query_t::state.in(approve_state_t::waiting, approve_state_t::approved));
+				&& query_t::state == approve_state_t::waiting);
 			if (co_await m_database.async_load<cmall_apply_for_mechant>(query, apply))
 			{
 				throw boost::system::system_error(cmall::error::already_exist);

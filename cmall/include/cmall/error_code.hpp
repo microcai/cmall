@@ -24,6 +24,7 @@ namespace cmall
 			recipient_id_out_of_range,
 			duplicate_operation,
 			already_exist,
+			already_a_merchant,
 			order_not_found,
 			merchant_vanished,
 			goods_not_found,
