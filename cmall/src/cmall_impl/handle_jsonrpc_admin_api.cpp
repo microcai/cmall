@@ -105,7 +105,8 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
 
             using query_t = odb::query<cmall_apply_for_mechant>;
             auto query = query_t::id == apply_id && query_t::state == approve_state_t::waiting;
-            co_await m_database.async_update<cmall_apply_for_mechant>(query, [reason](cmall_apply_for_mechant&& apply) mutable {
+            co_await m_database.async_update<cmall_apply_for_mechant>(query, [reason](cmall_apply_for_mechant&& apply) mutable
+            {
                 apply.state_ = approve_state_t::denied;
                 apply.ext_ = reason;
                 return apply;
@@ -139,7 +140,8 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
                 auto state = enable ? merchant_state_t::normal : merchant_state_t::disabled;
                 using query_t = odb::query<cmall_merchant>;
                 auto query = query_t::uid.in_range(mids.begin(), mids.end());
-                co_await m_database.async_update<cmall_merchant>(query, [state](cmall_merchant&& m) mutable {
+                co_await m_database.async_update<cmall_merchant>(query, [state](cmall_merchant&& m) mutable
+                {
                     m.state_ = state;
                     return m;
                 });
