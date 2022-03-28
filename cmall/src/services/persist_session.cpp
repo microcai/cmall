@@ -13,8 +13,6 @@
 #include "utils/logging.hpp"
 #include "utils/time_clock.hpp"
 
-using steady_timer = boost::asio::basic_waitable_timer<time_clock::steady_clock>;
-
 #include "persist_map.hpp"
 #include "services/persist_session.hpp"
 

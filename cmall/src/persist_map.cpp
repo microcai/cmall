@@ -10,8 +10,6 @@
 #include "utils/time_clock.hpp"
 #include "utils/logging.hpp"
 
-using steady_timer = boost::asio::basic_waitable_timer<time_clock::steady_clock>;
-
 #include "persist_map.hpp"
 #include "utils/coroyield.hpp"
 
