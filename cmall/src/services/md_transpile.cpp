@@ -23,7 +23,7 @@ static int count_backticks(std::string_view::iterator first, std::string_view::i
 // 会更新 pos 到新位置
 static int backtick_lexer(std::string_view::iterator& pos, std::string_view::iterator end_postiton)
 {
-	
+
 	// 就剩下一个 ` 了，别想了。剩下 2 个也别想了.
 	// 剩下 3以上个才有意义.
 	if (std::distance(pos, end_postiton) <= 3)
@@ -56,7 +56,7 @@ static int backtick_lexer(std::string_view::iterator& pos, std::string_view::ite
 static std::string_view::iterator skip_backtick_text(int back_tick_type, std::string_view::iterator pos, std::string_view::iterator end_postiton)
 {
 	int type = -1;
-	do 
+	do
 	{
 		type = backtick_lexer(pos, end_postiton);
 		if (type == -1)
@@ -67,7 +67,7 @@ static std::string_view::iterator skip_backtick_text(int back_tick_type, std::st
 				return pos;
 		}
 	} while (type != back_tick_type);
-	return pos;	
+	return pos;
 }
 
 // 本函数, 遇到每个 ![image](url) 标记, 就调用 replacer 获取更新后的地址.
@@ -138,7 +138,7 @@ std::string md::markdown_transpile(std::string_view original, url_replacer repla
                         state = state_normal_md;
                         converted.push_back('!');
                         converted.push_back(*pos++);
-                        break;                
+                        break;
                 }
             }break;
             case state_inside_image_marker_tag:
@@ -223,7 +223,7 @@ std::string md::markdown_transpile(std::string_view original, url_replacer repla
                         image_url.push_back(*pos);
                         ++pos;
                     }
-                    break;           
+                    break;
                 }
             }break;
 			default:

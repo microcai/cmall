@@ -134,7 +134,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
             cmall_apply_for_mechant apply;
             using query_t = odb::query<cmall_apply_for_mechant>;
 			auto query = query_t::applicant->uid == session_info.user_info->uid_ && query_t::state.in(approve_state_t::waiting, approve_state_t::approved);
-			if (co_await m_database.async_load<cmall_apply_for_mechant>(query, apply)) 
+			if (co_await m_database.async_load<cmall_apply_for_mechant>(query, apply))
 			{
                 throw boost::system::system_error(cmall::error::already_exist);
 			}
