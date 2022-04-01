@@ -196,9 +196,8 @@ namespace services
 			return product{};
 		}
 
-		std::vector<product> get_products(boost::system::error_code& ec)
+		std::vector<product> get_products()
 		{
-			boost::system::error_code effective_ec;
 			std::vector<product> ret;
 			gitpp::oid commit_version = git_repo.head().target();
 			gitpp::tree repo_tree = git_repo.get_tree_by_commit(commit_version);
@@ -214,6 +213,7 @@ namespace services
 						auto file_blob = git_repo.get_blob(tree_entry.get_oid());
 						std::string_view md = file_blob.get_content();
 
+						boost::system::error_code ec;
 						product to_be_append = to_product(md, ec);
 						if (!ec)
 						{
@@ -221,17 +221,10 @@ namespace services
 							to_be_append.product_id = entry_filename.stem().string();
 							ret.push_back(to_be_append);
 						}
-						else
-						{
-							effective_ec = ec;
-						}
-						ec = boost::system::error_code{};
 					}
 					return false;
 				});
 
-			if (ret.empty())
-				ec = effective_ec;
 			return ret;
 		}
 
@@ -316,11 +309,7 @@ namespace services
 	awaitable<std::vector<product>> repo_products::get_products()
 	{
 		return boost::asio::co_spawn(thread_pool, [this]() mutable -> awaitable<std::vector<product>> {
-			boost::system::error_code ec;
-			auto ret = impl().get_products(ec);
-			if (ec)
-				boost::throw_exception(boost::system::system_error(ec));
-			co_return ret;
+			co_return impl().get_products();
 		}, use_awaitable);
 	}
 
