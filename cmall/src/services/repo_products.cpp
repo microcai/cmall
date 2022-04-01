@@ -218,9 +218,10 @@ namespace services
 						{
 							to_be_append.git_version = commit_version.as_sha1_string();
 							to_be_append.product_id = entry_filename.stem().string();
-							ec = boost::system::error_code{};
 							ret.push_back(to_be_append);
 						}
+						if (!ret.empty())
+							ec = boost::system::error_code{};
 					}
 					return false;
 				});
