@@ -111,7 +111,7 @@ namespace cmall {
 		std::shared_ptr<services::repo_products>,
 		boost::multi_index::indexed_by<
 			boost::multi_index::sequenced<>,
-			boost::multi_index::ordered_unique<
+			boost::multi_index::ordered_non_unique<
 				boost::multi_index::tag<tag::merchant_ranke_tag>,
 				boost::multi_index::global_fun<std::shared_ptr<services::repo_products>, std::int64_t, &merchant_get_rank>
 			>,
