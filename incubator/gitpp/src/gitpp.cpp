@@ -182,9 +182,10 @@ bool gitpp::is_git_repo(std::filesystem::path dir)
 	try
 	{
 		repo tmp(dir);
+		tmp.head().target();
 		return true;
 	}
-	catch (exception::not_repo&)
+	catch (exception::git2_exception&)
 	{}
 	return false;
 }
