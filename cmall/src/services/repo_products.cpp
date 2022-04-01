@@ -96,7 +96,7 @@ namespace services
 		{
 			// 寻找 --- ---
 			auto first_pos = md.find("---\n");
-			if (first_pos >= 0)
+			if (first_pos != std::string::npos)
 			{
 				auto second_pos = md.find("---\n", first_pos + 4);
 
