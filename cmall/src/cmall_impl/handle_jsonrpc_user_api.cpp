@@ -29,7 +29,8 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 
 			session_info.verify_telephone = tel;
 			verify_session_cookie		  = co_await telephone_verifier.send_verify_code(tel);
-
+			// 验证码发送后, sessionid 写入 mdbx 数据库以便日后恢复.
+			co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info);
 			session_info.verify_session_cookie = verify_session_cookie;
 			reply_message["result"]			   = true;
 		}
