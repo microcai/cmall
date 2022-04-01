@@ -198,6 +198,7 @@ namespace services
 
 		std::vector<product> get_products(boost::system::error_code& ec)
 		{
+			boost::system::error_code effective_ec;
 			std::vector<product> ret;
 			gitpp::oid commit_version = git_repo.head().target();
 			gitpp::tree repo_tree = git_repo.get_tree_by_commit(commit_version);
@@ -220,12 +221,17 @@ namespace services
 							to_be_append.product_id = entry_filename.stem().string();
 							ret.push_back(to_be_append);
 						}
-						if (!ret.empty())
-							ec = boost::system::error_code{};
+						else
+						{
+							effective_ec = ec;
+						}
+						ec = boost::system::error_code{};
 					}
 					return false;
 				});
 
+			if (ret.empty())
+				ec = effective_ec;
 			return ret;
 		}
 
