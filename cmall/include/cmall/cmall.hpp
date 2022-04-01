@@ -266,7 +266,7 @@ namespace cmall {
 		std::vector<httpd::ssl_acceptor<client_connection_ptr, cmall_service>> m_wss_acceptors;
 		std::vector<httpd::unix_acceptor<client_connection_ptr, cmall_service>> m_ws_unix_acceptors;
 		std::atomic_bool m_abort{false};
-		boost::asio::cancellation_signal m_abort_signal;
+		std::vector<promise<void(std::exception_ptr)>> m_background_threads;
 
 		friend class httpd::acceptor<client_connection_ptr, cmall_service>;
 		friend class httpd::ssl_acceptor<client_connection_ptr, cmall_service>;

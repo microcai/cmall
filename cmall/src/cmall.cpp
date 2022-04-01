@@ -51,7 +51,7 @@ namespace cmall
 	{
 		m_abort = true;
 
-		m_abort_signal.emit(boost::asio::cancellation_type::all);
+		m_background_threads.clear();
 
 		LOG_DBG << "close all ws...";
 		co_await close_all_ws();
@@ -72,11 +72,13 @@ namespace cmall
 			std::unique_lock<std::shared_mutex> l(merchant_repos_mtx);
 			merchant_repos.get<tag::merchant_uid_tag>().erase(merchant.uid_);
 			merchant_repos.get<tag::merchant_uid_tag>().insert(repo);
+			m_background_threads.push_back(
 			boost::asio::co_spawn(background_task_thread_pool, [this, repo]() mutable -> awaitable<void>
 			{
 				co_await search_service.add_merchant(repo);
 				co_await repo_push_check(std::move(repo));
-			}, boost::asio::bind_cancellation_slot(m_abort_signal.slot(), boost::asio::detached));
+			}, use_promise));
+
 			co_return true;
 		}
 		else
