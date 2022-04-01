@@ -170,7 +170,7 @@ namespace cmall
 							target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/((images|css)/.+)")))
 					{
 						std::string merchant = w[1].str();
-						std::string remains	 = w[2].str();
+						std::string remains = httpd::decodeURIComponent(w[2].str());
 
 						int status_code = co_await render_git_repo_files(
 							connection_id, merchant, remains, client_ptr->tcp_stream, req);
