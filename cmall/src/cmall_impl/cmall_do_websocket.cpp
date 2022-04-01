@@ -118,8 +118,15 @@ awaitable<void> cmall::cmall_service::do_ws_write(size_t connection_id, client_c
 			= co_await (t.async_wait() || message_deque.async_receive(use_awaitable));
 		if (awaited_result.index() == 0)
 		{
-			LOG_DBG << "coro: do_ws_write: [" << connection_id << "], send ping to client";
-			co_await ws.async_ping("", use_awaitable); // timed out
+			if (connection_ptr->ws_client->m_disable_ping)
+			{
+				LOG_DBG << "coro: do_ws_write: [" << connection_id << "], send ping to client disable because tencent CDN disallows it";
+			}
+			else
+			{
+				LOG_DBG << "coro: do_ws_write: [" << connection_id << "], send ping to client";
+				co_await ws.async_ping("", use_awaitable); // timed out
+			}
 		}
 		else
 		{

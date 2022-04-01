@@ -47,6 +47,7 @@ namespace cmall {
 		websocket::stream<httpd::http_any_stream&> ws_stream_;
 		awaitable_timer message_channel_timer;
 		boost::asio::experimental::concurrent_channel<void(boost::system::error_code, std::string)> message_channel;
+		bool m_disable_ping = false;
 	};
 
 	struct client_connection : boost::noncopyable

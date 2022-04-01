@@ -137,6 +137,8 @@ namespace cmall
 				// 获取executor.
 				auto executor = client_ptr->tcp_stream.get_executor();
 
+				client_ptr->ws_client->m_disable_ping = (req["x-tencent-ua"] == "Qcloud");
+
 				// 接收到pong, 重置超时定时器.
 				client_ptr->ws_client->ws_stream_.control_callback(
 					[&tcp_stream = client_ptr->tcp_stream](
