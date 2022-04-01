@@ -71,7 +71,8 @@ namespace cmall
 				background_task_thread_pool, merchant.uid_, merchant.repo_path);
 			std::unique_lock<std::shared_mutex> l(merchant_repos_mtx);
 			merchant_repos.get<tag::merchant_uid_tag>().erase(merchant.uid_);
-			merchant_repos.get<tag::merchant_uid_tag>().insert(repo);
+			auto insert_result = merchant_repos.get<tag::merchant_uid_tag>().insert(repo);
+			BOOST_ASSERT_MSG(insert_result.second, "insert should always success!");
 			m_background_threads.push_back(
 			boost::asio::co_spawn(background_task_thread_pool, [this, repo]() mutable -> awaitable<void>
 			{

@@ -61,7 +61,7 @@ namespace services
 
 			boost::algorithm::trim_right_if(sended_smscode, boost::is_any_of(" \n\r"));
 
-			LOG_INFO << "sendsms_verify returned: " << sended_smscode;
+			LOG_INFO << "sendsms_verify to" << telephone << " returned: " << sended_smscode;
 
 			verify_session ret;
 
