@@ -137,14 +137,10 @@ namespace services
 			co_return token;
 		}
 
-		awaitable<bool> create_repo(std::uint64_t uid, std::string user_token)
+		awaitable<bool> create_repo(std::uint64_t uid, std::string user_token, std::string template_owner, std::string template_repo)
 		{
 			// 创建模板仓库.
 			auto username = gen_repo_user(uid);
-
-			// TODO: 目前写死.
-			std::string template_owner = "admin";
-			std::string template_repo = "shop-template";
 
 			boost::json::value body = {
 				{ "owner", username },
@@ -176,13 +172,13 @@ namespace services
 			co_return res.code == 201;
 		}
 
-		awaitable<bool> init_user(std::uint64_t uid, std::string password, std::string template_dir)
+		awaitable<bool> init_user(std::uint64_t uid, std::string password, std::string template_owner = "admin", std::string template_repo = "shop-template")
 		{
 			bool ok = co_await create_user(uid, password);
 			if (ok)
 			{
 				auto user_token = co_await create_user_token(uid, password);
-				ok = co_await create_repo(uid, user_token);
+				ok = co_await create_repo(uid, user_token, template_owner, template_repo);
 			}
 			co_return ok;
 		}
@@ -222,9 +218,9 @@ namespace services
 		std::string admin_token;
 	};
 
-	awaitable<bool> gitea::init_user(std::uint64_t uid, std::string password, std::string template_dir)
+	awaitable<bool> gitea::init_user(std::uint64_t uid, std::string password, std::string template_owner, std::string template_repo)
 	{
-		co_return co_await impl().init_user(uid, password, template_dir);
+		co_return co_await impl().init_user(uid, password, template_owner, template_repo);
 	}
 
 	awaitable<bool> gitea::change_password(std::uint64_t uid, std::string password)

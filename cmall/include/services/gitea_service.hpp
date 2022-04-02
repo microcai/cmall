@@ -17,7 +17,7 @@ namespace services
 		~gitea();
 
 		// 生成用户.
-		awaitable<bool> init_user(std::uint64_t uid, std::string password, std::string template_dir);
+		awaitable<bool> init_user(std::uint64_t uid, std::string password, std::string template_owner, std::string template_repo);
 		// 修改密码
 		awaitable<bool> change_password(std::uint64_t uid, std::string password);
 

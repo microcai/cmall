@@ -82,8 +82,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
             if (succeed)
             {
 				// 初始化仓库.
-				std::string gitea_template_loaction = m_config.gitea_template_location.string();
-				co_await gitea_service.init_user(m.uid_, m.gitea_password.get(), gitea_template_loaction);
+				co_await gitea_service.init_user(m.uid_, m.gitea_password.get(), m_config.gitea_template_user, m_config.gitea_template_reponame);
 
                 co_await boost::asio::co_spawn(background_task_thread_pool, [this, m]() mutable -> awaitable<void>
 				{

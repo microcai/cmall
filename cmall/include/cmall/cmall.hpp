@@ -58,11 +58,12 @@ namespace cmall {
 		cmall::db_config dbcfg_;
 
 		std::filesystem::path session_cache_file;
-		std::filesystem::path gitea_template_location;
 		std::filesystem::path repo_root; // repos dir for gitea
 
 		std::string gitea_api;
 		std::string gitea_admin_token;
+		std::string gitea_template_user;
+		std::string gitea_template_reponame;
 	};
 
 

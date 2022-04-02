@@ -166,8 +166,9 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 	std::string db_passwd;
 	unsigned short db_port;
 
-	std::string template_dir;
 	std::string repo_root;
+
+	std::string gitea_token, gitea_api_path, gitea_template_user, gitea_template_reponame;
 
 	std::string cert_file, key_file;
 
@@ -186,8 +187,11 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 		("db_port", po::value<unsigned short>(&db_port)->default_value(5432), "Database port.")
 		("db_user", po::value<std::string>(&db_user)->default_value("postgres"), "Database user.")
 		("db_passwd", po::value<std::string>(&db_passwd)->default_value("postgres"), "Database password.")
-		("template_dir", po::value<std::string>(&template_dir)->default_value("/var/lib/gitea/example/shop.git"), "gitea template dir")
 		("repo_root", po::value<std::string>(&repo_root)->default_value("/repos"), "gitea repo base dir")
+		("gitea_token", po::value<std::string>(&gitea_token), "gitea api token")
+		("gitea_api_path", po::value<std::string>(&gitea_api_path)->default_value("http://localhost:3000"), "gitea repo base dir")
+		("gitea_template_user", po::value<std::string>(&gitea_template_user)->default_value("admin"), "template for user's default repo")
+		("gitea_template_reponame", po::value<std::string>(&gitea_template_reponame)->default_value("shop-template"), "template for user's default repo")
 		("cert", po::value<std::string>(&cert_file), "ssl cert file")
 		("key", po::value<std::string>(&key_file), "ssl private key file")
 		;
@@ -237,8 +241,11 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 	cfg.wss_listens_ = wss_listens;
 	cfg.ws_unix_listens_ = ws_unix_listens;
 	cfg.session_cache_file = session_cache;
-	cfg.gitea_template_location = template_dir;
 	cfg.repo_root = repo_root;
+	cfg.gitea_api = gitea_api_path;
+	cfg.gitea_template_user = gitea_template_user;
+	cfg.gitea_template_reponame = gitea_template_reponame;
+	cfg.gitea_admin_token = gitea_token;
 
 	cmall::cmall_service xsrv(ios, cfg);
 
