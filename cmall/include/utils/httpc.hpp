@@ -48,7 +48,7 @@ namespace httpc
 		using https_stream = beast::ssl_stream<http_stream>;
 		using stream_type  = variant<monostate, http_stream, https_stream>;
 
-		inline awaitable<response_t> do_request(request_options_t&& option)
+		inline awaitable<response_t> do_request(request_options_t option)
 		{
 			using namespace std::chrono_literals;
 			boost::system::error_code ec;
@@ -180,5 +180,5 @@ namespace httpc
 		}
 	}
 
-	inline awaitable<response_t> request(request_options_t&& options) { return detail::do_request(std::move(options)); }
+	inline awaitable<response_t> request(request_options_t options) { return detail::do_request(std::move(options)); }
 }
