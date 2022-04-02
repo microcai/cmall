@@ -199,7 +199,7 @@ namespace services
 			auto uri = std::format("{}/api/v1/admin/users/{}", gitea_api, username);
 
 			httpc::request_options_t opts {
-				httpc::http::verb::post,
+				httpc::http::verb::patch,
 				uri,
 				{},
 				jsutil::json_to_string(body),
