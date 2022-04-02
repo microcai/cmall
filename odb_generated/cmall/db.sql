@@ -96,7 +96,6 @@ CREATE INDEX "cmall_user_recipients_index_i"
 CREATE TABLE "administrators" (
   "uid" BIGSERIAL NOT NULL PRIMARY KEY,
   "user" BIGINT NULL,
-  "gitea_token" TEXT NULL,
   CONSTRAINT "user_fk"
     FOREIGN KEY ("user")
     REFERENCES "cmall_user" ("uid")
@@ -248,7 +247,7 @@ CREATE UNIQUE INDEX "unique seq_applicant_id"
 
 INSERT INTO "schema_version" (
   "name", "version", "migration")
-  SELECT '', 23, FALSE
+  SELECT '', 22, FALSE
   WHERE NOT EXISTS (
     SELECT 1 FROM "schema_version" WHERE "name" = '');
 

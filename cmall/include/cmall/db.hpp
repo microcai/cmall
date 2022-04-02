@@ -41,7 +41,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(19, 23, open)
+#pragma db model version(19, 22, open)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -130,7 +130,6 @@ struct administrators
 	#pragma db id auto
 	std::uint64_t uid_;
 	std::shared_ptr<cmall_user> user;
-	odb::nullable<std::string> gitea_token;
 };
 
 enum class merchant_state_t

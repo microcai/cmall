@@ -1,10 +1,4 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
-  <changeset version="23">
-    <alter-table name="administrators">
-      <add-column name="gitea_token" type="TEXT" null="true"/>
-    </alter-table>
-  </changeset>
-
   <changeset version="22">
     <alter-table name="cmall_apply_for_mechant">
       <add-column name="seq" type="BIGINT" null="true"/>

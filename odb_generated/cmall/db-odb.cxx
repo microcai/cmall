@@ -2815,8 +2815,7 @@ namespace odb
   const unsigned int access::object_traits_impl< ::administrators, id_pgsql >::
   persist_statement_types[] =
   {
-    pgsql::int8_oid,
-    pgsql::text_oid
+    pgsql::int8_oid
   };
 
   const unsigned int access::object_traits_impl< ::administrators, id_pgsql >::
@@ -2829,7 +2828,6 @@ namespace odb
   update_statement_types[] =
   {
     pgsql::int8_oid,
-    pgsql::text_oid,
     pgsql::int8_oid
   };
 
@@ -2909,14 +2907,6 @@ namespace odb
     //
     t[1UL] = 0;
 
-    // gitea_token
-    //
-    if (t[2UL])
-    {
-      i.gitea_token_value.capacity (i.gitea_token_size);
-      grew = true;
-    }
-
     return grew;
   }
 
@@ -2946,15 +2936,6 @@ namespace odb
     b[n].type = pgsql::bind::bigint;
     b[n].buffer = &i.user_value;
     b[n].is_null = &i.user_null;
-    n++;
-
-    // gitea_token
-    //
-    b[n].type = pgsql::bind::text;
-    b[n].buffer = i.gitea_token_value.data ();
-    b[n].capacity = i.gitea_token_value.capacity ();
-    b[n].size = &i.gitea_token_size;
-    b[n].is_null = &i.gitea_token_null;
     n++;
   }
 
@@ -3003,27 +2984,6 @@ namespace odb
       }
       else
         i.user_null = true;
-    }
-
-    // gitea_token
-    //
-    {
-      ::odb::nullable< ::std::basic_string< char > > const& v =
-        o.gitea_token;
-
-      bool is_null (true);
-      std::size_t size (0);
-      std::size_t cap (i.gitea_token_value.capacity ());
-      pgsql::value_traits<
-          ::odb::nullable< ::std::basic_string< char > >,
-          pgsql::id_string >::set_image (
-        i.gitea_token_value,
-        size,
-        is_null,
-        v);
-      i.gitea_token_null = is_null;
-      i.gitea_token_size = size;
-      grew = grew || (cap != i.gitea_token_value.capacity ());
     }
 
     return grew;
@@ -3082,21 +3042,6 @@ namespace odb
             obj_traits::object_type > (ptr_id));
       }
     }
-
-    // gitea_token
-    //
-    {
-      ::odb::nullable< ::std::basic_string< char > >& v =
-        o.gitea_token;
-
-      pgsql::value_traits<
-          ::odb::nullable< ::std::basic_string< char > >,
-          pgsql::id_string >::set_value (
-        v,
-        i.gitea_token_value,
-        i.gitea_token_size,
-        i.gitea_token_null);
-    }
   }
 
   void access::object_traits_impl< ::administrators, id_pgsql >::
@@ -3115,26 +3060,23 @@ namespace odb
   const char access::object_traits_impl< ::administrators, id_pgsql >::persist_statement[] =
   "INSERT INTO \"administrators\" "
   "(\"uid\", "
-  "\"user\", "
-  "\"gitea_token\") "
+  "\"user\") "
   "VALUES "
-  "(DEFAULT, $1, $2) "
+  "(DEFAULT, $1) "
   "RETURNING \"uid\"";
 
   const char access::object_traits_impl< ::administrators, id_pgsql >::find_statement[] =
   "SELECT "
   "\"administrators\".\"uid\", "
-  "\"administrators\".\"user\", "
-  "\"administrators\".\"gitea_token\" "
+  "\"administrators\".\"user\" "
   "FROM \"administrators\" "
   "WHERE \"administrators\".\"uid\"=$1";
 
   const char access::object_traits_impl< ::administrators, id_pgsql >::update_statement[] =
   "UPDATE \"administrators\" "
   "SET "
-  "\"user\"=$1, "
-  "\"gitea_token\"=$2 "
-  "WHERE \"uid\"=$3";
+  "\"user\"=$1 "
+  "WHERE \"uid\"=$2";
 
   const char access::object_traits_impl< ::administrators, id_pgsql >::erase_statement[] =
   "DELETE FROM \"administrators\" "
@@ -3143,8 +3085,7 @@ namespace odb
   const char access::object_traits_impl< ::administrators, id_pgsql >::query_statement[] =
   "SELECT\n"
   "\"administrators\".\"uid\",\n"
-  "\"administrators\".\"user\",\n"
-  "\"administrators\".\"gitea_token\"\n"
+  "\"administrators\".\"user\"\n"
   "FROM \"administrators\"\n"
   "LEFT JOIN \"cmall_user\" AS \"user\" ON \"user\".\"uid\"=\"administrators\".\"user\"";
 
@@ -3446,20 +3387,6 @@ namespace odb
     st.execute ();
     auto_result ar (st);
     select_statement::result r (st.fetch ());
-
-    if (r == select_statement::truncated)
-    {
-      if (grow (im, sts.select_image_truncated ()))
-        im.version++;
-
-      if (im.version != sts.select_image_version ())
-      {
-        bind (imb.bind, im, statement_select);
-        sts.select_image_version (im.version);
-        imb.version++;
-        st.refetch ();
-      }
-    }
 
     return r != select_statement::no_data;
   }
@@ -10208,7 +10135,6 @@ namespace odb
           db.execute ("CREATE TABLE \"administrators\" (\n"
                       "  \"uid\" BIGSERIAL NOT NULL PRIMARY KEY,\n"
                       "  \"user\" BIGINT NULL,\n"
-                      "  \"gitea_token\" TEXT NULL,\n"
                       "  CONSTRAINT \"user_fk\"\n"
                       "    FOREIGN KEY (\"user\")\n"
                       "    REFERENCES \"cmall_user\" (\"uid\")\n"
@@ -10343,7 +10269,7 @@ namespace odb
                       "  \"migration\" BOOLEAN NOT NULL)");
           db.execute ("INSERT INTO \"schema_version\" (\n"
                       "  \"name\", \"version\", \"migration\")\n"
-                      "  SELECT '', 23, FALSE\n"
+                      "  SELECT '', 22, FALSE\n"
                       "  WHERE NOT EXISTS (\n"
                       "    SELECT 1 FROM \"schema_version\" WHERE \"name\" = '')");
           return false;
@@ -10534,60 +10460,6 @@ namespace odb
     "",
     22ULL,
     &migrate_schema_22);
-
-  static bool
-  migrate_schema_23 (database& db, unsigned short pass, bool pre)
-  {
-    ODB_POTENTIALLY_UNUSED (db);
-    ODB_POTENTIALLY_UNUSED (pass);
-    ODB_POTENTIALLY_UNUSED (pre);
-
-    if (pre)
-    {
-      switch (pass)
-      {
-        case 1:
-        {
-          db.execute ("ALTER TABLE \"administrators\"\n"
-                      "  ADD COLUMN \"gitea_token\" TEXT NULL");
-          return true;
-        }
-        case 2:
-        {
-          db.execute ("UPDATE \"schema_version\"\n"
-                      "  SET \"version\" = 23, \"migration\" = TRUE\n"
-                      "  WHERE \"name\" = ''");
-          return false;
-        }
-      }
-    }
-    else
-    {
-      switch (pass)
-      {
-        case 1:
-        {
-          return true;
-        }
-        case 2:
-        {
-          db.execute ("UPDATE \"schema_version\"\n"
-                      "  SET \"migration\" = FALSE\n"
-                      "  WHERE \"name\" = ''");
-          return false;
-        }
-      }
-    }
-
-    return false;
-  }
-
-  static const schema_catalog_migrate_entry
-  migrate_schema_entry_23_ (
-    id_pgsql,
-    "",
-    23ULL,
-    &migrate_schema_23);
 }
 
 #include <odb/post.hxx>
