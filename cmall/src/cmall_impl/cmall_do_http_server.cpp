@@ -74,7 +74,7 @@ namespace cmall
 			client_ptr->tcp_stream.close();
 		};
 
-		LOG_DBG << "coro created: handle_accepted_client( " << connection_id << ")";
+		LOG_FMT("coro created: handle_accepted_client({})", connection_id);
 
 		do
 		{
@@ -108,7 +108,7 @@ namespace cmall
 
 			std::string_view target = req.target();
 
-			LOG_DBG << "coro: handle_accepted_client: [" << connection_id << "], got request on " << target;
+			LOG_FMT("coro: handle_accepted_client: [{}], got request on {}", connection_id, target);
 
 			if (target.empty() || target[0] != '/' || target.find("..") != boost::beast::string_view::npos)
 			{
@@ -118,7 +118,7 @@ namespace cmall
 			// 处理 HTTP 请求.
 			else if (boost::beast::websocket::is_upgrade(req))
 			{
-				LOG_DBG << "ws client incoming: " << connection_id << ", remote: " << client_ptr->x_real_ip;
+				LOG_FMT("ws client incoming: [{}], remote: {}, real_remote: {}", connection_id, client_ptr->remote_host_, client_ptr->x_real_ip);
 
 				if (!target.starts_with("/api"))
 				{
@@ -153,7 +153,7 @@ namespace cmall
 				co_await (
 					// 启动读写协程.
 					do_ws_read(connection_id, client_ptr) || do_ws_write(connection_id, client_ptr));
-				LOG_DBG << "handle_accepted_client, " << connection_id << ", connection exit.";
+				LOG_FMT("ws connection [{}] exit", connection_id);
 				co_return;
 			}
 			else

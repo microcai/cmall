@@ -38,7 +38,8 @@ namespace cmall {
 
 		void close(auto connection_id)
 		{
-			LOG_DBG << "ws client close() called: [" << connection_id << "]";
+			LOG_FMT("ws client close() called: [{}]", connection_id);
+
 			boost::system::error_code ignore_ec;
 			message_channel.close();
 			message_channel_timer.cancel(ignore_ec);
