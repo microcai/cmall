@@ -124,7 +124,7 @@ namespace services
 					break;
 				}
 
-				if (jv.as_object().contains("sha1") || !jv.at("sha1").is_string())
+				if (!(jv.as_object().contains("sha1") && jv.at("sha1").is_string()))
 				{
 					LOG_ERR << "create user response error: " << res.body << ", no sha1 field or format error";
 					break;
@@ -162,7 +162,7 @@ namespace services
 				jsutil::json_to_string(body),
 			};
 			opts.headers.insert({"Content-Type", "application/json"});
-			opts.headers.insert({"Authorization", std::format("token {}", user_token)});
+			opts.headers.insert({"Authorization", std::format("token {}", admin_token)});
 
 			boost::system::error_code ec;
 			auto res = co_await httpc::request(std::move(opts));
