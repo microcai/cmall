@@ -279,10 +279,7 @@ namespace cmall
 
 				keep_alive &= !req.need_eof();
 			}
-		} while (keep_alive && (!m_abort));
-
-		if (m_abort)
-			co_return;
+		} while (keep_alive);
 
 		if (!keep_alive)
 		{

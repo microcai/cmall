@@ -10,7 +10,7 @@
 
 awaitable<void> cmall::cmall_service::do_ws_read(size_t connection_id, client_connection_ptr connection_ptr)
 {
-	while (!m_abort)
+	for (;;)
 	{
 		boost::beast::multi_buffer buffer{ 4 * 1024 * 1024 }; // max multi_buffer size 4M.
 		co_await connection_ptr->ws_client->ws_stream_.async_read(buffer, use_awaitable);
@@ -111,7 +111,7 @@ awaitable<void> cmall::cmall_service::do_ws_write(size_t connection_id, client_c
 
 	using namespace boost::asio::experimental::awaitable_operators;
 
-	while (!m_abort)
+	for (;;)
 	{
 		t.expires_from_now(std::chrono::seconds(15));
 		std::variant<std::monostate, std::string> awaited_result
