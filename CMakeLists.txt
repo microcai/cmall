@@ -358,3 +358,5 @@ configure_file(cmall.service.in cmall.service)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cmall.service DESTINATION /usr/lib/systemd/system/)
 
 add_subdirectory(misc-debug)
+
+add_subdirectory(test)
