@@ -1226,6 +1226,18 @@ namespace odb
     user_type_;
 
     static const user_type_ user;
+
+    // gitea_token
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::std::basic_string< char >,
+        pgsql::id_string >::query_type,
+      pgsql::id_string >
+    gitea_token_type_;
+
+    static const gitea_token_type_ gitea_token;
   };
 
   template <typename A>
@@ -1237,6 +1249,11 @@ namespace odb
   const typename pointer_query_columns< ::administrators, id_pgsql, A >::user_type_
   pointer_query_columns< ::administrators, id_pgsql, A >::
   user (A::table_name, "\"user\"", 0);
+
+  template <typename A>
+  const typename pointer_query_columns< ::administrators, id_pgsql, A >::gitea_token_type_
+  pointer_query_columns< ::administrators, id_pgsql, A >::
+  gitea_token (A::table_name, "\"gitea_token\"", 0);
 
   template <>
   class access::object_traits_impl< ::administrators, id_pgsql >:
@@ -1262,6 +1279,12 @@ namespace odb
       //
       long long user_value;
       bool user_null;
+
+      // gitea_token
+      //
+      details::buffer gitea_token_value;
+      std::size_t gitea_token_size;
+      bool gitea_token_null;
 
       std::size_t version;
     };
@@ -1307,7 +1330,7 @@ namespace odb
 
     typedef pgsql::query_base query_base_type;
 
-    static const std::size_t column_count = 2UL;
+    static const std::size_t column_count = 3UL;
     static const std::size_t id_column_count = 1UL;
     static const std::size_t inverse_column_count = 0UL;
     static const std::size_t readonly_column_count = 0UL;
@@ -3504,6 +3527,18 @@ namespace odb
     };
 
     static const user_type_ user;
+
+    // gitea_token
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::std::basic_string< char >,
+        pgsql::id_string >::query_type,
+      pgsql::id_string >
+    gitea_token_type_;
+
+    static const gitea_token_type_ gitea_token;
   };
 
   template <typename A>
@@ -3515,6 +3550,11 @@ namespace odb
   const typename query_columns< ::administrators, id_pgsql, A >::user_type_
   query_columns< ::administrators, id_pgsql, A >::
   user (A::table_name, "\"user\"", 0);
+
+  template <typename A>
+  const typename query_columns< ::administrators, id_pgsql, A >::gitea_token_type_
+  query_columns< ::administrators, id_pgsql, A >::
+  gitea_token (A::table_name, "\"gitea_token\"", 0);
 
   // cmall_apptoken
   //
