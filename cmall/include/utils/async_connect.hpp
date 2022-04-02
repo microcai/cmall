@@ -32,9 +32,9 @@ namespace asio_util {
 	namespace detail {
 
 		template <typename Stream>
-		concept cancel_has_ec = requires (Stream t)
+		concept cancel_has_ec = requires (Stream t, boost::system::error_code ec)
 		{
-			{ t.cancel(boost::system::error_code{}) };
+			{ t.cancel(ec) };
 		};
 
 		template <typename Stream, typename Handler>
@@ -116,15 +116,8 @@ namespace asio_util {
 							if (!t)
 								continue;
 
-							if constexpr (cancel_has_ec<decltype(t)>)
-							{
-								boost::system::error_code ignore_ec;
-								t->cancel(ignore_ec);
-							}
-							else
-							{
-								t->cancel();
-							}
+							boost::system::error_code ignore_ec;
+							t->cancel(ignore_ec);
 						}
 					});
 				}
@@ -201,15 +194,8 @@ namespace asio_util {
 							{
 								if (!t)
 									continue;
-								if constexpr (cancel_has_ec<decltype(t)>)
-								{
-									boost::system::error_code ignore_ec;
-									t->cancel(ignore_ec);
-								}
-								else
-								{
-									t->cancel();
-								}
+								boost::system::error_code ignore_ec;
+								t->cancel(ignore_ec);
 							}
 
 							callback<Stream, Handler, Iterator, ResultType>(std::forward<Handler>(*h), begin, error);

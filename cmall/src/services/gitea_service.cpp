@@ -83,7 +83,7 @@ namespace services
 			// 创建用户.
 			auto now = to_string(boost::posix_time::second_clock::local_time());
 			auto username = gen_repo_user(uid);
-			auto token_name = username + "_" + now;
+			auto token_name = "cmall-operation";
 
 			boost::json::value body = {
 				{ "name", token_name },
