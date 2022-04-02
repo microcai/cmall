@@ -14,6 +14,8 @@
 #include "uawaitable.hpp"
 #include "url_parser.hpp"
 
+#include "utils/async_connect.hpp"
+
 #include <iostream>
 
 using boost::asio::awaitable;
@@ -89,13 +91,13 @@ namespace httpc
 				{
 					auto& s = get<1>(stream);
 					s.expires_after(30s);
-					co_await s.async_connect(results, asio_util::use_awaitable[ec]);
+					co_await asio_util::async_connect(s.socket(), results, asio_util::use_awaitable[ec]);
 				}
 				else
 				{
 					auto& s = get<2>(stream);
 					beast::get_lowest_layer(s).expires_after(30s);
-					co_await beast::get_lowest_layer(s).async_connect(results, asio_util::use_awaitable[ec]);
+					co_await asio_util::async_connect(beast::get_lowest_layer(s).socket(), results, asio_util::use_awaitable[ec]);
 				}
 				if (ec)
 					break;
