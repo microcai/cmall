@@ -60,6 +60,9 @@ namespace cmall {
 		std::filesystem::path session_cache_file;
 		std::filesystem::path gitea_template_location;
 		std::filesystem::path repo_root; // repos dir for gitea
+
+		std::string gitea_api;
+		std::string gitea_admin_token;
 	};
 
 

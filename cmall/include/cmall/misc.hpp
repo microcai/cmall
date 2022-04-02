@@ -212,3 +212,14 @@ inline std::string gen_password(std::size_t len = 8)
 
 	return result;
 }
+
+inline std::string base64_encode(const std::string& in)
+{
+	auto b64_size = boost::beast::detail::base64::encoded_size(in.size());
+	std::string ret;
+	ret.resize(b64_size);
+
+	boost::beast::detail::base64::encode(ret.data(), in.data(), in.size());
+
+	return ret;
+}

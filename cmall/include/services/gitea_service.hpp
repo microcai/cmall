@@ -13,7 +13,7 @@ namespace services
 	class gitea
 	{
 	public:
-		gitea(boost::asio::io_context& io);
+		gitea(boost::asio::io_context& io, const std::string& gitea_api, const std::string& token);
 		~gitea();
 
 		// 生成用户.
@@ -26,6 +26,5 @@ namespace services
 		gitea_impl& impl();
 
 		std::array<char, 512> obj_stor;
-
 	};
 }

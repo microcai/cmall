@@ -25,94 +25,11 @@ using namespace boost::asio::experimental::awaitable_operators;
 #include "cmall/error_code.hpp"
 #include "utils/uawaitable.hpp"
 
+#include "utils/httpc.hpp"
+#include "cmall/js_util.hpp"
+#include "utils/uawaitable.hpp"
+
 using boost::asio::use_awaitable;
-
-#ifdef BOOST_POSIX_API
-
-#include <sys/types.h>
-#include <pwd.h>
-#include <sys/syscall.h>
-#include <unistd.h>
-
-struct unixuserinfo
-{
-	std::string username;
-	std::string homedir;
-	std::string shell;
-
-	int uid, gid;
-};
-
-static unixuserinfo get_unix_user_info(std::string_view name)
-{
-	unixuserinfo ret;
-	struct passwd pwd_storeage;
-	struct passwd *result;
-	std::vector<char> buf(sysconf(_SC_GETPW_R_SIZE_MAX) == -1 ? 16384 : sysconf(_SC_GETPW_R_SIZE_MAX));
-
-	int ok = getpwnam_r(name.data(), &pwd_storeage, buf.data(), buf.capacity(), &result);
-	if (ok == 0)
-	{
-		ret.homedir = result->pw_dir;
-		ret.username = std::string(name);
-		ret.shell = result->pw_shell;
-		ret.uid = result->pw_uid;
-		ret.gid = result->pw_gid;
-		return ret;
-	}
-
-	throw boost::system::system_error(boost::asio::error::not_found);
-}
-
-static void change_user(int uid, int gid)
-{
-	setgid(gid);
-	setuid(uid);
-}
-
-
-static awaitable<int> async_wait_child(boost::process::child& child)
-{
-	auto executor = co_await boost::asio::this_coro::executor;
-	int pidfd_ = syscall(SYS_pidfd_open, child.id(), 0);
-
-	boost::asio::posix::stream_descriptor pidfd(executor, pidfd_);
-
-	co_await pidfd.async_wait(boost::asio::posix::stream_descriptor::wait_read, use_awaitable);
-
-	int status = 0;
-	pid_t ret = waitpid(child.id(), &status, 0);
-	co_return status;
-}
-
-#endif
-
-#ifdef _WIN32
-
-#include <boost/asio/windows/object_handle.hpp>
-
-static awaitable<int> async_wait_child(boost::process::child& child)
-{
-	auto executor = co_await boost::asio::this_coro::executor;
-	boost::asio::windows::object_handle pidfd(executor, child.native_handle());
-
-	co_await pidfd.async_wait(use_awaitable);
-
-	co_return child.wait_for(std::chrono::milliseconds(2));
-}
-
-#endif
-
-static std::string flaten_args(auto args)
-{
-	std::string cmdline;
-	for (auto arg : args)
-	{
-		cmdline += " ";
-		cmdline += arg;
-	}
-	return cmdline;
-}
 
 namespace services
 {
@@ -123,37 +40,11 @@ namespace services
 
 	struct gitea_impl
 	{
-		gitea_impl(boost::asio::io_context& io)
+		gitea_impl(boost::asio::io_context& io, const std::string& gitea_api, const std::string& token)
 			: io(io)
+			, gitea_api(gitea_api)
+			, admin_token(token)
 		{}
-
-		awaitable<bool> call_gitea_cli(std::vector<std::string> gitea_args)
-		{
-			using namespace boost::process;
-
-			LOG_DBG << "executing gitea " << flaten_args(gitea_args);
-#ifdef BOOST_POSIX_API
-			boost::process::environment gitea_process_env = boost::this_process::environment();
-			auto gitea_userinfo = get_unix_user_info("gitea");
-
-			gitea_process_env.set("HOME", gitea_userinfo.homedir);
-			gitea_process_env.set("USER", "gitea");
-			gitea_process_env.set("LANG", "C");
-#endif
-			child cp(io, search_path("gitea"), boost::process::args(gitea_args)
-			#ifdef BOOST_POSIX_API
-				, gitea_process_env, extend::on_exec_setup=[gitea_userinfo](auto& exec){
-					::change_user(gitea_userinfo.uid, gitea_userinfo.gid);
-				}
-			#endif
-			);
-
-			int exit_code = co_await async_wait_child(cp);
-
-			LOG_DBG << "executing gitea return " << exit_code;
-
-			co_return exit_code == EXIT_SUCCESS;
-		}
 
 		awaitable<bool> create_user(std::uint64_t uid, std::string password)
 		{
@@ -161,37 +52,131 @@ namespace services
 			auto username = gen_repo_user(uid);
 			auto email = std::format("{}@{}.com", username, username);
 
-			std::vector<std::string> gitea_args = {
-				"admin",
-				"user",
-				"create",
-				"--username",
-				username,
-				"--password",
-				password,
-				"--email",
-				email
+			boost::json::value body = {
+				{ "email", email },
+				{ "username", username },
+				{ "password", password },
+				{ "must_change_password", false },
 			};
 
-			co_return co_await call_gitea_cli(gitea_args);
+			auto uri = std::format("{}/api/v1/admin/users", gitea_api);
+
+			httpc::request_options_t opts {
+				io,
+				httpc::http::verb::post,
+				uri,
+				{},
+				jsutil::json_to_string(body),
+			};
+			opts.headers.insert({"Content-Type", "application/json"});
+			opts.headers.insert({"Authorization", std::format("token {}", admin_token)});
+
+			boost::system::error_code ec;
+			auto res = co_await httpc::request(std::move(opts));
+			if (res.err.has_value())
+				LOG_ERR << "create user error: " << res.err.value() << " uid: " << uid;
+
+			// co_return res.code >= 200 && res.code < 300;
+			co_return res.code == 201;
+		}
+		awaitable<std::string> create_user_token(std::uint64_t uid, std::string password)
+		{
+			// 创建用户.
+			auto now = to_string(boost::posix_time::second_clock::local_time());
+			auto username = gen_repo_user(uid);
+			auto token_name = username + "_" + now;
+
+			boost::json::value body = {
+				{ "name", token_name },
+			};
+
+			auto uri = std::format("{}/api/v1/users/{}/tokens", gitea_api, username);
+
+			httpc::request_options_t opts {
+				io,
+				httpc::http::verb::post,
+				uri,
+				{},
+				jsutil::json_to_string(body),
+			};
+			opts.headers.insert({"Content-Type", "application/json"});
+			auto auth_info = std::format("{}:{}", username, password);
+			opts.headers.insert({"Authorization", std::format("Basic {}", base64_encode(auth_info))});
+
+			boost::system::error_code ec;
+			auto res = co_await httpc::request(std::move(opts));
+			std::string token;
+			do
+			{
+				if (res.err.has_value())
+				{
+					LOG_ERR << "create user error: " << res.err.value() << " uid: " << uid;
+					break;
+				}
+				if (res.code != 201 || !res.content_type.starts_with("application/json"))
+				{
+					LOG_ERR << "create user error: " << res.body;
+					break;
+				}
+
+				auto jv = boost::json::parse(res.body, ec, {}, { 64, false, false, false });
+				if (ec || !jv.is_object())
+				{
+					LOG_ERR << "create user response error: " << res.body;
+					break;
+				}
+
+				if (jv.as_object().contains("sha1") || !jv.at("sha1").is_string())
+				{
+					LOG_ERR << "create user response error: " << res.body << ", no sha1 field or format error";
+					break;
+				}
+
+				token = jv.at("sha1").as_string();
+
+			} while (false);
+
+			co_return token;
 		}
 
-		awaitable<bool> create_repo(std::uint64_t uid, std::string template_dir)
+		awaitable<bool> create_repo(std::uint64_t uid, std::string user_token)
 		{
 			// 创建模板仓库.
 			auto username = gen_repo_user(uid);
 
-			std::vector<std::string> gitea_args = {
-				"restore-repo",
-				"--repo_dir",
-				template_dir,
-				"--owner_name",
-				username,
-				"--repo_name",
-				"shop"
-			};
+			// TODO: 目前写死.
+			std::string template_owner = "admin";
+			std::string template_repo = "shop-template";
 
-			co_return co_await call_gitea_cli(gitea_args);
+			boost::json::value body = {
+				{ "owner", username },
+				{ "name", "shop" },
+				{ "private", true },
+				{ "avatar", true },
+				{ "description", "my shop" },
+				{ "git_content", true },
+				{ "git_hooks", true },
+				{ "labels", true },
+				{ "topics", true },
+				{ "webhooks", true },
+			};
+			auto uri = std::format("{}/api/v1/repos/{}/{}/generate", gitea_api, template_owner, template_repo);
+			httpc::request_options_t opts {
+				io,
+				httpc::http::verb::post,
+				uri,
+				{},
+				jsutil::json_to_string(body),
+			};
+			opts.headers.insert({"Content-Type", "application/json"});
+			opts.headers.insert({"Authorization", std::format("token {}", user_token)});
+
+			boost::system::error_code ec;
+			auto res = co_await httpc::request(std::move(opts));
+			if (res.err.has_value())
+				LOG_ERR << "create user repo error: " << res.err.value() << " uid: " << uid;
+
+			co_return res.code == 201;
 		}
 
 		awaitable<bool> init_user(std::uint64_t uid, std::string password, std::string template_dir)
@@ -199,7 +184,8 @@ namespace services
 			bool ok = co_await create_user(uid, password);
 			if (ok)
 			{
-				ok = co_await create_repo(uid, template_dir);
+				auto user_token = co_await create_user_token(uid, password);
+				ok = co_await create_repo(uid, user_token);
 			}
 			co_return ok;
 		}
@@ -208,19 +194,36 @@ namespace services
 		{
 			auto username = gen_repo_user(uid);
 
-			std::vector<std::string> gitea_args = {
-				"admin",
-				"user",
-				"change-password",
-				"--username",
-				username,
-				"--password",
-				password
+			boost::json::value body = {
+				{ "login_name", username },
+				{ "password", password },
 			};
-			co_return co_await call_gitea_cli(gitea_args);
+
+			auto uri = std::format("{}/api/v1/admin/users/{}", gitea_api, username);
+
+			httpc::request_options_t opts {
+				io,
+				httpc::http::verb::post,
+				uri,
+				{},
+				jsutil::json_to_string(body),
+			};
+			opts.headers.insert({"Content-Type", "application/json"});
+			opts.headers.insert({"Authorization", std::format("token {}", admin_token)});
+
+			boost::system::error_code ec;
+			auto res = co_await httpc::request(std::move(opts));
+			if (res.err.has_value())
+				LOG_ERR << "change user password error: " << res.err.value() << " uid: " << uid;
+
+			// co_return res.code >= 200 && res.code < 300;
+			co_return res.code == 200;
 		}
 
 		boost::asio::io_context& io;
+
+		std::string gitea_api;
+		std::string admin_token;
 	};
 
 	awaitable<bool> gitea::init_user(std::uint64_t uid, std::string password, std::string template_dir)
@@ -233,10 +236,11 @@ namespace services
 		co_return co_await impl().change_password(uid, password);
 	}
 
-	gitea::gitea(boost::asio::io_context& io)
+	gitea::gitea(boost::asio::io_context& io, const std::string& gitea_api, const std::string& token)
+
 	{
 		static_assert(sizeof(obj_stor) >= sizeof(gitea_impl));
-		std::construct_at(reinterpret_cast<gitea_impl*>(obj_stor.data()), io);
+		std::construct_at(reinterpret_cast<gitea_impl*>(obj_stor.data()), io, gitea_api, token);
 	}
 
 	gitea::~gitea()
