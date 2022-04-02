@@ -26,7 +26,6 @@ namespace httpc
 
 	struct request_options_t
 	{
-		boost::asio::io_context& ioc;
 		http::verb verb;
 		std::string url;
 		std::unordered_map<std::string, std::string> headers;
@@ -51,7 +50,7 @@ namespace httpc
 		{
 			using namespace std::chrono_literals;
 			boost::system::error_code ec;
-			auto& ioc = option.ioc;
+			auto ioc = co_await boost::asio::this_coro::executor;
 
 			response_t ret;
 

@@ -11,7 +11,7 @@ int main(int argc, char* argv[])
 	boost::asio::io_context ioc;
 	std::string uri = argv[1];
 
-	httpc::request_options_t opts{ ioc, httpc::http::verb::get, uri };
+	httpc::request_options_t opts{ httpc::http::verb::get, uri };
 	boost::asio::co_spawn(ioc,
 		httpc::request(std::move(opts)),
 		[](std::exception_ptr e, httpc::response_t resp)

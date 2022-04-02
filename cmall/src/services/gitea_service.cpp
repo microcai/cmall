@@ -62,7 +62,6 @@ namespace services
 			auto uri = std::format("{}/api/v1/admin/users", gitea_api);
 
 			httpc::request_options_t opts {
-				io,
 				httpc::http::verb::post,
 				uri,
 				{},
@@ -93,7 +92,6 @@ namespace services
 			auto uri = std::format("{}/api/v1/users/{}/tokens", gitea_api, username);
 
 			httpc::request_options_t opts {
-				io,
 				httpc::http::verb::post,
 				uri,
 				{},
@@ -162,7 +160,6 @@ namespace services
 			};
 			auto uri = std::format("{}/api/v1/repos/{}/{}/generate", gitea_api, template_owner, template_repo);
 			httpc::request_options_t opts {
-				io,
 				httpc::http::verb::post,
 				uri,
 				{},
@@ -202,7 +199,6 @@ namespace services
 			auto uri = std::format("{}/api/v1/admin/users/{}", gitea_api, username);
 
 			httpc::request_options_t opts {
-				io,
 				httpc::http::verb::post,
 				uri,
 				{},
