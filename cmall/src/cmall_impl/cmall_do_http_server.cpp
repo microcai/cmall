@@ -10,6 +10,12 @@
 #include "httpd/header_helper.hpp"
 #include "httpd/httpd.hpp"
 
+template <typename Iterator>
+auto make_iterator_range(std::pair<Iterator, Iterator> pair)
+{
+	return boost::make_iterator_range(pair.first, pair.second);
+}
+
 namespace cmall
 {
 	awaitable<void> cmall_service::close_all_ws()
@@ -130,8 +136,39 @@ namespace cmall
 
 				client_ptr->ws_client.emplace(client_ptr->tcp_stream);
 
-				client_ptr->ws_client->ws_stream_.set_option(boost::beast::websocket::stream_base::decorator(
-					[](auto& res) { res.set(boost::beast::http::field::server, HTTPD_VERSION_STRING); }));
+				for (auto& cookie : make_iterator_range(req.equal_range(boost::beast::http::field::cookie)))
+				{
+					auto sessionid = httpd::parse_cookie(cookie.value())["Session"];
+
+					if ((!sessionid.empty()) && (co_await session_cache_map.exist(sessionid)) )
+					{
+						// 从 cookie 里直接 recover_session
+						client_ptr->session_info
+							= std::make_shared<services::client_session>(co_await session_cache_map.load(sessionid));
+
+						co_await load_user_info(client_ptr);
+					}
+				}
+
+				std::string cookie_line;
+
+				if (!client_ptr->session_info)
+				{
+					co_await alloca_sessionid(client_ptr);
+
+					cookie_line = std::format("Session={}; Path=/api; Expires={}",
+						client_ptr->session_info->session_id,
+						httpd::make_http_last_modified(std::time(NULL) + 31536000)
+					);
+				}
+
+				client_ptr->ws_client->ws_stream_.set_option(
+					boost::beast::websocket::stream_base::decorator([cookie_line](auto& res)
+					{
+						res.set(boost::beast::http::field::server, HTTPD_VERSION_STRING);
+						if (!cookie_line.empty())
+							res.set(boost::beast::http::field::set_cookie, cookie_line);
+					}));
 
 				co_await client_ptr->ws_client->ws_stream_.async_accept(req, use_awaitable);
 

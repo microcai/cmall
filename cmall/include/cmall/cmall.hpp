@@ -227,6 +227,9 @@ namespace cmall {
 
 		promise<void(std::exception_ptr)> websocket_write(client_connection_ptr, std::string message);
 
+		awaitable<void> alloca_sessionid(client_connection_ptr);
+		awaitable<void> load_user_info(client_connection_ptr);
+
 		awaitable<boost::json::object> handle_jsonrpc_call(client_connection_ptr, const std::string& method, boost::json::object params);
 
 		awaitable<boost::json::object> handle_jsonrpc_user_api(client_connection_ptr, const req_method method, boost::json::object params);

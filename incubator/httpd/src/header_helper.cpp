@@ -492,8 +492,6 @@ struct range_grammer : qi::grammar<Iterator, httpd::BytesRange()>
 	};
 
 	qi::rule<Iterator, httpd::BytesRange()> range_line;
-
-	qi::rule<Iterator, std::uint64_t()> number;
 };
 
 std::optional<httpd::BytesRange> httpd::parse_range(std::string_view range)
@@ -525,4 +523,49 @@ std::string httpd::make_http_last_modified(std::time_t t)
 std::string httpd::make_cpntent_range(BytesRange r, std::uint64_t content_length)
 {
     return std::format("bytes {}-{}/{}", r.begin, r.end == 0 ? content_length: r.end, content_length);
+}
+
+using string_pair = std::pair<std::string, std::string>;
+
+BOOST_PHOENIX_ADAPT_FUNCTION(string_pair, make_pair, std::make_pair, 2);
+
+template <typename Iterator>
+struct cookie_grammer : qi::grammar<Iterator, std::map<std::string, std::string>()>
+{
+	cookie_grammer() : cookie_grammer::base_type(cookie_line)
+	{
+		using qi::debug;
+		using namespace boost::phoenix;
+
+		cookie_line = cookie_item [ insert(qi::_val, qi::_1) ] >> *( qi::char_(';') >> *qi::space >> cookie_item [ insert(qi::_val, qi::_1)]);
+
+        cookie_item = (key >> qi::char_('=') >> value)[ qi::_val = make_pair(qi::_1, qi::_3) ];
+
+    	key = qi::lexeme[ +(qi::char_ - '=' - ';' - ' ' - ':') ];
+		value = qi::lexeme[ +(qi::char_ - ';' - '\n' - ' ') ];
+	};
+
+	qi::rule<Iterator, std::map<std::string, std::string>()> cookie_line;
+
+	qi::rule<Iterator, std::pair<std::string, std::string>()> cookie_item;
+
+    qi::rule<Iterator, std::string()> key, value;
+};
+
+std::map<std::string, std::string> httpd::parse_cookie(std::string_view cookie_line)
+{
+	std::map<std::string, std::string> ast;
+
+	cookie_grammer<std::string_view::const_iterator> gramer;
+
+	auto first = cookie_line.begin();
+
+	bool r = qi::parse(first, cookie_line.end(), gramer, ast);
+
+	if (!r)
+	{
+		return {};
+	}
+
+	return ast;
 }

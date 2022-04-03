@@ -402,6 +402,46 @@ namespace cmall
 		co_return 200;
 	}
 
+	awaitable<void> cmall_service::alloca_sessionid(client_connection_ptr connection_ptr)
+	{
+		client_connection& this_client = *connection_ptr;
+		this_client.session_info = std::make_shared<services::client_session>();
+
+		this_client.session_info->session_id = gen_uuid();
+		co_await session_cache_map.save(*this_client.session_info);
+	}
+
+	awaitable<void> cmall_service::load_user_info(client_connection_ptr connection_ptr)
+	{
+		client_connection& this_client = *connection_ptr;
+
+		bool db_operation = co_await m_database.async_load<cmall_user>(
+			this_client.session_info->user_info->uid_, *(this_client.session_info->user_info));
+		if (!db_operation)
+		{
+			this_client.session_info->user_info = {};
+		}
+		else
+		{
+			cmall_merchant merchant_user;
+			administrators admin_user;
+			// 如果是 merchant/admin 也载入他们的信息
+			if (co_await m_database.async_load<cmall_merchant>(this_client.session_info->user_info->uid_, merchant_user))
+			{
+				this_client.session_info->merchant_info = merchant_user;
+				this_client.session_info->isMerchant = true;
+			}
+			if (co_await m_database.async_load<administrators>(this_client.session_info->user_info->uid_, admin_user))
+			{
+				this_client.session_info->admin_info = admin_user;
+				this_client.session_info->isAdmin = true;
+			}
+
+			std::unique_lock<std::shared_mutex> l(active_users_mtx);
+			active_users.push_back(connection_ptr);
+		}
+	}
+
 
 	awaitable<boost::json::object> cmall_service::handle_jsonrpc_call(
 		client_connection_ptr connection_ptr, const std::string& methodstr, boost::json::object params)
@@ -454,22 +494,12 @@ namespace cmall
 					if (sessionid.empty())
 					{
 						// 表示是第一次使用，所以创建一个新　session 给客户端.
-						this_client.session_info = std::make_shared<services::client_session>();
-
-						this_client.session_info->session_id = gen_uuid();
-						sessionid							 = this_client.session_info->session_id;
-
-						co_await session_cache_map.save(*this_client.session_info);
+						co_await alloca_sessionid(connection_ptr);
 					}
 					else if (!(co_await session_cache_map.exist(sessionid)))
 					{
 						// 表示session 过期，所以创建一个新　session 给客户端.
-						this_client.session_info = std::make_shared<services::client_session>();
-
-						this_client.session_info->session_id = gen_uuid();
-						sessionid							 = this_client.session_info->session_id;
-
-						co_await session_cache_map.save(*this_client.session_info);
+						co_await alloca_sessionid(connection_ptr);
 					}
 					else
 					{
@@ -479,31 +509,7 @@ namespace cmall
 
 					if (this_client.session_info->user_info)
 					{
-						bool db_operation = co_await m_database.async_load<cmall_user>(
-							this_client.session_info->user_info->uid_, *(this_client.session_info->user_info));
-						if (!db_operation)
-						{
-							this_client.session_info->user_info = {};
-						}
-						else
-						{
-							cmall_merchant merchant_user;
-							administrators admin_user;
-							// 如果是 merchant/admin 也载入他们的信息
-							if (co_await m_database.async_load<cmall_merchant>(this_client.session_info->user_info->uid_, merchant_user))
-							{
-								this_client.session_info->merchant_info = merchant_user;
-								this_client.session_info->isMerchant = true;
-							}
-							if (co_await m_database.async_load<administrators>(this_client.session_info->user_info->uid_, admin_user))
-							{
-								this_client.session_info->admin_info = admin_user;
-								this_client.session_info->isAdmin = true;
-							}
-
-							std::unique_lock<std::shared_mutex> l(active_users_mtx);
-							active_users.push_back(connection_ptr);
-						}
+						co_await load_user_info(connection_ptr);
 					}
 
 					reply_message["result"] = {

@@ -21,4 +21,5 @@ namespace httpd {
     std::string make_http_last_modified(std::time_t t);
     std::string make_cpntent_range(BytesRange, std::uint64_t content_length);
 
+    std::map<std::string, std::string> parse_cookie(std::string_view cookie_line);
 }
