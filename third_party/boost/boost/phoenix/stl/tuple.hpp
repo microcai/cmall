@@ -108,11 +108,18 @@ namespace boost { namespace phoenix {
 
     // Make unpacked argument placeholders
     namespace placeholders {
+#if defined(BOOST_MSVC)
+#define WEAK_SYMBOL static
+#else
+#define WEAK_SYMBOL __attribute__((weak))
+#endif
         #define BOOST_PP_LOCAL_LIMITS (1, BOOST_PHOENIX_ARG_LIMIT)
         #define BOOST_PP_LOCAL_MACRO(N)                                                \
-            auto uarg##N =                                                             \
+            WEAK_SYMBOL auto uarg##N =                                                             \
             boost::phoenix::get_<(N)-1>(boost::phoenix::placeholders::arg1);
         #include BOOST_PP_LOCAL_ITERATE()
+
+#undef WEAK_SYMBOL
     }
 }} // namespace boost::phoenix
 
