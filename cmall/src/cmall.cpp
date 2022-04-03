@@ -347,12 +347,11 @@ namespace cmall
 
 		if (req_range)
 		{
-			auto ranged_body = req_range->end == 0 ? res_body.substr(req_range->begin): res_body.substr(req_range->begin, req_range->end - req_range->begin);
-			headers.insert({boost::beast::http::field::content_range, httpd::make_cpntent_range(req_range.value(), ranged_body.length())});
+			headers.insert({boost::beast::http::field::content_range, httpd::make_cpntent_range(req_range.value(), res_body.length())});
 
 			// 执行 206 响应.
 			ec = co_await httpd::send_string_response_body(client,
-				std::move(ranged_body),
+				req_range->end == 0 ? res_body.substr(req_range->begin): res_body.substr(req_range->begin, req_range->end - req_range->begin),
 				std::move(headers),
 				req.version(),
 				req.keep_alive(),
