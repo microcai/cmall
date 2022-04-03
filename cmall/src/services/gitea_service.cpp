@@ -78,66 +78,8 @@ namespace services
 			// co_return res.code >= 200 && res.code < 300;
 			co_return res.code == 201;
 		}
-		awaitable<std::string> create_user_token(std::uint64_t uid, std::string password)
-		{
-			// 创建用户.
-			auto now = to_string(boost::posix_time::second_clock::local_time());
-			auto username = gen_repo_user(uid);
-			auto token_name = "cmall-operation";
 
-			boost::json::value body = {
-				{ "name", token_name },
-			};
-
-			auto uri = std::format("{}/api/v1/users/{}/tokens", gitea_api, username);
-
-			httpc::request_options_t opts {
-				httpc::http::verb::post,
-				uri,
-				{},
-				jsutil::json_to_string(body),
-			};
-			opts.headers.insert({"Content-Type", "application/json"});
-			auto auth_info = std::format("{}:{}", username, password);
-			opts.headers.insert({"Authorization", std::format("Basic {}", base64_encode(auth_info))});
-
-			boost::system::error_code ec;
-			auto res = co_await httpc::request(std::move(opts));
-			std::string token;
-			do
-			{
-				if (res.err.has_value())
-				{
-					LOG_ERR << "create user error: " << res.err.value() << " uid: " << uid;
-					break;
-				}
-				if (res.code != 201 || !res.content_type.starts_with("application/json"))
-				{
-					LOG_ERR << "create user error: " << res.body;
-					break;
-				}
-
-				auto jv = boost::json::parse(res.body, ec, {}, { 64, false, false, false });
-				if (ec || !jv.is_object())
-				{
-					LOG_ERR << "create user response error: " << res.body;
-					break;
-				}
-
-				if (!(jv.as_object().contains("sha1") && jv.at("sha1").is_string()))
-				{
-					LOG_ERR << "create user response error: " << res.body << ", no sha1 field or format error";
-					break;
-				}
-
-				token = jv.at("sha1").as_string();
-
-			} while (false);
-
-			co_return token;
-		}
-
-		awaitable<bool> create_repo(std::uint64_t uid, std::string user_token, std::string template_owner, std::string template_repo)
+		awaitable<bool> create_repo(std::uint64_t uid, std::string template_owner, std::string template_repo)
 		{
 			// 创建模板仓库.
 			auto username = gen_repo_user(uid);
@@ -177,8 +119,7 @@ namespace services
 			bool ok = co_await create_user(uid, password);
 			if (ok)
 			{
-				auto user_token = co_await create_user_token(uid, password);
-				ok = co_await create_repo(uid, user_token, template_owner, template_repo);
+				ok = co_await create_repo(uid, template_owner, template_repo);
 			}
 			co_return ok;
 		}
