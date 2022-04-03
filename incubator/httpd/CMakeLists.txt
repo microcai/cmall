@@ -1,5 +1,9 @@
 
 file(GLOB httpd_sources
+	LIST_DIRECTORIES false
+	RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+	CONFIGURE_DEPENDS
+
 	include/httpd/*.hpp
 	src/*.cpp
 )

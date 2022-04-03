@@ -20,6 +20,7 @@
 #include "cmall/conversion.hpp"
 
 #include "httpd/http_misc_helper.hpp"
+#include "httpd/header_decode.hpp"
 #include "httpd/httpd.hpp"
 #include "httpd/wait_all.hpp"
 #include "dirmon/dirmon.hpp"
@@ -335,15 +336,36 @@ namespace cmall
 			co_return 404;
 		}
 
-		ec = co_await httpd::send_string_response_body(client,
-			res_body,
-			httpd::make_http_last_modified(std::time(0) + 60),
-			httpd::get_mime_type_from_extension(std::filesystem::path(path_in_repo).extension().string()),
-			req.version(),
-			req.keep_alive());
-		if (ec)
-			throw boost::system::system_error(ec);
-		co_return 200;
+		// check for Range Header
+
+		auto req_range = httpd::parse_range(req[boost::beast::http::field::range]);
+
+		if (req_range)
+		{
+			// 执行 206 响应.
+			ec = co_await httpd::send_string_response_body(client,
+				res_body.substr(req_range->begin, req_range->end - req_range->begin),
+				httpd::make_http_last_modified(std::time(0) + 60),
+				httpd::get_mime_type_from_extension(std::filesystem::path(path_in_repo).extension().string()),
+				req.version(),
+				req.keep_alive(),
+				boost::beast::http::status::partial_content);
+			if (ec)
+				throw boost::system::system_error(ec);
+			co_return 206;
+		}
+		else
+		{
+			ec = co_await httpd::send_string_response_body(client,
+				std::move(res_body),
+				httpd::make_http_last_modified(std::time(0) + 60),
+				httpd::get_mime_type_from_extension(std::filesystem::path(path_in_repo).extension().string()),
+				req.version(),
+				req.keep_alive());
+			if (ec)
+				throw boost::system::system_error(ec);
+			co_return 200;
+		}
 	}
 
 	// 成功给用户返回内容, 返回 200. 如果没找到商品, 不要向 client 写任何数据, 直接放回 404, 由调用方统一返回错误页面.

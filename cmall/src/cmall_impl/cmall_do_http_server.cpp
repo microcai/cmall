@@ -177,7 +177,7 @@ namespace cmall
 						int status_code = co_await render_git_repo_files(
 							connection_id, merchant, remains, client_ptr->tcp_stream, req);
 
-						if (status_code != 200)
+						if ((status_code != 200) && (status_code != 206))
 						{
 							co_await http_simple_error_page("ERRORED", status_code, req.version());
 						}

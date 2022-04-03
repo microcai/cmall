@@ -8,9 +8,9 @@
 using boost::asio::awaitable;
 
 awaitable<boost::system::error_code> httpd::send_string_response_body(http_any_stream& client,
-        std::string& res_body, std::string expires, std::string mime_types, int http_version, bool keepalive)
+        std::string res_body, std::string expires, std::string mime_types, int http_version, bool keepalive, boost::beast::http::status status)
 {
-    boost::beast::http::response<boost::beast::http::string_body> res{ boost::beast::http::status::ok, http_version };
+    boost::beast::http::response<boost::beast::http::string_body> res{ status, http_version };
 
     res.set(boost::beast::http::field::server, "cmall1.0");
     res.set(boost::beast::http::field::expires, expires);
