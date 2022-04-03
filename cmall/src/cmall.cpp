@@ -342,6 +342,7 @@ namespace cmall
 
 		std::map<boost::beast::http::field, std::string> headers;
 
+		headers.insert({boost::beast::http::field::accept_ranges, "bytes"});
 		headers.insert({boost::beast::http::field::expires, httpd::make_http_last_modified(std::time(0) + 60)});
 		headers.insert({boost::beast::http::field::content_type, httpd::get_mime_type_from_extension(std::filesystem::path(path_in_repo).extension().string())});
 
