@@ -18,4 +18,7 @@ namespace httpd {
 	bool parse_gmt_time_fmt(std::string_view date_str, time_t* output);
 
     std::optional<BytesRange> parse_range(std::string_view range);
+    std::string make_http_last_modified(std::time_t t);
+    std::string make_cpntent_range(BytesRange, std::uint64_t content_length);
+
 }

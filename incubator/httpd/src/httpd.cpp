@@ -1,4 +1,5 @@
 
+#include <map>
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
 #include <boost/asio/awaitable.hpp>
@@ -8,13 +9,13 @@
 using boost::asio::awaitable;
 
 awaitable<boost::system::error_code> httpd::send_string_response_body(http_any_stream& client,
-        std::string res_body, std::string expires, std::string mime_types, int http_version, bool keepalive, boost::beast::http::status status)
+        std::string res_body, std::map<boost::beast::http::field, std::string> headers, int http_version, bool keepalive, boost::beast::http::status status)
 {
     boost::beast::http::response<boost::beast::http::string_body> res{ status, http_version };
 
     res.set(boost::beast::http::field::server, "cmall1.0");
-    res.set(boost::beast::http::field::expires, expires);
-    res.set(boost::beast::http::field::content_type, mime_types);
+    for (auto h : headers)
+        res.set(h.first, h.second);
     res.keep_alive(keepalive);
 
     boost::system::error_code ec;

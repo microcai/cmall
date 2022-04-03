@@ -59,14 +59,6 @@ namespace httpd {
 		return std::mktime(&ltime);
 	}
 
-	std::string make_http_last_modified(std::time_t t)
-	{
-		tm* gmt = gmtime((const time_t*)&t);
-		char time_buf[512] = { 0 };
-		strftime(time_buf, 200, "%a, %d %b %Y %H:%M:%S GMT", gmt);
-		return time_buf;
-	}
-
 	std::string decodeURIComponent(std::string_view str)
 	{
 		std::string result;

@@ -7,6 +7,7 @@
 #include "cmall/http_static_file_handle.hpp"
 
 #include "httpd/http_misc_helper.hpp"
+#include "httpd/header_helper.hpp"
 #include "httpd/httpd.hpp"
 
 namespace cmall
@@ -251,10 +252,14 @@ namespace cmall
 						std::string response_body = co_await script_runner.run_script(callback_js,
 							req.body(), script_env, {});
 
+						std::map<boost::beast::http::field, std::string> headers;
+
+						headers.insert({boost::beast::http::field::expires, httpd::make_http_last_modified(std::time(0) + 60)});
+						headers.insert({boost::beast::http::field::content_type, "text/plain"});
+
 						ec = co_await httpd::send_string_response_body(client_ptr->tcp_stream,
 							response_body,
-							httpd::make_http_last_modified(std::time(0) + 60),
-							"text/plain",
+							std::move(headers),
 							req.version(),
 							keep_alive);
 						if (ec)

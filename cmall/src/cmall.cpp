@@ -20,7 +20,7 @@
 #include "cmall/conversion.hpp"
 
 #include "httpd/http_misc_helper.hpp"
-#include "httpd/header_decode.hpp"
+#include "httpd/header_helper.hpp"
 #include "httpd/httpd.hpp"
 #include "httpd/wait_all.hpp"
 #include "dirmon/dirmon.hpp"
@@ -340,13 +340,20 @@ namespace cmall
 
 		auto req_range = httpd::parse_range(req[boost::beast::http::field::range]);
 
+		std::map<boost::beast::http::field, std::string> headers;
+
+		headers.insert({boost::beast::http::field::expires, httpd::make_http_last_modified(std::time(0) + 60)});
+		headers.insert({boost::beast::http::field::content_type, httpd::get_mime_type_from_extension(std::filesystem::path(path_in_repo).extension().string())});
+
 		if (req_range)
 		{
+			auto ranged_body = req_range->end == 0 ? res_body.substr(req_range->begin): res_body.substr(req_range->begin, req_range->end - req_range->begin);
+			headers.insert({boost::beast::http::field::content_range, httpd::make_cpntent_range(req_range.value(), ranged_body.length())});
+
 			// 执行 206 响应.
 			ec = co_await httpd::send_string_response_body(client,
-				req_range->end == 0 ? res_body.substr(req_range->begin): res_body.substr(req_range->begin, req_range->end - req_range->begin),
-				httpd::make_http_last_modified(std::time(0) + 60),
-				httpd::get_mime_type_from_extension(std::filesystem::path(path_in_repo).extension().string()),
+				std::move(ranged_body),
+				std::move(headers),
 				req.version(),
 				req.keep_alive(),
 				boost::beast::http::status::partial_content);
@@ -358,8 +365,7 @@ namespace cmall
 		{
 			ec = co_await httpd::send_string_response_body(client,
 				std::move(res_body),
-				httpd::make_http_last_modified(std::time(0) + 60),
-				httpd::get_mime_type_from_extension(std::filesystem::path(path_in_repo).extension().string()),
+				std::move(headers),
 				req.version(),
 				req.keep_alive());
 			if (ec)
@@ -381,10 +387,14 @@ namespace cmall
 
 		std::string product_detail = co_await merchant_repo_ptr->get_product_detail(goods_id);
 
+		std::map<boost::beast::http::field, std::string> headers;
+
+		headers.insert({boost::beast::http::field::expires, httpd::make_http_last_modified(std::time(0) + 60)});
+		headers.insert({boost::beast::http::field::content_type, "text/markdown; charset=utf-8"});
+
 		ec = co_await httpd::send_string_response_body(client,
 			product_detail,
-			httpd::make_http_last_modified(std::time(0) + 60),
-			"text/markdown; charset=utf-8",
+			headers,
 			http_ver,
 			keepalive);
 		if (ec)

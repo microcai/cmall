@@ -12,12 +12,32 @@
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix.hpp>
 
-#ifdef _MSC_VER
-#	pragma warning(push)
-#	pragma warning(disable: 4244 4459)
-#endif // _MSC_VER
+//////////////////////////////////////////////////////////////////////////
 
-#include "httpd/header_decode.hpp"
+// 微软的 STL 只有 足够的新才能 include fmt 不然会报错
+#if defined(__cpp_lib_format)
+#include <format>
+#else
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wexpansion-to-defined"
+#endif
+
+#include <fmt/ostream.h>
+#include <fmt/printf.h>
+#include <fmt/format.h>
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+
+namespace std {
+	using namespace fmt;
+}
+#endif
+
+#include "httpd/header_helper.hpp"
 
 typedef struct {
     int tm_sec;
@@ -492,4 +512,17 @@ std::optional<httpd::BytesRange> httpd::parse_range(std::string_view range)
 	}
 
 	return ast;
+}
+
+std::string httpd::make_http_last_modified(std::time_t t)
+{
+    tm* gmt = gmtime((const time_t*)&t);
+    char time_buf[512] = { 0 };
+    strftime(time_buf, 200, "%a, %d %b %Y %H:%M:%S GMT", gmt);
+    return time_buf;
+}
+
+std::string httpd::make_cpntent_range(BytesRange r, std::uint64_t content_length)
+{
+    return std::format("bytes {}-{}/{}", r.begin, r.end == 0 ? content_length: r.end, content_length);
 }
