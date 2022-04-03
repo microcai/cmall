@@ -491,20 +491,27 @@ namespace cmall
 
 				if (api_token.empty())
 				{
-					if (sessionid.empty())
+					// 兼容老客户端, 如果基于 cookie 恢复, 就没有 sessionid, 但是已经有 connection_ptr->session_info
+					if (!connection_ptr->session_info)
 					{
-						// 表示是第一次使用，所以创建一个新　session 给客户端.
-						co_await alloca_sessionid(connection_ptr);
-					}
-					else if (!(co_await session_cache_map.exist(sessionid)))
-					{
-						// 表示session 过期，所以创建一个新　session 给客户端.
-						co_await alloca_sessionid(connection_ptr);
-					}
-					else
-					{
-						this_client.session_info
-							= std::make_shared<services::client_session>(co_await session_cache_map.load(sessionid));
+						if (sessionid.empty())
+						{
+							if (!connection_ptr->session_info)
+							{
+								// 表示是第一次使用，所以创建一个新　session 给客户端.
+								co_await alloca_sessionid(connection_ptr);
+							}
+						}
+						else if (!(co_await session_cache_map.exist(sessionid)))
+						{
+							// 表示session 过期，所以创建一个新　session 给客户端.
+							co_await alloca_sessionid(connection_ptr);
+						}
+						else
+						{
+							this_client.session_info
+								= std::make_shared<services::client_session>(co_await session_cache_map.load(sessionid));
+						}
 					}
 
 					if (this_client.session_info->user_info)
