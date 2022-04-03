@@ -484,8 +484,6 @@ std::optional<httpd::BytesRange> httpd::parse_range(std::string_view range)
 
 	auto first = range.begin();
 
-	std::cerr << "parse:" << range;
-
 	bool r = qi::parse(first, range.end(), gramer, ast);
 
 	if (!r)
