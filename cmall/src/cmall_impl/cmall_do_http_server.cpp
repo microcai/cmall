@@ -146,7 +146,10 @@ namespace cmall
 						client_ptr->session_info
 							= std::make_shared<services::client_session>(co_await session_cache_map.load(sessionid));
 
-						co_await load_user_info(client_ptr);
+						if (client_ptr->session_info->user_info)
+						{
+							co_await load_user_info(client_ptr);
+						}
 					}
 				}
 
