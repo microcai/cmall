@@ -468,9 +468,7 @@ struct range_grammer : qi::grammar<Iterator, httpd::BytesRange()>
 		using qi::debug;
 		using namespace boost::phoenix;
 
-		range_line = qi::lit("bytes=")>> number [ at_c<0>(qi::_val) = qi::_1 ] >> qi::lit('-') >> number [ at_c<1>(qi::_val) = qi::_1];
-
-        number = qi::ulong_long;
+		range_line = qi::lit("bytes=")>> qi::uint_ [ at_c<0>(qi::_val) = qi::_1 ] >> qi::char_('-') >> * qi::uint_ [ at_c<1>(qi::_val) = qi::_1];
 	};
 
 	qi::rule<Iterator, httpd::BytesRange()> range_line;

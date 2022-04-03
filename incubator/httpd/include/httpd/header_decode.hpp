@@ -11,9 +11,9 @@ namespace httpd {
 
     struct BytesRange
     {
-        std::uint64_t begin, end;
+        std::uint64_t begin {0};
+        std::uint64_t end {0};
     };
-
 
 	bool parse_gmt_time_fmt(std::string_view date_str, time_t* output);
 

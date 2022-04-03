@@ -344,7 +344,7 @@ namespace cmall
 		{
 			// 执行 206 响应.
 			ec = co_await httpd::send_string_response_body(client,
-				res_body.substr(req_range->begin, req_range->end - req_range->begin),
+				req_range->end == 0 ? res_body.substr(req_range->begin): res_body.substr(req_range->begin, req_range->end - req_range->begin),
 				httpd::make_http_last_modified(std::time(0) + 60),
 				httpd::get_mime_type_from_extension(std::filesystem::path(path_in_repo).extension().string()),
 				req.version(),
