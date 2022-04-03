@@ -34,9 +34,8 @@ namespace services
 
 	struct gitea_impl
 	{
-		gitea_impl(boost::asio::io_context& io, const std::string& gitea_api, const std::string& token)
-			: io(io)
-			, gitea_api(gitea_api)
+		gitea_impl(const std::string& gitea_api, const std::string& token)
+			: gitea_api(gitea_api)
 			, admin_token(token)
 		{}
 
@@ -147,8 +146,6 @@ namespace services
 			co_return res.code == 200;
 		}
 
-		boost::asio::io_context& io;
-
 		std::string gitea_api;
 		std::string admin_token;
 	};
@@ -163,11 +160,11 @@ namespace services
 		co_return co_await impl().change_password(uid, password);
 	}
 
-	gitea::gitea(boost::asio::io_context& io, const std::string& gitea_api, const std::string& token)
+	gitea::gitea(const std::string& gitea_api, const std::string& token)
 
 	{
 		static_assert(sizeof(obj_stor) >= sizeof(gitea_impl));
-		std::construct_at(reinterpret_cast<gitea_impl*>(obj_stor.data()), io, gitea_api, token);
+		std::construct_at(reinterpret_cast<gitea_impl*>(obj_stor.data()), gitea_api, token);
 	}
 
 	gitea::~gitea()

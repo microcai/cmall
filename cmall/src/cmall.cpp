@@ -40,7 +40,7 @@ namespace cmall
 		, telephone_verifier(m_io_context)
 		, payment_service(m_io_context)
 		, script_runner(m_io_context)
-		, gitea_service(m_io_context, config.gitea_api, config.gitea_admin_token)
+		, gitea_service(config.gitea_api, config.gitea_admin_token)
 		, sslctx_(boost::asio::ssl::context::tls_server)
 	{
 	}
