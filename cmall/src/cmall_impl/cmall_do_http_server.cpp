@@ -154,15 +154,19 @@ namespace cmall
 				}
 
 				std::string cookie_line;
+				auto user_agent = req[boost::beast::http::field::user_agent];
 
-				if (!client_ptr->session_info)
+				if (user_agent.length() && user_agent.find("Mozilla")!= std::string::npos)
 				{
-					co_await alloca_sessionid(client_ptr);
+					if (!client_ptr->session_info)
+					{
+						co_await alloca_sessionid(client_ptr);
 
-					cookie_line = std::format("Session={}; Path=/api; Expires={}",
-						client_ptr->session_info->session_id,
-						httpd::make_http_last_modified(std::time(NULL) + 31536000)
-					);
+						cookie_line = std::format("Session={}; Path=/api; Expires={}",
+							client_ptr->session_info->session_id,
+							httpd::make_http_last_modified(std::time(NULL) + 31536000)
+						);
+					}
 				}
 
 				client_ptr->ws_client->ws_stream_.set_option(
