@@ -35,7 +35,7 @@ namespace httpd
 {
 	using boost::asio::experimental::promise;
 	using boost::asio::experimental::use_promise;
-	
+
 	template <typename AcceptedClientClass, typename ServiceClass, typename Execotor = boost::asio::any_io_executor>
 	requires requires
 	{

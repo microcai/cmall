@@ -74,7 +74,7 @@ public:
             if constexpr (std::is_same_v<std::decay_t<decltype(realtype)>, httpd::unix_stream>)
                 return boost::beast::get_lowest_layer(realtype).socket();
             else
-                throw std::runtime_error("not a tcp socket");
+                throw std::runtime_error("not a unix_socket");
         }, *this);
     }
 
