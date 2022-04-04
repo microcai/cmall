@@ -61,6 +61,7 @@ namespace cmall
 		using fields	  = boost::beast::http::fields;
 		using request	  = boost::beast::http::request<string_body>;
 		using response	  = boost::beast::http::response<string_body>;
+		using header_field = boost::beast::http::field;
 
 		const size_t connection_id = client_ptr->connection_id_;
 
@@ -70,8 +71,8 @@ namespace cmall
 			= [&client_ptr](auto body, auto status_code, unsigned version) mutable -> awaitable<void>
 		{
 			response res{ static_cast<boost::beast::http::status>(status_code), version };
-			res.set(boost::beast::http::field::server, HTTPD_VERSION_STRING);
-			res.set(boost::beast::http::field::content_type, "text/html");
+			res.set(header_field::server, HTTPD_VERSION_STRING);
+			res.set(header_field::content_type, "text/html");
 			res.keep_alive(false);
 			res.body() = body;
 			res.prepare_payload();
@@ -136,7 +137,7 @@ namespace cmall
 
 				client_ptr->ws_client.emplace(client_ptr->tcp_stream);
 
-				for (auto& cookie : make_iterator_range(req.equal_range(boost::beast::http::field::cookie)))
+				for (auto& cookie : make_iterator_range(req.equal_range(header_field::cookie)))
 				{
 					auto sessionid = httpd::parse_cookie(cookie.value())["Session"];
 
@@ -154,9 +155,10 @@ namespace cmall
 				}
 
 				std::string cookie_line;
-				auto user_agent = req[boost::beast::http::field::user_agent];
+				auto user_agent = req[header_field::user_agent];
+				auto sec_websocket_protocol = req[header_field::sec_websocket_protocol];
 
-				if (user_agent.length() && user_agent.find("Mozilla")!= std::string::npos)
+				if (user_agent.length() && user_agent.find("Mozilla")!= std::string::npos && sec_websocket_protocol == "request_cookie")
 				{
 					if (!client_ptr->session_info)
 					{
@@ -170,9 +172,10 @@ namespace cmall
 				}
 
 				client_ptr->ws_client->ws_stream_.set_option(
-					boost::beast::websocket::stream_base::decorator([cookie_line](auto& res)
+					boost::beast::websocket::stream_base::decorator([sec_websocket_protocol, cookie_line](auto& res)
 					{
-						res.set(boost::beast::http::field::server, HTTPD_VERSION_STRING);
+						res.set(header_field::server, HTTPD_VERSION_STRING);
+						res.set(header_field::sec_websocket_protocol, sec_websocket_protocol);
 						if (!cookie_line.empty())
 							res.set(boost::beast::http::field::set_cookie, cookie_line);
 					}));
