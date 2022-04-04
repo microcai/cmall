@@ -11,13 +11,6 @@
 #include "httpd/http_misc_helper.hpp"
 namespace httpd {
 
-#ifdef _MSC_VER
-	template<typename T>
-	auto strcasecmp(T a, T b) {
-		return lstrcmpiA(a, b);
-	}
-#endif
-
 	static std::map<std::string_view, std::string> mime_map = {
 		{ ".html", "text/html; charset=utf-8" },
 		{ ".js", "application/javascript" },

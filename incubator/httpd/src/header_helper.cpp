@@ -39,6 +39,13 @@ namespace std {
 
 #include "httpd/header_helper.hpp"
 
+#ifdef _MSC_VER
+template<typename T>
+auto strcasecmp(T a, T b) {
+	return lstrcmpiA(a, b);
+}
+#endif
+
 typedef struct {
     int tm_sec;
     int tm_min;
