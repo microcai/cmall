@@ -608,7 +608,7 @@ endif()
 
 if(WIN32)
 	target_compile_definitions(boost_header INTERFACE -DWIN32_LEAN_AND_MEAN -DNOMINMAX)
-	target_compile_definitions(boost_header PUBLIC -DBOOST_USE_WINAPI_VERSION=0x0601)
+	target_compile_definitions(boost_header INTERFACE -DBOOST_USE_WINAPI_VERSION=0x0601)
 	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 		target_compile_definitions(boost_header INTERFACE -DBOOST_SP_USE_STD_ATOMIC -DBOOST_USE_WINDOWS_H)
 		set_property(SOURCE libs/locale/src/shared/message.cpp APPEND PROPERTY CMAKE_CXX_FLAGS "-O0")
