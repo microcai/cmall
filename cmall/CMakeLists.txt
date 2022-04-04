@@ -1,11 +1,14 @@
 
 if (USE_BUNDLED_ODB_FILE)
 	set(ODB_GENERATED ${CMAKE_CURRENT_SOURCE_DIR}/../odb_generated/cmall/db-odb.cxx)
+elseif(MSVC)
+	ADD_ODB_INTERFACE(ODB_GENERATED ${CMAKE_CURRENT_SOURCE_DIR}/include/cmall/db.hpp ${CMAKE_CURRENT_BINARY_DIR}/cmall --include-prefix cmall)
+	include_directories(${CMAKE_CURRENT_BINARY_DIR})
 else()
 	ADD_ODB_INTERFACE(ODB_GENERATED ${CMAKE_CURRENT_SOURCE_DIR}/include/cmall/db.hpp ${CMAKE_CURRENT_SOURCE_DIR}/../odb_generated/cmall --include-prefix cmall)
+	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../odb_generated)
 endif()
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../odb_generated)
 add_definitions(-DLOGGING_COMPRESS_LOGS)
 
 find_package(seccomp)
