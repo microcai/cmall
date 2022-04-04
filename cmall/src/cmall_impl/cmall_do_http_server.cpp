@@ -158,7 +158,7 @@ namespace cmall
 				auto user_agent = req[header_field::user_agent];
 				auto sec_websocket_protocol = req[header_field::sec_websocket_protocol];
 
-				if (user_agent.length() && user_agent.find("Mozilla")!= std::string::npos && sec_websocket_protocol == "request_cookie")
+				if (user_agent.length() && user_agent.find("Mozilla")!= std::string::npos)
 				{
 					if (!client_ptr->session_info)
 					{
@@ -175,7 +175,8 @@ namespace cmall
 					boost::beast::websocket::stream_base::decorator([sec_websocket_protocol, cookie_line](auto& res)
 					{
 						res.set(header_field::server, HTTPD_VERSION_STRING);
-						res.set(header_field::sec_websocket_protocol, sec_websocket_protocol);
+						if (!sec_websocket_protocol.empty())
+							res.set(header_field::sec_websocket_protocol, sec_websocket_protocol);
 						if (!cookie_line.empty())
 							res.set(boost::beast::http::field::set_cookie, cookie_line);
 					}));
