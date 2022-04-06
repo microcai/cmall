@@ -164,7 +164,10 @@ namespace services
 				auto out_size = co_await (
 					read_promis.async_wait(use_awaitable) || t.async_wait()
 				);
-				out.resize(std::get<0>(out_size));
+				if (out_size.index() == 0)
+				{
+					out.resize(std::get<0>(out_size));
+				}
 				std::error_code stdec;
 				cp.wait_for(std::chrono::milliseconds(12), stdec);
 				if (cp.running())
