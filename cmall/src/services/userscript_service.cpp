@@ -158,21 +158,36 @@ namespace services
 			awaitable_timer  t(co_await boost::asio::this_coro::executor);
 			t.expires_from_now(std::chrono::seconds(5));
 
-			auto out_size = co_await (
-				read_promis.async_wait(use_awaitable) || t.async_wait()
-			);
-			out.resize(std::get<0>(out_size));
-			std::error_code stdec;
-			cp.wait_for(std::chrono::milliseconds(12), stdec);
-			if (cp.running())
+			try
 			{
-				cp.terminate();
-				cp.wait(stdec);
-			}
+
+				auto out_size = co_await (
+					read_promis.async_wait(use_awaitable) || t.async_wait()
+				);
+				out.resize(std::get<0>(out_size));
+				std::error_code stdec;
+				cp.wait_for(std::chrono::milliseconds(12), stdec);
+				if (cp.running())
+				{
+					cp.terminate();
+					cp.wait(stdec);
+				}
 #ifdef __linux__
-			seccomp_supervisor_promise.cancel();;
+				seccomp_supervisor_promise.cancel();;
 #endif
-			co_return out;
+				co_return out;
+			}
+			catch(std::exception& e)
+			{
+				std::error_code stdec;
+				if (cp.running())
+				{
+					cp.terminate();
+				}
+				cp.wait(stdec);
+				LOG_ERR << "execute script error:" << e.what();
+				co_return "";
+			}
 		}
 
 		awaitable<std::string> run_script(std::string_view script_file_content, std::string_view http_request_body,
