@@ -19,11 +19,40 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
     switch (method)
     {
         case req_method::admin_user_list:
+		{
+            std::vector<cmall_user> all_users;
+            using query_t = odb::query<cmall_user>;
+            auto query = query_t::deleted_at.is_null() + " order by " + query_t::created_at + " desc";
+            co_await m_database.async_load<cmall_user>(query, all_users);
+            reply_message["result"] = boost::json::value_from(all_users);
+		}
+		break;
         case req_method::admin_user_ban:
-            break;
+		{
+			auto uid = jsutil::json_accessor(params).get("uid", -1).as_int64();
+			if (uid < 0)
+                throw boost::system::system_error(cmall::error::invalid_params);
+
+			co_await m_database.async_update<cmall_user>(uid, [](cmall_user&& user) mutable
+			{
+				user.state_ = 2;
+				return user;
+			});
+			reply_message["result"] = true;
+		}
+		break;
         case req_method::admin_user_detail:
         {
-            // TODO
+			auto uid = jsutil::json_accessor(params).get("uid", -1).as_int64();
+			if (uid < 0)
+                throw boost::system::system_error(cmall::error::invalid_params);
+
+			cmall_user u;
+            bool found = co_await m_database.async_load<cmall_user>(uid, u);
+			if (!found)
+				throw boost::system::system_error(cmall::error::user_not_found);
+
+			reply_message["result"] = boost::json::value_from(u);
 
         }break;
         case req_method::admin_list_merchants:

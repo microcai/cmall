@@ -33,6 +33,7 @@ namespace cmall
 			should_be_same_merchant,
 			no_payment_script_supplyed,
 			no_paycheck_script_spplyed,
+			user_not_found,
 		};
 
 		class cmall_category : public boost::system::error_category
