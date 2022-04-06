@@ -176,6 +176,28 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api
             reply_message["result"] = ok;
         }
         break;
+        case req_method::merchant_create_apptoken:
+        {
+            cmall_apptoken token;
+            token.uid_ = this_user.uid_;
+            token.apptoken = gen_uuid();
+            bool db_ok = co_await m_database.async_add(token);
+            reply_message["result"] = db_ok ? token.apptoken : "" ;
+        }break;
+		case req_method::merchant_list_apptoken:
+        {
+            std::vector<cmall_apptoken> r;
+            co_await m_database.async_load<cmall_apptoken>(odb::query<cmall_apptoken>::uid == this_user.uid_, r);
+            std::vector<std::string> r_converted;
+            std::transform(r.begin(), r.end(), std::back_inserter(r_converted), [](auto t){ return t.apptoken; });
+            reply_message["result"] = boost::json::value_from(r_converted);
+        }break;
+		case req_method::merchant_delete_apptoken:
+        {
+            auto apptoken	   = jsutil::json_accessor(params).get_string("apptoken");
+            bool db_ok = co_await m_database.async_erase<cmall_apptoken>(odb::query<cmall_apptoken>::apptoken == apptoken);
+            reply_message["result"] = db_ok;
+        }break;
         default:
             throw "this should never be executed";
     }

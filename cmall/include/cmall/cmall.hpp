@@ -168,6 +168,9 @@ namespace cmall {
 		merchant_delete_sold_orders,
 		merchant_get_gitea_password,
 		merchant_reset_gitea_password,
+		merchant_create_apptoken,
+		merchant_list_apptoken,
+		merchant_delete_apptoken,
 
 		admin_user_detail,
 		admin_user_list,

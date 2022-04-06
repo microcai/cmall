@@ -611,6 +611,9 @@ namespace cmall
 			case req_method::merchant_delete_sold_orders:
 			case req_method::merchant_get_gitea_password:
 			case req_method::merchant_reset_gitea_password:
+			case req_method::merchant_create_apptoken:
+			case req_method::merchant_list_apptoken:
+			case req_method::merchant_delete_apptoken:
 				co_await ensure_login(false, true);
 				co_return co_await handle_jsonrpc_merchant_api(connection_ptr, method.value(), params);
 				break;

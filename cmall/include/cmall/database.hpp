@@ -303,6 +303,18 @@ namespace cmall
 				});
 		}
 
+		template <typename T>
+		bool erase_query(const odb::query<T>& query)
+		{
+			return retry_database_op(
+				[&, this]() mutable
+				{
+					odb::transaction t(m_db->begin());
+					m_db->erase_query<T>(query);
+					t.commit();
+					return true;
+				});
+		}
 	public:
 		template <typename T> requires SupportSoftDeletion<T>
 		awaitable<bool> async_load_all(std::vector<T> & value)
@@ -379,6 +391,15 @@ namespace cmall
 			return boost::asio::co_spawn(thread_pool, [id, this]()mutable -> awaitable<bool>
 			{
 				co_return hard_remove<T>(id);
+			}, use_awaitable);
+		}
+
+		template <typename T>
+		awaitable<bool> async_erase(const odb::query<T>& query)
+		{
+			return boost::asio::co_spawn(thread_pool, [this, query]() mutable -> awaitable<bool>
+			{
+				co_return erase_query<T>(query);
 			}, use_awaitable);
 		}
 
