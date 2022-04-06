@@ -158,48 +158,33 @@ namespace services
 			awaitable_timer  t(co_await boost::asio::this_coro::executor);
 			t.expires_from_now(std::chrono::seconds(5));
 
-			try
+			auto out_size = co_await (
+				read_promis.async_wait(use_awaitable) || t.async_wait()
+			);
+			if (out_size.index() == 0)
 			{
-
-				auto out_size = co_await (
-					read_promis.async_wait(use_awaitable) || t.async_wait()
-				);
-				if (out_size.index() == 0)
-				{
-					out.resize(std::get<0>(out_size));
-				}
-				else
-				{
-					LOG_ERR << "script timedout, terminationg";
-					// script timedout
-					std::error_code stdec;
-					cp.terminate(stdec);
-					cp.wait(stdec);
-					co_return "";
-				}
-				std::error_code stdec;
-				cp.wait_for(std::chrono::milliseconds(12), stdec);
-				if (cp.running())
-				{
-					cp.terminate();
-				}
-#ifdef __linux__
-				seccomp_supervisor_promise.cancel();;
-#endif
-				cp.wait(stdec);
-				co_return out;
+				out.resize(std::get<0>(out_size));
 			}
-			catch(std::exception& e)
+			else
 			{
+				LOG_ERR << "script timedout, terminationg";
+				// script timedout
 				std::error_code stdec;
-				if (cp.running())
-				{
-					cp.terminate();
-				}
+				cp.terminate(stdec);
 				cp.wait(stdec);
-				LOG_ERR << "execute script error:" << e.what();
 				co_return "";
 			}
+			std::error_code stdec;
+			cp.wait_for(std::chrono::milliseconds(12), stdec);
+			if (cp.running())
+			{
+				cp.terminate();
+			}
+#ifdef __linux__
+			seccomp_supervisor_promise.cancel();;
+#endif
+			cp.wait(stdec);
+			co_return out;
 		}
 
 		awaitable<std::string> run_script(std::string_view script_file_content, std::string_view http_request_body,
@@ -286,48 +271,34 @@ namespace services
 			awaitable_timer  t(co_await boost::asio::this_coro::executor);
 			t.expires_from_now(std::chrono::seconds(20));
 
-			try
+			auto out_size = co_await (
+				read_promis.async_wait(use_awaitable) || t.async_wait()
+			);
+			if (out_size.index() == 0)
 			{
-
-				auto out_size = co_await (
-					read_promis.async_wait(use_awaitable) || t.async_wait()
-				);
-				if (out_size.index() == 0)
-				{
-					out.resize(std::get<0>(out_size));
-				}
-				else
-				{
-					LOG_ERR << "script timedout, terminationg";
-					// script timedout
-					std::error_code stdec;
-					cp.terminate(stdec);
-					cp.wait(stdec);
-					co_return "";
-				}
-				std::error_code stdec;
-				cp.wait_for(std::chrono::milliseconds(12), stdec);
-				if (cp.running())
-				{
-					cp.terminate();
-				}
-#ifdef __linux__
-				seccomp_supervisor_promise.cancel();;
-#endif
-				cp.wait(stdec);
-				co_return out;
+				out.resize(std::get<0>(out_size));
 			}
-			catch(std::exception& e)
+			else
 			{
+				LOG_ERR << "script timedout, terminationg";
+				// script timedout
 				std::error_code stdec;
-				if (cp.running())
-				{
-					cp.terminate();
-				}
+				cp.terminate(stdec);
 				cp.wait(stdec);
-				LOG_ERR << "execute script error:" << e.what();
 				co_return "";
 			}
+			std::error_code stdec;
+			cp.wait_for(std::chrono::milliseconds(12), stdec);
+			if (cp.running())
+			{
+				cp.terminate();
+			}
+#ifdef __linux__
+			seccomp_supervisor_promise.cancel();;
+#endif
+			cp.wait(stdec);
+			co_return out;
+
 		}
 
 		boost::asio::io_context& io;
