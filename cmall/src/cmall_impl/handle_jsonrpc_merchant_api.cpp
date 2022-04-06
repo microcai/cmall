@@ -68,7 +68,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api
             {
                 throw boost::system::system_error(cmall::error::no_paycheck_script_spplyed);
             }
-        }
+        }// 这里是特意没 break 的
         case req_method::merchant_sold_orders_mark_payed:
         {
             auto orderid = jsutil::json_accessor(params).get_string("orderid");
