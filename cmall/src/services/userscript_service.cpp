@@ -148,7 +148,7 @@ namespace services
 			std::string out;
 			auto d_buffer = boost::asio::dynamic_buffer(out);
 
-			auto read_promis = boost::asio::async_read_until(nodejs_output, d_buffer, '\n', use_promise);
+			auto read_promis = boost::asio::co_spawn(io, read_all_pipe_data(nodejs_output, d_buffer), use_promise);
 
 #ifdef _WIN32
 			co_await boost::asio::async_write(nodejs_input, boost::asio::buffer(script_content), use_awaitable);
@@ -156,7 +156,7 @@ namespace services
 			nodejs_input.close();
 
 			awaitable_timer  t(co_await boost::asio::this_coro::executor);
-			t.expires_from_now(std::chrono::seconds(20));
+			t.expires_from_now(std::chrono::seconds(5));
 
 			auto out_size = co_await (
 				read_promis.async_wait(use_awaitable) || t.async_wait()
@@ -165,7 +165,10 @@ namespace services
 			std::error_code stdec;
 			cp.wait_for(std::chrono::milliseconds(12), stdec);
 			if (cp.running())
+			{
 				cp.terminate();
+				cp.wait(stdec);
+			}
 #ifdef __linux__
 			seccomp_supervisor_promise.cancel();;
 #endif
@@ -254,11 +257,8 @@ namespace services
 			}, use_promise);
 
 			awaitable_timer  t(co_await boost::asio::this_coro::executor);
-#ifdef _DEBUG
-			t.expires_from_now(std::chrono::seconds(200));
-#else
 			t.expires_from_now(std::chrono::seconds(20));
-#endif
+
 			auto out_size = co_await (
 				read_promis.async_wait(use_awaitable) || t.async_wait()
 			);
@@ -266,7 +266,11 @@ namespace services
 			std::error_code stdec;
 			cp.wait_for(std::chrono::milliseconds(12), stdec);
 			if (cp.running())
+			{
 				cp.terminate();
+				cp.wait(stdec);
+			}
+
 #ifdef __linux__
 			seccomp_supervisor_promise.cancel();;
 #endif
