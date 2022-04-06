@@ -56,7 +56,7 @@ namespace services
 			{
 				std::unique_lock<std::mutex> l(exclude_run);
 
-				if (awaiting_orders.count(orderid) != 0)
+				if (awaiting_orders.count(orderid) == 0)
 				{
 					awaiting_orders.insert(orderid);
 				}
