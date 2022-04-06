@@ -161,6 +161,7 @@ namespace cmall {
 
 		merchant_info,
 		merchant_get_sold_order_detail,
+		merchant_sold_orders_check_payment,
 		merchant_sold_orders_mark_payed,
 		merchant_goods_list,
 		merchant_list_sold_orders,

@@ -33,7 +33,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api
         break;
         case req_method::merchant_get_sold_order_detail:
         {
-            auto orderid	   = jsutil::json_accessor(params).get_string("orderid");
+            auto orderid	 = jsutil::json_accessor(params).get_string("orderid");
 
             std::vector<cmall_order> orders;
             using query_t = odb::query<cmall_order>;
@@ -47,9 +47,31 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api
                 throw boost::system::system_error(cmall::error::order_not_found);
         }
         break;
+        case req_method::merchant_sold_orders_check_payment:
+        {
+            boost::system::error_code ec;
+            auto orderid = jsutil::json_accessor(params).get_string("orderid");
+            auto merchant_repo_ptr = get_merchant_git_repo(this_merchant);
+            std::string checkpay_script_content = co_await merchant_repo_ptr->get_file_content("scripts/checkpay.js", ec);
+            if (!checkpay_script_content.empty())
+            {
+                std::string pay_check_result = co_await boost::asio::co_spawn(background_task_thread_pool,
+                    script_runner.run_script(checkpay_script_content, {"--order-id", orderid}), use_awaitable);
+                if (pay_check_result != "payed" && pay_check_result != "payed\n")
+                {
+
+                    reply_message["result"] = false;
+                    co_return reply_message;
+                }
+            }
+            else
+            {
+                throw boost::system::system_error(cmall::error::no_paycheck_script_spplyed);
+            }
+        }
         case req_method::merchant_sold_orders_mark_payed:
         {
-            auto orderid	   = jsutil::json_accessor(params).get_string("orderid");
+            auto orderid = jsutil::json_accessor(params).get_string("orderid");
 
             std::vector<cmall_order> orders;
             using query_t = odb::query<cmall_order>;
@@ -91,6 +113,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api
                 throw boost::system::system_error(cmall::error::order_not_found);
         }
         break;
+
         case req_method::merchant_goods_list:
         {
             // 列出 商品, 根据参数决定是首页还是商户

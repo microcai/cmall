@@ -32,6 +32,7 @@ namespace cmall
 			already_in_cart,
 			should_be_same_merchant,
 			no_payment_script_supplyed,
+			no_paycheck_script_spplyed,
 		};
 
 		class cmall_category : public boost::system::error_category

@@ -46,6 +46,10 @@ std::string cmall::error::cmall_category::message(int ev) const
 			return (const char*) u8"已在购物车中";
 		case merchant_vanished:
 			return (const char*) u8"商户蜜汁消失";
+		case no_payment_script_supplyed:
+			return (const char*) u8"没提供 getpayurl.js";
+		case no_paycheck_script_spplyed:
+			return (const char*) u8"未提供 checkpay.js";
 	}
 	return "error message";
 }
