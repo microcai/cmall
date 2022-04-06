@@ -49,24 +49,41 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api
         break;
         case req_method::merchant_sold_orders_check_payment:
         {
-            boost::system::error_code ec;
             auto orderid = jsutil::json_accessor(params).get_string("orderid");
-            auto merchant_repo_ptr = get_merchant_git_repo(this_merchant);
-            std::string checkpay_script_content = co_await merchant_repo_ptr->get_file_content("scripts/checkpay.js", ec);
-            if (!checkpay_script_content.empty())
-            {
-                std::string pay_check_result = co_await boost::asio::co_spawn(background_task_thread_pool,
-                    script_runner.run_script(checkpay_script_content, {"--order-id", orderid}), use_awaitable);
-                if (pay_check_result != "payed" && pay_check_result != "payed\n")
-                {
 
-                    reply_message["result"] = false;
-                    co_return reply_message;
+            std::vector<cmall_order> orders;
+            using query_t = odb::query<cmall_order>;
+            auto query	  = (query_t::oid == orderid && query_t::seller == this_user.uid_ && query_t::deleted_at.is_null());
+            co_await m_database.async_load<cmall_order>(query, orders);
+
+            if (orders.size() != 1)
+                throw boost::system::system_error(cmall::error::order_not_found);
+
+            if (orders[0].payed_at_.null())
+            {
+                boost::system::error_code ec;
+                auto merchant_repo_ptr = get_merchant_git_repo(this_merchant);
+                std::string checkpay_script_content = co_await merchant_repo_ptr->get_file_content("scripts/checkpay.js", ec);
+                if (!checkpay_script_content.empty())
+                {
+                    std::string pay_check_result = co_await boost::asio::co_spawn(background_task_thread_pool,
+                        script_runner.run_script(checkpay_script_content, {"--order-id", orderid}), use_awaitable);
+                    if (pay_check_result != "payed" && pay_check_result != "payed\n")
+                    {
+
+                        reply_message["result"] = false;
+                        co_return reply_message;
+                    }
+                }
+                else
+                {
+                    throw boost::system::system_error(cmall::error::no_paycheck_script_spplyed);
                 }
             }
             else
             {
-                throw boost::system::system_error(cmall::error::no_paycheck_script_spplyed);
+                reply_message["result"] = true;
+                co_return reply_message;
             }
         }// 这里是特意没 break 的
         case req_method::merchant_sold_orders_mark_payed:
