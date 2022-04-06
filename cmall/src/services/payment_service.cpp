@@ -49,7 +49,7 @@ namespace services
 
 			scoped_exit c([this, orderid]()
 			{
-				std::lock_guard<std::mutex> l(exclude_run);
+				std::scoped_lock<std::mutex> l(exclude_run);
 				awaiting_orders.erase(orderid);
 			});
 

@@ -429,7 +429,14 @@ awaitable<void> sandbox::supervisor::start_supervisor()
 					struct iovec traced_readbuf = { reinterpret_cast<void*>(req->data.args[1]), addrlen };
 					process_vm_readv(req->pid, &this_readbuf, 1, &traced_readbuf, 1, 0);
 
-					if (raw_socket[0] == AF_LOCAL)
+					if (raw_socket[0] == AF_UNSPEC)
+					{
+						resp->error = 0;
+						resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
+						break;
+
+					}
+					else if (raw_socket[0] == AF_LOCAL)
 					{
 						sockaddr_un * addr = reinterpret_cast<sockaddr_un *>(raw_socket.data());
 
