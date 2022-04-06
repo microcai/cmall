@@ -21,6 +21,7 @@ using namespace boost::asio::experimental::awaitable_operators;
 #include "utils/timedmap.hpp"
 #include "utils/logging.hpp"
 #include "cmall/error_code.hpp"
+#include "utils/scoped_exit.hpp"
 
 using boost::asio::awaitable;
 
@@ -29,6 +30,9 @@ namespace services
 	struct payment_impl
 	{
 		services::userscript nodejs;
+
+		std::mutex exclude_run;
+		std::set<std::string> awaiting_orders;
 
 		payment_impl(boost::asio::io_context& io)
 			: nodejs(io)
@@ -41,6 +45,38 @@ namespace services
 			if (script_content.empty())
 			{
 				throw boost::system::system_error(cmall::error::no_payment_script_supplyed);
+			}
+
+			scoped_exit c([this, orderid]()
+			{
+				std::lock_guard<std::mutex> l(exclude_run);
+				awaiting_orders.erase(orderid);
+			});
+
+			{
+				std::unique_lock<std::mutex> l(exclude_run);
+
+				if (awaiting_orders.count(orderid) != 0)
+				{
+					awaiting_orders.insert(orderid);
+				}
+				else
+				{
+					do
+					{
+						l.unlock();
+						// wait for exclusive orders
+						awaitable_timer t(co_await boost::asio::this_coro::executor);
+
+						t.expires_from_now(std::chrono::milliseconds(50));
+
+						co_await t.async_wait(use_awaitable);
+
+						l.lock();
+					}while(awaiting_orders.count(orderid) !=0);
+
+					awaiting_orders.insert(orderid);
+				}
 			}
 
 			using namespace std::string_literals;
