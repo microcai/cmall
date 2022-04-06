@@ -383,6 +383,14 @@ awaitable<void> sandbox::supervisor::start_supervisor()
 							break;
 						}
 
+						if (node_want_open.starts_with("/run/systemd/") && (dirfd == AT_FDCWD))
+						{
+							LOG_DBG << "[seccomp] node wants to open dir /run/systemd/ return ENOENT";
+							resp->error = ENOENT;
+							resp->flags = 0;
+							break;
+						}
+
 						if (dirfd == AT_FDCWD && vfs.contains(node_want_open))
 						{
 							auto file_content = vfs.at(node_want_open);
@@ -430,6 +438,13 @@ awaitable<void> sandbox::supervisor::start_supervisor()
 						if (unix_socket_path.starts_with("/run/systemd/resolve"))
 						{
 							LOG_DBG << "[seccomp] node wants to connecto to systemd-resolved, allowed";
+							resp->error = 0;
+							resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
+							break;
+						}
+						if (unix_socket_path.starts_with("/var/run/nscd/socket"))
+						{
+							LOG_DBG << "[seccomp] node wants to connecto to nscd, allowed";
 							resp->error = 0;
 							resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
 							break;
