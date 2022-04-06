@@ -459,10 +459,10 @@ awaitable<void> sandbox::supervisor::start_supervisor()
 							reinterpret_cast<const boost::asio::ip::address_v4::bytes_type*>(&(addr->sin_addr))
 						);
 
-						LOG_DBG << "[seccomp] node wants to connect to " << destip.to_string() << ":" << addr->sin_port;
+						LOG_DBG << "[seccomp] node wants to connect to " << destip.to_string() << ":" << ntohs(addr->sin_port);
 
 						// 拒绝连接  5432
-						if (addr->sin_port == 5432)
+						if ( ntohs(addr->sin_port) == 5432)
 							break;
 
 						if (destip.is_multicast())
@@ -481,7 +481,7 @@ awaitable<void> sandbox::supervisor::start_supervisor()
 							addr->sin6_scope_id
 						);
 
-						LOG_DBG << "[seccomp] node wants to connect to [" << destip.to_string() << "]:" << addr->sin6_port;
+						LOG_DBG << "[seccomp] node wants to connect to [" << destip.to_string() << "]:" << ntohs(addr->sin6_port);
 
 						// 拒绝连接  5432
 						if (addr->sin6_port == 5432)

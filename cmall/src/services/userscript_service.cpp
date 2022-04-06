@@ -168,16 +168,25 @@ namespace services
 				{
 					out.resize(std::get<0>(out_size));
 				}
+				else
+				{
+					LOG_ERR << "script timedout, terminationg";
+					// script timedout
+					std::error_code stdec;
+					cp.terminate(stdec);
+					cp.wait(stdec);
+					co_return "";
+				}
 				std::error_code stdec;
 				cp.wait_for(std::chrono::milliseconds(12), stdec);
 				if (cp.running())
 				{
 					cp.terminate();
-					cp.wait(stdec);
 				}
 #ifdef __linux__
 				seccomp_supervisor_promise.cancel();;
 #endif
+				cp.wait(stdec);
 				co_return out;
 			}
 			catch(std::exception& e)
