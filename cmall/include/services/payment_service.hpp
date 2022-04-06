@@ -27,7 +27,7 @@ namespace services
 		const payment_impl& impl() const;
 		payment_impl& impl();
 
-		std::array<char, 512> obj_stor;
+		std::array<char, 1024> obj_stor;
 
 	};
 }
