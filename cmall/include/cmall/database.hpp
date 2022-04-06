@@ -97,7 +97,6 @@ namespace cmall
 				[&, this]() mutable
 				{
 					odb::transaction t(m_db->begin());
-					t.tracer(odb::stderr_full_tracer);
 					bool ok = m_db->find<T>(id, ret);
 					t.commit();
 					return ok;
@@ -111,7 +110,6 @@ namespace cmall
 				[&, this]() mutable
 				{
 					odb::transaction t(m_db->begin());
-					t.tracer(odb::stderr_full_tracer);
 					auto r = m_db->query<T>(query);
 					for (auto i : r)
 						ret.push_back(i);
@@ -128,7 +126,6 @@ namespace cmall
 				{
 					bool found = false;
 					odb::transaction t(m_db->begin());
-					t.tracer(odb::stderr_full_tracer);
 					auto r = m_db->query_one<T>(query);
 					if (r)
 					{
