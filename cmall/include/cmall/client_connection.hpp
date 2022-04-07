@@ -59,9 +59,13 @@ namespace cmall {
 		std::string remote_host_;
 		std::string x_real_ip;
 
+		std::uint64_t last_processed_req_id = { 0 };
+
 		std::optional<websocket_connection> ws_client;
 
 		std::shared_ptr<services::client_session> session_info;
+
+		std::map<std::uint64_t, std::shared_ptr<boost::asio::cancellation_signal>> cancel_signals_;
 
 		auto get_executor()
 		{
@@ -80,12 +84,16 @@ namespace cmall {
 
 		~client_connection()
 		{
+			for (auto & cs: cancel_signals_)
+				cs.second->emit(boost::asio::cancellation_type::all);
 			tcp_stream.close();
 			LOG_DBG << (ws_client? "ws" : "http" ) <<  " client leave: " << connection_id_ << ", remote: " << x_real_ip;
 		}
 
 		void close()
 		{
+			for (auto & cs: cancel_signals_)
+				cs.second->emit(boost::asio::cancellation_type::all);
 			if (ws_client)
 				ws_client->close(connection_id_);
 			tcp_stream.close();

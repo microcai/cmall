@@ -72,6 +72,11 @@ awaitable<void> cmall::cmall_service::do_ws_read(size_t connection_id, client_co
 			continue;
 		}
 
+		auto cancel_signal = std::make_shared<boost::asio::cancellation_signal>();
+		auto last_processed_req_id = connection_ptr->last_processed_req_id ++;
+
+		connection_ptr->cancel_signals_.emplace(last_processed_req_id, cancel_signal);
+
 		// 每个请求都单开线程处理
 		boost::asio::co_spawn(
 			connection_ptr->get_executor(),
@@ -99,7 +104,11 @@ awaitable<void> cmall::cmall_service::do_ws_read(size_t connection_id, client_co
 				co_await websocket_write(connection_ptr, jsutil::json_to_string(replay_message))
 					.async_wait(use_awaitable);
 			},
-			boost::asio::detached);
+			boost::asio::bind_cancellation_slot(cancel_signal->slot(), [last_processed_req_id, connection_ptr](std::exception_ptr)
+			{
+				connection_ptr->cancel_signals_.erase(last_processed_req_id);
+			})
+		);
 	}
 }
 
