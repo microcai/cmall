@@ -28,12 +28,7 @@ systemctl start cmall
 
 cmall 由前端驱动. 前端只需要向 cmall 维持单一的一条长连接即可. 前端使用长连接, 必然就是 websocket 了.
 
-cmall 的前端连接服务器后, 立即进行恢复session的操作. 如果无 session 可恢复, 服务端会返回一个新的 session. 前端需要在本地使用 localstorage 持久化 session token.
-
-所有的API操作, 都需要 session 上下文环境. 由于有 session 恢复机制, 因此 websocket 连接中断可以保留会话信息.
-
-
-
+所有的API操作, 都需要 session 上下文环境. 由于有 cookie 可以恢复 session, 因此 websocket 连接中断可以保留会话信息.
 
 # FAQ
 
