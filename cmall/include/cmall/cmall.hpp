@@ -172,6 +172,7 @@ namespace cmall {
 		merchant_create_apptoken,
 		merchant_list_apptoken,
 		merchant_delete_apptoken,
+		merchant_alter_name,
 
 		admin_user_detail,
 		admin_user_list,

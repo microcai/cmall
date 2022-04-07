@@ -615,6 +615,7 @@ namespace cmall
 			case req_method::merchant_create_apptoken:
 			case req_method::merchant_list_apptoken:
 			case req_method::merchant_delete_apptoken:
+			case req_method::merchant_alter_name:
 				co_await ensure_login(false, true);
 				co_return co_await handle_jsonrpc_merchant_api(connection_ptr, method.value(), params);
 				break;

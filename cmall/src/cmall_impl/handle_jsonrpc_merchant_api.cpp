@@ -238,6 +238,18 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api
             bool db_ok = co_await m_database.async_erase<cmall_apptoken>(odb::query<cmall_apptoken>::apptoken == apptoken);
             reply_message["result"] = db_ok;
         }break;
+        case req_method::merchant_alter_name:
+        {
+            auto new_name	   = jsutil::json_accessor(params).get_string("name");
+            bool db_ok = co_await m_database.async_update<cmall_merchant>(this_merchant.uid_, [new_name](cmall_merchant&& old_value)
+            {
+                old_value.name_ = new_name;
+                return old_value;
+            });
+            if (db_ok)
+                this_merchant.name_ = new_name;
+            reply_message["result"] = db_ok;
+        }break;
         default:
             throw "this should never be executed";
     }
