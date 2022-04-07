@@ -250,6 +250,8 @@ struct cmall_cart
 	std::uint64_t uid_;
 
 	std::uint64_t merchant_id_;
+	#pragma db transient
+	std::string merchant_name_;
 
 	std::string goods_id_;
 

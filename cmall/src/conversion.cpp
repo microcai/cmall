@@ -99,6 +99,7 @@ inline namespace conversion
 		jv = {
 			{ "item_id", c.id_ },
 			{ "merchant_id", c.merchant_id_ },
+			{ "merchant_name", c.merchant_name_ },
 			{ "goods_id", c.goods_id_ },
 			{ "count", c.count_ },
 			{ "created_at", to_string(c.created_at_) },

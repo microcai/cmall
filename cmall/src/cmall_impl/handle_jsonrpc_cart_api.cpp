@@ -110,11 +110,37 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_cart_api(cli
             auto page	   = jsutil::json_accessor(params).get("page", 0).as_int64();
             auto page_size = jsutil::json_accessor(params).get("page_size", 20).as_int64();
 
+            std::map<std::uint64_t, cmall_merchant> cache;
+
             std::vector<cmall_cart> items;
             using query_t = odb::query<cmall_cart>;
             auto query	  = (query_t::uid == this_user.uid_) + " order by " + query_t::created_at + " desc limit "
                 + std::to_string(page_size) + " offset " + std::to_string(page * page_size);
             co_await m_database.async_load<cmall_cart>(query, items);
+
+            std::set<std::uint64_t> vanished_merchant_ids;
+
+            for (auto& cc: items)
+            {
+                if (!cache.contains(cc.merchant_id_))
+                {
+                    cmall_merchant m;
+                    if (! co_await m_database.async_load<cmall_merchant>(cc.merchant_id_, m))
+                    {
+                        vanished_merchant_ids.insert(cc.merchant_id_);
+                        continue;
+                    }
+                    cache.emplace(cc.merchant_id_, m);
+                }
+
+                cc.merchant_name_ = cache[cc.merchant_id_].name_;
+            }
+
+            if (!vanished_merchant_ids.empty())
+            {
+                for (auto merchant_id : vanished_merchant_ids)
+                    co_await m_database.async_erase<cmall_cart>(query_t::merchant_id == merchant_id);
+            }
 
             reply_message["result"] = boost::json::value_from(items);
         }
