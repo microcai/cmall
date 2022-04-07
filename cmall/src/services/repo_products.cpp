@@ -112,7 +112,7 @@ namespace services
 			return std::make_tuple(std::string_view(), std::string_view());
 		}
 
-		product to_product(std::string_view markdown_content, boost::system::error_code& ec)
+		product to_product(std::string_view markdown_content, std::string_view merchant_name, boost::system::error_code& ec)
 		{
 			auto [meta, body] = split_markdown(markdown_content, ec);
 
@@ -130,6 +130,7 @@ namespace services
 				for (auto pic_url : result->picture)
 					founded.pics.push_back(correct_url(pic_url));
 				founded.merchant_id = merchant_id;
+				founded.merchant_name = merchant_name;
 				for (auto & keywording : result->keywords)
 					founded.keywords.push_back({.keyword = keywording, .rank = 1.0});
 				return founded;
@@ -160,7 +161,7 @@ namespace services
 			return ret;
 		}
 
-		product get_product(std::string goods_id, boost::system::error_code& ec)
+		product get_product(std::string goods_id, std::string_view merchant_name, boost::system::error_code& ec)
 		{
 			std::vector<product> ret;
 			gitpp::oid commit_version = git_repo.head().target();
@@ -169,7 +170,7 @@ namespace services
 			auto goods = repo_tree.by_path("goods");
 
 			if (!goods.empty())
-				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), std::filesystem::path(""), [goods_id, &commit_version, &ret, &ec, this](const gitpp::tree_entry & tree_entry, std::filesystem::path) mutable
+				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), std::filesystem::path(""), [merchant_name, goods_id, &commit_version, &ret, &ec, this](const gitpp::tree_entry & tree_entry, std::filesystem::path) mutable
 				{
 					std::filesystem::path entry_filename(tree_entry.name());
 
@@ -178,7 +179,7 @@ namespace services
 						auto file_blob = git_repo.get_blob(tree_entry.get_oid());
 						std::string_view md = file_blob.get_content();
 
-						product to_be_append = to_product(md, ec);
+						product to_be_append = to_product(md, merchant_name, ec);
 						if (ec)
 							return false;
 						to_be_append.git_version = commit_version.as_sha1_string();
@@ -196,7 +197,7 @@ namespace services
 			return product{};
 		}
 
-		std::vector<product> get_products()
+		std::vector<product> get_products(std::string_view merchant_name)
 		{
 			std::vector<product> ret;
 			gitpp::oid commit_version = git_repo.head().target();
@@ -214,7 +215,7 @@ namespace services
 						std::string_view md = file_blob.get_content();
 
 						boost::system::error_code ec;
-						product to_be_append = to_product(md, ec);
+						product to_be_append = to_product(md, merchant_name, ec);
 						if (!ec)
 						{
 							to_be_append.git_version = commit_version.as_sha1_string();
@@ -287,11 +288,11 @@ namespace services
 	}
 
 	// 从给定的 goods_id 找到商品定义.
-	awaitable<product> repo_products::get_product(std::string goods_id)
+	awaitable<product> repo_products::get_product(std::string goods_id, std::string_view merchant_name)
 	{
-		return boost::asio::co_spawn(thread_pool, [goods_id, this]() mutable -> awaitable<product> {
+		return boost::asio::co_spawn(thread_pool, [goods_id, merchant_name, this]() mutable -> awaitable<product> {
 			boost::system::error_code ec;
-			auto ret = impl().get_product(goods_id, ec);
+			auto ret = impl().get_product(goods_id, merchant_name, ec);
 			if (ec)
 				boost::throw_exception(boost::system::system_error(ec));
 			co_return ret;
@@ -299,17 +300,17 @@ namespace services
 	}
 
 	// 从给定的 goods_id 找到商品定义.
-	awaitable<product> repo_products::get_product(std::string goods_id, boost::system::error_code& ec)
+	awaitable<product> repo_products::get_product(std::string goods_id, std::string_view merchant_name, boost::system::error_code& ec)
 	{
-		return boost::asio::co_spawn(thread_pool, [goods_id, &ec, this]() mutable -> awaitable<product> {
-			co_return impl().get_product(goods_id, ec);
+		return boost::asio::co_spawn(thread_pool, [goods_id, merchant_name, &ec, this]() mutable -> awaitable<product> {
+			co_return impl().get_product(goods_id, merchant_name, ec);
 		}, use_awaitable);
 	}
 
-	awaitable<std::vector<product>> repo_products::get_products()
+	awaitable<std::vector<product>> repo_products::get_products(std::string_view merchant_name)
 	{
-		return boost::asio::co_spawn(thread_pool, [this]() mutable -> awaitable<std::vector<product>> {
-			co_return impl().get_products();
+		return boost::asio::co_spawn(thread_pool, [this, merchant_name]() mutable -> awaitable<std::vector<product>> {
+			co_return impl().get_products(merchant_name);
 		}, use_awaitable);
 	}
 

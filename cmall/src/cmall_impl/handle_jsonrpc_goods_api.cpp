@@ -26,10 +26,17 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_goods_api(
 
             // then transform goods_ref to products
             std::vector<services::product> final_result;
+            std::map<std::uint64_t, cmall_merchant> cache;
             for (auto gr : search_result)
             {
+                if (!cache.contains(gr.merchant_id))
+                {
+                    cmall_merchant m;
+                    co_await m_database.async_load<cmall_merchant>(gr.merchant_id, m);
+                    cache.emplace(gr.merchant_id, m);
+                }
                 final_result.push_back(
-                    co_await get_merchant_git_repo(gr.merchant_id)->get_product(gr.goods_id)
+                    co_await get_merchant_git_repo(gr.merchant_id)->get_product(gr.goods_id, cache[gr.merchant_id].name_)
                 );
             }
 
@@ -53,17 +60,18 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_goods_api(
 
             co_await m_database.async_load<cmall_merchant>(query, merchants);
 
+            std::map<std::uint64_t, cmall_merchant> cache;
+
             std::vector<services::product> all_products;
             if (merchants.size() > 0)
             {
                 for (const auto& m : merchants)
                 {
-                    if (!services::repo_products::is_git_repo(m.repo_path))
+                    boost::system::error_code ec;
+                    auto repo = get_merchant_git_repo(m.uid_, ec);
+                    if (ec)
                         continue;
-
-                    auto repo
-                        = std::make_shared<services::repo_products>(background_task_thread_pool, m.uid_, m.repo_path);
-                    std::vector<services::product> products = co_await repo->get_products();
+                    std::vector<services::product> products = co_await repo->get_products(m.name_);
                     std::copy(products.begin(), products.end(), std::back_inserter(all_products));
                 }
             }
@@ -80,10 +88,18 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_goods_api(
             if (goods_id.empty())
                 throw boost::system::system_error(cmall::error::invalid_params);
 
-            auto product = co_await get_merchant_git_repo(merchant_id)->get_product(goods_id);
+            cmall_merchant m;
+            if (co_await m_database.async_load(merchant_id, m))
+            {
+                auto product = co_await get_merchant_git_repo(merchant_id)->get_product(goods_id, m.name_);
 
-            // 获取商品信息, 注意这个不是商品描述, 而是商品 标题, 价格, 和缩略图. 用在商品列表页面.
-            reply_message["result"] = boost::json::value_from(product);
+                // 获取商品信息, 注意这个不是商品描述, 而是商品 标题, 价格, 和缩略图. 用在商品列表页面.
+                reply_message["result"] = boost::json::value_from(product);
+            }
+            else
+            {
+                throw boost::system::system_error(cmall::error::merchant_vanished);
+            }
         }
         catch(std::invalid_argument&)
         {

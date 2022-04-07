@@ -47,20 +47,29 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_order_api(
 
             cpp_numeric total_price = 0;
 
+            std::map<std::uint64_t, cmall_merchant> cache;
+
             for (boost::json::value goods_v : goods_array_ref)
             {
                 boost::json::object goods_ref = goods_v.as_object();
                 auto merchant_id_of_goods	  = goods_ref["merchant_id"].as_int64();
                 auto goods_id_of_goods		  = jsutil::json_as_string(goods_ref["goods_id"].as_string(), "");
 
-                cmall_merchant m;
-                bool found = co_await m_database.async_load(merchant_id_of_goods, m);
-                if (!found || (m.state_ != merchant_state_t::normal))
+                if (!cache.contains(merchant_id_of_goods))
+                {
+                    cmall_merchant m;
+                    if (!co_await m_database.async_load<cmall_merchant>(merchant_id_of_goods, m))
+                        continue;
+                    cache.emplace(merchant_id_of_goods, m);
+                }
+
+                cmall_merchant m = cache[merchant_id_of_goods];
+                if (m.state_ != merchant_state_t::normal)
                     continue;
 
                 boost::system::error_code ec;
                 services::product product_in_mall
-                    = co_await get_merchant_git_repo(merchant_id_of_goods)->get_product(goods_id_of_goods);
+                    = co_await get_merchant_git_repo(merchant_id_of_goods)->get_product(goods_id_of_goods, m.name_);
 
                 if (new_order.seller_ == 0)
                     new_order.seller_ = merchant_id_of_goods;

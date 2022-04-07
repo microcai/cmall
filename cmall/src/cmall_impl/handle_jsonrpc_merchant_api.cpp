@@ -134,7 +134,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api
         case req_method::merchant_goods_list:
         {
             // 列出 商品, 根据参数决定是首页还是商户
-            std::vector<services::product> all_products = co_await get_merchant_git_repo(this_merchant)->get_products();
+            std::vector<services::product> all_products = co_await get_merchant_git_repo(this_merchant)->get_products(this_merchant.name_);
             reply_message["result"] = boost::json::value_from(all_products);
 
         }break;
