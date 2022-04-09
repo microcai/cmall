@@ -38,6 +38,11 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
 				user.state_ = 2;
 				return user;
 			});
+			co_await m_database.async_update<cmall_merchant>(uid, [](cmall_merchant&& merchant) mutable
+			{
+				merchant.state_ = merchant_state_t::banned;
+				return merchant;
+			});
 			reply_message["result"] = true;
 		}
 		break;
