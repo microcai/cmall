@@ -524,6 +524,7 @@ namespace cmall
 						{ "isAdmin", static_cast<bool>(this_client.session_info->isAdmin) },
 						{ "isMerchant", static_cast<bool>(this_client.session_info->isMerchant) },
 						{ "isLogin", static_cast<bool>(this_client.session_info->user_info) },
+						{ "site_name", m_config.site_name },
 					};
 				}
 				else
