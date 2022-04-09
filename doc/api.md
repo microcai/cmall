@@ -14,9 +14,11 @@ websocket 连上来以后, 首先要恢复 session , 发送一个
 { result: {session_id: "dd2d4bbf581b4a04b0eff3f5bd05525b", isLogin: false} }
 ```
 
-客户端要永久保存返回的 session_id, 以便连接断开的时候恢复session.
-
 因为登录状态是对 session 而言的, 而不是针对一个 tcp 连接.
+
+客户端要永久保存返回的 session_id, 以便连接断开的时候恢复session.
+如果客户的是浏览器, 则可以略去 session_id 的保存, 也不必传入 session_id 参数. 浏览器和cmall之间会使用 cookie 完成 session 相关操作.
+
 
 # 浏览组
 
