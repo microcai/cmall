@@ -38,6 +38,8 @@ std::string cmall::error::cmall_category::message(int ev) const
 			return (const char*) u8"记录已存在";
 		case already_a_merchant:
 			return (const char*) u8"不用申请啦, 已经是商户了";
+		case order_not_found:
+			return (const char*) u8"订单未找到";
 		case invalid_params:
 			return (const char*) u8"参数错误";
 		case cart_goods_not_found:
