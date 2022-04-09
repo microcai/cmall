@@ -172,6 +172,8 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 
 	std::string cert_file, key_file;
 
+	std::string site_name;
+
 	po::options_description desc("Options");
 	desc.add_options()
 		("help,h", "Help message.")
@@ -194,6 +196,7 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 		("gitea_template_reponame", po::value<std::string>(&gitea_template_reponame)->default_value("shop-template"), "template for user's default repo")
 		("cert", po::value<std::string>(&cert_file), "ssl cert file")
 		("key", po::value<std::string>(&key_file), "ssl private key file")
+		("site_name", po::value<std::string>(&site_name)->default_value("cmall"), "ssl private key file")
 		;
 
 	try
@@ -246,6 +249,7 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 	cfg.gitea_template_user = gitea_template_user;
 	cfg.gitea_template_reponame = gitea_template_reponame;
 	cfg.gitea_admin_token = gitea_token;
+	cfg.site_name = site_name;
 
 	cmall::cmall_service xsrv(ios, cfg);
 

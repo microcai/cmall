@@ -558,6 +558,7 @@ namespace cmall
 							{ "login", "success" },
 							{ "isMerchant", this_client.session_info->isMerchant },
 							{ "isAdmin", this_client.session_info->isAdmin },
+							{ "site_name", m_config.site_name },
 						};
 					}
 				}

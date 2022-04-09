@@ -64,6 +64,8 @@ namespace cmall {
 		std::string gitea_admin_token;
 		std::string gitea_template_user;
 		std::string gitea_template_reponame;
+
+		std::string site_name;
 	};
 
 
