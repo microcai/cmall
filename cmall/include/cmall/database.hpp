@@ -313,10 +313,17 @@ namespace cmall
 				});
 		}
 	public:
+		template <typename T>
+		awaitable<bool> async_load_all(std::vector<T> & value)
+		{
+			odb::query<T> query;
+			co_return co_await async_load<T>(query, value);
+		}
+
 		template <typename T> requires SupportSoftDeletion<T>
 		awaitable<bool> async_load_all(std::vector<T> & value)
 		{
-			co_return co_await async_load<T>( odb::query<T>::deleted_at.is_null(), value);
+			co_return co_await async_load<T>(odb::query<T>::deleted_at.is_null(), value);
 		}
 
 		template <typename T>

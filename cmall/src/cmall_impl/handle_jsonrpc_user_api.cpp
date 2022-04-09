@@ -78,6 +78,23 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 						// 新用户注册，赶紧创建个新用户
 						co_await m_database.async_add(new_user);
 						this_client.session_info->user_info = new_user;
+
+						auto ex = co_await boost::asio::this_coro::executor;
+						std::call_once(check_admin_flag, [this, new_user, ex](){
+							boost::asio::co_spawn(ex, [this, new_user]() mutable -> awaitable<void>
+							{
+								// find admin
+								std::vector<administrators> admins;
+								auto ok = co_await m_database.async_load_all<administrators>(admins);
+								if (ok && admins.empty())
+								{
+									administrators admin;
+									admin.uid_ = new_user.uid_;
+									admin.user = std::make_shared<cmall_user>(std::move(new_user));
+									co_await m_database.async_add(admin);
+								}
+							}, boost::asio::detached);
+						});
 					}
 					session_info.verify_session_cookie = {};
 					// 认证成功后， sessionid 写入 mdbx 数据库以便日后恢复.

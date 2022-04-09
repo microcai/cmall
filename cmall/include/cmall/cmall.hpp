@@ -273,6 +273,8 @@ namespace cmall {
 		std::shared_mutex active_users_mtx;
 		active_session_map active_users;
 
+		std::once_flag check_admin_flag;
+
 		boost::asio::ssl::context sslctx_;
 		std::vector<httpd::acceptor<client_connection_ptr, cmall_service>> m_ws_acceptors;
 		std::vector<httpd::ssl_acceptor<client_connection_ptr, cmall_service>> m_wss_acceptors;
