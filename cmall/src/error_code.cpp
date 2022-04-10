@@ -54,6 +54,8 @@ std::string cmall::error::cmall_category::message(int ev) const
 			return (const char*) u8"未提供 checkpay.js";
 		case user_not_found:
 			return (const char*) u8"未找到用户";
+		case user_banned:
+			return (const char*) u8"该手机无法接收验证码";
 	}
 	return "error message";
 }

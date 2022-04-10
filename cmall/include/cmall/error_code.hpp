@@ -34,6 +34,7 @@ namespace cmall
 			no_payment_script_supplyed,
 			no_paycheck_script_spplyed,
 			user_not_found,
+			user_banned,
 		};
 
 		class cmall_category : public boost::system::error_category

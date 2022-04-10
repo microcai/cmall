@@ -27,6 +27,16 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 
 			std::string tel = jsutil::json_as_string(jsutil::json_accessor(params).get("telephone", ""));
 
+			// 先检查一波用户是不是被和谐了
+			cmall_user user;
+			if (co_await m_database.async_load<cmall_user>(odb::query<cmall_user>::active_phone == tel, user))
+			{
+				if (user.state_ == user_state_t::banned)
+				{
+					throw boost::system::system_error(error::user_banned);
+				}
+			}
+
 			session_info.verify_telephone = tel;
 			verify_session_cookie		  = co_await telephone_verifier.send_verify_code(tel);
 			// 验证码发送后, sessionid 写入 mdbx 数据库以便日后恢复.
