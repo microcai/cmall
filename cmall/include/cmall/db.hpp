@@ -93,6 +93,13 @@ struct Recipient
 	bool as_default;
 };
 
+enum class user_state_t
+{
+	normal = 0,
+	disabled, // 停用.
+	banned, // 封禁.
+};
+
 // 用户表.
 #pragma db object pointer(std::shared_ptr)
 struct cmall_user
@@ -115,7 +122,8 @@ struct cmall_user
 
 	bool verified_{ false }; // 是否验证通过.
 
-	uint8_t state_{ 0 }; // 状态, 正常/停用/封禁.
+#pragma db type("SMALLINT")
+	user_state_t state_{ user_state_t::normal }; // 状态, 正常/停用/封禁.
 
 	odb::nullable<std::string> desc_;
 

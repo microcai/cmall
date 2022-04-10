@@ -35,7 +35,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
 
 			co_await m_database.async_update<cmall_user>(uid, [](cmall_user&& user) mutable
 			{
-				user.state_ = 2;
+				user.state_ = user_state_t::banned;
 				return user;
 			});
 			co_await m_database.async_update<cmall_merchant>(uid, [](cmall_merchant&& merchant) mutable
