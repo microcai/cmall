@@ -630,8 +630,19 @@ namespace cmall
 			case req_method::admin_list_merchants:
 			case req_method::admin_disable_merchants:
 			case req_method::admin_reenable_merchants:
+			case req_method::admin_sudo:
 				co_await ensure_login(true);
 				co_return co_await handle_jsonrpc_admin_api(connection_ptr, method.value(), params);
+			case req_method::admin_sudo_cancel:
+				// check original user
+				if (this_client.session_info->sudo_mode && this_client.session_info->original_user)
+				{
+					co_return co_await handle_jsonrpc_admin_api(connection_ptr, method.value(), params);
+				}
+				else
+				{
+					throw boost::system::system_error(error::not_in_sudo_mode);
+				}
 
 				break;
 		}

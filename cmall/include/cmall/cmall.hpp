@@ -185,6 +185,8 @@ namespace cmall {
 		admin_list_merchants,
 		admin_disable_merchants,
 		admin_reenable_merchants,
+		admin_sudo,
+		admin_sudo_cancel,
 	};
 
 	class cmall_service

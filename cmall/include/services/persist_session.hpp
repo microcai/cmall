@@ -34,6 +34,8 @@ namespace services
 		bool isMerchant = false;
 		std::string verify_telephone;
 		std::optional<verify_session> verify_session_cookie;
+		bool sudo_mode = false;
+		std::optional<administrators> original_user;
 
 		void clear()
 		{

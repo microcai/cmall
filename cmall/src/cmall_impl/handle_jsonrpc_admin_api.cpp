@@ -183,6 +183,9 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
             reply_message["result"] = true;
         }
         break;
+        case req_method::admin_sudo:
+        case req_method::admin_sudo_cancel:
+            throw boost::system::system_error(error::not_implemented);
         default:
             throw "this should never be executed";
     }
