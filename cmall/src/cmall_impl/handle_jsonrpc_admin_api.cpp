@@ -248,6 +248,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
                 { "isMerchant", session_info.isMerchant },
                 { "isAdmin", session_info.isAdmin },
             };
+            break;
         }
         default:
             throw "this should never be executed";
