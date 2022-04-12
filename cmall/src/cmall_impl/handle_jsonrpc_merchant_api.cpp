@@ -133,16 +133,18 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api
 
         case req_method::merchant_goods_list:
         {
-            // 列出 商品, 根据参数决定是首页还是商户
             std::vector<services::product> all_products = co_await get_merchant_git_repo(this_merchant)->get_products(this_merchant.name_);
             reply_message["result"] = boost::json::value_from(all_products);
 
         }break;
         case req_method::merchant_list_sold_orders:
         {
+            auto page	   = jsutil::json_accessor(params).get("page", 0).as_int64();
+            auto page_size = jsutil::json_accessor(params).get("page_size", 20).as_int64();
             std::vector<cmall_order> orders;
             using query_t = odb::query<cmall_order>;
-            auto query	  = (query_t::seller == this_user.uid_ && query_t::deleted_at.is_null()) + " order by " + query_t::created_at + " desc";
+            auto query = (query_t::seller == this_user.uid_ && query_t::deleted_at.is_null()) + " order by " + query_t::created_at + " desc " +
+                " limit " + std::to_string(page_size) + " offset " + std::to_string(page * page_size);
             co_await m_database.async_load<cmall_order>(query, orders);
 
             LOG_DBG << "order_list retrieved, " << orders.size() << " items";
