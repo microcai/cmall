@@ -62,6 +62,20 @@ namespace services
 				cs.user_info->uid_ = jv.at("uid").as_int64();
 			}
 
+			cs.sudo_mode = false;
+
+			if (jv.contains("sudo_mode"))
+			{
+				cs.sudo_mode = jv.at("sudo_mode").as_bool();
+			}
+
+			if (cs.sudo_mode && jv.contains("original_user"))
+			{
+				administrators original_user;
+				original_user.uid_ = jv.at("original_user").as_int64();
+				cs.original_user = original_user;
+			}
+
 			co_return cs;
 		}
 
@@ -74,6 +88,9 @@ namespace services
 			if (session.user_info)
 				ser["uid"] = static_cast<std::uint64_t>(session.user_info->uid_);
 			ser["verifyinfo"] = { { "tel", session.verify_telephone },  { "verify_cookie", session.verify_session_cookie ? verify_session_access::as_string(session.verify_session_cookie.value()) : std::string("") } };
+			ser["sudo_mode"] =  session.sudo_mode;
+			if (session.original_user)
+				ser["original_user"] =  session.original_user->uid_;
 
 			co_await mdbx_db.put(session_id, json_to_string(ser) );
 		}

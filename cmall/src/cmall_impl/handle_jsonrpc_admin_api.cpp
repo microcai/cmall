@@ -184,8 +184,71 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
         }
         break;
         case req_method::admin_sudo:
+        {
+            std::uint64_t target_uid;
+
+            auto target_uid_ = jsutil::json_accessor(params).get("target_uid", {});
+            if (target_uid_.is_int64())
+            {
+                target_uid = target_uid_.as_int64();
+            }
+            else if (target_uid_.is_uint64())
+            {
+                target_uid = target_uid_.as_uint64();
+            }
+            else
+            {
+                throw boost::system::system_error(error::invalid_params);
+            }
+
+            // 目前只能 sudo 到 merchant
+            cmall_merchant target_merchant;
+            cmall_user target_user;
+
+            if (co_await m_database.async_load<cmall_merchant>(odb::query<cmall_merchant>::uid == target_uid, target_merchant) &&
+                co_await m_database.async_load<cmall_user>(odb::query<cmall_user>::uid == target_uid, target_user))
+            {
+                session_info.original_user = session_info.admin_info;
+                session_info.admin_info.reset();
+                session_info.isAdmin = false;
+                session_info.isMerchant = true;
+                session_info.sudo_mode = true;
+                session_info.merchant_info = target_merchant;
+                session_info.user_info = target_user;
+
+                co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info);
+                reply_message["result"] = {
+                    { "sudo", "success" },
+                    { "isMerchant", session_info.isMerchant },
+                    { "isAdmin", session_info.isAdmin },
+                };
+                break;
+            }
+        }
+        break;
         case req_method::admin_sudo_cancel:
-            throw boost::system::system_error(error::not_implemented);
+        {
+            cmall_merchant admin_check_merchant;
+
+            bool admin_is_merchant = co_await m_database.async_load<cmall_merchant>(odb::query<cmall_merchant>::uid == session_info.original_user->user->uid_, admin_check_merchant);
+
+            session_info.isAdmin = true;
+            session_info.admin_info = session_info.original_user;
+            session_info.user_info = *(session_info.original_user->user);
+            session_info.sudo_mode = false;
+            session_info.isMerchant = admin_is_merchant;
+            if (admin_is_merchant)
+                session_info.merchant_info = admin_check_merchant;
+            else
+                session_info.merchant_info.reset();
+            session_info.original_user.reset();
+            co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info);
+            reply_message["result"] = {
+                { "sudo", "success" },
+                { "isMerchant", session_info.isMerchant },
+                { "isAdmin", session_info.isAdmin },
+            };
+        }
         default:
             throw "this should never be executed";
     }

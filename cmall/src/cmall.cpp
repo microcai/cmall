@@ -437,6 +437,13 @@ namespace cmall
 				this_client.session_info->isAdmin = true;
 			}
 
+			if (this_client.session_info->sudo_mode)
+			{
+				administrators original_user;
+				co_await m_database.async_load<administrators>(this_client.session_info->original_user->uid_, original_user);
+				this_client.session_info->original_user = original_user;
+			}
+
 			std::unique_lock<std::shared_mutex> l(active_users_mtx);
 			active_users.push_back(connection_ptr);
 		}
@@ -524,6 +531,7 @@ namespace cmall
 						{ "isAdmin", static_cast<bool>(this_client.session_info->isAdmin) },
 						{ "isMerchant", static_cast<bool>(this_client.session_info->isMerchant) },
 						{ "isLogin", static_cast<bool>(this_client.session_info->user_info) },
+						{ "isSudo", this_client.session_info->sudo_mode },
 						{ "site_name", m_config.site_name },
 					};
 				}
@@ -559,6 +567,7 @@ namespace cmall
 							{ "login", "success" },
 							{ "isMerchant", this_client.session_info->isMerchant },
 							{ "isAdmin", this_client.session_info->isAdmin },
+							{ "isSudo", this_client.session_info->sudo_mode },
 							{ "site_name", m_config.site_name },
 						};
 					}

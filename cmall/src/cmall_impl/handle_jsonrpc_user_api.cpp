@@ -113,6 +113,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 						{ "login", "success" },
 						{ "isMerchant", session_info.isMerchant },
 						{ "isAdmin", session_info.isAdmin },
+						{ "isSudo", session_info.sudo_mode },
 					};
 
 					std::unique_lock<std::shared_mutex> l(active_users_mtx);
