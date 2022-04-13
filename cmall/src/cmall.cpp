@@ -604,10 +604,10 @@ namespace cmall
 			case req_method::order_close:
 			case req_method::order_list:
 			case req_method::order_get_pay_url:
+			case req_method::order_check_payment:
 				co_await ensure_login();
 				co_return co_await handle_jsonrpc_order_api(connection_ptr, method.value(), params);
 				break;
-
 			case req_method::search_goods:
 			case req_method::goods_list:
 			case req_method::goods_detail:

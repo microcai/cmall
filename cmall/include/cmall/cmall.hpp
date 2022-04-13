@@ -156,6 +156,7 @@ namespace cmall {
 		order_close,
 
 		order_get_pay_url,
+		order_check_payment,
 
 		search_goods,
 		goods_list,

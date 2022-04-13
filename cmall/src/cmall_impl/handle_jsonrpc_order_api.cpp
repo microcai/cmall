@@ -181,6 +181,9 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_order_api(
             reply_message["result"] = { { "type", "url" }, { "url", payurl.uri } };
         }
         break;
+        case req_method::order_check_payment:
+            throw boost::system::system_error(error::not_implemented);
+        break;
         default:
             throw "this should never be executed";
     }
