@@ -151,83 +151,17 @@ namespace cmall
 				});
 		}
 
-		template <typename T> requires SupportUpdateAt<T>
-		bool update(T& value)
-		{
-			return retry_database_op(
-				[&, this]() mutable
-				{
-					auto now		  = boost::posix_time::second_clock::local_time();
-					value.updated_at_ = now;
-					odb::transaction t(m_db->begin());
-					m_db->update(value);
-					t.commit();
-					return true;
-				});
-		}
-
-		template <typename T, typename UPDATER> requires SupportUpdateAt<T>
-		bool update(const odb::query<T>& query, UPDATER&& updater)
-		{
-			return retry_database_op(
-				[&, this]() mutable
-				{
-					auto now		  = boost::posix_time::second_clock::local_time();
-					odb::transaction t(m_db->begin());
-					auto r = m_db->query<T>(query);
-					for (auto& i : r)
-					{
-						T new_value = updater(std::move(i));
-						new_value.updated_at_ = now;
-						m_db->update(new_value);
-					}
-					t.commit();
-					return true;
-				});
-		}
-
-		template <typename T, typename UPDATER> requires (!SupportUpdateAt<T>)
-		bool update(const odb::query<T>& query, UPDATER&& updater)
-		{
-			return retry_database_op(
-				[&, this]() mutable
-				{
-					odb::transaction t(m_db->begin());
-					auto r = m_db->query<T>(query);
-					for (auto& i : r)
-					{
-						T new_value = updater(std::move(i));
-						m_db->update(new_value);
-					}
-					t.commit();
-					return true;
-				});
-		}
-
-		template <typename T, typename UPDATER> requires SupportUpdateAt<T>
-		bool update(const typename odb::object_traits<T>::id_type id, UPDATER&& updater)
-		{
-			return retry_database_op(
-				[&, this]() mutable
-				{
-					odb::transaction t(m_db->begin());
-					T old_value;
-					m_db->load<T>(id, old_value);
-					T new_value = updater(std::move(old_value));
-					auto now		  = boost::posix_time::second_clock::local_time();
-					new_value.updated_at_ = now;
-					m_db->update(new_value);
-					t.commit();
-					return true;
-				});
-		}
-
 		template <typename T>
 		bool update(T& value)
 		{
 			return retry_database_op(
 				[&, this]() mutable
 				{
+					auto now		  = boost::posix_time::second_clock::local_time();
+					if constexpr(SupportUpdateAt<T>)
+					{
+						value.updated_at_ = now;
+					}
 					odb::transaction t(m_db->begin());
 					m_db->update(value);
 					t.commit();
@@ -235,7 +169,28 @@ namespace cmall
 				});
 		}
 
-		template <typename T, typename UPDATER> requires (!SupportUpdateAt<T>)
+		template <typename T, typename UPDATER>
+		bool update(const odb::query<T>& query, UPDATER&& updater)
+		{
+			return retry_database_op(
+				[&, this]() mutable
+				{
+					auto now		  = boost::posix_time::second_clock::local_time();
+					odb::transaction t(m_db->begin());
+					auto r = m_db->query<T>(query);
+					for (auto& i : r)
+					{
+						T new_value = updater(std::move(i));
+						if constexpr (SupportUpdateAt<T>)
+							new_value.updated_at_ = now;
+						m_db->update(new_value);
+					}
+					t.commit();
+					return true;
+				});
+		}
+
+		template <typename T, typename UPDATER>
 		bool update(const typename odb::object_traits<T>::id_type id, UPDATER&& updater)
 		{
 			return retry_database_op(
@@ -245,6 +200,8 @@ namespace cmall
 					T old_value;
 					m_db->load<T>(id, old_value);
 					T new_value = updater(std::move(old_value));
+					if constexpr (SupportUpdateAt<T>)
+						new_value.updated_at_ = boost::posix_time::second_clock::local_time();
 					m_db->update(new_value);
 					t.commit();
 					return true;
