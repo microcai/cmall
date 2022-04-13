@@ -122,20 +122,13 @@ awaitable<void> cmall::cmall_service::do_ws_write(size_t connection_id, client_c
 
 	for (;;)
 	{
-		t.expires_from_now(std::chrono::seconds(15));
+		t.expires_from_now(std::chrono::seconds(connection_ptr->ws_client->m_disable_ping ? 30 : 15));
 		std::variant<std::monostate, std::string> awaited_result
 			= co_await (t.async_wait() || message_deque.async_receive(use_awaitable));
 		if (awaited_result.index() == 0)
 		{
-			if (connection_ptr->ws_client->m_disable_ping)
-			{
-				LOG_DBG << "coro: do_ws_write: [" << connection_id << "], send ping to client disable because tencent CDN disallows it";
-			}
-			else
-			{
-				LOG_DBG << "coro: do_ws_write: [" << connection_id << "], send ping to client";
-				co_await ws.async_ping("", use_awaitable); // timed out
-			}
+			LOG_DBG << "coro: do_ws_write: [" << connection_id << "], send ping to client";
+			co_await ws.async_ping("", use_awaitable); // timed out
 		}
 		else
 		{
