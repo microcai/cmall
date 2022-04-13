@@ -190,8 +190,6 @@ namespace cmall {
 
 		// 发客服消息.
 		customer_service_send_message,
-		// 登录后订阅发给自己的消息.
-		customer_service_subscribe_message,
 		// 拉取历史客服聊天记录.
 		customer_service_message_history,
 	};
