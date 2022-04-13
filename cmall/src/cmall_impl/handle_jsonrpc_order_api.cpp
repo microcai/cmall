@@ -182,7 +182,33 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_order_api(
         }
         break;
         case req_method::order_check_payment:
-            throw boost::system::system_error(error::not_implemented);
+        {
+            auto orderid = jsutil::json_accessor(params).get_string("orderid");
+
+            std::vector<cmall_order> orders;
+            using query_t = odb::query<cmall_order>;
+            auto query	  = (query_t::oid == orderid && query_t::buyer == this_user.uid_ && query_t::deleted_at.is_null());
+            co_await m_database.async_load<cmall_order>(query, orders);
+
+            if (orders.size() != 1)
+                throw boost::system::system_error(cmall::error::order_not_found);
+
+            if (orders[0].payed_at_.null())
+            {
+                cmall_merchant seller_merchant;
+                if (co_await m_database.async_load<cmall_merchant>(orders[0].seller_, seller_merchant))
+                {
+                    reply_message["result"] = co_await order_check_payment(orders[0], seller_merchant);
+                }
+                else
+                    reply_message["result"] = false;
+            }
+            else
+            {
+                reply_message["result"] = true;
+                co_return reply_message;
+            }
+        }
         break;
         default:
             throw "this should never be executed";

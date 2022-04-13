@@ -252,13 +252,16 @@ namespace cmall {
 		awaitable<boost::json::object> handle_jsonrpc_cart_api(client_connection_ptr, const req_method method, boost::json::object params);
 		awaitable<boost::json::object> handle_jsonrpc_goods_api(client_connection_ptr, const req_method method, boost::json::object params);
 
-		awaitable<boost::json::object> handle_jsonrpc_merchant_api(services::client_session&, const req_method method, boost::json::object params);
+		awaitable<boost::json::object> handle_jsonrpc_merchant_api(client_connection_ptr, const req_method method, boost::json::object params);
 		awaitable<boost::json::object> handle_jsonrpc_admin_api(client_connection_ptr, const req_method method, boost::json::object params);
 
 		awaitable<void> send_notify_message(std::uint64_t uid_, const std::string&, std::int64_t exclude_connection);
 
 		// round robing for acceptor.
 		auto& get_executor(){ return m_io_context_pool.get_io_context(); }
+
+		awaitable<bool> order_check_payment(cmall_order& order, const cmall_merchant& seller);
+		awaitable<bool> order_mark_payed(cmall_order& order, const cmall_merchant& seller);
 
 	private:
 		io_context_pool& m_io_context_pool;

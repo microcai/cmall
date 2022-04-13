@@ -9,9 +9,58 @@
 #include "services/repo_products.hpp"
 #include "cmall/conversion.hpp"
 
-awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api(services::client_session& session_info, const req_method method, boost::json::object params)
+awaitable<bool> cmall::cmall_service::order_check_payment(cmall_order& order, const cmall_merchant& seller)
+{
+    boost::system::error_code ec;
+    auto merchant_repo_ptr = get_merchant_git_repo(seller);
+    std::string checkpay_script_content = co_await merchant_repo_ptr->get_file_content("scripts/checkpay.js", ec);
+    if (!checkpay_script_content.empty())
+    {
+        std::string pay_check_result = co_await boost::asio::co_spawn(background_task_thread_pool,
+            script_runner.run_script(checkpay_script_content, {"--order-id", order.oid_}), use_awaitable);
+        if (pay_check_result == "payed" || pay_check_result == "payed\n")
+        {
+            co_return co_await order_mark_payed(order, seller);
+        }
+    }
+    else
+    {
+        throw boost::system::system_error(cmall::error::no_paycheck_script_spplyed);
+    }
+    co_return false;
+}
+
+awaitable<bool> cmall::cmall_service::order_mark_payed(cmall_order& order, const cmall_merchant& seller)
+{
+    order.payed_at_ = boost::posix_time::second_clock::local_time();
+
+    bool success = co_await m_database.async_update<cmall_order>(order);
+
+    if (success)
+    {
+        boost::system::error_code ec;
+        auto merchant_repo_ptr = get_merchant_git_repo(seller, ec);
+        if (merchant_repo_ptr)
+        {
+            std::string pay_script_content = co_await merchant_repo_ptr->get_file_content("scripts/orderstatus.js", ec);
+            if (!ec && !pay_script_content.empty())
+            {
+                boost::asio::co_spawn(background_task_thread_pool,
+                    script_runner.run_script(pay_script_content, {"--order-id", order.oid_}), boost::asio::detached);
+            }
+        }
+        co_return true;
+    }
+    else
+    {
+        throw boost::system::system_error(cmall::error::internal_server_error);
+    }
+}
+
+awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api(client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
 {
     boost::json::object reply_message;
+    services::client_session& session_info = *(connection_ptr->session_info);
     cmall_user& this_user				   = *(session_info.user_info);
     cmall_merchant& this_merchant		   = *(session_info.merchant_info);
 
@@ -59,31 +108,14 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api
 
             if (orders[0].payed_at_.null())
             {
-                boost::system::error_code ec;
-                auto merchant_repo_ptr = get_merchant_git_repo(this_merchant);
-                std::string checkpay_script_content = co_await merchant_repo_ptr->get_file_content("scripts/checkpay.js", ec);
-                if (!checkpay_script_content.empty())
-                {
-                    std::string pay_check_result = co_await boost::asio::co_spawn(background_task_thread_pool,
-                        script_runner.run_script(checkpay_script_content, {"--order-id", orderid}), use_awaitable);
-                    if (pay_check_result != "payed" && pay_check_result != "payed\n")
-                    {
-
-                        reply_message["result"] = false;
-                        co_return reply_message;
-                    }
-                }
-                else
-                {
-                    throw boost::system::system_error(cmall::error::no_paycheck_script_spplyed);
-                }
+                reply_message["result"] = co_await order_check_payment(orders[0], this_merchant);
             }
             else
             {
                 reply_message["result"] = true;
-                co_return reply_message;
             }
-        }// 这里是特意没 break 的
+        }
+        break;
         case req_method::merchant_sold_orders_mark_payed:
         {
             auto orderid = jsutil::json_accessor(params).get_string("orderid");
@@ -94,41 +126,19 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api
             co_await m_database.async_load<cmall_order>(query, orders);
 
             LOG_DBG << "order_list retrieved, " << orders.size() << " items";
-            if (orders.size() == 1)
+            if (orders.size() != 1)
+                throw boost::system::system_error(cmall::error::order_not_found);
+
+            if (orders[0].payed_at_.null())
             {
-                if (orders[0].payed_at_.null())
-                {
-                    orders[0].payed_at_ = boost::posix_time::second_clock::local_time();
-
-                    bool success = co_await m_database.async_update<cmall_order>(orders[0]);
-                    reply_message["result"] = success;
-
-                    if (success)
-                    {
-                        boost::system::error_code ec;
-                        auto merchant_repo_ptr = get_merchant_git_repo(this_merchant, ec);
-                        if (merchant_repo_ptr)
-                        {
-                            std::string pay_script_content = co_await merchant_repo_ptr->get_file_content("scripts/orderstatus.js", ec);
-                            if (!ec && !pay_script_content.empty())
-                            {
-                                boost::asio::co_spawn(background_task_thread_pool,
-                                    script_runner.run_script(pay_script_content, {"--order-id", orderid}), boost::asio::detached);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        throw boost::system::system_error(cmall::error::internal_server_error);
-                    }
-                }
-                reply_message["result"] = true;
+                reply_message["result"] = co_await order_mark_payed(orders[0], this_merchant);
             }
             else
-                throw boost::system::system_error(cmall::error::order_not_found);
+            {
+                reply_message["result"] = true;
+            }
         }
         break;
-
         case req_method::merchant_goods_list:
         {
             std::vector<services::product> all_products = co_await get_merchant_git_repo(this_merchant)->get_products(this_merchant.name_);
