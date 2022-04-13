@@ -58,6 +58,8 @@ std::string cmall::error::cmall_category::message(int ev) const
 			return (const char*) u8"该手机无法接收验证码";
 		case not_in_sudo_mode:
 			return (const char*) u8"未处于替身模式";
+		case cannot_sudo:
+			return (const char*) u8"无法进入替身模式";
 	}
 	return "error message";
 }

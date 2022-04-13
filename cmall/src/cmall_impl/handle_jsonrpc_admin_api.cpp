@@ -200,6 +200,8 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
             {
                 throw boost::system::system_error(error::invalid_params);
             }
+            if (target_uid == this_user.uid_)
+                throw boost::system::system_error(error::cannot_sudo);
 
             // 目前只能 sudo 到 merchant
             cmall_merchant target_merchant;

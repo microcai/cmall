@@ -36,6 +36,7 @@ namespace cmall
 			user_not_found,
 			user_banned,
 			not_in_sudo_mode,
+			cannot_sudo,
 		};
 
 		class cmall_category : public boost::system::error_category
