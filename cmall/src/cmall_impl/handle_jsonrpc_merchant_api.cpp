@@ -9,11 +9,9 @@
 #include "services/repo_products.hpp"
 #include "cmall/conversion.hpp"
 
-awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api(client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
+awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api(services::client_session& session_info, const req_method method, boost::json::object params)
 {
-    client_connection& this_client = *connection_ptr;
     boost::json::object reply_message;
-    services::client_session& session_info = *this_client.session_info;
     cmall_user& this_user				   = *(session_info.user_info);
     cmall_merchant& this_merchant		   = *(session_info.merchant_info);
 
@@ -26,7 +24,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api
             if (!found)
                 throw boost::system::system_error(cmall::error::merchant_vanished);
 
-            this_client.session_info->merchant_info = m;
+            session_info.merchant_info = m;
 
             reply_message["result"] = boost::json::value_from(m);
         }
