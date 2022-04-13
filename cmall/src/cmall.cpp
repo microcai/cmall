@@ -654,6 +654,9 @@ namespace cmall
 				}
 
 				break;
+			case req_method::customer_service_send_message:
+			case req_method::customer_service_message_history:
+				break;
 		}
 
 		co_return reply_message;

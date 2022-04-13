@@ -180,6 +180,18 @@ namespace odb
     ODB_POTENTIALLY_UNUSED (e);
   }
 
+  // cmall_order_stat
+  //
+
+  inline
+  void access::view_traits< ::cmall_order_stat >::
+  callback (database& db, view_type& x, callback_event e)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (x);
+    ODB_POTENTIALLY_UNUSED (e);
+  }
+
   // cmall_cart
   //
 
@@ -462,6 +474,9 @@ namespace odb
     erase (db, id (obj));
     callback (db, obj, callback_event::post_erase);
   }
+
+  // cmall_order_stat
+  //
 
   // cmall_cart
   //

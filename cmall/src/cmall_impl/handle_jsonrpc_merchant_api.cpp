@@ -141,14 +141,33 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api
         {
             auto page	   = jsutil::json_accessor(params).get("page", 0).as_int64();
             auto page_size = jsutil::json_accessor(params).get("page_size", 20).as_int64();
+			auto status = jsutil::json_accessor(params).get_string("status"); // unpay / payed / closed
+
             std::vector<cmall_order> orders;
             using query_t = odb::query<cmall_order>;
-            auto query = (query_t::seller == this_user.uid_ && query_t::deleted_at.is_null()) + " order by " + query_t::created_at + " desc " +
+            auto query = (query_t::seller == this_user.uid_ && query_t::deleted_at.is_null());
+
+			if (status == "unpay")
+				query = query && query_t::payed_at.is_null();
+			if (status == "payed")
+				query = query && query_t::payed_at.is_not_null();
+			if (status == "closed")
+				query = query && query_t::close_at.is_not_null();
+
+			cmall_order_stat ostat;
+			co_await m_database.async_load<cmall_order_stat>(query, ostat);
+
+			query += " order by " + query_t::created_at + " desc " +
                 " limit " + std::to_string(page_size) + " offset " + std::to_string(page * page_size);
             co_await m_database.async_load<cmall_order>(query, orders);
 
             LOG_DBG << "order_list retrieved, " << orders.size() << " items";
-            reply_message["result"] = boost::json::value_from(orders);
+			boost::json::value result {
+				{ "orders", boost::json::value_from(orders) },
+				{ "count", ostat.count },
+			};
+            // reply_message["result"] = boost::json::value_from(orders);
+            reply_message["result"] = result;
         }
         break;
         case req_method::merchant_sold_orders_add_kuaidi:

@@ -247,6 +247,13 @@ struct cmall_order {
 	odb::nullable<boost::posix_time::ptime> deleted_at_;
 };
 
+#pragma db view object(cmall_order)
+struct cmall_order_stat
+{
+	#pragma db column("count(" + cmall_order::id_ + ")")
+	std::size_t count;
+};
+
 // 购物车.
 #pragma db object
 struct cmall_cart
