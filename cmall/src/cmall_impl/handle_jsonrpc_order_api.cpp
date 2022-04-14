@@ -69,7 +69,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_order_api(
 
                 boost::system::error_code ec;
                 services::product product_in_mall
-                    = co_await get_merchant_git_repo(merchant_id_of_goods)->get_product(goods_id_of_goods, m.name_);
+                    = co_await get_merchant_git_repo(merchant_id_of_goods)->get_product(goods_id_of_goods, m.name_, this_client.ws_client->baseurl_);
 
                 if (new_order.seller_ == 0)
                     new_order.seller_ = merchant_id_of_goods;

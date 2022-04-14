@@ -108,7 +108,7 @@ namespace services
 		awaitable<void> add_merchant(std::shared_ptr<merchant_git_repo> repo)
 		{
 			// 这里只是做索引, 不用在意店铺名字.
-			auto products = co_await repo->get_products("any_merchant");
+			auto products = co_await repo->get_products("any_merchant", "");
 
 			std::unique_lock<std::shared_mutex> l(dbmtx);
 
@@ -155,7 +155,7 @@ namespace services
 
 		awaitable<void> reload_merchant(std::shared_ptr<merchant_git_repo> repo)
 		{
-			auto products = co_await repo->get_products("any_name_be_ok");
+			auto products = co_await repo->get_products("any_name_be_ok", "");
 
 			std::unique_lock<std::shared_mutex> l(dbmtx);
 

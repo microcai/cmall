@@ -376,7 +376,7 @@ namespace cmall
 
 	// 成功给用户返回内容, 返回 200. 如果没找到商品, 不要向 client 写任何数据, 直接放回 404, 由调用方统一返回错误页面.
 	awaitable<int> cmall_service::render_goods_detail_content(size_t connection_id, std::string merchant,
-		std::string goods_id, httpd::http_any_stream& client, int http_ver, bool keepalive)
+		std::string goods_id, httpd::http_any_stream& client, std::string baseurl, int http_ver, bool keepalive)
 	{
 		auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
 		boost::system::error_code ec;
@@ -385,7 +385,7 @@ namespace cmall
 		if (ec)
 			co_return 404;
 
-		std::string product_detail = co_await merchant_repo_ptr->get_product_detail(goods_id);
+		std::string product_detail = co_await merchant_repo_ptr->get_product_detail(goods_id, baseurl);
 
 		std::map<boost::beast::http::field, std::string> headers;
 
@@ -495,6 +495,9 @@ namespace cmall
 			{
 				std::string sessionid = jsutil::json_accessor(params).get_string("sessionid");
 				std::string api_token = jsutil::json_accessor(params).get_string("api-token");
+				std::string baseurl = jsutil::json_accessor(params).get_string("baseurl");
+
+				this_client.ws_client->baseurl_ = baseurl;
 
 				if (api_token.empty())
 				{
@@ -652,11 +655,9 @@ namespace cmall
 				{
 					throw boost::system::system_error(error::not_in_sudo_mode);
 				}
-
 				break;
-			case req_method::customer_service_send_message:
-			case req_method::customer_service_message_history:
-				break;
+			default:
+				throw boost::system::system_error(error::not_implemented);
 		}
 
 		co_return reply_message;

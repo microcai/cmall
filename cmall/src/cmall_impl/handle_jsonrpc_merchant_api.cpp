@@ -60,6 +60,7 @@ awaitable<bool> cmall::cmall_service::order_mark_payed(cmall_order& order, const
 awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api(client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
 {
     boost::json::object reply_message;
+    client_connection& this_client         = *connection_ptr;
     services::client_session& session_info = *(connection_ptr->session_info);
     cmall_user& this_user				   = *(session_info.user_info);
     cmall_merchant& this_merchant		   = *(session_info.merchant_info);
@@ -141,7 +142,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api
         break;
         case req_method::merchant_goods_list:
         {
-            std::vector<services::product> all_products = co_await get_merchant_git_repo(this_merchant)->get_products(this_merchant.name_);
+            std::vector<services::product> all_products = co_await get_merchant_git_repo(this_merchant)->get_products(this_merchant.name_, this_client.ws_client->baseurl_);
             reply_message["result"] = boost::json::value_from(all_products);
 
         }break;

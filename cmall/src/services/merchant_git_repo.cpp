@@ -65,7 +65,7 @@ namespace services
 			}
 		}
 
-		std::string correct_url(std::string original_url)
+		std::string correct_url(std::string original_url, std::string baseurl)
 		{
 			if (original_url.empty())
 				return original_url;
@@ -79,15 +79,15 @@ namespace services
 			LOG_DBG << "replace url(" << original_url << ")";
 			if (boost::regex_match(original_url, w, boost::regex(R"raw(((\/)|(\.\/)|(\.\.\/))?images\/(.*))raw")))
 			{
-				LOG_DBG << std::format("replace_url ({}) as ({})", original_url, (std::to_string(merchant_id) + "/images/" + w[5].str()));
+				LOG_DBG << std::format("replace_url ({}) as ({})", original_url, (baseurl + std::to_string(merchant_id) + "/images/" + w[5].str()));
 				// 只要找到了 ../images/... 这样的路径, 就替换为 /repos/
-				return "/repos/" + std::to_string(merchant_id) + "/images/" + w[5].str();
+				return baseurl + "/repos/" + std::to_string(merchant_id) + "/images/" + w[5].str();
 			}
 			else if (boost::regex_match(original_url, w, boost::regex(R"raw(((\/)|(\.\/)|(\.\.\/))?css\/(.*))raw")))
 			{
-				LOG_DBG << std::format("replace_url ({}) as ({})", original_url, (std::to_string(merchant_id) + "/css/" + w[5].str()));
+				LOG_DBG << std::format("replace_url ({}) as ({})", original_url, (baseurl + std::to_string(merchant_id) + "/css/" + w[5].str()));
 				// 只要找到了 ../images/... 这样的路径, 就替换为 /repos/
-				return "/repos/" + std::to_string(merchant_id) + "/css/" + w[5].str();
+				return baseurl + "/repos/" + std::to_string(merchant_id) + "/css/" + w[5].str();
 			}
 			return original_url;
 		}
@@ -112,7 +112,7 @@ namespace services
 			return std::make_tuple(std::string_view(), std::string_view());
 		}
 
-		product to_product(std::string_view markdown_content, std::string_view merchant_name, boost::system::error_code& ec)
+		product to_product(std::string_view markdown_content, std::string_view merchant_name, std::string baseurl, boost::system::error_code& ec)
 		{
 			auto [meta, body] = split_markdown(markdown_content, ec);
 
@@ -128,7 +128,7 @@ namespace services
 				founded.product_price = result->price;
 				founded.product_description = result->description;
 				for (auto pic_url : result->picture)
-					founded.pics.push_back(correct_url(pic_url));
+					founded.pics.push_back(correct_url(pic_url, baseurl));
 				founded.merchant_id = merchant_id;
 				founded.merchant_name = merchant_name;
 				for (auto & keywording : result->keywords)
@@ -161,7 +161,7 @@ namespace services
 			return ret;
 		}
 
-		product get_product(std::string goods_id, std::string_view merchant_name, boost::system::error_code& ec)
+		product get_product(std::string goods_id, std::string_view merchant_name, std::string baseurl, boost::system::error_code& ec)
 		{
 			std::vector<product> ret;
 			gitpp::oid commit_version = git_repo.head().target();
@@ -170,7 +170,7 @@ namespace services
 			auto goods = repo_tree.by_path("goods");
 
 			if (!goods.empty())
-				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), std::filesystem::path(""), [merchant_name, goods_id, &commit_version, &ret, &ec, this](const gitpp::tree_entry & tree_entry, std::filesystem::path) mutable
+				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), std::filesystem::path(""), [baseurl, merchant_name, goods_id, &commit_version, &ret, &ec, this](const gitpp::tree_entry & tree_entry, std::filesystem::path) mutable
 				{
 					std::filesystem::path entry_filename(tree_entry.name());
 
@@ -179,7 +179,7 @@ namespace services
 						auto file_blob = git_repo.get_blob(tree_entry.get_oid());
 						std::string_view md = file_blob.get_content();
 
-						product to_be_append = to_product(md, merchant_name, ec);
+						product to_be_append = to_product(md, merchant_name, baseurl, ec);
 						if (ec)
 							return false;
 						to_be_append.git_version = commit_version.as_sha1_string();
@@ -197,7 +197,7 @@ namespace services
 			return product{};
 		}
 
-		std::vector<product> get_products(std::string_view merchant_name)
+		std::vector<product> get_products(std::string_view merchant_name, std::string baseurl)
 		{
 			std::vector<product> ret;
 			gitpp::oid commit_version = git_repo.head().target();
@@ -206,7 +206,7 @@ namespace services
 			auto goods = repo_tree.by_path("goods");
 
 			if (!goods.empty())
-				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), std::filesystem::path(""), [&, this](const gitpp::tree_entry & tree_entry, std::filesystem::path parent_dir_in_git)
+				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), std::filesystem::path(""), [&, baseurl, this](const gitpp::tree_entry & tree_entry, std::filesystem::path parent_dir_in_git)
 				{
 					std::filesystem::path entry_filename(tree_entry.name());
 					if (entry_filename.has_extension() && entry_filename.extension() == ".md")
@@ -215,7 +215,7 @@ namespace services
 						std::string_view md = file_blob.get_content();
 
 						boost::system::error_code ec;
-						product to_be_append = to_product(md, merchant_name, ec);
+						product to_be_append = to_product(md, merchant_name, baseurl, ec);
 						if (!ec)
 						{
 							to_be_append.git_version = commit_version.as_sha1_string();
@@ -229,7 +229,7 @@ namespace services
 			return ret;
 		}
 
-		std::string get_product_detail(std::string goods_id, boost::system::error_code& ec)
+		std::string get_product_detail(std::string goods_id, std::string baseurl, boost::system::error_code& ec)
 		{
 			ec = cmall::error::goods_not_found;
 			std::string ret;
@@ -239,7 +239,7 @@ namespace services
 			auto goods = repo_tree.by_path("goods");
 
 			if (!goods.empty())
-				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), std::filesystem::path(""), [goods_id, &ret, &ec, this](const gitpp::tree_entry & tree_entry, std::filesystem::path) mutable -> bool
+				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), std::filesystem::path(""), [baseurl, goods_id, &ret, &ec, this](const gitpp::tree_entry & tree_entry, std::filesystem::path) mutable -> bool
 				{
 					std::filesystem::path entry_filename(tree_entry.name());
 
@@ -253,7 +253,7 @@ namespace services
 						if (ec)
 							return false;
 
-						ret = md::markdown_transpile(body, std::bind(&merchant_git_repo_impl::correct_url, this, std::placeholders::_1));
+						ret = md::markdown_transpile(body, std::bind(&merchant_git_repo_impl::correct_url, this, std::placeholders::_1, baseurl));
 						return true;
 					}
 					return false;
@@ -300,11 +300,11 @@ namespace services
 	}
 
 	// 从给定的 goods_id 找到商品定义.
-	awaitable<product> merchant_git_repo::get_product(std::string goods_id, std::string_view merchant_name)
+	awaitable<product> merchant_git_repo::get_product(std::string goods_id, std::string_view merchant_name, std::string baseurl)
 	{
-		return boost::asio::co_spawn(thread_pool, [goods_id, merchant_name, this]() mutable -> awaitable<product> {
+		return boost::asio::co_spawn(thread_pool, [goods_id, merchant_name, baseurl, this]() mutable -> awaitable<product> {
 			boost::system::error_code ec;
-			auto ret = impl().get_product(goods_id, merchant_name, ec);
+			auto ret = impl().get_product(goods_id, merchant_name, baseurl, ec);
 			if (ec)
 				boost::throw_exception(boost::system::system_error(ec));
 			co_return ret;
@@ -312,35 +312,35 @@ namespace services
 	}
 
 	// 从给定的 goods_id 找到商品定义.
-	awaitable<product> merchant_git_repo::get_product(std::string goods_id, std::string_view merchant_name, boost::system::error_code& ec)
+	awaitable<product> merchant_git_repo::get_product(std::string goods_id, std::string_view merchant_name, std::string baseurl, boost::system::error_code& ec)
 	{
-		return boost::asio::co_spawn(thread_pool, [goods_id, merchant_name, &ec, this]() mutable -> awaitable<product> {
-			co_return impl().get_product(goods_id, merchant_name, ec);
+		return boost::asio::co_spawn(thread_pool, [=, &ec, this]() mutable -> awaitable<product> {
+			co_return impl().get_product(goods_id, merchant_name, baseurl, ec);
 		}, use_awaitable);
 	}
 
-	awaitable<std::vector<product>> merchant_git_repo::get_products(std::string_view merchant_name)
+	awaitable<std::vector<product>> merchant_git_repo::get_products(std::string_view merchant_name, std::string baseurl)
 	{
-		return boost::asio::co_spawn(thread_pool, [this, merchant_name]() mutable -> awaitable<std::vector<product>> {
-			co_return impl().get_products(merchant_name);
+		return boost::asio::co_spawn(thread_pool, [=, this]() mutable -> awaitable<std::vector<product>> {
+			co_return impl().get_products(merchant_name, baseurl);
 		}, use_awaitable);
 	}
 
-	awaitable<std::string> merchant_git_repo::get_product_detail(std::string goods_id)
+	awaitable<std::string> merchant_git_repo::get_product_detail(std::string goods_id, std::string baseurl)
 	{
-		return boost::asio::co_spawn(thread_pool, [goods_id, this]() mutable -> awaitable<std::string> {
+		return boost::asio::co_spawn(thread_pool, [=, this]() mutable -> awaitable<std::string> {
 			boost::system::error_code ec;
-			auto ret = impl().get_product_detail(goods_id, ec);
+			auto ret = impl().get_product_detail(goods_id, baseurl, ec);
 			if (ec)
 				boost::throw_exception(boost::system::system_error(ec));
 			co_return ret;
 		}, use_awaitable);
 	}
 
-	awaitable<std::string> merchant_git_repo::get_product_detail(std::string goods_id, boost::system::error_code& ec)
+	awaitable<std::string> merchant_git_repo::get_product_detail(std::string goods_id, std::string baseurl, boost::system::error_code& ec)
 	{
-		return boost::asio::co_spawn(thread_pool, [goods_id, &ec, this]() mutable -> awaitable<std::string> {
-			co_return impl().get_product_detail(goods_id, ec);
+		return boost::asio::co_spawn(thread_pool, [=, &ec, this]() mutable -> awaitable<std::string> {
+			co_return impl().get_product_detail(goods_id, baseurl, ec);
 		}, use_awaitable);
 	}
 

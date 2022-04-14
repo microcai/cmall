@@ -36,7 +36,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_goods_api(
                     cache.emplace(gr.merchant_id, m);
                 }
                 final_result.push_back(
-                    co_await get_merchant_git_repo(gr.merchant_id)->get_product(gr.goods_id, cache[gr.merchant_id].name_)
+                    co_await get_merchant_git_repo(gr.merchant_id)->get_product(gr.goods_id, cache[gr.merchant_id].name_, this_client.ws_client->baseurl_)
                 );
             }
 
@@ -71,7 +71,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_goods_api(
                     auto repo = get_merchant_git_repo(m.uid_, ec);
                     if (ec)
                         continue;
-                    std::vector<services::product> products = co_await repo->get_products(m.name_);
+                    std::vector<services::product> products = co_await repo->get_products(m.name_, this_client.ws_client->baseurl_);
                     std::copy(products.begin(), products.end(), std::back_inserter(all_products));
                 }
             }
@@ -91,7 +91,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_goods_api(
             cmall_merchant m;
             if (co_await m_database.async_load(merchant_id, m))
             {
-                auto product = co_await get_merchant_git_repo(merchant_id)->get_product(goods_id, m.name_);
+                auto product = co_await get_merchant_git_repo(merchant_id)->get_product(goods_id, m.name_, this_client.ws_client->baseurl_);
 
                 // 获取商品信息, 注意这个不是商品描述, 而是商品 标题, 价格, 和缩略图. 用在商品列表页面.
                 reply_message["result"] = boost::json::value_from(product);

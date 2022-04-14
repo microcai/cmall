@@ -48,6 +48,7 @@ namespace cmall {
 		awaitable_timer message_channel_timer;
 		boost::asio::experimental::concurrent_channel<void(boost::system::error_code, std::string)> message_channel;
 		bool m_disable_ping = false;
+		std::string baseurl_;
 	};
 
 	struct client_connection : boost::noncopyable

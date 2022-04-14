@@ -298,9 +298,12 @@ namespace cmall
 					{
 						std::string merchant = w[1].str();
 						std::string goods_id = httpd::decodeURIComponent(w[2].str());
+						std::string baseurl;
+
+//						req[boost::beast::http::field::host]
 
 						int status_code = co_await render_goods_detail_content(
-							connection_id, merchant, goods_id, client_ptr->tcp_stream, req.version(), req.keep_alive());
+							connection_id, merchant, goods_id, client_ptr->tcp_stream, baseurl, req.version(), req.keep_alive());
 
 						if (status_code != 200)
 						{
