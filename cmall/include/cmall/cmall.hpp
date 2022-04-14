@@ -31,7 +31,7 @@
 #include "services/verifycode.hpp"
 #include "services/persist_session.hpp"
 #include "services/payment_service.hpp"
-#include "services/repo_products.hpp"
+#include "services/merchant_git_repo.hpp"
 #include "services/userscript_service.hpp"
 #include "services/gitea_service.hpp"
 #include "services/search_service.hpp"
@@ -102,28 +102,28 @@ namespace cmall {
 		>
 	> active_session_map;
 
-	inline std::int64_t merchant_get_rank(std::shared_ptr<services::repo_products>)
+	inline std::int64_t merchant_get_rank(std::shared_ptr<services::merchant_git_repo>)
 	{
 		return 0;
 	}
 
-	inline std::uint64_t merchant_get_uid(std::shared_ptr<services::repo_products> p)
+	inline std::uint64_t merchant_get_uid(std::shared_ptr<services::merchant_git_repo> p)
 	{
 		return p->get_merchant_uid();
 	}
 
 	// 这个多索引map 用来快速找到同一个用户的 session
 	typedef boost::multi_index_container<
-		std::shared_ptr<services::repo_products>,
+		std::shared_ptr<services::merchant_git_repo>,
 		boost::multi_index::indexed_by<
 			boost::multi_index::sequenced<>,
 			boost::multi_index::ordered_non_unique<
 				boost::multi_index::tag<tag::merchant_ranke_tag>,
-				boost::multi_index::global_fun<std::shared_ptr<services::repo_products>, std::int64_t, &merchant_get_rank>
+				boost::multi_index::global_fun<std::shared_ptr<services::merchant_git_repo>, std::int64_t, &merchant_get_rank>
 			>,
 			boost::multi_index::hashed_unique<
 				boost::multi_index::tag<tag::merchant_uid_tag>,
-				boost::multi_index::global_fun<std::shared_ptr<services::repo_products>, std::uint64_t, &merchant_get_uid>
+				boost::multi_index::global_fun<std::shared_ptr<services::merchant_git_repo>, std::uint64_t, &merchant_get_uid>
 			>
 		>
 	> loaded_merchant_map;
@@ -218,12 +218,12 @@ namespace cmall {
 
 	private:
 		awaitable<bool> load_merchant_git(const cmall_merchant& merchant); // false if no git repo for merchant
-		std::shared_ptr<services::repo_products> get_merchant_git_repo(std::uint64_t merchant_uid, boost::system::error_code& ec) const;
-		std::shared_ptr<services::repo_products> get_merchant_git_repo(const cmall_merchant& merchant, boost::system::error_code& ec) const;
-		std::shared_ptr<services::repo_products> get_merchant_git_repo(const cmall_merchant& merchant) const; // will throw if not found
-		std::shared_ptr<services::repo_products> get_merchant_git_repo(std::uint64_t merchant_uid) const; // will throw if not found
+		std::shared_ptr<services::merchant_git_repo> get_merchant_git_repo(std::uint64_t merchant_uid, boost::system::error_code& ec) const;
+		std::shared_ptr<services::merchant_git_repo> get_merchant_git_repo(const cmall_merchant& merchant, boost::system::error_code& ec) const;
+		std::shared_ptr<services::merchant_git_repo> get_merchant_git_repo(const cmall_merchant& merchant) const; // will throw if not found
+		std::shared_ptr<services::merchant_git_repo> get_merchant_git_repo(std::uint64_t merchant_uid) const; // will throw if not found
 
-		awaitable<void> repo_push_check(std::weak_ptr<services::repo_products>);
+		awaitable<void> repo_push_check(std::weak_ptr<services::merchant_git_repo>);
 
 		// 这 3 个函数, 是 acceptor 需要的.
 		client_connection_ptr        make_shared_connection(const boost::asio::any_io_executor& io, std::int64_t connection_id);

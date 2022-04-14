@@ -6,7 +6,7 @@
 
 #include "httpd/http_misc_helper.hpp"
 #include "services/search_service.hpp"
-#include "services/repo_products.hpp"
+#include "services/merchant_git_repo.hpp"
 #include "cmall/conversion.hpp"
 
 awaitable<bool> cmall::cmall_service::order_check_payment(cmall_order& order, const cmall_merchant& seller)

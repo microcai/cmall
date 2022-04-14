@@ -5,7 +5,7 @@
 #include <boost/asio.hpp>
 #include <boost/date_time/posix_time/ptime.hpp>
 
-#include "services/repo_products.hpp"
+#include "services/merchant_git_repo.hpp"
 
 using boost::asio::awaitable;
 
@@ -25,8 +25,8 @@ namespace services
 		search();
 		~search();
 
-		awaitable<void> add_merchant(std::shared_ptr<repo_products>);
-		awaitable<void> reload_merchant(std::shared_ptr<repo_products>);
+		awaitable<void> add_merchant(std::shared_ptr<merchant_git_repo>);
+		awaitable<void> reload_merchant(std::shared_ptr<merchant_git_repo>);
 
 		awaitable<std::vector<goods_ref>> search_goods(std::string search_string);
 

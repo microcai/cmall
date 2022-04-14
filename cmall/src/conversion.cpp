@@ -2,7 +2,7 @@
 
 #include "cmall/internal.hpp"
 #include "cmall/misc.hpp"
-#include <services/repo_products.hpp>
+#include "services/merchant_git_repo.hpp"
 
 #include "cmall/conversion.hpp"
 

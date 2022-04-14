@@ -6,7 +6,6 @@
 
 #include "cmall/conversion.hpp"
 #include "httpd/http_misc_helper.hpp"
-#include "services/repo_products.hpp"
 #include "services/search_service.hpp"
 
 awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(

@@ -20,7 +20,7 @@
 #include "boost/system/detail/error_code.hpp"
 #include "boost/system/system_error.hpp"
 #include "boost/throw_exception.hpp"
-#include "services/repo_products.hpp"
+#include "services/merchant_git_repo.hpp"
 #include "utils/logging.hpp"
 
 #include "gitpp/gitpp.hpp"
@@ -33,9 +33,9 @@ using boost::asio::use_awaitable;
 
 namespace services
 {
-	struct repo_products_impl
+	struct merchant_git_repo_impl
 	{
-		repo_products_impl(std::uint64_t merchant_id, std::filesystem::path repo_path_)
+		merchant_git_repo_impl(std::uint64_t merchant_id, std::filesystem::path repo_path_)
 			: repo_path_(repo_path_)
 			, git_repo(repo_path_)
 			, merchant_id(merchant_id)
@@ -253,7 +253,7 @@ namespace services
 						if (ec)
 							return false;
 
-						ret = md::markdown_transpile(body, std::bind(&repo_products_impl::correct_url, this, std::placeholders::_1));
+						ret = md::markdown_transpile(body, std::bind(&merchant_git_repo_impl::correct_url, this, std::placeholders::_1));
 						return true;
 					}
 					return false;
@@ -280,7 +280,7 @@ namespace services
 		std::uint64_t merchant_id;
 	};
 
-	awaitable<std::string> repo_products::get_file_content(std::filesystem::path path, boost::system::error_code& ec)
+	awaitable<std::string> merchant_git_repo::get_file_content(std::filesystem::path path, boost::system::error_code& ec)
 	{
 		return boost::asio::co_spawn(thread_pool, [path, &ec, this]() mutable -> awaitable<std::string> {
 			co_return impl().get_file_content(path, ec);
@@ -288,7 +288,7 @@ namespace services
 	}
 
 	// 从给定的 goods_id 找到商品定义.
-	awaitable<product> repo_products::get_product(std::string goods_id, std::string_view merchant_name)
+	awaitable<product> merchant_git_repo::get_product(std::string goods_id, std::string_view merchant_name)
 	{
 		return boost::asio::co_spawn(thread_pool, [goods_id, merchant_name, this]() mutable -> awaitable<product> {
 			boost::system::error_code ec;
@@ -300,21 +300,21 @@ namespace services
 	}
 
 	// 从给定的 goods_id 找到商品定义.
-	awaitable<product> repo_products::get_product(std::string goods_id, std::string_view merchant_name, boost::system::error_code& ec)
+	awaitable<product> merchant_git_repo::get_product(std::string goods_id, std::string_view merchant_name, boost::system::error_code& ec)
 	{
 		return boost::asio::co_spawn(thread_pool, [goods_id, merchant_name, &ec, this]() mutable -> awaitable<product> {
 			co_return impl().get_product(goods_id, merchant_name, ec);
 		}, use_awaitable);
 	}
 
-	awaitable<std::vector<product>> repo_products::get_products(std::string_view merchant_name)
+	awaitable<std::vector<product>> merchant_git_repo::get_products(std::string_view merchant_name)
 	{
 		return boost::asio::co_spawn(thread_pool, [this, merchant_name]() mutable -> awaitable<std::vector<product>> {
 			co_return impl().get_products(merchant_name);
 		}, use_awaitable);
 	}
 
-	awaitable<std::string> repo_products::get_product_detail(std::string goods_id)
+	awaitable<std::string> merchant_git_repo::get_product_detail(std::string goods_id)
 	{
 		return boost::asio::co_spawn(thread_pool, [goods_id, this]() mutable -> awaitable<std::string> {
 			boost::system::error_code ec;
@@ -325,56 +325,56 @@ namespace services
 		}, use_awaitable);
 	}
 
-	awaitable<std::string> repo_products::get_product_detail(std::string goods_id, boost::system::error_code& ec)
+	awaitable<std::string> merchant_git_repo::get_product_detail(std::string goods_id, boost::system::error_code& ec)
 	{
 		return boost::asio::co_spawn(thread_pool, [goods_id, &ec, this]() mutable -> awaitable<std::string> {
 			co_return impl().get_product_detail(goods_id, ec);
 		}, use_awaitable);
 	}
 
-	std::uint64_t repo_products::get_merchant_uid() const
+	std::uint64_t merchant_git_repo::get_merchant_uid() const
 	{
 		return impl().merchant_id;
 	}
 
-	awaitable<bool> repo_products::check_repo_changed()
+	awaitable<bool> merchant_git_repo::check_repo_changed()
 	{
 		return impl().check_repo_changed();
 	}
 
-	std::filesystem::path repo_products::repo_path() const
+	std::filesystem::path merchant_git_repo::repo_path() const
 	{
 		return impl().repo_path();
 	}
 
-	repo_products::repo_products(boost::asio::thread_pool& executor, std::uint64_t merchant_id, std::filesystem::path repo_path)
+	merchant_git_repo::merchant_git_repo(boost::asio::thread_pool& executor, std::uint64_t merchant_id, std::filesystem::path repo_path)
 		: thread_pool(executor)
 	{
-		static_assert(sizeof(obj_stor) >= sizeof(repo_products_impl));
-		std::construct_at(reinterpret_cast<repo_products_impl*>(obj_stor.data()), merchant_id, repo_path);
+		static_assert(sizeof(obj_stor) >= sizeof(merchant_git_repo_impl));
+		std::construct_at(reinterpret_cast<merchant_git_repo_impl*>(obj_stor.data()), merchant_id, repo_path);
 	}
 
-	repo_products::~repo_products()
+	merchant_git_repo::~merchant_git_repo()
 	{
-		std::destroy_at(reinterpret_cast<repo_products_impl*>(obj_stor.data()));
+		std::destroy_at(reinterpret_cast<merchant_git_repo_impl*>(obj_stor.data()));
 	}
 
-	const repo_products_impl& repo_products::impl() const
+	const merchant_git_repo_impl& merchant_git_repo::impl() const
 	{
-		return *reinterpret_cast<const repo_products_impl*>(obj_stor.data());
+		return *reinterpret_cast<const merchant_git_repo_impl*>(obj_stor.data());
 	}
 
-	repo_products_impl& repo_products::impl()
+	merchant_git_repo_impl& merchant_git_repo::impl()
 	{
-		return *reinterpret_cast<repo_products_impl*>(obj_stor.data());
+		return *reinterpret_cast<merchant_git_repo_impl*>(obj_stor.data());
 	}
 
-	bool repo_products::init_bare_repo(std::filesystem::path repo_path)
+	bool merchant_git_repo::init_bare_repo(std::filesystem::path repo_path)
 	{
 		return gitpp::init_bare_repo(repo_path);
 	}
 
-	bool repo_products::is_git_repo(std::filesystem::path repo_path)
+	bool merchant_git_repo::is_git_repo(std::filesystem::path repo_path)
 	{
 		return gitpp::is_git_repo(repo_path);
 	}

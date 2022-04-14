@@ -5,7 +5,7 @@
 
 #include "httpd/http_misc_helper.hpp"
 #include "services/search_service.hpp"
-#include "services/repo_products.hpp"
+#include "services/merchant_git_repo.hpp"
 #include "cmall/conversion.hpp"
 
 awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(client_connection_ptr connection_ptr, const req_method method, boost::json::object params)

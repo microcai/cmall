@@ -29,7 +29,7 @@ using namespace boost::asio::experimental::awaitable_operators;
 #include "cmall/error_code.hpp"
 #include "utils/uawaitable.hpp"
 
-#include "services/repo_products.hpp"
+#include "services/merchant_git_repo.hpp"
 
 using boost::asio::use_awaitable;
 using boost::asio::experimental::use_promise;
@@ -105,7 +105,7 @@ namespace services
 			}
 		}
 
-		awaitable<void> add_merchant(std::shared_ptr<repo_products> repo)
+		awaitable<void> add_merchant(std::shared_ptr<merchant_git_repo> repo)
 		{
 			// 这里只是做索引, 不用在意店铺名字.
 			auto products = co_await repo->get_products("any_merchant");
@@ -153,7 +153,7 @@ namespace services
 
 		awaitable<void> remove_merchant(std::uint64_t);
 
-		awaitable<void> reload_merchant(std::shared_ptr<repo_products> repo)
+		awaitable<void> reload_merchant(std::shared_ptr<merchant_git_repo> repo)
 		{
 			auto products = co_await repo->get_products("any_name_be_ok");
 
@@ -180,12 +180,12 @@ namespace services
 		std::destroy_at(reinterpret_cast<search_impl*>(obj_stor.data()));
 	}
 
-	awaitable<void> search::add_merchant(std::shared_ptr<repo_products> merchant_repos)
+	awaitable<void> search::add_merchant(std::shared_ptr<merchant_git_repo> merchant_repos)
 	{
 		return impl().add_merchant(merchant_repos);
 	}
 
-	awaitable<void> search::reload_merchant(std::shared_ptr<repo_products> repo)
+	awaitable<void> search::reload_merchant(std::shared_ptr<merchant_git_repo> repo)
 	{
 		return impl().reload_merchant(repo);
 	}

@@ -15,7 +15,7 @@
 
 #include "cmall/js_util.hpp"
 
-#include "services/repo_products.hpp"
+#include "services/merchant_git_repo.hpp"
 
 #include "cmall/conversion.hpp"
 
@@ -64,9 +64,9 @@ namespace cmall
 	// false if no git repo for merchant
 	awaitable<bool> cmall_service::load_merchant_git(const cmall_merchant& merchant)
 	{
-		if (services::repo_products::is_git_repo(merchant.repo_path))
+		if (services::merchant_git_repo::is_git_repo(merchant.repo_path))
 		{
-			auto repo = std::make_shared<services::repo_products>(
+			auto repo = std::make_shared<services::merchant_git_repo>(
 				background_task_thread_pool, merchant.uid_, merchant.repo_path);
 			std::unique_lock<std::shared_mutex> l(merchant_repos_mtx);
 			merchant_repos.get<tag::merchant_uid_tag>().erase(merchant.uid_);
@@ -90,7 +90,7 @@ namespace cmall
 		co_return false;
 	}
 
-	std::shared_ptr<services::repo_products> cmall_service::get_merchant_git_repo(std::uint64_t merchant_uid, boost::system::error_code& ec) const
+	std::shared_ptr<services::merchant_git_repo> cmall_service::get_merchant_git_repo(std::uint64_t merchant_uid, boost::system::error_code& ec) const
 	{
 		std::shared_lock<std::shared_mutex> l(merchant_repos_mtx);
 		auto& index_by_uid = merchant_repos.get<tag::merchant_uid_tag>();
@@ -103,19 +103,19 @@ namespace cmall
 		return * it;
 	}
 
-	std::shared_ptr<services::repo_products> cmall_service::get_merchant_git_repo(const cmall_merchant& merchant, boost::system::error_code& ec) const
+	std::shared_ptr<services::merchant_git_repo> cmall_service::get_merchant_git_repo(const cmall_merchant& merchant, boost::system::error_code& ec) const
 	{
 		return get_merchant_git_repo(merchant.uid_, ec);
 	}
 
 	 // will throw if not found
-	std::shared_ptr<services::repo_products> cmall_service::get_merchant_git_repo(const cmall_merchant& merchant) const
+	std::shared_ptr<services::merchant_git_repo> cmall_service::get_merchant_git_repo(const cmall_merchant& merchant) const
 	{
 		return get_merchant_git_repo(merchant.uid_);
 	}
 
 	 // will throw if not found
-	std::shared_ptr<services::repo_products> cmall_service::get_merchant_git_repo(std::uint64_t merchant_uid) const
+	std::shared_ptr<services::merchant_git_repo> cmall_service::get_merchant_git_repo(std::uint64_t merchant_uid) const
 	{
 		std::shared_lock<std::shared_mutex> l(merchant_repos_mtx);
 		auto& index_by_uid = merchant_repos.get<tag::merchant_uid_tag>();
@@ -127,7 +127,7 @@ namespace cmall
 		return * it;
 	}
 
-	awaitable<void> cmall_service::repo_push_check(std::weak_ptr<services::repo_products> repo_)
+	awaitable<void> cmall_service::repo_push_check(std::weak_ptr<services::merchant_git_repo> repo_)
 	{
 		std::string repo_dir;
 

@@ -5,7 +5,6 @@
 
 #include "cmall/conversion.hpp"
 #include "httpd/http_misc_helper.hpp"
-#include "services/repo_products.hpp"
 #include "services/search_service.hpp"
 
 awaitable<void> cmall::cmall_service::do_ws_read(size_t connection_id, client_connection_ptr connection_ptr)

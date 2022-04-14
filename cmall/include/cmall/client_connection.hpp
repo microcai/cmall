@@ -13,7 +13,6 @@
 #include "services/verifycode.hpp"
 #include "services/persist_session.hpp"
 #include "services/payment_service.hpp"
-#include "services/repo_products.hpp"
 #include "services/userscript_service.hpp"
 #include "services/gitea_service.hpp"
 

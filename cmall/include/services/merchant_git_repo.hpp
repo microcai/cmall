@@ -44,8 +44,8 @@ namespace services
 		std::vector<product_keyword> keywords;
 	};
 
-	struct repo_products_impl;
-	class repo_products
+	struct merchant_git_repo_impl;
+	class merchant_git_repo
 	{
 	public:
 
@@ -53,8 +53,8 @@ namespace services
 
 		static bool is_git_repo(std::filesystem::path repo_path);
 
-		repo_products(boost::asio::thread_pool& executor, std::uint64_t merchant_id, std::filesystem::path repo_path);
-		~repo_products();
+		merchant_git_repo(boost::asio::thread_pool& executor, std::uint64_t merchant_id, std::filesystem::path repo_path);
+		~merchant_git_repo();
 
 		awaitable<std::string> get_file_content(std::filesystem::path path, boost::system::error_code& ec);
 
@@ -77,8 +77,8 @@ namespace services
 	private:
 		boost::asio::thread_pool& thread_pool;
 
-		const repo_products_impl& impl() const;
-		repo_products_impl& impl();
+		const merchant_git_repo_impl& impl() const;
+		merchant_git_repo_impl& impl();
 
 		std::array<char, 512> obj_stor;
 
