@@ -173,6 +173,7 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 	std::string cert_file, key_file;
 
 	std::string site_name;
+	std::string config;
 
 	po::options_description desc("Options");
 	desc.add_options()
@@ -197,13 +198,19 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 		("cert", po::value<std::string>(&cert_file), "ssl cert file")
 		("key", po::value<std::string>(&key_file), "ssl private key file")
 		("site_name", po::value<std::string>(&site_name)->default_value("cmall"), "ssl private key file")
+		("config", po::value<std::string>(&config), "Load config options from file.")
 		;
 
 	try
 	{
 		// 解析命令行.
 		po::variables_map vm;
-		po::store(po::parse_command_line(argc, argv, desc), vm);
+		po::store(
+			po::command_line_parser(argc, argv)
+			.options(desc)
+			.style(po::command_line_style::unix_style | po::command_line_style::allow_long_disguise)
+			.run()
+			, vm);
 		po::notify(vm);
 
 		// 输出版本信息.
@@ -214,6 +221,20 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 		{
 			std::cout << desc;
 			co_return EXIT_SUCCESS;
+		}
+
+		if (vm.count("config"))
+		{
+			if (!std::filesystem::exists(config))
+			{
+				LOG_ERR << "No such config file: " << config;
+				co_return EXIT_FAILURE;
+			}
+
+			LOG_DBG << "Load config file: " << config;
+			auto cfg = po::parse_config_file(config.c_str(), desc, false);
+			po::store(cfg, vm);
+			po::notify(vm);
 		}
 	}
 	catch (const std::exception& e)
