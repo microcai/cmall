@@ -231,44 +231,13 @@ namespace cmall
 							co_await http_simple_error_page("ERRORED", status_code, req.version());
 						}
 					}
-					else
-					{
-						co_await http_simple_error_page("ERRORED", 403, req.version());
-					}
-					continue;
-				}
-
-				// 这个 /goods/${merchant}/${goods_id} 获取 富文本的商品描述.
-				else if (target.starts_with("/goods"))
-				{
-					boost::match_results<std::string_view::const_iterator> w;
-					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/goods/([^/]+)/([^/]+)")))
+					else if (boost::regex_match(
+							target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/callback.js(/.+)?")))
 					{
 						std::string merchant = w[1].str();
-						std::string goods_id = httpd::decodeURIComponent(w[2].str());
-
-						int status_code = co_await render_goods_detail_content(
-							connection_id, merchant, goods_id, client_ptr->tcp_stream, req.version(), req.keep_alive());
-
-						if (status_code != 200)
-						{
-							co_await http_simple_error_page("ERRORED", status_code, req.version());
-						}
-					}
-					else
-					{
-						co_await http_simple_error_page("access denied", 401, req.version());
-					}
-					continue;
-				}
-				// 这个 /scriptcallback/${merchant}/? 的调用, 都传给 scripts/callback.js.
-				else if (target.starts_with("/scriptcallback"))
-				{
-					boost::match_results<std::string_view::const_iterator> w;
-					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/scriptcallback/([0-9]+)(/.+)")))
-					{
-						std::string merchant = w[1].str();
-						std::string remains = w[2].str();
+						std::string remains;
+						if (w.size() == 3)
+							remains = httpd::decodeURIComponent(w[2].str());
 
 						auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
 						boost::system::error_code ec;
@@ -312,6 +281,31 @@ namespace cmall
 							keep_alive);
 						if (ec)
 							throw boost::system::system_error(ec);
+
+					}
+					else
+					{
+						co_await http_simple_error_page("ERRORED", 403, req.version());
+					}
+					continue;
+				}
+
+				// 这个 /goods/${merchant}/${goods_id} 获取 富文本的商品描述.
+				else if (target.starts_with("/goods"))
+				{
+					boost::match_results<std::string_view::const_iterator> w;
+					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/goods/([^/]+)/([^/]+)")))
+					{
+						std::string merchant = w[1].str();
+						std::string goods_id = httpd::decodeURIComponent(w[2].str());
+
+						int status_code = co_await render_goods_detail_content(
+							connection_id, merchant, goods_id, client_ptr->tcp_stream, req.version(), req.keep_alive());
+
+						if (status_code != 200)
+						{
+							co_await http_simple_error_page("ERRORED", status_code, req.version());
+						}
 					}
 					else
 					{

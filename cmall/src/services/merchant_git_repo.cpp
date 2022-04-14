@@ -269,6 +269,18 @@ namespace services
 			co_return last_checked_master_sha1 != old_value;
 		}
 
+		awaitable<std::vector<std::string>> get_supported_payment()
+		{
+			boost::system::error_code ec;
+
+			auto content = get_file_content("settings.ini", ec);
+			if (!ec)
+			{
+			}
+
+			co_return std::vector<std::string>{};
+		}
+
 		std::filesystem::path repo_path() const
 		{
 			return repo_path_;
@@ -330,6 +342,11 @@ namespace services
 		return boost::asio::co_spawn(thread_pool, [goods_id, &ec, this]() mutable -> awaitable<std::string> {
 			co_return impl().get_product_detail(goods_id, ec);
 		}, use_awaitable);
+	}
+
+	awaitable<std::vector<std::string>> merchant_git_repo::get_supported_payment()
+	{
+		return boost::asio::co_spawn(thread_pool, impl().get_supported_payment(), use_awaitable);
 	}
 
 	std::uint64_t merchant_git_repo::get_merchant_uid() const

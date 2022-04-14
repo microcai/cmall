@@ -68,6 +68,8 @@ namespace services
 		awaitable<std::string> get_product_detail(std::string goods_id);
 		awaitable<std::string> get_product_detail(std::string goods_id, boost::system::error_code& ec);
 
+		awaitable<std::vector<std::string>> get_supported_payment();
+
 		std::uint64_t get_merchant_uid() const;
 
 		awaitable<bool> check_repo_changed();
