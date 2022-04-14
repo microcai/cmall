@@ -1,207 +1,382 @@
 
 #include "stdafx.hpp"
 
-#include <chrono>
-#include <boost/asio.hpp>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <boost/process.hpp>
+#include <cstdint>
+#include <string>
+#include <string_view>
+#include <tuple>
 
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/sequenced_index.hpp>
-#include <boost/multi_index/global_fun.hpp>
-#include <boost/multi_index/member.hpp>
-#include <boost/multi_index/mem_fun.hpp>
-#include <boost/multi_index/ranked_index.hpp>
-#include <boost/multi_index/composite_key.hpp>
+#include "boost/asio/co_spawn.hpp"
+#include "boost/asio/execution_context.hpp"
+#include "boost/asio/thread_pool.hpp"
+#include "boost/asio/use_awaitable.hpp"
 
-#include <boost/multi_index/ordered_index.hpp>
-#include <boost/multi_index/hashed_index.hpp>
-#include <boost/multi_index/tag.hpp>
+#include <boost/regex.hpp>
 
-
-#include <boost/asio/experimental/promise.hpp>
-#include <boost/asio/experimental/awaitable_operators.hpp>
-
-using namespace boost::asio::experimental::awaitable_operators;
-
-#include "services/search_service.hpp"
-
-#include "utils/timedmap.hpp"
-#include "utils/logging.hpp"
-#include "cmall/error_code.hpp"
-#include "utils/uawaitable.hpp"
-
+#include "boost/system/detail/error_code.hpp"
+#include "boost/system/system_error.hpp"
+#include "boost/throw_exception.hpp"
 #include "services/merchant_git_repo.hpp"
+#include "utils/logging.hpp"
+
+#include "gitpp/gitpp.hpp"
+
+#include "./goods_md_metadata_grammer.hpp"
+#include "./md_transpile.hpp"
+#include "cmall/error_code.hpp"
 
 using boost::asio::use_awaitable;
-using boost::asio::experimental::use_promise;
-using boost::asio::awaitable;
 
 namespace services
 {
-
-	bool operator < (const goods_ref & a , const goods_ref & b)
+	struct merchant_git_repo_impl
 	{
-		return a.merchant_id < b.merchant_id && a.goods_id < b.goods_id;
-	}
-
-	namespace tags{
-		struct goods_ref{};
-		struct merchant_id{};
-		struct key_word{};
-	}
-
-	struct keyword_index_item
-	{
-		std::string key_word;
-		double ranke;
-		goods_ref target;
-
-		std::uint64_t merchant_id() const { return target.merchant_id; }
-		std::string_view goods_id() const { return target.goods_id; }
-	};
-
-	typedef boost::multi_index::multi_index_container<
-		keyword_index_item,
-		boost::multi_index::indexed_by<
-			boost::multi_index::hashed_non_unique<
-				boost::multi_index::tag<tags::goods_ref>,
-				boost::multi_index::composite_key<
-					keyword_index_item,
-					boost::multi_index::const_mem_fun<keyword_index_item, std::uint64_t, &keyword_index_item::merchant_id>,
-					boost::multi_index::const_mem_fun<keyword_index_item, std::string_view, &keyword_index_item::goods_id>
-				>
-			>,
-			boost::multi_index::hashed_non_unique<
-				boost::multi_index::tag<tags::key_word>,
-				boost::multi_index::member<
-					keyword_index_item, std::string, &keyword_index_item::key_word
-				>
-			>,
-			boost::multi_index::hashed_non_unique<
-				boost::multi_index::tag<tags::merchant_id>,
-				boost::multi_index::const_mem_fun<keyword_index_item, std::uint64_t, &keyword_index_item::merchant_id>
-			>
-		>
-	> keywords_database;
-
-
-	struct search_impl
-	{
-		void add_merchant_unlocked(std::vector<product> products)
+		merchant_git_repo_impl(std::uint64_t merchant_id, std::filesystem::path repo_path_)
+			: repo_path_(repo_path_)
+			, git_repo(repo_path_)
+			, merchant_id(merchant_id)
 		{
-			auto &goods_ref_containr = indexdb.get<tags::goods_ref>();
+			last_checked_master_sha1 = git_repo.head().target();
+		}
 
-			for (auto& p : products)
+		template<typename WalkHandler>
+		void treewalk(const gitpp::tree& tree, std::filesystem::path parent_dir_in_git, WalkHandler walker)
+		{
+			for (const gitpp::tree_entry & tree_entry : tree)
 			{
-				keyword_index_item item;
-
-				item.target = { .merchant_id = p.merchant_id, .goods_id = p.product_id };
-
-				for (auto& keyword : p.keywords)
+				switch (tree_entry.type())
 				{
-					item.key_word = keyword.keyword;
-					item.ranke = keyword.rank;
-					goods_ref_containr.insert(item);
+					case GIT_OBJECT_TREE:
+						treewalk(git_repo.get_tree_by_treeid(tree_entry.get_oid()), parent_dir_in_git / tree_entry.name(), walker);
+						break;
+					case GIT_OBJECT_BLOB:
+					{
+						if (walker(tree_entry, parent_dir_in_git))
+							break;
+					}
+					break;
+					default:
+					break;
+		 		}
+			}
+		}
+
+		std::string correct_url(std::string original_url)
+		{
+			if (original_url.empty())
+				return original_url;
+
+			if (original_url.starts_with("http"))
+			{
+				return original_url;
+			}
+
+			boost::smatch w;
+			LOG_DBG << "replace url(" << original_url << ")";
+			if (boost::regex_match(original_url, w, boost::regex(R"raw(((\/)|(\.\/)|(\.\.\/))?images\/(.*))raw")))
+			{
+				LOG_DBG << std::format("replace_url ({}) as ({})", original_url, (std::to_string(merchant_id) + "/images/" + w[5].str()));
+				// 只要找到了 ../images/... 这样的路径, 就替换为 /repos/
+				return "/repos/" + std::to_string(merchant_id) + "/images/" + w[5].str();
+			}
+			else if (boost::regex_match(original_url, w, boost::regex(R"raw(((\/)|(\.\/)|(\.\.\/))?css\/(.*))raw")))
+			{
+				LOG_DBG << std::format("replace_url ({}) as ({})", original_url, (std::to_string(merchant_id) + "/css/" + w[5].str()));
+				// 只要找到了 ../images/... 这样的路径, 就替换为 /repos/
+				return "/repos/" + std::to_string(merchant_id) + "/css/" + w[5].str();
+			}
+			return original_url;
+		}
+
+		std::tuple<std::string_view, std::string_view> split_markdown(std::string_view md, boost::system::error_code& ec)
+		{
+			// 寻找 --- ---
+			auto first_pos = md.find("---\n");
+			if (first_pos != std::string::npos)
+			{
+				auto second_pos = md.find("---\n", first_pos + 4);
+
+				if (second_pos > first_pos + 4){
+					std::string_view metadata = md.substr(first_pos, second_pos - first_pos + 4);
+					std::string_view main_body = md.substr(second_pos + 4);
+					ec = boost::system::error_code();
+					return std::make_tuple(metadata, main_body);
 				}
 			}
+
+			ec = boost::asio::error::not_found;
+			return std::make_tuple(std::string_view(), std::string_view());
 		}
 
-		awaitable<void> add_merchant(std::shared_ptr<merchant_git_repo> repo)
+		product to_product(std::string_view markdown_content, std::string_view merchant_name, boost::system::error_code& ec)
 		{
-			// 这里只是做索引, 不用在意店铺名字.
-			auto products = co_await repo->get_products("any_merchant");
+			auto [meta, body] = split_markdown(markdown_content, ec);
 
-			std::unique_lock<std::shared_mutex> l(dbmtx);
+			if (ec)
+				return product{};
 
-			add_merchant_unlocked(products);
-			co_return;
-		}
+			auto result = parse_goods_metadata(meta);
 
-		awaitable<std::vector<goods_ref>> search_goods(std::string search_string)
-		{
-			std::vector<goods_ref> result;
-
-			std::map<goods_ref, double> result_ranking;
-
-			std::shared_lock<std::shared_mutex> l(dbmtx);
-
-			auto &keyword_ref_containr = indexdb.get<tags::key_word>();
-
-			auto keyword_result = keyword_ref_containr.equal_range(search_string);
-
-			for (const auto& item : boost::make_iterator_range(keyword_result.first, keyword_result.second) )
+			if (result)
 			{
-				result_ranking[item.target] += item.ranke;
+				product founded;
+				founded.product_title = result->title;
+				founded.product_price = result->price;
+				founded.product_description = result->description;
+				for (auto pic_url : result->picture)
+					founded.pics.push_back(correct_url(pic_url));
+				founded.merchant_id = merchant_id;
+				founded.merchant_name = merchant_name;
+				for (auto & keywording : result->keywords)
+					founded.keywords.push_back({.keyword = keywording, .rank = 1.0});
+				return founded;
 			}
 
-			l.unlock();
+			ec = boost::asio::error::not_found;
+			return product{};
+		}
 
-			std::vector<std::pair<goods_ref, double>> vectored_result;
-			for (auto & i : result_ranking)
-				vectored_result.push_back(i);
+		std::string get_file_content(std::filesystem::path look_for_file, boost::system::error_code& ec)
+		{
+			std::string ret;
+			gitpp::oid commit_version = git_repo.head().target();
+			gitpp::tree repo_tree = git_repo.get_tree_by_commit(commit_version);
 
-			sort(vectored_result.begin(), vectored_result.end(), [](auto & a, auto& b){ return b.second < a.second; });
+			auto look_for_file_entry = repo_tree.by_path(look_for_file.string());
 
-			for (std::size_t i=0; i < 10; i++)
+			ec = boost::asio::error::not_found;
+
+			if (!look_for_file_entry.empty())
 			{
-				if (i < vectored_result.size())
-					result.push_back(vectored_result[i].first);
-				else break;
+				auto file_blob = git_repo.get_blob(look_for_file_entry.get_oid());
+				ret = file_blob.get_content();
+				ec = boost::system::error_code{};
+				return ret;
 			}
 
-			co_return result;
+			return ret;
 		}
 
-		awaitable<void> remove_merchant(std::uint64_t);
-
-		awaitable<void> reload_merchant(std::shared_ptr<merchant_git_repo> repo)
+		product get_product(std::string goods_id, std::string_view merchant_name, boost::system::error_code& ec)
 		{
-			auto products = co_await repo->get_products("any_name_be_ok");
+			std::vector<product> ret;
+			gitpp::oid commit_version = git_repo.head().target();
+			gitpp::tree repo_tree = git_repo.get_tree_by_commit(commit_version);
 
-			std::unique_lock<std::shared_mutex> l(dbmtx);
+			auto goods = repo_tree.by_path("goods");
 
-			indexdb.get<tags::merchant_id>().erase(repo->get_merchant_uid());
+			if (!goods.empty())
+				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), std::filesystem::path(""), [merchant_name, goods_id, &commit_version, &ret, &ec, this](const gitpp::tree_entry & tree_entry, std::filesystem::path) mutable
+				{
+					std::filesystem::path entry_filename(tree_entry.name());
 
-			add_merchant_unlocked(products);
-			co_return;
+					if (entry_filename.stem().string() == goods_id && entry_filename.has_extension() && entry_filename.extension() == ".md")
+					{
+						auto file_blob = git_repo.get_blob(tree_entry.get_oid());
+						std::string_view md = file_blob.get_content();
+
+						product to_be_append = to_product(md, merchant_name, ec);
+						if (ec)
+							return false;
+						to_be_append.git_version = commit_version.as_sha1_string();
+						to_be_append.product_id = entry_filename.stem().string();
+
+						ret.push_back(to_be_append);
+						return true;
+					}
+					return false;
+				});
+
+			if (ret.size() > 0)
+				return ret[0];
+			ec = cmall::error::goods_not_found;
+			return product{};
 		}
 
-		mutable std::shared_mutex dbmtx;
-		keywords_database indexdb;
+		std::vector<product> get_products(std::string_view merchant_name)
+		{
+			std::vector<product> ret;
+			gitpp::oid commit_version = git_repo.head().target();
+			gitpp::tree repo_tree = git_repo.get_tree_by_commit(commit_version);
+
+			auto goods = repo_tree.by_path("goods");
+
+			if (!goods.empty())
+				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), std::filesystem::path(""), [&, this](const gitpp::tree_entry & tree_entry, std::filesystem::path parent_dir_in_git)
+				{
+					std::filesystem::path entry_filename(tree_entry.name());
+					if (entry_filename.has_extension() && entry_filename.extension() == ".md")
+					{
+						auto file_blob = git_repo.get_blob(tree_entry.get_oid());
+						std::string_view md = file_blob.get_content();
+
+						boost::system::error_code ec;
+						product to_be_append = to_product(md, merchant_name, ec);
+						if (!ec)
+						{
+							to_be_append.git_version = commit_version.as_sha1_string();
+							to_be_append.product_id = entry_filename.stem().string();
+							ret.push_back(to_be_append);
+						}
+					}
+					return false;
+				});
+
+			return ret;
+		}
+
+		std::string get_product_detail(std::string goods_id, boost::system::error_code& ec)
+		{
+			ec = cmall::error::goods_not_found;
+			std::string ret;
+			gitpp::oid commit_version = git_repo.head().target();
+			gitpp::tree repo_tree = git_repo.get_tree_by_commit(commit_version);
+
+			auto goods = repo_tree.by_path("goods");
+
+			if (!goods.empty())
+				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), std::filesystem::path(""), [goods_id, &ret, &ec, this](const gitpp::tree_entry & tree_entry, std::filesystem::path) mutable -> bool
+				{
+					std::filesystem::path entry_filename(tree_entry.name());
+
+					if (entry_filename.stem().string() == goods_id && entry_filename.has_extension() && entry_filename.extension() == ".md")
+					{
+						auto file_blob = git_repo.get_blob(tree_entry.get_oid());
+						std::string_view md = file_blob.get_content();
+
+						auto [meta, body] = split_markdown(md, ec);
+
+						if (ec)
+							return false;
+
+						ret = md::markdown_transpile(body, std::bind(&merchant_git_repo_impl::correct_url, this, std::placeholders::_1));
+						return true;
+					}
+					return false;
+				});
+
+			return ret;
+		}
+
+		awaitable<bool> check_repo_changed()
+		{
+			auto old_value = last_checked_master_sha1;
+			last_checked_master_sha1 = git_repo.head().target();
+			co_return last_checked_master_sha1 != old_value;
+		}
+
+		std::filesystem::path repo_path() const
+		{
+			return repo_path_;
+		}
+
+		gitpp::oid last_checked_master_sha1;
+		std::filesystem::path repo_path_;
+		gitpp::repo git_repo;
+		std::uint64_t merchant_id;
 	};
 
-	search::search()
+	awaitable<std::string> merchant_git_repo::get_file_content(std::filesystem::path path, boost::system::error_code& ec)
 	{
-		static_assert(sizeof(obj_stor) >= sizeof(search_impl));
-		std::construct_at(reinterpret_cast<search_impl*>(obj_stor.data()));
+		return boost::asio::co_spawn(thread_pool, [path, &ec, this]() mutable -> awaitable<std::string> {
+			co_return impl().get_file_content(path, ec);
+		}, use_awaitable);
 	}
 
-	search::~search()
+	// 从给定的 goods_id 找到商品定义.
+	awaitable<product> merchant_git_repo::get_product(std::string goods_id, std::string_view merchant_name)
 	{
-		std::destroy_at(reinterpret_cast<search_impl*>(obj_stor.data()));
+		return boost::asio::co_spawn(thread_pool, [goods_id, merchant_name, this]() mutable -> awaitable<product> {
+			boost::system::error_code ec;
+			auto ret = impl().get_product(goods_id, merchant_name, ec);
+			if (ec)
+				boost::throw_exception(boost::system::system_error(ec));
+			co_return ret;
+		}, use_awaitable);
 	}
 
-	awaitable<void> search::add_merchant(std::shared_ptr<merchant_git_repo> merchant_repos)
+	// 从给定的 goods_id 找到商品定义.
+	awaitable<product> merchant_git_repo::get_product(std::string goods_id, std::string_view merchant_name, boost::system::error_code& ec)
 	{
-		return impl().add_merchant(merchant_repos);
+		return boost::asio::co_spawn(thread_pool, [goods_id, merchant_name, &ec, this]() mutable -> awaitable<product> {
+			co_return impl().get_product(goods_id, merchant_name, ec);
+		}, use_awaitable);
 	}
 
-	awaitable<void> search::reload_merchant(std::shared_ptr<merchant_git_repo> repo)
+	awaitable<std::vector<product>> merchant_git_repo::get_products(std::string_view merchant_name)
 	{
-		return impl().reload_merchant(repo);
+		return boost::asio::co_spawn(thread_pool, [this, merchant_name]() mutable -> awaitable<std::vector<product>> {
+			co_return impl().get_products(merchant_name);
+		}, use_awaitable);
 	}
 
-	awaitable<std::vector<goods_ref>> search::search_goods(std::string q)
+	awaitable<std::string> merchant_git_repo::get_product_detail(std::string goods_id)
 	{
-		return impl().search_goods(q);
+		return boost::asio::co_spawn(thread_pool, [goods_id, this]() mutable -> awaitable<std::string> {
+			boost::system::error_code ec;
+			auto ret = impl().get_product_detail(goods_id, ec);
+			if (ec)
+				boost::throw_exception(boost::system::system_error(ec));
+			co_return ret;
+		}, use_awaitable);
 	}
 
-	const search_impl& search::impl() const
+	awaitable<std::string> merchant_git_repo::get_product_detail(std::string goods_id, boost::system::error_code& ec)
 	{
-		return *reinterpret_cast<const search_impl*>(obj_stor.data());
+		return boost::asio::co_spawn(thread_pool, [goods_id, &ec, this]() mutable -> awaitable<std::string> {
+			co_return impl().get_product_detail(goods_id, ec);
+		}, use_awaitable);
 	}
 
-	search_impl& search::impl()
+	std::uint64_t merchant_git_repo::get_merchant_uid() const
 	{
-		return *reinterpret_cast<search_impl*>(obj_stor.data());
+		return impl().merchant_id;
 	}
+
+	awaitable<bool> merchant_git_repo::check_repo_changed()
+	{
+		return impl().check_repo_changed();
+	}
+
+	std::filesystem::path merchant_git_repo::repo_path() const
+	{
+		return impl().repo_path();
+	}
+
+	merchant_git_repo::merchant_git_repo(boost::asio::thread_pool& executor, std::uint64_t merchant_id, std::filesystem::path repo_path)
+		: thread_pool(executor)
+	{
+		static_assert(sizeof(obj_stor) >= sizeof(merchant_git_repo_impl));
+		std::construct_at(reinterpret_cast<merchant_git_repo_impl*>(obj_stor.data()), merchant_id, repo_path);
+	}
+
+	merchant_git_repo::~merchant_git_repo()
+	{
+		std::destroy_at(reinterpret_cast<merchant_git_repo_impl*>(obj_stor.data()));
+	}
+
+	const merchant_git_repo_impl& merchant_git_repo::impl() const
+	{
+		return *reinterpret_cast<const merchant_git_repo_impl*>(obj_stor.data());
+	}
+
+	merchant_git_repo_impl& merchant_git_repo::impl()
+	{
+		return *reinterpret_cast<merchant_git_repo_impl*>(obj_stor.data());
+	}
+
+	bool merchant_git_repo::init_bare_repo(std::filesystem::path repo_path)
+	{
+		return gitpp::init_bare_repo(repo_path);
+	}
+
+	bool merchant_git_repo::is_git_repo(std::filesystem::path repo_path)
+	{
+		return gitpp::is_git_repo(repo_path);
+	}
+
 }
