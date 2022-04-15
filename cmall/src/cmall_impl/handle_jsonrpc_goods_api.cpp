@@ -111,7 +111,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_goods_api(
 		case req_method::goods_markdown:
 		{
 			auto merchant_id = jsutil::json_accessor(params).get("merchant_id", -1).as_int64();
-			auto goods_id	 = httpd::decodeURIComponent(jsutil::json_accessor(params).get_string("goods_id"));
+			auto goods_id	 = jsutil::json_accessor(params).get_string("goods_id");
 			if (goods_id.empty())
 				throw boost::system::system_error(cmall::error::invalid_params);
 
