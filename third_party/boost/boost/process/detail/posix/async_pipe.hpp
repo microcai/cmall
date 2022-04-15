@@ -25,6 +25,11 @@ public:
     typedef ::boost::asio::posix::stream_descriptor handle_type;
     typedef typename handle_type::executor_type executor_type;
 
+    executor_type get_executor()
+    {
+        return _source.get_executor();
+    }
+
     inline async_pipe(boost::asio::io_context & ios) : async_pipe(ios, ios) {}
 
     inline async_pipe(boost::asio::io_context & ios_source,
@@ -45,8 +50,8 @@ public:
     inline async_pipe(const async_pipe& lhs);
     async_pipe(async_pipe&& lhs)  : _source(std::move(lhs._source)), _sink(std::move(lhs._sink))
     {
-        lhs._source.assign (-1);
-        lhs._sink  .assign (-1);
+        lhs._source = ::boost::asio::posix::stream_descriptor{lhs._source.get_executor()};
+        lhs._sink   = ::boost::asio::posix::stream_descriptor{lhs._sink.  get_executor()};
     }
 
     template<class CharT, class Traits = std::char_traits<CharT>>
@@ -112,15 +117,6 @@ public:
             boost::asio::post(_sink.get_executor(),   [this]{_sink.close();});
         if (_source.is_open())
             boost::asio::post(_source.get_executor(), [this]{_source.close();});
-    }
-
-    auto get_executor()
-    {
-        if (_sink.is_open())
-            return _sink.get_executor();
-        if (_source.is_open())
-            return _source.get_executor();
-        return _source.get_executor();
     }
 
     template<typename MutableBufferSequence>

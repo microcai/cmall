@@ -379,7 +379,7 @@ class cpp_dec_float
       static constexpr uint128_type mask      = (static_cast<uint128_type>(1u) << bit_shift) - 1;
       unsigned                           shift     = bit_shift;
       *this                                        = static_cast<unsigned long long>(v & mask);
-      v >>= shift;
+      v >>= bit_shift;
       while (v)
       {
          cpp_dec_float t(static_cast<unsigned long long>(v & mask));
