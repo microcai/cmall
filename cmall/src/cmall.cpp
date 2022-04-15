@@ -614,6 +614,7 @@ namespace cmall
 			case req_method::search_goods:
 			case req_method::goods_list:
 			case req_method::goods_detail:
+			case req_method::goods_markdown:
 				co_return co_await handle_jsonrpc_goods_api(connection_ptr, method.value(), params);
 				break;
 			case req_method::merchant_info:

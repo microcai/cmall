@@ -161,6 +161,7 @@ namespace cmall {
 		search_goods,
 		goods_list,
 		goods_detail,
+		goods_markdown,
 
 		merchant_info,
 		merchant_get_sold_order_detail,
