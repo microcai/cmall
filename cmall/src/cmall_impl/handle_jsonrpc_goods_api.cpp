@@ -115,9 +115,10 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_goods_api(
 			if (goods_id.empty())
 				throw boost::system::system_error(cmall::error::invalid_params);
 
-			auto merchant_repo_ptr	   = get_merchant_git_repo(merchant_id);
-			std::string product_detail = co_await merchant_repo_ptr->get_product_detail(goods_id, connection_ptr->ws_client->baseurl_);
-            reply_message["result"] = product_detail;
+			auto merchant_repo_ptr = get_merchant_git_repo(merchant_id);
+			std::string product_detail
+				= co_await merchant_repo_ptr->get_product_detail(goods_id, connection_ptr->ws_client->baseurl_);
+			reply_message["result"] = product_detail;
 		}
 		break;
 		default:
