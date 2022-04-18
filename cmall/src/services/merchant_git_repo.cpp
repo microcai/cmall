@@ -291,7 +291,7 @@ namespace services
 					std::vector<std::string> result;
 					boost::split(result, methods, boost::is_any_of(";；,，"));
 
-					co_return std::vector<std::string>{};
+					co_return result;
 				}
 				catch (std::exception& ex)
 				{
