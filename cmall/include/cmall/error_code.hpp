@@ -33,6 +33,7 @@ namespace cmall
 			should_be_same_merchant,
 			no_payment_script_supplyed,
 			no_paycheck_script_spplyed,
+			merchant_has_no_payments_supported,
 			user_not_found,
 			user_banned,
 			not_in_sudo_mode,

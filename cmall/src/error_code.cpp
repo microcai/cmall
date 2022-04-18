@@ -52,6 +52,8 @@ std::string cmall::error::cmall_category::message(int ev) const
 			return (const char*) u8"没提供 getpayurl.js";
 		case no_paycheck_script_spplyed:
 			return (const char*) u8"未提供 checkpay.js";
+		case merchant_has_no_payments_supported:
+			return (const char*) u8"商户未做好收款准备";
 		case user_not_found:
 			return (const char*) u8"未找到用户";
 		case user_banned:

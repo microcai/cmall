@@ -168,6 +168,8 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_order_api(
 			boost::system::error_code ec;
 			std::uint64_t merchant_id = order_to_pay.bought_goods[0].merchant_id;
 			auto methods = co_await get_merchant_git_repo(merchant_id)->get_supported_payment();
+            if (methods.empty())
+                throw boost::system::system_error(error::merchant_has_no_payments_supported);
             reply_message["result"] = boost::json::value_from(methods);
         }break;
         case req_method::order_get_pay_url:
