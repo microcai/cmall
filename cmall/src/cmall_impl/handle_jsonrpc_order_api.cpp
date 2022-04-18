@@ -154,6 +154,14 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_order_api(
             reply_message["result"] = result;
         }
         break;
+        case req_method::order_get_paymethods:
+        {
+            auto orderid = jsutil::json_accessor(params).get_string("orderid");
+            // TODO, 从店铺的 settings.ini 获取
+            // TODO, 实现 merchant_git_repo::get_supported_payment() 然后从那里返回.
+            auto payments = boost::json::array { "alipay", "unionpay", "rncoldwallet" };
+            reply_message["result"] = payments;
+        }break;
         case req_method::order_get_pay_url:
         {
             auto orderid = jsutil::json_accessor(params).get_string("orderid");

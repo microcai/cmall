@@ -155,6 +155,7 @@ namespace cmall {
 		order_list,
 		order_close,
 
+		order_get_paymethods, // 获取支持的支付方式.
 		order_get_pay_url,
 		order_check_payment,
 

@@ -606,6 +606,7 @@ namespace cmall
 			case req_method::order_detail:
 			case req_method::order_close:
 			case req_method::order_list:
+			case req_method::order_get_paymethods:
 			case req_method::order_get_pay_url:
 			case req_method::order_check_payment:
 				co_await ensure_login();
