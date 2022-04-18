@@ -150,17 +150,25 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_order_api(
 				{ "orders", boost::json::value_from(orders) },
 				{ "count", ostat.count },
 			};
-            // reply_message["result"] = boost::json::value_from(orders);
             reply_message["result"] = result;
         }
         break;
         case req_method::order_get_paymethods:
         {
             auto orderid = jsutil::json_accessor(params).get_string("orderid");
-            // TODO, 从店铺的 settings.ini 获取
-            // TODO, 实现 merchant_git_repo::get_supported_payment() 然后从那里返回.
-            auto payments = boost::json::array { "alipay", "unionpay", "rncoldwallet" };
-            reply_message["result"] = payments;
+			cmall_order order_to_pay;
+			using query_t	   = odb::query<cmall_order>;
+			auto query		   = query_t::oid == orderid && query_t::buyer == this_user.uid_;
+			bool order_founded = co_await m_database.async_load<cmall_order>(query, order_to_pay);
+			if (!order_founded)
+			{
+				throw boost::system::system_error(cmall::error::order_not_found);
+			}
+
+			boost::system::error_code ec;
+			std::uint64_t merchant_id = order_to_pay.bought_goods[0].merchant_id;
+			auto methods = co_await get_merchant_git_repo(merchant_id)->get_supported_payment();
+            reply_message["result"] = boost::json::value_from(methods);
         }break;
         case req_method::order_get_pay_url:
         {

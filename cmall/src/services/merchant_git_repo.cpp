@@ -15,6 +15,10 @@
 #include "boost/asio/thread_pool.hpp"
 #include "boost/asio/use_awaitable.hpp"
 
+#include "boost/property_tree/ptree.hpp"
+#include "boost/property_tree/ini_parser.hpp"
+#include "boost/algorithm/string/split.hpp"
+
 #include <boost/regex.hpp>
 
 #include "boost/system/detail/error_code.hpp"
@@ -276,7 +280,24 @@ namespace services
 			auto content = get_file_content("settings.ini", ec);
 			if (!ec)
 			{
-				// TODO
+				try
+				{
+					namespace pt = boost::property_tree;
+					pt::ptree ptree;
+					std::istringstream is(content);
+					pt::ini_parser::read_ini(is, ptree);
+					auto methods = ptree.get<std::string>("Payment.methods"); // alipay;unionpay;rncoldwallet
+
+					std::vector<std::string> result;
+					boost::split(result, methods, boost::is_any_of(";；,，"));
+
+					co_return std::vector<std::string>{};
+				}
+				catch (std::exception& ex)
+				{
+					LOG_ERR << "error parsing supported payment: " << ec.message();
+				}
+
 			}
 
 			co_return std::vector<std::string>{};
