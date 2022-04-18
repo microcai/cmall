@@ -1,29 +1,20 @@
 
 #include "stdafx.hpp"
 
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid_io.hpp>
-#include <boost/process.hpp>
 #include <cstdint>
 #include <string>
 #include <string_view>
 #include <tuple>
 
-#include "boost/asio/co_spawn.hpp"
-#include "boost/asio/execution_context.hpp"
-#include "boost/asio/thread_pool.hpp"
-#include "boost/asio/use_awaitable.hpp"
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/thread_pool.hpp>
+#include <boost/asio/use_awaitable.hpp>
 
-#include "boost/property_tree/ptree.hpp"
-#include "boost/property_tree/ini_parser.hpp"
-#include "boost/algorithm/string/split.hpp"
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/ini_parser.hpp>
+#include <boost/algorithm/string/split.hpp>
 
-#include <boost/regex.hpp>
-
-#include "boost/system/detail/error_code.hpp"
-#include "boost/system/system_error.hpp"
-#include "boost/throw_exception.hpp"
+#include <boost/throw_exception.hpp>
 #include "services/merchant_git_repo.hpp"
 #include "utils/logging.hpp"
 
