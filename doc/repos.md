@@ -63,5 +63,11 @@ goods/class1/ 这样的目录结构, class1 下还可以继续套 subclass , 这
 商户如果要收款, 就必须要在仓库的 scripts/ 文件夹下存放一个 getpayurl.js 的文件. 该文件必须是 nodejs 脚本, 但是不能引用任何 node_modules.
 可以使用工具将 node 脚本打包为一个 js 文件.
 
+仓库中需创建一个settings.ini文件, 用来配置支持的收款方式, 格式如下
+```ini
+[Payment]
+methods=alipay,unionpay
+```
+
 具体查看 [收款文档](pay.md)
 

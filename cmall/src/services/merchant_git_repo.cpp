@@ -289,7 +289,7 @@ namespace services
 					auto methods = ptree.get<std::string>("Payment.methods"); // alipay;unionpay;rncoldwallet
 
 					std::vector<std::string> result;
-					boost::split(result, methods, boost::is_any_of(";；,，"));
+					boost::split(result, methods, boost::is_any_of(",，"));
 
 					co_return result;
 				}
