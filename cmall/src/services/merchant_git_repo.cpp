@@ -284,9 +284,9 @@ namespace services
 
 					co_return result;
 				}
-				catch (std::exception& ex)
+				catch (std::exception& e)
 				{
-					LOG_ERR << "error parsing supported payment: " << ec.message();
+					LOG_ERR << "error parsing supported payment: " << e.what();
 				}
 
 			}
