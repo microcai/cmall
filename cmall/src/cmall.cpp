@@ -577,6 +577,10 @@ namespace cmall
 				}
 			}
 			break;
+			case req_method::ping:
+			{
+				reply_message["result"] = "pong";
+			}break;
 			case req_method::user_prelogin:
 			case req_method::user_login:
 			case req_method::user_islogin:

@@ -131,6 +131,8 @@ namespace cmall {
 	enum class req_method {
 		recover_session,
 
+		ping,
+
 		user_prelogin,
 		user_login,
 		user_logout,
