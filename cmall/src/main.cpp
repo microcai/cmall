@@ -168,7 +168,7 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 
 	std::string repo_root;
 
-	std::string gitea_token, gitea_api_path, gitea_template_user, gitea_template_reponame = "shop-template";
+	std::string gitea_token, gitea_api_path = "http://localhost:3000", gitea_template_user, gitea_template_reponame = "shop-template";
 
 	std::string cert_file, key_file;
 
@@ -182,9 +182,9 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 
 		("session_cache", po::value<std::string>(&session_cache)->default_value(co_await get_default_cache_dir())->value_name("dir"), "the dir for session cache")
 
-		("ws", po::value<std::vector<std::string>>(&ws_listens)->multitoken()->value_name("ip:port ip:port ..."), "For websocket server listen.")
-		("wss", po::value<std::vector<std::string>>(&wss_listens)->multitoken()->value_name("ip:port ip:port ..."), "For SSL websocket server listen.")
-		("ws_unix", po::value<std::vector<std::string>>(&ws_unix_listens)->multitoken()->value_name("path path ..."), "For (unix socket) websocket server listen.")
+		("ws", po::value<std::vector<std::string>>(&ws_listens)->multitoken()->value_name("ip:port [ip:port ...]"), "For websocket server listen.")
+		("wss", po::value<std::vector<std::string>>(&wss_listens)->multitoken()->value_name("ip:port [ip:port ...]"), "For SSL websocket server listen.")
+		("ws_unix", po::value<std::vector<std::string>>(&ws_unix_listens)->multitoken()->value_name("path [path ...]"), "For (unix socket) websocket server listen.")
 		("db_name", po::value<std::string>(&db_name)->default_value("cmall")->value_name("db"), "Database name.")
 		("db_host", po::value<std::string>(&db_host)->default_value("")->value_name("host"), "Database host.")
 		("db_port", po::value<unsigned short>(&db_port)->default_value(5432)->value_name("port"), "Database port.")
@@ -192,12 +192,12 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 		("db_passwd", po::value<std::string>(&db_passwd)->default_value("postgres")->value_name("passwd"), "Database password.")
 		("repo_root", po::value<std::string>(&repo_root)->default_value("/repos")->value_name("dir"), "gitea repo base dir")
 		("gitea_token", po::value<std::string>(&gitea_token)->value_name("token"), "gitea api token")
-		("gitea_api_path", po::value<std::string>(&gitea_api_path)->default_value("http://localhost:3000")->value_name("url"), "gitea repo base dir")
+		("gitea_api_path", po::value<std::string>(&gitea_api_path)->value_name("url"), "default http://localhost:3000 cmall will use this url to manage gitea")
 		("gitea_template_user", po::value<std::string>(&gitea_template_user)->default_value("admin")->value_name("user"), "template for user's default repo")
 		("gitea_template_reponame", po::value<std::string>(&gitea_template_reponame)->value_name("repo"), "template for user's default repo")
 		("cert", po::value<std::string>(&cert_file)->value_name("file"), "ssl cert file")
 		("key", po::value<std::string>(&key_file)->value_name("file"), "ssl private key file")
-		("site_name", po::value<std::string>(&site_name)->default_value("desc"), "site name")
+		("site_name", po::value<std::string>(&site_name)->value_name("desc")->default_value("cmall"), "site name")
 		("config", po::value<std::string>(&config)->value_name("cmall.conf"), "Load config options from file.")
 		;
 
