@@ -168,7 +168,7 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 
 	std::string repo_root;
 
-	std::string gitea_token, gitea_api_path, gitea_template_user, gitea_template_reponame;
+	std::string gitea_token, gitea_api_path, gitea_template_user, gitea_template_reponame = "shop-template";
 
 	std::string cert_file, key_file;
 
@@ -194,7 +194,7 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 		("gitea_token", po::value<std::string>(&gitea_token)->value_name("token"), "gitea api token")
 		("gitea_api_path", po::value<std::string>(&gitea_api_path)->default_value("http://localhost:3000")->value_name("url"), "gitea repo base dir")
 		("gitea_template_user", po::value<std::string>(&gitea_template_user)->default_value("admin")->value_name("user"), "template for user's default repo")
-		("gitea_template_reponame", po::value<std::string>(&gitea_template_reponame)->default_value("shop-template")->value_name("repo"), "template for user's default repo")
+		("gitea_template_reponame", po::value<std::string>(&gitea_template_reponame)->value_name("repo"), "template for user's default repo")
 		("cert", po::value<std::string>(&cert_file)->value_name("file"), "ssl cert file")
 		("key", po::value<std::string>(&key_file)->value_name("file"), "ssl private key file")
 		("site_name", po::value<std::string>(&site_name)->default_value("desc"), "site name")
