@@ -1,30 +1,17 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
-  <changeset version="22">
-    <alter-table name="cmall_apply_for_mechant">
-      <add-column name="seq" type="BIGINT" null="true"/>
-      <add-index name="cmall_apply_for_mechant_seq_i">
-        <column name="seq"/>
-      </add-index>
-      <add-index name="unique seq_applicant_id" type="UNIQUE">
-        <column name="applicant"/>
-        <column name="seq"/>
-      </add-index>
-    </alter-table>
+  <changeset version="23">
+    <add-table name="cmall_3rd_kv_store" kind="object">
+      <column name="uid" type="BIGINT" null="false"/>
+      <column name="key_value" type="TEXT" null="false"/>
+      <column name="value" type="TEXT" null="false"/>
+      <primary-key>
+        <column name="uid"/>
+        <column name="key_value"/>
+      </primary-key>
+    </add-table>
   </changeset>
 
-  <changeset version="21">
-    <alter-table name="cmall_apply_for_mechant">
-      <add-column name="state" type="SMALLINT" null="false" default="0"/>
-    </alter-table>
-  </changeset>
-
-  <changeset version="20">
-    <alter-table name="cmall_apply_for_mechant">
-      <drop-column name="approved"/>
-    </alter-table>
-  </changeset>
-
-  <model version="19">
+  <model version="22">
     <table name="cmall_config" kind="object">
       <column name="id" type="BIGINT" null="false"/>
       <primary-key auto="true">
@@ -208,7 +195,8 @@
       <column name="created_at" type="TIMESTAMP" null="true"/>
       <column name="updated_at" type="TIMESTAMP" null="true"/>
       <column name="deleted_at" type="TIMESTAMP" null="true"/>
-      <column name="approved" type="BOOLEAN" null="false" default="FALSE"/>
+      <column name="state" type="SMALLINT" null="false" default="0"/>
+      <column name="seq" type="BIGINT" null="true"/>
       <primary-key auto="true">
         <column name="id"/>
       </primary-key>
@@ -220,6 +208,13 @@
       </foreign-key>
       <index name="cmall_apply_for_mechant_applicant_i">
         <column name="applicant"/>
+      </index>
+      <index name="cmall_apply_for_mechant_seq_i">
+        <column name="seq"/>
+      </index>
+      <index name="unique seq_applicant_id" type="UNIQUE">
+        <column name="applicant"/>
+        <column name="seq"/>
       </index>
     </table>
     <table name="administrators" kind="object">

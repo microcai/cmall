@@ -41,7 +41,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(19, 22, open)
+#pragma db model version(22, 23, open)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -308,9 +308,25 @@ struct cmall_apply_for_mechant
 	odb::nullable<boost::posix_time::ptime> deleted_at_;
 };
 
+#pragma db value
+struct cmall_kv_store_key
+{
+	std::uint64_t uid_;
+	std::string key_value_;
+};
+
+#pragma db object
+struct cmall_3rd_kv_store
+{
+	#pragma db id column("")
+	cmall_kv_store_key key_;
+	std::string value_;
+};
+
 #pragma db view object(cmall_apply_for_mechant)
 struct max_application_seq
 {
 	#pragma db column("max(" + cmall_apply_for_mechant::seq +")")
 	odb::nullable<std::uint64_t> last_seq;
 };
+

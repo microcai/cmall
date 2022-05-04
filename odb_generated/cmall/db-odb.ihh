@@ -250,6 +250,35 @@ namespace odb
     ODB_POTENTIALLY_UNUSED (e);
   }
 
+  // cmall_3rd_kv_store
+  //
+
+  inline
+  access::object_traits< ::cmall_3rd_kv_store >::id_type
+  access::object_traits< ::cmall_3rd_kv_store >::
+  id (const object_type& o)
+  {
+    return o.key_;
+  }
+
+  inline
+  void access::object_traits< ::cmall_3rd_kv_store >::
+  callback (database& db, object_type& x, callback_event e)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (x);
+    ODB_POTENTIALLY_UNUSED (e);
+  }
+
+  inline
+  void access::object_traits< ::cmall_3rd_kv_store >::
+  callback (database& db, const object_type& x, callback_event e)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (x);
+    ODB_POTENTIALLY_UNUSED (e);
+  }
+
   // max_application_seq
   //
 
@@ -514,6 +543,54 @@ namespace odb
 
   inline
   void access::object_traits_impl< ::cmall_apply_for_mechant, id_pgsql >::
+  load_ (statements_type& sts,
+         object_type& obj,
+         bool)
+  {
+    ODB_POTENTIALLY_UNUSED (sts);
+    ODB_POTENTIALLY_UNUSED (obj);
+  }
+
+  // cmall_kv_store_key
+  //
+
+  inline
+  bool access::composite_value_traits< ::cmall_kv_store_key, id_pgsql >::
+  get_null (const image_type& i)
+  {
+    bool r (true);
+    r = r && i.uid_null;
+    r = r && i.key_value_null;
+    return r;
+  }
+
+  inline
+  void access::composite_value_traits< ::cmall_kv_store_key, id_pgsql >::
+  set_null (image_type& i,
+            pgsql::statement_kind sk)
+  {
+    ODB_POTENTIALLY_UNUSED (sk);
+
+    using namespace pgsql;
+
+    i.uid_null = true;
+    i.key_value_null = true;
+  }
+
+  // cmall_3rd_kv_store
+  //
+
+  inline
+  void access::object_traits_impl< ::cmall_3rd_kv_store, id_pgsql >::
+  erase (database& db, const object_type& obj)
+  {
+    callback (db, obj, callback_event::pre_erase);
+    erase (db, id (obj));
+    callback (db, obj, callback_event::post_erase);
+  }
+
+  inline
+  void access::object_traits_impl< ::cmall_3rd_kv_store, id_pgsql >::
   load_ (statements_type& sts,
          object_type& obj,
          bool)

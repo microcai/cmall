@@ -2,6 +2,8 @@
  * compiler for C++.
  */
 
+DROP TABLE IF EXISTS "cmall_3rd_kv_store" CASCADE;
+
 DROP TABLE IF EXISTS "cmall_apply_for_mechant" CASCADE;
 
 DROP TABLE IF EXISTS "cmall_cart" CASCADE;
@@ -245,9 +247,16 @@ CREATE UNIQUE INDEX "unique seq_applicant_id"
     "applicant",
     "seq");
 
+CREATE TABLE "cmall_3rd_kv_store" (
+  "uid" BIGINT NOT NULL,
+  "key_value" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  PRIMARY KEY ("uid",
+               "key_value"));
+
 INSERT INTO "schema_version" (
   "name", "version", "migration")
-  SELECT '', 22, FALSE
+  SELECT '', 23, FALSE
   WHERE NOT EXISTS (
     SELECT 1 FROM "schema_version" WHERE "name" = '');
 
