@@ -259,10 +259,12 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 		case req_method::user_3rd_kv_put:
 		{
 			auto key_value = params["key_value"].as_string();
+			auto value = params["value"].as_string();
 
 			cmall_3rd_kv_store kv;
 			kv.key_.uid_ = session_info.user_info->uid_;
 			kv.key_.key_value_ = key_value;
+			kv.value_ = value;
 			bool is_db_op_ok = co_await m_database.async_upset<cmall_3rd_kv_store>(kv);
 			reply_message["result"] = is_db_op_ok;
 		}
