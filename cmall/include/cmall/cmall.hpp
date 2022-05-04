@@ -145,6 +145,8 @@ namespace cmall {
 		user_add_recipient_address,
 		user_modify_receipt_address,
 		user_erase_receipt_address,
+		user_3rd_kv_put,
+		user_3rd_kv_get,
 
 		cart_add,
 		cart_mod,
@@ -165,6 +167,7 @@ namespace cmall {
 		goods_list,
 		goods_detail,
 		goods_markdown,
+		merchant_index,
 
 		merchant_info,
 		merchant_get_sold_order_detail,

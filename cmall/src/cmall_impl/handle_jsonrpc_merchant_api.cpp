@@ -280,6 +280,11 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api
                 this_merchant.name_ = new_name;
             reply_message["result"] = db_ok;
         }break;
+        case cmall::req_method::merchant_index:
+        {
+            // 获取 商户首页,
+            throw boost::system::system_error(cmall::error::not_implemented);
+        }break;
         default:
             throw "this should never be executed";
     }

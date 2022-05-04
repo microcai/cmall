@@ -256,6 +256,16 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 			reply_message["result"] = is_db_op_ok;
 		}
 		break;
+		case req_method::user_3rd_kv_put:
+		{
+            throw boost::system::system_error(cmall::error::not_implemented);
+		}
+		break;
+		case req_method::user_3rd_kv_get:
+		{
+            throw boost::system::system_error(cmall::error::not_implemented);
+		}
+		break;
 		default:
 			throw "this should never be executed";
 	}
