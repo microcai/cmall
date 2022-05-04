@@ -62,6 +62,8 @@ std::string cmall::error::cmall_category::message(int ev) const
 			return (const char*) u8"未处于替身模式";
 		case cannot_sudo:
 			return (const char*) u8"无法进入替身模式";
+		case kv_store_key_not_found:
+			return (const char*) u8"key不存在";
 	}
 	return "error message";
 }

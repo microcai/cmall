@@ -152,6 +152,51 @@ namespace cmall
 		}
 
 		template <typename T>
+		bool upset(T& value)
+		{
+			return retry_database_op(
+				[&, this]() mutable
+				{
+					odb::transaction t(m_db->begin());
+					try
+					{
+						T oldvalue = value;
+						m_db->reload(oldvalue);
+						// 如果存在, 就 update.
+						// 不存在就抛, 下面接住.
+						m_db->update(value);
+					}
+					catch (odb::object_not_persistent&)
+					{
+						// 不存在就用 persist 调用.
+						m_db->persist(value);
+					}
+					t.commit();
+					return true;
+				});
+		}
+
+		template <typename T>
+		bool reload(T& value)
+		{
+			return retry_database_op(
+				[&, this]() mutable
+				{
+					odb::transaction t(m_db->begin());
+					try
+					{
+						m_db->reload(value);
+					}
+					catch (odb::object_not_persistent&)
+					{
+						return false;
+					}
+					t.commit();
+					return true;
+				});
+		}
+
+		template <typename T>
 		bool update(T& value)
 		{
 			return retry_database_op(
@@ -316,6 +361,24 @@ namespace cmall
 			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> awaitable<bool>
 			{
 				co_return add<T>(value);
+			}, use_awaitable);
+		}
+
+		template<typename T>
+		awaitable<bool> async_upset(T& value)
+		{
+			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> awaitable<bool>
+			{
+				co_return upset<T>(value);
+			}, use_awaitable);
+		}
+
+		template<typename T>
+		awaitable<bool> async_reload(T& value)
+		{
+			return boost::asio::co_spawn(thread_pool, [&, this]()mutable -> awaitable<bool>
+			{
+				co_return reload<T>(value);
 			}, use_awaitable);
 		}
 

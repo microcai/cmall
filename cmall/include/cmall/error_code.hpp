@@ -38,6 +38,7 @@ namespace cmall
 			user_banned,
 			not_in_sudo_mode,
 			cannot_sudo,
+			kv_store_key_not_found,
 		};
 
 		class cmall_category : public boost::system::error_category
