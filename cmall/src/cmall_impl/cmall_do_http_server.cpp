@@ -305,6 +305,18 @@ namespace cmall
 							co_await http_simple_error_page("ERRORED", status_code, req.version());
 						}
 					}
+					else if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/pages/")))
+					{
+						std::string merchant = w[1].str();
+
+						int status_code = co_await render_git_repo_files(
+							connection_id, merchant, "pages/index.html", client_ptr->tcp_stream, req);
+
+						if ((status_code != 200) && (status_code != 206))
+						{
+							co_await http_simple_error_page("ERRORED", status_code, req.version());
+						}
+					}
 					else
 					{
 						co_await http_simple_error_page("ERRORED", 403, req.version());
