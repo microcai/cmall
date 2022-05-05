@@ -302,6 +302,8 @@ set(MDBX_TXN_CHECKOWNER OFF) # 受 coroutine 影响, coroutine 会转移协程�
 set(MDBX_ENV_CHECKPID OFF)
 add_subdirectory(third_party/libmdbx EXCLUDE_FROM_ALL)
 
+add_subdirectory(third_party/cmark EXCLUDE_FROM_ALL)
+
 link_libraries(
 		Boost::thread
 		Boost::date_time
@@ -317,6 +319,7 @@ link_libraries(
 		libodb-boost
 
 		mdbx-static
+		cmark_static
 
 		${OPENSSL_LIBRARIES}
 		${PostgreSQL_LIBRARIES}
