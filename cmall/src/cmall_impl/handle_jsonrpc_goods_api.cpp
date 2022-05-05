@@ -121,6 +121,15 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_goods_api(
 			reply_message["result"] = product_detail;
 		}
 		break;
+		case req_method::goods_merchant_index:
+		{
+			boost::system::error_code ec;
+			auto merchant_id = jsutil::json_accessor(params).get("merchant_id", -1).as_int64();
+			auto merchant_repo_ptr = get_merchant_git_repo(merchant_id);
+			std::string index_md = co_await merchant_repo_ptr->get_transpiled_md("index.md", connection_ptr->ws_client->baseurl_, ec);
+			reply_message["result"] = index_md;
+		}
+		break;
 		default:
 			throw "this should never be executed";
 	}

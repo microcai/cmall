@@ -65,6 +65,8 @@ namespace services
 		awaitable<product> get_product(std::string goods_id, std::string_view merchant_name, std::string baseurl, boost::system::error_code& ec);
 		awaitable<product> get_product(std::string goods_id, std::string_view merchant_name, std::string baseurl);
 
+		awaitable<std::string> get_transpiled_md(std::string md_file_path, std::string baseurl);
+		awaitable<std::string> get_transpiled_md(std::string md_file_path, std::string baseurl, boost::system::error_code& ec);
 		awaitable<std::string> get_product_detail(std::string goods_id, std::string baseurl);
 		awaitable<std::string> get_product_detail(std::string goods_id, std::string baseurl, boost::system::error_code& ec);
 

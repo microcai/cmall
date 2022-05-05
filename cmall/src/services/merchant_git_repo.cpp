@@ -224,6 +224,28 @@ namespace services
 			return ret;
 		}
 
+		std::string get_transpiled_md(std::filesystem::path md_file_path, std::string baseurl, boost::system::error_code& ec)
+		{
+			std::string ret;
+			gitpp::oid commit_version = git_repo.head().target();
+			gitpp::tree repo_tree = git_repo.get_tree_by_commit(commit_version);
+
+			auto look_for_file_entry = repo_tree.by_path(md_file_path.string());
+
+			ec = boost::asio::error::not_found;
+
+			if (!look_for_file_entry.empty())
+			{
+				auto file_blob = git_repo.get_blob(look_for_file_entry.get_oid());
+				ret = md::markdown_transpile(file_blob.get_content(), std::bind(&merchant_git_repo_impl::correct_url, this, std::placeholders::_1, baseurl));
+
+				ec = boost::system::error_code{};
+				return ret;
+			}
+
+			return ret;
+		}
+
 		std::string get_product_detail(std::string goods_id, std::string baseurl, boost::system::error_code& ec)
 		{
 			ec = cmall::error::goods_not_found;
@@ -336,6 +358,24 @@ namespace services
 	{
 		return boost::asio::co_spawn(thread_pool, [=, this]() mutable -> awaitable<std::vector<product>> {
 			co_return impl().get_products(merchant_name, baseurl);
+		}, use_awaitable);
+	}
+
+	awaitable<std::string>merchant_git_repo::get_transpiled_md(std::string md_file_path, std::string baseurl)
+	{
+		co_return co_await boost::asio::co_spawn(thread_pool, [=, this]() mutable -> awaitable<std::string> {
+			boost::system::error_code ec;
+			auto ret = impl().get_transpiled_md(md_file_path, baseurl, ec);
+			if (ec)
+				boost::throw_exception(boost::system::system_error(ec));
+			co_return ret;
+		}, use_awaitable);
+	}
+
+	awaitable<std::string>merchant_git_repo::get_transpiled_md(std::string md_file_path, std::string baseurl, boost::system::error_code& ec)
+	{
+		return boost::asio::co_spawn(thread_pool, [=, &ec, this]() mutable -> awaitable<std::string> {
+			co_return impl().get_transpiled_md(md_file_path, baseurl, ec);
 		}, use_awaitable);
 	}
 

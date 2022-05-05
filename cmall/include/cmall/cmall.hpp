@@ -167,7 +167,7 @@ namespace cmall {
 		goods_list,
 		goods_detail,
 		goods_markdown,
-		merchant_index,
+		goods_merchant_index,
 
 		merchant_info,
 		merchant_get_sold_order_detail,
