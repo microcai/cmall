@@ -139,8 +139,7 @@ awaitable<void> cmall::cmall_service::do_ws_write(size_t connection_id, client_c
 	}
 }
 
-promise<void(std::exception_ptr)> cmall::cmall_service::websocket_write(
-	client_connection_ptr clientptr, std::string message)
+promise<void(std::exception_ptr)> cmall::cmall_service::websocket_write(client_connection_ptr clientptr, std::string message)
 {
 	// 本来 co_await co_spawn 就好，但是 gcc 上有 bug, 会崩
 	// 所以返回 promise 然后在 promise 上 wait 就不会崩了.
