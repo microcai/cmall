@@ -283,6 +283,29 @@ namespace cmall
 							throw boost::system::system_error(ec);
 
 					}
+					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/(pages/.+)")))
+					{
+						std::string merchant = w[1].str();
+						std::string remains = httpd::decodeURIComponent(w[2].str());
+
+						if (remains.find_first_of('?') != std::string::npos)
+						{
+							remains = remains.substr(0, remains.find_first_of('?'));
+						}
+
+						int status_code = co_await render_git_repo_files(
+							connection_id, merchant, remains, client_ptr->tcp_stream, req);
+
+						if (status_code == 404)
+						{
+							status_code = co_await render_git_repo_files(connection_id, merchant, "pages/index.html", client_ptr->tcp_stream, req);
+						}
+
+						if ((status_code != 200) && (status_code != 206))
+						{
+							co_await http_simple_error_page("ERRORED", status_code, req.version());
+						}
+					}
 					else
 					{
 						co_await http_simple_error_page("ERRORED", 403, req.version());
