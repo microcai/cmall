@@ -213,7 +213,6 @@ namespace cmall
 						"not allowed", boost::beast::http::status::forbidden, req.version());
 					continue;
 				}
-
 				else if (target.starts_with("/repos"))
 				{
 					boost::match_results<std::string_view::const_iterator> w;
@@ -283,7 +282,7 @@ namespace cmall
 							throw boost::system::system_error(ec);
 
 					}
-					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/(pages/.+)")))
+					else if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/(pages/.+)")))
 					{
 						std::string merchant = w[1].str();
 						std::string remains = httpd::decodeURIComponent(w[2].str());
