@@ -431,7 +431,7 @@ namespace cmall
   <head>
     <meta charset="utf-8" />
     <title>{}</title>
-	<style>body {{display: grid}} </style>
+	<style>p {{display: grid}} </style>
   </head>
   <body>
       {}
