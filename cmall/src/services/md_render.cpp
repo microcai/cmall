@@ -37,6 +37,17 @@ static void node_walker(mdrender::url_replacer replacer, cmark_node* node, cmark
 			node->as.link.url = cmark_mem_strdup(new_url, cmark_mem_);// reinterpret_cast<unsigned char*>(cmark_mem_->calloc(new_url.length() + 1, 1));
 			cmark_mem_->free(old_url);
 		}
+		else if (boost::regex_match(reinterpret_cast<char*>(old_url), w, boost::regex("([^ ]+) +=(.+)[xX](.+)")))
+		{
+			cmark_node* size_style = cmark_node_new_with_mem(CMARK_NODE_CUSTOM_INLINE, cmark_mem_);
+			size_style->as.custom.on_enter = cmark_mem_strdup(std::format("\" style=\"width:{};height:{}", w[2].str(), w[3].str()), cmark_mem_);
+			// size_style->as.custom.on_enter = cmark_mem_->calloc()
+			cmark_node_append_child(node, size_style);
+
+			auto new_url = replacer(w[1].str());
+			node->as.link.url = cmark_mem_strdup(new_url, cmark_mem_);// reinterpret_cast<unsigned char*>(cmark_mem_->calloc(new_url.length() + 1, 1));
+			cmark_mem_->free(old_url);
+		}
 		else
 		{
 			auto new_url = replacer(std::string((char*)old_url));
