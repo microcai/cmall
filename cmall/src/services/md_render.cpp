@@ -46,7 +46,8 @@ std::string mdrender::markdown_to_html(std::string_view original, url_replacer r
 
 	auto html = cmark_render_html(ast.get(), CMARK_OPT_VALIDATE_UTF8 | CMARK_OPT_UNSAFE | CMARK_OPT_SMART);
 
-	std::string ret(html);
+	std::string ret;
+    ret.assign(html);
 	cmark_mem->free(html);
 
 	return ret;

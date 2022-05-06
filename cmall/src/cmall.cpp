@@ -25,6 +25,12 @@
 #include "httpd/wait_all.hpp"
 #include "dirmon/dirmon.hpp"
 
+template <typename Iterator>
+auto make_iterator_range(std::pair<Iterator, Iterator> pair)
+{
+	return boost::make_iterator_range(pair.first, pair.second);
+}
+
 namespace cmall
 {
 	using namespace std::chrono_literals;
@@ -375,9 +381,9 @@ namespace cmall
 	}
 
 	// 成功给用户返回内容, 返回 200. 如果没找到商品, 不要向 client 写任何数据, 直接放回 404, 由调用方统一返回错误页面.
-	awaitable<int> cmall_service::render_goods_detail_content(size_t connection_id, std::string merchant,
-		std::string goods_id, httpd::http_any_stream& client, std::string baseurl, int http_ver, bool keepalive)
+	awaitable<int> cmall_service::render_goods_detail_content(std::string merchant, std::string goods_id, httpd::http_any_stream& client, const boost::beast::http::request<boost::beast::http::string_body>& req)
 	{
+
 		auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
 		boost::system::error_code ec;
 		auto merchant_repo_ptr = get_merchant_git_repo(merchant_id, ec);
@@ -385,18 +391,61 @@ namespace cmall
 		if (ec)
 			co_return 404;
 
-		std::string product_detail = co_await merchant_repo_ptr->get_product_detail(goods_id, baseurl);
+		std::string baseurl;
+
+		auto user_agent = req[boost::beast::http::field::user_agent];
+		if (!user_agent.empty())
+		{
+			// electron 客户端, 则 images 的地址, 要 replace 为 https://[host]
+			if (user_agent.find("Electron") != std::string::npos)
+			{
+				baseurl = "https://";
+				baseurl += req[boost::beast::http::field::host];
+			}
+		}
+
+		bool return_md_type = false;
+
+		for (auto& accept : make_iterator_range(req.equal_range(boost::beast::http::field::accept)))
+		{
+			return_md_type |= std::string::npos != accept.value().find("text/markdown");
+		}
 
 		std::map<boost::beast::http::field, std::string> headers;
-
 		headers.insert({boost::beast::http::field::expires, httpd::make_http_last_modified(std::time(0) + 60)});
-		headers.insert({boost::beast::http::field::content_type, "text/markdown; charset=utf-8"});
+
+		std::string return_body;
+
+		if (return_md_type)
+		{
+			return_body = co_await merchant_repo_ptr->get_product_detail(goods_id, baseurl);
+			headers.insert({boost::beast::http::field::content_type, "text/markdown; charset=utf-8"});
+		}
+		else
+		{
+			std::string html_body = co_await merchant_repo_ptr->get_product_html(goods_id, baseurl);
+			headers.insert({boost::beast::http::field::content_type, "text/html; charset=utf-8"});
+
+			return_body = std::format(R"xhtml(<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{}</title>
+  </head>
+  <body>
+      {}
+  </body>
+</html>
+)xhtml", "查看商品详情", html_body);
+
+			// return_body
+		}
 
 		ec = co_await httpd::send_string_response_body(client,
-			product_detail,
+			return_body,
 			headers,
-			http_ver,
-			keepalive);
+			req.version(),
+			req.keep_alive());
 		if (ec)
 			throw boost::system::system_error(ec);
 		co_return 200;
