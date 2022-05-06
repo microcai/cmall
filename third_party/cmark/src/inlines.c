@@ -1033,11 +1033,6 @@ static bufsize_t manual_scan_link_url_2(cmark_chunk *input, bufsize_t offset,
         break;
       --nb_p;
       ++i;
-    } else if (cmark_isspace(input->data[i])) {
-      if (i == offset) {
-        return -1;
-      }
-      break;
     } else {
       ++i;
     }
