@@ -69,6 +69,14 @@ static int S_render_node(cmark_node *node, cmark_event_type ev_type,
       cmark_strbuf_putc(html, ' ');
       break;
 
+    case CMARK_NODE_CUSTOM_INLINE: {
+      unsigned char *block = entering ? node->as.custom.on_enter :
+                                        node->as.custom.on_exit;
+      if (block) {
+        cmark_strbuf_puts(html, (char *)block);
+      }
+      break;
+    }
     default:
       break;
     }
