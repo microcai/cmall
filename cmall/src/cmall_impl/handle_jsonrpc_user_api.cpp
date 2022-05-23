@@ -284,6 +284,34 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
             throw boost::system::system_error(cmall::error::kv_store_key_not_found);
 		}
 		break;
+		case req_method::user_3rd_kv_put_pubkey:
+		{
+			auto key_value = params["key_value"].as_string();
+			auto value = params["value"].as_string();
+
+			cmall_3rd_public_kv_store kv;
+			kv.key_.uid_ = session_info.user_info->uid_;
+			kv.key_.key_value_ = key_value;
+			kv.value_ = value;
+			bool is_db_op_ok = co_await m_database.async_upset<cmall_3rd_public_kv_store>(kv);
+			reply_message["result"] = is_db_op_ok;
+		}
+		break;
+		case req_method::user_3rd_kv_get_pubkey:
+		{
+			auto key_value = params["key_value"].as_string();
+			cmall_3rd_public_kv_store kv;
+			kv.key_.uid_ = session_info.user_info->uid_;
+			kv.key_.key_value_ = key_value;
+			bool is_db_op_ok = co_await m_database.async_reload<cmall_3rd_public_kv_store>(kv);
+			if (is_db_op_ok)
+			{
+				reply_message["result"] = kv.value_;
+				break;
+			}
+            throw boost::system::system_error(cmall::error::kv_store_key_not_found);
+		}
+		break;
 		default:
 			throw "this should never be executed";
 	}

@@ -2,6 +2,8 @@
  * compiler for C++.
  */
 
+DROP TABLE IF EXISTS "cmall_3rd_public_kv_store" CASCADE;
+
 DROP TABLE IF EXISTS "cmall_3rd_kv_store" CASCADE;
 
 DROP TABLE IF EXISTS "cmall_apply_for_mechant" CASCADE;
@@ -254,9 +256,16 @@ CREATE TABLE "cmall_3rd_kv_store" (
   PRIMARY KEY ("uid",
                "key_value"));
 
+CREATE TABLE "cmall_3rd_public_kv_store" (
+  "uid" BIGINT NOT NULL,
+  "key_value" TEXT NOT NULL,
+  "value" TEXT NOT NULL,
+  PRIMARY KEY ("uid",
+               "key_value"));
+
 INSERT INTO "schema_version" (
   "name", "version", "migration")
-  SELECT '', 23, FALSE
+  SELECT '', 24, FALSE
   WHERE NOT EXISTS (
     SELECT 1 FROM "schema_version" WHERE "name" = '');
 

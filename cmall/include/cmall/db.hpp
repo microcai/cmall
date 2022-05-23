@@ -41,7 +41,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(22, 23, open)
+#pragma db model version(22, 24, open)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -317,6 +317,14 @@ struct cmall_kv_store_key
 
 #pragma db object
 struct cmall_3rd_kv_store
+{
+	#pragma db id column("")
+	cmall_kv_store_key key_;
+	std::string value_;
+};
+
+#pragma db object
+struct cmall_3rd_public_kv_store
 {
 	#pragma db id column("")
 	cmall_kv_store_key key_;

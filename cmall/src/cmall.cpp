@@ -646,6 +646,8 @@ namespace cmall
 			case req_method::user_erase_receipt_address:
 			case req_method::user_3rd_kv_put:
 			case req_method::user_3rd_kv_get:
+			case req_method::user_3rd_kv_put_pubkey:
+			case req_method::user_3rd_kv_get_pubkey:
 				co_await ensure_login();
 				co_return co_await handle_jsonrpc_user_api(connection_ptr, method.value(), params);
 				break;
@@ -689,6 +691,7 @@ namespace cmall
 			case req_method::merchant_list_apptoken:
 			case req_method::merchant_delete_apptoken:
 			case req_method::merchant_alter_name:
+			case req_method::merchant_user_kv_get:
 				co_await ensure_login(false, true);
 				co_return co_await handle_jsonrpc_merchant_api(connection_ptr, method.value(), params);
 				break;

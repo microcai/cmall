@@ -147,6 +147,8 @@ namespace cmall {
 		user_erase_receipt_address,
 		user_3rd_kv_put,
 		user_3rd_kv_get,
+		user_3rd_kv_put_pubkey,
+		user_3rd_kv_get_pubkey,
 
 		cart_add,
 		cart_mod,
@@ -183,6 +185,7 @@ namespace cmall {
 		merchant_list_apptoken,
 		merchant_delete_apptoken,
 		merchant_alter_name,
+		merchant_user_kv_get,
 
 		admin_user_detail,
 		admin_user_list,

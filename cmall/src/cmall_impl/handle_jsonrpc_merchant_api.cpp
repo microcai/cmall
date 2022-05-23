@@ -280,6 +280,21 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api
                 this_merchant.name_ = new_name;
             reply_message["result"] = db_ok;
         }break;
+        case req_method::merchant_user_kv_get:
+        {
+			auto key_value = params["key_value"].as_string();
+			auto user_id = params["user_id"].as_int64();
+			cmall_3rd_public_kv_store kv;
+			kv.key_.uid_ = user_id;
+			kv.key_.key_value_ = key_value;
+			bool is_db_op_ok = co_await m_database.async_reload<cmall_3rd_public_kv_store>(kv);
+			if (is_db_op_ok)
+			{
+				reply_message["result"] = kv.value_;
+				break;
+			}
+            throw boost::system::system_error(cmall::error::kv_store_key_not_found);
+        }break;
         default:
             throw "this should never be executed";
     }
