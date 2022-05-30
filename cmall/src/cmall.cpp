@@ -352,9 +352,11 @@ namespace cmall
 		headers.insert({boost::beast::http::field::expires, httpd::make_http_last_modified(std::time(0) + 60)});
 		headers.insert({boost::beast::http::field::content_type, httpd::get_mime_type_from_extension(std::filesystem::path(path_in_repo).extension().string())});
 
-		if (req_range)
+
+		if (req_range && ((res_body.length() != req_range->end) && (req_range->begin != 0)))
 		{
 			headers.insert({boost::beast::http::field::content_range, httpd::make_cpntent_range(req_range.value(), res_body.length())});
+
 
 			// 执行 206 响应.
 			ec = co_await httpd::send_string_response_body(client,
