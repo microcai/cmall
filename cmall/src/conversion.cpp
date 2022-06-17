@@ -106,6 +106,15 @@ inline namespace conversion
 		};
 	}
 
+	void tag_invoke(const value_from_tag&, value& jv, const cmall_user_fav& c)
+	{
+		jv = {
+			{ "merchant_id", c.merchant_id_ },
+			{ "merchant_name", c.merchant_name_ },
+			{ "created_at", to_string(c.created_at_) },
+		};
+	}
+
 	void tag_invoke(const value_from_tag&, value& jv, const cmall_apply_for_mechant& a)
 	{
 		jv = {

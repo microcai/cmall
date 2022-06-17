@@ -1,4 +1,20 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
+  <changeset version="25">
+    <add-table name="cmall_user_fav" kind="object">
+      <column name="id" type="BIGINT" null="false"/>
+      <column name="uid" type="BIGINT" null="false"/>
+      <column name="merchant_id" type="BIGINT" null="false"/>
+      <column name="created_at" type="TIMESTAMP" null="true"/>
+      <column name="updated_at" type="TIMESTAMP" null="true"/>
+      <primary-key auto="true">
+        <column name="id"/>
+      </primary-key>
+      <index name="cmall_user_fav_uid_i">
+        <column name="uid"/>
+      </index>
+    </add-table>
+  </changeset>
+
   <changeset version="24">
     <add-table name="cmall_3rd_public_kv_store" kind="object">
       <column name="uid" type="BIGINT" null="false"/>

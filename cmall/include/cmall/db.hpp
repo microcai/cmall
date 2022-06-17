@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (C) 2019 Jack.
 //
 // Author: jack
@@ -41,7 +41,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(22, 24, open)
+#pragma db model version(22, 25, open)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -276,6 +276,24 @@ struct cmall_cart
 	boost::posix_time::ptime updated_at_{ boost::posix_time::second_clock::local_time() };
 };
 
+
+// 收藏夹.
+#pragma db object
+struct cmall_user_fav
+{
+#pragma db id auto
+	std::uint64_t id_;
+
+#pragma db index
+	std::uint64_t uid_;
+
+	std::uint64_t merchant_id_;
+#pragma db transient
+	std::string merchant_name_;
+
+	boost::posix_time::ptime created_at_{ boost::posix_time::second_clock::local_time() };
+	boost::posix_time::ptime updated_at_{ boost::posix_time::second_clock::local_time() };
+};
 
 enum class approve_state_t
 {

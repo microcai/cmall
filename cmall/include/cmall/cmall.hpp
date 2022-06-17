@@ -155,6 +155,10 @@ namespace cmall {
 		cart_del,
 		cart_list,
 
+		fav_add,
+		fav_del,
+		fav_list,
+
 		order_create_cart,
 		order_create_direct,
 		order_detail,
@@ -255,6 +259,7 @@ namespace cmall {
 		awaitable<boost::json::object> handle_jsonrpc_user_api(client_connection_ptr, const req_method method, boost::json::object params);
 		awaitable<boost::json::object> handle_jsonrpc_order_api(client_connection_ptr, const req_method method, boost::json::object params);
 		awaitable<boost::json::object> handle_jsonrpc_cart_api(client_connection_ptr, const req_method method, boost::json::object params);
+		awaitable<boost::json::object> handle_jsonrpc_fav_api(client_connection_ptr, const req_method method, boost::json::object params);
 		awaitable<boost::json::object> handle_jsonrpc_goods_api(client_connection_ptr, const req_method method, boost::json::object params);
 
 		awaitable<boost::json::object> handle_jsonrpc_merchant_api(client_connection_ptr, const req_method method, boost::json::object params);

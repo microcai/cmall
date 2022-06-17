@@ -661,6 +661,13 @@ namespace cmall
 				co_await ensure_login();
 				co_return co_await handle_jsonrpc_cart_api(connection_ptr, method.value(), params);
 				break;
+			case req_method::fav_add:
+			case req_method::fav_del:
+			case req_method::fav_list:
+				co_await ensure_login();
+				co_return co_await handle_jsonrpc_fav_api(connection_ptr, method.value(), params);
+				break;
+
 			case req_method::order_create_cart:
 			case req_method::order_create_direct:
 			case req_method::order_detail:
