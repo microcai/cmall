@@ -28,10 +28,10 @@ std::string md::markdown_transpile(std::string_view original, url_replacer repla
 	std::shared_ptr<cmark_node> ast;
 
 	ast.reset(
-        cmark_parse_document(original.begin(), original.length(), CMARK_OPT_VALIDATE_UTF8 | CMARK_OPT_UNSAFE | CMARK_OPT_SMART),
+        cmark_parse_document(original.data(), original.length(), CMARK_OPT_VALIDATE_UTF8 | CMARK_OPT_UNSAFE | CMARK_OPT_SMART),
 		cmark_node_free
     );
-    auto root_node = ast.get();
+//    auto root_node = ast.get();
 
 	auto cmark_mem = ast->mem;
 
