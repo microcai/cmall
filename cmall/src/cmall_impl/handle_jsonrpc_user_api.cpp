@@ -133,11 +133,11 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 		case req_method::user_fastlogin:
 		{
 			std::string token = jsutil::json_accessor(params).get_string("token");
-			std::string key = jsutil::json_accessor(params).get_string("key");
+			std::string accessToken = jsutil::json_accessor(params).get_string("accessToken");
 
 			// TODO 调用 网易 SDK 获取用户真正的手机号.
 			neteasesdk netsdk(m_io_context);
-			std::string realphone = co_await netsdk.get_user_phone(token, key);
+			std::string realphone = co_await netsdk.get_user_phone(token, accessToken);
 
 			if (!realphone.empty())
 			{
