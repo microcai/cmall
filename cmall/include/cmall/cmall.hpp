@@ -133,6 +133,7 @@ namespace cmall {
 
 		ping,
 
+		user_fastlogin,
 		user_prelogin,
 		user_login,
 		user_logout,
