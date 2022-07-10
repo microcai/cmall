@@ -66,6 +66,10 @@ namespace cmall {
 		std::string gitea_template_reponame;
 
 		std::string site_name;
+
+		std::string netease_secret_id;
+		std::string netease_secret_key;
+		std::string netease_business_id;
 	};
 
 

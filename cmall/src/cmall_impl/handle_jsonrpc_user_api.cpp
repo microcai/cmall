@@ -136,7 +136,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 			std::string accessToken = jsutil::json_accessor(params).get_string("accessToken");
 
 			// TODO 调用 网易 SDK 获取用户真正的手机号.
-			neteasesdk netsdk(m_io_context);
+			neteasesdk netsdk(m_io_context, m_config.netease_secret_id, m_config.netease_secret_key, m_config.netease_business_id);
 			std::string realphone = co_await netsdk.get_user_phone(token, accessToken);
 
 			if (!realphone.empty())

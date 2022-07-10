@@ -20,6 +20,8 @@
 #include <boost/multiprecision/cpp_int.hpp>
 #include <type_traits>
 
+#include <openssl/md5.h>
+
 #include "fmt_extra.hpp"
 
 std::string gen_uuid();
@@ -222,4 +224,11 @@ inline std::string base64_encode(const std::string& in)
 	boost::beast::detail::base64::encode(ret.data(), in.data(), in.size());
 
 	return ret;
+}
+
+inline std::string md5sum(const std::string& in)
+{
+	std::vector<uint8_t> ret(MD5_DIGEST_LENGTH, 0x0);
+	MD5((unsigned char *)in.data(), in.size(), (unsigned char *)ret.data());
+	return to_hexstring(ret);
 }

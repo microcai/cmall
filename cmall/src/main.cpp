@@ -1,4 +1,4 @@
-﻿
+
 #include "stdafx.hpp"
 
 #include <boost/program_options.hpp>
@@ -169,6 +169,7 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 	std::string repo_root;
 
 	std::string gitea_token, gitea_api_path = "http://localhost:3000", gitea_template_user, gitea_template_reponame = "shop-template";
+	std::string netease_secret_id, netease_secret_key, netease_business_id;
 
 	std::string cert_file, key_file;
 
@@ -195,6 +196,9 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 		("gitea_api_path", po::value<std::string>(&gitea_api_path)->value_name("url"), "default http://localhost:3000 cmall will use this url to manage gitea")
 		("gitea_template_user", po::value<std::string>(&gitea_template_user)->default_value("admin")->value_name("user"), "template for user's default repo")
 		("gitea_template_reponame", po::value<std::string>(&gitea_template_reponame)->value_name("repo"), "template for user's default repo")
+		("netease_secret_id", po::value<std::string>(&netease_secret_id)->value_name("netease_secret_id"), "netease secret id")
+		("netease_secret_key", po::value<std::string>(&netease_secret_key)->value_name("netease_secret_key"), "netease secret key")
+		("netease_business_id", po::value<std::string>(&netease_business_id)->value_name("netease_business_id"), "netease business id")
 		("cert", po::value<std::string>(&cert_file)->value_name("file"), "ssl cert file")
 		("key", po::value<std::string>(&key_file)->value_name("file"), "ssl private key file")
 		("site_name", po::value<std::string>(&site_name)->value_name("desc")->default_value("cmall"), "site name")
