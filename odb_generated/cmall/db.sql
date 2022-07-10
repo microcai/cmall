@@ -8,6 +8,8 @@ DROP TABLE IF EXISTS "cmall_3rd_kv_store" CASCADE;
 
 DROP TABLE IF EXISTS "cmall_apply_for_mechant" CASCADE;
 
+DROP TABLE IF EXISTS "cmall_user_fav" CASCADE;
+
 DROP TABLE IF EXISTS "cmall_cart" CASCADE;
 
 DROP TABLE IF EXISTS "cmall_order_kuaidi" CASCADE;
@@ -224,6 +226,16 @@ CREATE TABLE "cmall_cart" (
 CREATE INDEX "cmall_cart_uid_i"
   ON "cmall_cart" ("uid");
 
+CREATE TABLE "cmall_user_fav" (
+  "id" BIGSERIAL NOT NULL PRIMARY KEY,
+  "uid" BIGINT NOT NULL,
+  "merchant_id" BIGINT NOT NULL,
+  "created_at" TIMESTAMP NULL,
+  "updated_at" TIMESTAMP NULL);
+
+CREATE INDEX "cmall_user_fav_uid_i"
+  ON "cmall_user_fav" ("uid");
+
 CREATE TABLE "cmall_apply_for_mechant" (
   "id" BIGSERIAL NOT NULL PRIMARY KEY,
   "applicant" BIGINT NULL,
@@ -265,7 +277,7 @@ CREATE TABLE "cmall_3rd_public_kv_store" (
 
 INSERT INTO "schema_version" (
   "name", "version", "migration")
-  SELECT '', 24, FALSE
+  SELECT '', 25, FALSE
   WHERE NOT EXISTS (
     SELECT 1 FROM "schema_version" WHERE "name" = '');
 
