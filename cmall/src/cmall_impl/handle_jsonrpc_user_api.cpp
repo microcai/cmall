@@ -144,8 +144,10 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 				co_await handle_user_login(session_info.verify_telephone);
 				break;
 			}
-
-			throw boost::system::system_error(cmall::error::internal_server_error);
+			else
+			{
+				throw boost::system::system_error(cmall::error::internal_server_error);
+			}
 
 		}break;
 
