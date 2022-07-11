@@ -633,6 +633,7 @@ namespace cmall
 			{
 				reply_message["result"] = "pong";
 			}break;
+			case req_method::user_fastlogin:
 			case req_method::user_prelogin:
 			case req_method::user_login:
 			case req_method::user_islogin:
