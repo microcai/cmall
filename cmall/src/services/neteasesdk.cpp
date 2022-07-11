@@ -70,6 +70,8 @@ namespace services
 			auto reply = co_await request(option);
 			auto resp = reply.body;
 
+			LOG_DBG << "netease resp:" << reply.body;
+
 			// { code, msg, data{ phone, resultCode } }
 			do {
 				boost::system::error_code ec;
