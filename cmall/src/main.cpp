@@ -275,6 +275,9 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 	cfg.gitea_template_reponame = gitea_template_reponame;
 	cfg.gitea_admin_token = gitea_token;
 	cfg.site_name = site_name;
+	cfg.netease_business_id = netease_business_id;
+	cfg.netease_secret_key = netease_secret_key;
+	cfg.netease_secret_id = netease_secret_id;
 
 	cmall::cmall_service xsrv(ios, cfg);
 
