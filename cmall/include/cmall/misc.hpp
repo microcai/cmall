@@ -230,5 +230,5 @@ inline std::string md5sum(const std::string& in)
 {
 	std::vector<uint8_t> ret(MD5_DIGEST_LENGTH, 0x0);
 	MD5((unsigned char *)in.data(), in.size(), (unsigned char *)ret.data());
-	return to_hexstring(ret);
+	return to_hexstring(ret, 32);
 }
