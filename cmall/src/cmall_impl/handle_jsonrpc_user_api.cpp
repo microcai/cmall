@@ -141,6 +141,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 
 			if (!realphone.empty())
 			{
+				session_info.verify_telephone = realphone;
 				co_await handle_user_login(session_info.verify_telephone);
 				break;
 			}
