@@ -203,28 +203,53 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
             if (target_uid == this_user.uid_)
                 throw boost::system::system_error(error::cannot_sudo);
 
-            // 目前只能 sudo 到 merchant
             cmall_merchant target_merchant;
             cmall_user target_user;
 
-            if (co_await m_database.async_load<cmall_merchant>(odb::query<cmall_merchant>::uid == target_uid, target_merchant) &&
-                co_await m_database.async_load<cmall_user>(odb::query<cmall_user>::uid == target_uid, target_user))
+            if (co_await m_database.async_load<cmall_user>(odb::query<cmall_user>::uid == target_uid, target_user))
             {
-                session_info.original_user = session_info.admin_info;
-                session_info.admin_info.reset();
-                session_info.isAdmin = false;
-                session_info.isMerchant = true;
-                session_info.sudo_mode = true;
-                session_info.merchant_info = target_merchant;
-                session_info.user_info = target_user;
+                if (co_await m_database.async_load<cmall_merchant>(odb::query<cmall_merchant>::uid == target_uid, target_merchant))
+                {
+                    // sudo 到 merchant
+                    session_info.original_user = session_info.admin_info;
+                    session_info.admin_info.reset();
+                    session_info.isAdmin = false;
+                    session_info.isMerchant = true;
+                    session_info.sudo_mode = true;
+                    session_info.merchant_info = target_merchant;
+                    session_info.user_info = target_user;
 
-                co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info);
-                reply_message["result"] = {
-                    { "sudo", "success" },
-                    { "isMerchant", session_info.isMerchant },
-                    { "isAdmin", session_info.isAdmin },
-                };
-                break;
+                    co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info);
+                    reply_message["result"] = {
+                        { "sudo", "success" },
+                        { "isMerchant", session_info.isMerchant },
+                        { "isAdmin", session_info.isAdmin },
+                    };
+                    break;
+                }
+                else
+                {
+                    // sudo 到普通用户.
+                    session_info.original_user = session_info.admin_info;
+                    session_info.admin_info.reset();
+                    session_info.isAdmin = false;
+                    session_info.isMerchant = false;
+                    session_info.sudo_mode = true;
+                    session_info.merchant_info.reset();
+                    session_info.user_info = target_user;
+
+                    co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info);
+                    reply_message["result"] = {
+                        { "sudo", "success" },
+                        { "isMerchant", session_info.isMerchant },
+                        { "isAdmin", session_info.isAdmin },
+                    };
+                    break;
+                }
+            }
+            else
+            {
+                throw boost::system::system_error(error::internal_server_error);
             }
         }
         break;
