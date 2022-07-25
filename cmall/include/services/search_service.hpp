@@ -17,6 +17,12 @@ namespace services
 		std::string goods_id;
 	};
 
+	struct goods_ref_with_ranking
+	{
+		std::uint64_t merchant_id;
+		std::string goods_id;
+		double ranking;
+	};
 
 	struct search_impl;
 	class search

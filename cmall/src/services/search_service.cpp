@@ -55,6 +55,7 @@ namespace services
 		double ranke;
 		goods_ref target;
 
+		std::string_view keyword() const { return key_word; }
 		std::uint64_t merchant_id() const { return target.merchant_id; }
 		std::string_view goods_id() const { return target.goods_id; }
 	};
@@ -72,8 +73,8 @@ namespace services
 			>,
 			boost::multi_index::hashed_non_unique<
 				boost::multi_index::tag<tags::key_word>,
-				boost::multi_index::member<
-					keyword_index_item, std::string, &keyword_index_item::key_word
+				boost::multi_index::const_mem_fun<
+					keyword_index_item, std::string_view, &keyword_index_item::keyword
 				>
 			>,
 			boost::multi_index::hashed_non_unique<
@@ -118,9 +119,28 @@ namespace services
 
 		awaitable<std::vector<goods_ref>> search_goods(std::string search_string)
 		{
+			typedef boost::multi_index::multi_index_container<
+				goods_ref_with_ranking,
+				boost::multi_index::indexed_by<
+					boost::multi_index::sequenced<>,
+					boost::multi_index::ranked_unique<
+						boost::multi_index::composite_key<
+							goods_ref_with_ranking,
+							boost::multi_index::member<goods_ref_with_ranking, std::uint64_t, &goods_ref_with_ranking::merchant_id>,
+							boost::multi_index::member<goods_ref_with_ranking, std::string, &goods_ref_with_ranking::goods_id>
+						>
+					>,
+					boost::multi_index::ranked_non_unique<
+						boost::multi_index::member<
+							goods_ref_with_ranking, double, &goods_ref_with_ranking::ranking
+						>
+					>
+				>
+			> goods_ref_with_ranking_container;
+
 			std::vector<goods_ref> result;
 
-			std::map<goods_ref, double> result_ranking;
+			goods_ref_with_ranking_container result_tmp;
 
 			std::shared_lock<std::shared_mutex> l(dbmtx);
 
@@ -128,26 +148,30 @@ namespace services
 
 			auto keyword_result = keyword_ref_containr.equal_range(search_string);
 
+			LOG_DBG << "search {" << search_string << "}, has " << std::distance(keyword_result.first, keyword_result.second) << " results.";
+
 			for (const auto& item : boost::make_iterator_range(keyword_result.first, keyword_result.second) )
 			{
-				result_ranking[item.target] += item.ranke;
+				goods_ref_with_ranking new_item = { .merchant_id = item.target.merchant_id, .goods_id = item.target.goods_id, .ranking = 0-item.ranke };
+				auto insertion_result = result_tmp.push_back(new_item);
+				if (insertion_result.second == false)
+				{
+					result_tmp.modify(insertion_result.first, [&](goods_ref_with_ranking& old){ old.ranking -= item.ranke;});
+				}
 			}
 
 			l.unlock();
 
-			std::vector<std::pair<goods_ref, double>> vectored_result;
-			for (auto & i : result_ranking)
-				vectored_result.push_back(i);
+			LOG_DBG << "search {" << search_string << "}, has " << result_tmp.size() << " results sorted.";
 
-			sort(vectored_result.begin(), vectored_result.end(), [](auto & a, auto& b){ return b.second < a.second; });
-
-			for (std::size_t i=0; i < 10; i++)
+			for (auto item: result_tmp.get<2>())
 			{
-				if (i < vectored_result.size())
-					result.push_back(vectored_result[i].first);
+				if (result.size() < 10)
+					result.push_back(goods_ref{.merchant_id = item.merchant_id, .goods_id = item.goods_id });
 				else break;
 			}
 
+			LOG_DBG << "search {" << search_string << "}, has " << result.size() << " results returned.";
 			co_return result;
 		}
 
