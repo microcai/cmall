@@ -148,14 +148,21 @@ namespace cmall
 
 		for (;;)
 		{
-			co_await git_monitor.async_wait_dirchange();
+			using namespace boost::asio::experimental::awaitable_operators;
+
+			awaitable_timer timer(co_await boost::asio::this_coro::executor);
+			timer.expires_from_now(300s);
+
+			auto awaited_result = co_await (
+				timer.async_wait()
+					||
+				git_monitor.async_wait_dirchange()
+			);
 
 			for (;;)
 			{
 				awaitable_timer timer(co_await boost::asio::this_coro::executor);
 				timer.expires_from_now(2s);
-
-				using namespace boost::asio::experimental::awaitable_operators;
 
 				auto awaited_result = co_await (
 					timer.async_wait()
@@ -176,7 +183,7 @@ namespace cmall
 			if (!repo)
 				co_return;
 			{
-				if (co_await repo->check_repo_changed())
+				if (co_await repo->check_repo_changed(co_await search_service.cached_head(repo) ))
 				{
 					LOG_DBG << std::format("repo {} git HEAD changed!", repo->repo_path().string());
 					co_await search_service.reload_merchant(repo);

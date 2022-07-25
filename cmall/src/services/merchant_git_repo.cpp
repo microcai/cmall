@@ -36,7 +36,6 @@ namespace services
 			, git_repo(repo_path_)
 			, merchant_id(merchant_id)
 		{
-			last_checked_master_sha1 = git_repo.head().target();
 		}
 
 		template<typename WalkHandler>
@@ -313,15 +312,20 @@ namespace services
 			return ret;
 		}
 
-		awaitable<bool> check_repo_changed()
+		bool check_repo_changed(std::string old_head) const
 		{
-			auto old_value = last_checked_master_sha1;
-			last_checked_master_sha1 = git_repo.head().target();
-			co_return last_checked_master_sha1 != old_value;
+			return git_repo.head().target().as_sha1_string() != old_head;
+		}
+
+		std::string git_head() const
+		{
+			return git_repo.head().target().as_sha1_string();
 		}
 
 		awaitable<std::vector<std::string>> get_supported_payment()
 		{
+			co_await boost::asio::this_coro::throw_if_cancelled();
+
 			boost::system::error_code ec;
 
 			auto content = get_file_content("settings.ini", ec);
@@ -355,7 +359,6 @@ namespace services
 			return repo_path_;
 		}
 
-		gitpp::oid last_checked_master_sha1;
 		std::filesystem::path repo_path_;
 		gitpp::repo git_repo;
 		std::uint64_t merchant_id;
@@ -453,9 +456,20 @@ namespace services
 		return impl().merchant_id;
 	}
 
-	awaitable<bool> merchant_git_repo::check_repo_changed()
+	awaitable<bool> merchant_git_repo::check_repo_changed(std::string old_head) const
 	{
-		return impl().check_repo_changed();
+		co_return co_await boost::asio::co_spawn(thread_pool, [this, old_head]() mutable -> awaitable<bool> {
+			co_await boost::asio::this_coro::throw_if_cancelled();
+			co_return impl().check_repo_changed(old_head);
+		}, use_awaitable);
+	}
+
+	awaitable<std::string> merchant_git_repo::git_head() const
+	{
+		co_return co_await boost::asio::co_spawn(thread_pool, [this]() mutable -> awaitable<std::string> {
+			co_await boost::asio::this_coro::throw_if_cancelled();
+			co_return impl().git_head();
+		}, use_awaitable);
 	}
 
 	std::filesystem::path merchant_git_repo::repo_path() const

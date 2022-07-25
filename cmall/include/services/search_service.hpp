@@ -33,6 +33,7 @@ namespace services
 
 		awaitable<void> add_merchant(std::shared_ptr<merchant_git_repo>);
 		awaitable<void> reload_merchant(std::shared_ptr<merchant_git_repo>);
+		awaitable<std::string> cached_head(std::shared_ptr<merchant_git_repo> repo);
 
 		awaitable<std::vector<goods_ref>> search_goods(std::string search_string);
 

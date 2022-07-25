@@ -6,11 +6,14 @@ boost::asio::awaitable<int> co_main(int argc, char** argv, boost::asio::io_conte
 {
 	dirmon::dirmon monitor(io, ".");
 
-	auto changed_list = co_await monitor.async_wait_dirchange();
-
-	for (auto& c : changed_list)
+	while(true)
 	{
-		std::cout << "got change. filename: " << c.file_name << "\n";
+		auto changed_list = co_await monitor.async_wait_dirchange();
+
+		for (auto& c : changed_list)
+		{
+			std::cout << "got change. filename: " << c.file_name << "\n";
+		}
 	}
 
 	co_return 0;

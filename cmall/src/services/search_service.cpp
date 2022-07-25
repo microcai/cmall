@@ -84,7 +84,6 @@ namespace services
 		>
 	> keywords_database;
 
-
 	struct search_impl
 	{
 		void add_merchant_unlocked(std::vector<product> products)
@@ -109,10 +108,12 @@ namespace services
 		awaitable<void> add_merchant(std::shared_ptr<merchant_git_repo> repo)
 		{
 			// 这里只是做索引, 不用在意店铺名字.
+			auto head = co_await repo->git_head();
 			auto products = co_await repo->get_products("any_merchant", "");
 
 			std::unique_lock<std::shared_mutex> l(dbmtx);
 
+			merchant_git_snap[repo->get_merchant_uid()] = head;
 			add_merchant_unlocked(products);
 			co_return;
 		}
@@ -179,18 +180,26 @@ namespace services
 
 		awaitable<void> reload_merchant(std::shared_ptr<merchant_git_repo> repo)
 		{
+			auto head = co_await repo->git_head();
 			auto products = co_await repo->get_products("any_name_be_ok", "");
 
 			std::unique_lock<std::shared_mutex> l(dbmtx);
 
 			indexdb.get<tags::merchant_id>().erase(repo->get_merchant_uid());
-
 			add_merchant_unlocked(products);
+			merchant_git_snap[repo->get_merchant_uid()] = head;
 			co_return;
+		}
+
+		awaitable<std::string> cached_head(std::shared_ptr<merchant_git_repo> repo)
+		{
+			std::unique_lock<std::shared_mutex> l(dbmtx);
+			co_return merchant_git_snap[repo->get_merchant_uid()];
 		}
 
 		mutable std::shared_mutex dbmtx;
 		keywords_database indexdb;
+		std::map<std::uint64_t, std::string> merchant_git_snap;
 	};
 
 	search::search()
@@ -207,6 +216,11 @@ namespace services
 	awaitable<void> search::add_merchant(std::shared_ptr<merchant_git_repo> merchant_repos)
 	{
 		return impl().add_merchant(merchant_repos);
+	}
+
+	awaitable<std::string> search::cached_head(std::shared_ptr<merchant_git_repo> repo)
+	{
+		return impl().cached_head(repo);
 	}
 
 	awaitable<void> search::reload_merchant(std::shared_ptr<merchant_git_repo> repo)

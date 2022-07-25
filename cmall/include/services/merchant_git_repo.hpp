@@ -76,7 +76,8 @@ namespace services
 
 		std::uint64_t get_merchant_uid() const;
 
-		awaitable<bool> check_repo_changed();
+		awaitable<bool> check_repo_changed(std::string oldhead) const;
+		awaitable<std::string> git_head() const;
 
 		std::filesystem::path repo_path() const;
 

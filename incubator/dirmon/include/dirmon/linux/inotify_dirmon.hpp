@@ -28,9 +28,10 @@ namespace dirmon {
 
 			if (bytes_transferred >= sizeof(inotify_event))
 			{
-				for (inotify_event* file_notify_info = reinterpret_cast<inotify_event*>(buf.data()); pos < bytes_transferred;
+				for (inotify_event* file_notify_info = reinterpret_cast<inotify_event*>(buf.data());
+					pos < bytes_transferred;
                     pos += sizeof(inotify_event) + file_notify_info->len,
-					file_notify_info = reinterpret_cast<inotify_event*>(reinterpret_cast<char*>(file_notify_info) + sizeof(inotify_event)+file_notify_info->len)
+					file_notify_info = reinterpret_cast<inotify_event*>(&buf[pos])
 				)
 				{
 					if (file_notify_info->len > 0)
