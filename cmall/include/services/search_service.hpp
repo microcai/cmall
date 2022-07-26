@@ -36,6 +36,7 @@ namespace services
 		awaitable<std::string> cached_head(std::shared_ptr<merchant_git_repo> repo);
 
 		awaitable<std::vector<goods_ref>> search_goods(std::string search_string);
+		awaitable<std::vector<goods_ref>> search_goods(std::vector<std::string> search_string);
 
 	private:
 		const search_impl& impl() const;

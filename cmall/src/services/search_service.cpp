@@ -118,7 +118,7 @@ namespace services
 			co_return;
 		}
 
-		awaitable<std::vector<goods_ref>> search_goods(std::string search_string)
+		awaitable<std::vector<goods_ref>> search_goods(std::vector<std::string> search_strings)
 		{
 			typedef boost::multi_index::multi_index_container<
 				goods_ref_with_ranking,
@@ -147,23 +147,26 @@ namespace services
 
 			auto &keyword_ref_containr = indexdb.get<tags::key_word>();
 
-			auto keyword_result = keyword_ref_containr.equal_range(search_string);
-
-			LOG_DBG << "search {" << search_string << "}, has " << std::distance(keyword_result.first, keyword_result.second) << " results.";
-
-			for (const auto& item : boost::make_iterator_range(keyword_result.first, keyword_result.second) )
+			for (std::string search_string: search_strings)
 			{
-				goods_ref_with_ranking new_item = { .merchant_id = item.target.merchant_id, .goods_id = item.target.goods_id, .ranking = 0-item.ranke };
-				auto insertion_result = result_tmp.push_back(new_item);
-				if (insertion_result.second == false)
+				auto keyword_result = keyword_ref_containr.equal_range(search_string);
+
+				LOG_DBG << "search {" << search_string << "}, has " << std::distance(keyword_result.first, keyword_result.second) << " results.";
+
+				for (const auto& item : boost::make_iterator_range(keyword_result.first, keyword_result.second) )
 				{
-					result_tmp.modify(insertion_result.first, [&](goods_ref_with_ranking& old){ old.ranking -= item.ranke;});
+					goods_ref_with_ranking new_item = { .merchant_id = item.target.merchant_id, .goods_id = item.target.goods_id, .ranking = 0-item.ranke };
+					auto insertion_result = result_tmp.push_back(new_item);
+					if (insertion_result.second == false)
+					{
+						result_tmp.modify(insertion_result.first, [&](goods_ref_with_ranking& old){ old.ranking -= item.ranke, old.ranking -= search_strings.size();});
+					}
 				}
 			}
 
 			l.unlock();
 
-			LOG_DBG << "search {" << search_string << "}, has " << result_tmp.size() << " results sorted.";
+			LOG_DBG << "search {" << search_strings[0] << ",...}, has " << result_tmp.size() << " results sorted.";
 
 			for (auto item: result_tmp.get<2>())
 			{
@@ -172,7 +175,7 @@ namespace services
 				else break;
 			}
 
-			LOG_DBG << "search {" << search_string << "}, has " << result.size() << " results returned.";
+			LOG_DBG << "search {" << search_strings[0] << ",...}, has " << result.size() << " results returned.";
 			co_return result;
 		}
 
@@ -229,6 +232,11 @@ namespace services
 	}
 
 	awaitable<std::vector<goods_ref>> search::search_goods(std::string q)
+	{
+		return impl().search_goods({q});
+	}
+
+	awaitable<std::vector<goods_ref>> search::search_goods(std::vector<std::string> q)
 	{
 		return impl().search_goods(q);
 	}

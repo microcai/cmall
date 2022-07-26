@@ -22,7 +22,12 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_goods_api(
 		case req_method::search_goods:
 		{
 			auto q			   = jsutil::json_accessor(params).get_string("q");
-			auto search_result = co_await search_service.search_goods(q);
+
+			std::vector<std::string> search_strings;
+
+			boost::algorithm::split(search_strings, q, boost::is_any_of(" "));
+
+			auto search_result = co_await search_service.search_goods(search_strings);
 
 			// then transform goods_ref to products
 			std::vector<services::product> final_result;
