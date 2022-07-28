@@ -170,7 +170,7 @@ namespace services
 
 			for (auto item: result_tmp.get<2>())
 			{
-				if (result.size() < 10)
+				if (result.size() < 80)
 					result.push_back(goods_ref{.merchant_id = item.merchant_id, .goods_id = item.goods_id });
 				else break;
 			}

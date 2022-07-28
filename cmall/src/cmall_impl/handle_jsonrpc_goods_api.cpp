@@ -25,7 +25,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_goods_api(
 
 			std::vector<std::string> search_strings;
 
-			boost::algorithm::split(search_strings, q, boost::is_any_of(" "));
+			boost::split(search_strings, q, boost::is_any_of(" "));
 
 			auto search_result = co_await search_service.search_goods(search_strings);
 
