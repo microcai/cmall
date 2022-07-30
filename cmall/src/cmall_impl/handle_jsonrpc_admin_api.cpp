@@ -277,6 +277,18 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
             };
             break;
         }
+        case req_method::admin_list_index_goods:
+        {
+
+        }break;
+        case req_method::admin_add_index_goods:
+        {
+
+        }break;
+        case req_method::admin_remove_index_goods:
+        {
+
+        }break;
         default:
             throw "this should never be executed";
     }

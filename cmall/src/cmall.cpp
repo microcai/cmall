@@ -736,6 +736,12 @@ namespace cmall
 					throw boost::system::system_error(error::not_in_sudo_mode);
 				}
 				break;
+			case req_method::admin_list_index_goods:
+			case req_method::admin_add_index_goods:
+			case req_method::admin_remove_index_goods:
+				co_await ensure_login(true);
+				co_return co_await handle_jsonrpc_admin_api(connection_ptr, method.value(), params);
+				break;
 			default:
 				throw boost::system::system_error(error::not_implemented);
 		}
