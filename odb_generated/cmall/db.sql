@@ -2,6 +2,8 @@
  * compiler for C++.
  */
 
+DROP TABLE IF EXISTS "cmall_index_page_goods" CASCADE;
+
 DROP TABLE IF EXISTS "cmall_3rd_public_kv_store" CASCADE;
 
 DROP TABLE IF EXISTS "cmall_3rd_kv_store" CASCADE;
@@ -275,9 +277,15 @@ CREATE TABLE "cmall_3rd_public_kv_store" (
   PRIMARY KEY ("uid",
                "key_value"));
 
+CREATE TABLE "cmall_index_page_goods" (
+  "id" BIGSERIAL NOT NULL PRIMARY KEY,
+  "merchant_id" BIGINT NOT NULL,
+  "goods" TEXT NOT NULL,
+  "order" INTEGER NOT NULL);
+
 INSERT INTO "schema_version" (
   "name", "version", "migration")
-  SELECT '', 25, FALSE
+  SELECT '', 26, FALSE
   WHERE NOT EXISTS (
     SELECT 1 FROM "schema_version" WHERE "name" = '');
 

@@ -41,7 +41,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(22, 25, open)
+#pragma db model version(25, 26, open)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -356,3 +356,12 @@ struct max_application_seq
 	odb::nullable<std::uint64_t> last_seq;
 };
 
+#pragma db object
+struct cmall_index_page_goods
+{
+	#pragma db id auto
+	long id;
+	std::uint64_t merchant_id;
+	std::string goods;
+	int order;
+};

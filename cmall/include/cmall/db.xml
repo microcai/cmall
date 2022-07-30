@@ -1,45 +1,17 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
-  <changeset version="25">
-    <add-table name="cmall_user_fav" kind="object">
+  <changeset version="26">
+    <add-table name="cmall_index_page_goods" kind="object">
       <column name="id" type="BIGINT" null="false"/>
-      <column name="uid" type="BIGINT" null="false"/>
       <column name="merchant_id" type="BIGINT" null="false"/>
-      <column name="created_at" type="TIMESTAMP" null="true"/>
-      <column name="updated_at" type="TIMESTAMP" null="true"/>
+      <column name="goods" type="TEXT" null="false"/>
+      <column name="order" type="INTEGER" null="false"/>
       <primary-key auto="true">
         <column name="id"/>
       </primary-key>
-      <index name="cmall_user_fav_uid_i">
-        <column name="uid"/>
-      </index>
     </add-table>
   </changeset>
 
-  <changeset version="24">
-    <add-table name="cmall_3rd_public_kv_store" kind="object">
-      <column name="uid" type="BIGINT" null="false"/>
-      <column name="key_value" type="TEXT" null="false"/>
-      <column name="value" type="TEXT" null="false"/>
-      <primary-key>
-        <column name="uid"/>
-        <column name="key_value"/>
-      </primary-key>
-    </add-table>
-  </changeset>
-
-  <changeset version="23">
-    <add-table name="cmall_3rd_kv_store" kind="object">
-      <column name="uid" type="BIGINT" null="false"/>
-      <column name="key_value" type="TEXT" null="false"/>
-      <column name="value" type="TEXT" null="false"/>
-      <primary-key>
-        <column name="uid"/>
-        <column name="key_value"/>
-      </primary-key>
-    </add-table>
-  </changeset>
-
-  <model version="22">
+  <model version="25">
     <table name="cmall_config" kind="object">
       <column name="id" type="BIGINT" null="false"/>
       <primary-key auto="true">
@@ -283,6 +255,37 @@
         <column name="apptoken"/>
       </primary-key>
       <index name="cmall_apptoken_uid_i">
+        <column name="uid"/>
+      </index>
+    </table>
+    <table name="cmall_3rd_kv_store" kind="object">
+      <column name="uid" type="BIGINT" null="false"/>
+      <column name="key_value" type="TEXT" null="false"/>
+      <column name="value" type="TEXT" null="false"/>
+      <primary-key>
+        <column name="uid"/>
+        <column name="key_value"/>
+      </primary-key>
+    </table>
+    <table name="cmall_3rd_public_kv_store" kind="object">
+      <column name="uid" type="BIGINT" null="false"/>
+      <column name="key_value" type="TEXT" null="false"/>
+      <column name="value" type="TEXT" null="false"/>
+      <primary-key>
+        <column name="uid"/>
+        <column name="key_value"/>
+      </primary-key>
+    </table>
+    <table name="cmall_user_fav" kind="object">
+      <column name="id" type="BIGINT" null="false"/>
+      <column name="uid" type="BIGINT" null="false"/>
+      <column name="merchant_id" type="BIGINT" null="false"/>
+      <column name="created_at" type="TIMESTAMP" null="true"/>
+      <column name="updated_at" type="TIMESTAMP" null="true"/>
+      <primary-key auto="true">
+        <column name="id"/>
+      </primary-key>
+      <index name="cmall_user_fav_uid_i">
         <column name="uid"/>
       </index>
     </table>
