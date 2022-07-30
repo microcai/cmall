@@ -179,6 +179,27 @@ namespace services
 			co_return result;
 		}
 
+		awaitable<std::vector<std::string>> keywords_list(std::uint64_t merchant_id)
+		{
+			std::set<std::string> keyword_set;
+
+			std::shared_lock<std::shared_mutex> l(dbmtx);
+
+			auto merchant_it = indexdb.get<tags::merchant_id>().equal_range(merchant_id);
+
+			for (auto items : boost::make_iterator_range(merchant_it.first, merchant_it.second))
+			{
+				keyword_set.insert(items.key_word);
+			}
+
+			std::vector<std::string> result;
+
+			for (auto k : keyword_set)
+				result.push_back(k);
+
+			co_return result;
+		}
+
 		awaitable<void> remove_merchant(std::uint64_t);
 
 		awaitable<void> reload_merchant(std::shared_ptr<merchant_git_repo> repo)
@@ -231,14 +252,14 @@ namespace services
 		return impl().reload_merchant(repo);
 	}
 
-	awaitable<std::vector<goods_ref>> search::search_goods(std::string q)
-	{
-		return impl().search_goods({q});
-	}
-
 	awaitable<std::vector<goods_ref>> search::search_goods(std::vector<std::string> q)
 	{
 		return impl().search_goods(q);
+	}
+
+	awaitable<std::vector<std::string>> search::keywords_list(std::uint64_t merchant_id)
+	{
+		return impl().keywords_list(merchant_id);
 	}
 
 	const search_impl& search::impl() const

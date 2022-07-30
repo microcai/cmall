@@ -185,6 +185,7 @@ namespace cmall {
 		merchant_sold_orders_check_payment,
 		merchant_sold_orders_mark_payed,
 		merchant_goods_list,
+		merchant_keywords_list,
 		merchant_list_sold_orders,
 		merchant_sold_orders_add_kuaidi,
 		merchant_delete_sold_orders,

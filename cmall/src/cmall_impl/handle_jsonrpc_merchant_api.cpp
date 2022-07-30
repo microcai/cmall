@@ -144,8 +144,14 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api
         {
             std::vector<services::product> all_products = co_await get_merchant_git_repo(this_merchant)->get_products(this_merchant.name_, this_client.ws_client->baseurl_);
             reply_message["result"] = boost::json::value_from(all_products);
-
-        }break;
+        }
+        break;
+        case req_method::merchant_keywords_list:
+        {
+            auto all_keywords = co_await search_service.keywords_list(this_merchant.uid_);
+            reply_message["result"] = boost::json::value_from(all_keywords);
+        }
+        break;
         case req_method::merchant_list_sold_orders:
         {
             auto page	   = jsutil::json_accessor(params).get("page", 0).as_int64();
