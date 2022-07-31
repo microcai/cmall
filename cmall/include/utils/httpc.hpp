@@ -16,6 +16,7 @@
 
 #include "utils/async_connect.hpp"
 
+#include <optional>
 #include <iostream>
 
 using boost::asio::awaitable;
