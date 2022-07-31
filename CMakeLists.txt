@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 cmake_policy(SET CMP0091 NEW) # for CMAKE_MSVC_RUNTIME_LIBRARY
+cmake_policy(SET CMP0077 NEW)
+
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
