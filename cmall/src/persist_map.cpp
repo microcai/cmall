@@ -137,6 +137,7 @@ struct persist_map_impl
 	{
 		co_return co_await boost::asio::co_spawn(runners, [this, key]() mutable -> awaitable<bool>
 		{
+			co_await boost::asio::this_coro::throw_if_cancelled();
 			try
 			{
 				txn_managed t = mdbx_env.start_read();
@@ -155,6 +156,7 @@ struct persist_map_impl
 	{
 		co_return co_await boost::asio::co_spawn(runners, [this, key]() mutable -> awaitable<std::string>
 		{
+			co_await boost::asio::this_coro::throw_if_cancelled();
 			txn_managed t = mdbx_env.start_read();
 			mdbx::slice v = t.get(mdbx_default_map, mdbx::slice(key));
 			std::string string_value = v.as_string();
@@ -170,8 +172,9 @@ struct persist_map_impl
 		std::time(&_expire_time);
 		_expire_time += lifetime.count();
 
-		co_await boost::asio::co_spawn(runners, [this, key, _expire_time, value = std::move(value)]() mutable -> awaitable<void>
+		co_await boost::asio::co_spawn(runners, [&, this]() mutable -> awaitable<void>
 		{
+			co_await boost::asio::this_coro::throw_if_cancelled();
 			txn_managed t = mdbx_env.start_write();
 			t.put(mdbx_default_map, mdbx::slice(key), mdbx::slice(value), upsert);
 			t.put(mdbx_lifetime_map, mdbx::slice(key), mdbx::slice(&_expire_time, sizeof _expire_time), upsert);

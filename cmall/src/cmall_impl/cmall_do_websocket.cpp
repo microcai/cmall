@@ -77,37 +77,40 @@ awaitable<void> cmall::cmall_service::do_ws_read(size_t connection_id, client_co
 		connection_ptr->cancel_signals_.emplace(last_processed_req_id, cancel_signal);
 
 		// 每个请求都单开线程处理
-		boost::asio::co_spawn(
-			connection_ptr->get_executor(),
-			[this, connection_ptr, method, params, jv]() -> awaitable<void>
-			{
-				boost::json::object replay_message;
-				try
+		boost::asio::post(connection_ptr->get_executor(), [this, cancel_signal, last_processed_req_id, connection_ptr, method, params, jv]() mutable
+		{
+			boost::asio::co_spawn(
+				connection_ptr->get_executor(),
+				[this, connection_ptr, method, params, jv]() -> awaitable<void>
 				{
-					replay_message = co_await handle_jsonrpc_call(connection_ptr, method, params);
-				}
-				catch (boost::system::system_error& e)
+					boost::json::object replay_message;
+					try
+					{
+						replay_message = co_await handle_jsonrpc_call(connection_ptr, method, params);
+					}
+					catch (boost::system::system_error& e)
+					{
+						replay_message["error"] = { { "code", e.code().value() }, { "message", e.code().message() } };
+					}
+					catch (std::exception& e)
+					{
+						LOG_ERR << e.what();
+						replay_message["error"] = { { "code", 502 }, { "message", "internal server error" } };
+					}
+					// 每个请求都单开线程处理, 因此客户端收到的应答是乱序的,
+					// 这就是 jsonrpc 里 id 字段的重要意义.
+					// 将 id 字段原原本本的还回去, 客户端就可以根据 返回的 id 找到原来发的请求
+					if (jv.as_object().contains("id"))
+						replay_message.insert_or_assign("id", jv.at("id"));
+					co_await websocket_write(connection_ptr, jsutil::json_to_string(replay_message))
+						.async_wait(use_awaitable);
+				},
+				boost::asio::bind_cancellation_slot(cancel_signal->slot(), [last_processed_req_id, connection_ptr](std::exception_ptr)
 				{
-					replay_message["error"] = { { "code", e.code().value() }, { "message", e.code().message() } };
-				}
-				catch (std::exception& e)
-				{
-					LOG_ERR << e.what();
-					replay_message["error"] = { { "code", 502 }, { "message", "internal server error" } };
-				}
-				// 每个请求都单开线程处理, 因此客户端收到的应答是乱序的,
-				// 这就是 jsonrpc 里 id 字段的重要意义.
-				// 将 id 字段原原本本的还回去, 客户端就可以根据 返回的 id 找到原来发的请求
-				if (jv.as_object().contains("id"))
-					replay_message.insert_or_assign("id", jv.at("id"));
-				co_await websocket_write(connection_ptr, jsutil::json_to_string(replay_message))
-					.async_wait(use_awaitable);
-			},
-			boost::asio::bind_cancellation_slot(cancel_signal->slot(), [last_processed_req_id, connection_ptr](std::exception_ptr)
-			{
-				connection_ptr->cancel_signals_.erase(last_processed_req_id);
-			})
-		);
+					connection_ptr->cancel_signals_.erase(last_processed_req_id);
+				})
+			);
+		});
 	}
 }
 

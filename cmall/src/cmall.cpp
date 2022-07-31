@@ -72,17 +72,31 @@ namespace cmall
 	{
 		if (services::merchant_git_repo::is_git_repo(merchant.repo_path))
 		{
-			auto repo = std::make_shared<services::merchant_git_repo>(
-				background_task_thread_pool, merchant.uid_, merchant.repo_path);
-			std::unique_lock<std::shared_mutex> l(merchant_repos_mtx);
-			merchant_repos.get<tag::merchant_uid_tag>().erase(merchant.uid_);
-			auto insert_result = merchant_repos.get<tag::merchant_uid_tag>().insert(repo);
-			BOOST_ASSERT_MSG(insert_result.second, "insert should always success!");
-			m_background_threads.push_back(
-			boost::asio::co_spawn(background_task_thread_pool, [this, repo]() mutable -> awaitable<void>
 			{
-				co_await search_service.add_merchant(repo);
-				co_await repo_push_check(std::move(repo));
+				auto repo = std::make_shared<services::merchant_git_repo>(
+					background_task_thread_pool, merchant.uid_, merchant.repo_path);
+				std::unique_lock<std::shared_mutex> l(merchant_repos_mtx);
+				merchant_repos.get<tag::merchant_uid_tag>().erase(merchant.uid_);
+				auto insert_result = merchant_repos.get<tag::merchant_uid_tag>().insert(repo);
+				BOOST_ASSERT_MSG(insert_result.second, "insert should always success!");
+			}
+
+			m_background_threads.push_back(
+			boost::asio::co_spawn(background_task_thread_pool, [this, merchant_id = merchant.uid_]() mutable -> awaitable<void>
+			{
+				co_await this_coro::coro_yield();
+
+				std::unique_lock<std::shared_mutex> l(merchant_repos_mtx);
+
+				auto it = merchant_repos.get<tag::merchant_uid_tag>().find(merchant_id);
+
+				if (it != merchant_repos.get<tag::merchant_uid_tag>().end())
+				{
+					std::shared_ptr<services::merchant_git_repo> repo = *it;
+					l.unlock();
+					co_await search_service.add_merchant(repo);
+					co_await repo_push_check(std::move(repo));
+				}
 			}, use_promise));
 
 			co_return true;

@@ -166,7 +166,16 @@ else()
 			message(STATUS "clang supports compiler-rt, use it")
 			add_link_options(-rtlib=compiler-rt -unwindlib=libunwind)
 		endif()
+	elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+
+		CHECK_CXX_COMPILER_FLAG(-fconcepts-diagnostics-depth=99 COMPILER_HAS_fconcepts_diagnostics)
+
+		if (COMPILER_HAS_fconcepts_diagnostics)
+			add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fconcepts-diagnostics-depth=99>)
+		endif()
+
 	endif()
+
 endif()
 
 check_cxx_symbol_exists(__cpp_lib_format "version" HAS_LIBCPP_FORMAT)

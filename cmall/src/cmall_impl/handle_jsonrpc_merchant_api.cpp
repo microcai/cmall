@@ -9,54 +9,6 @@
 #include "services/merchant_git_repo.hpp"
 #include "cmall/conversion.hpp"
 
-awaitable<bool> cmall::cmall_service::order_check_payment(cmall_order& order, const cmall_merchant& seller)
-{
-    boost::system::error_code ec;
-    auto merchant_repo_ptr = get_merchant_git_repo(seller);
-    std::string checkpay_script_content = co_await merchant_repo_ptr->get_file_content("scripts/checkpay.js", ec);
-    if (!checkpay_script_content.empty())
-    {
-        std::string pay_check_result = co_await boost::asio::co_spawn(background_task_thread_pool,
-            script_runner.run_script(checkpay_script_content, {"--order-id", order.oid_}), use_awaitable);
-        if (pay_check_result == "payed" || pay_check_result == "payed\n")
-        {
-            co_return co_await order_mark_payed(order, seller);
-        }
-    }
-    else
-    {
-        throw boost::system::system_error(cmall::error::no_paycheck_script_spplyed);
-    }
-    co_return false;
-}
-
-awaitable<bool> cmall::cmall_service::order_mark_payed(cmall_order& order, const cmall_merchant& seller)
-{
-    order.payed_at_ = boost::posix_time::second_clock::local_time();
-
-    bool success = co_await m_database.async_update<cmall_order>(order);
-
-    if (success)
-    {
-        boost::system::error_code ec;
-        auto merchant_repo_ptr = get_merchant_git_repo(seller, ec);
-        if (merchant_repo_ptr)
-        {
-            std::string pay_script_content = co_await merchant_repo_ptr->get_file_content("scripts/orderstatus.js", ec);
-            if (!ec && !pay_script_content.empty())
-            {
-                boost::asio::co_spawn(background_task_thread_pool,
-                    script_runner.run_script(pay_script_content, {"--order-id", order.oid_}), boost::asio::detached);
-            }
-        }
-        co_return true;
-    }
-    else
-    {
-        throw boost::system::system_error(cmall::error::internal_server_error);
-    }
-}
-
 awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api(client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
 {
     boost::json::object reply_message;
@@ -306,4 +258,56 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api
     }
 
     co_return reply_message;
+}
+
+awaitable<bool> cmall::cmall_service::order_check_payment(cmall_order& order, const cmall_merchant& seller)
+{
+    boost::system::error_code ec;
+    auto merchant_repo_ptr = get_merchant_git_repo(seller);
+    std::string checkpay_script_content = co_await merchant_repo_ptr->get_file_content("scripts/checkpay.js", ec);
+    if (!checkpay_script_content.empty())
+    {
+        std::vector<std::string> script_args;
+        script_args.push_back("--order-id");
+        script_args.push_back(order.oid_);
+
+        std::string pay_check_result = co_await boost::asio::co_spawn(background_task_thread_pool,
+            script_runner.run_script(checkpay_script_content, script_args), use_awaitable);
+        if (pay_check_result == "payed" || pay_check_result == "payed\n")
+        {
+            co_return (co_await order_mark_payed(order, seller));
+        }
+    }
+    else
+    {
+        throw boost::system::system_error(cmall::error::no_paycheck_script_spplyed);
+    }
+    co_return false;
+}
+
+awaitable<bool> cmall::cmall_service::order_mark_payed(cmall_order& order, const cmall_merchant& seller)
+{
+    order.payed_at_ = boost::posix_time::second_clock::local_time();
+
+    bool success = co_await m_database.async_update<cmall_order>(order);
+
+    if (success)
+    {
+        boost::system::error_code ec;
+        auto merchant_repo_ptr = get_merchant_git_repo(seller, ec);
+        if (merchant_repo_ptr)
+        {
+            std::string pay_script_content = co_await merchant_repo_ptr->get_file_content("scripts/orderstatus.js", ec);
+            if (!ec && !pay_script_content.empty())
+            {
+                boost::asio::co_spawn(background_task_thread_pool,
+                    script_runner.run_script(pay_script_content, {"--order-id", order.oid_}), boost::asio::detached);
+            }
+        }
+        co_return true;
+    }
+    else
+    {
+        throw boost::system::system_error(cmall::error::internal_server_error);
+    }
 }

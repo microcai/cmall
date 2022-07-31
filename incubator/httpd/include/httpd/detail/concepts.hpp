@@ -40,7 +40,7 @@ namespace httpd::detail {
     template <typename T>
     concept is_httpd_server = requires (T t)
     {
-        is_asio_io_object<T>;
+        { t.get_executor() };
         { t.make_shared_connection(t.get_executor(), 0) }; // 有 make_shared_connection 成员
         { t.client_connected(t.make_shared_connection(t.get_executor(), 0)) }; // 有 client_connected 成员
         { t.client_disconnected(t.make_shared_connection(t.get_executor(), 0)) }; // 有 client_disconnected 成员
@@ -49,7 +49,7 @@ namespace httpd::detail {
     template <typename T>
     concept is_httpsd_server = requires (T t)
     {
-        is_asio_io_object<T>;
+        { t.get_executor() };
         { t.make_shared_ssl_connection(t.get_executor(), 0) }; // 有 make_shared_ssl_connection 成员
         { t.client_connected(t.make_shared_ssl_connection(t.get_executor(), 0)) }; // 有 client_connected 成员
         { t.client_disconnected(t.make_shared_ssl_connection(t.get_executor(), 0)) }; // 有 client_disconnected 成员
@@ -58,7 +58,7 @@ namespace httpd::detail {
     template <typename T>
     concept is_unix_socket_httpd_server = requires (T t)
     {
-        is_asio_io_object<T>;
+        { t.get_executor() };
         { t.make_shared_unixsocket_connection(t.get_executor(), 0) }; // 有 make_shared_ssl_connection 成员
         { t.client_connected(t.make_shared_unixsocket_connection(t.get_executor(), 0)) }; // 有 client_connected 成员
         { t.client_disconnected(t.make_shared_unixsocket_connection(t.get_executor(), 0)) }; // 有 client_disconnected 成员
@@ -67,17 +67,40 @@ namespace httpd::detail {
     template <typename T>
     concept is_httpd_client = requires (T t)
     {
-        is_asio_io_object<T>;
+        { t.get_executor() };
         { t.socket() } -> std::same_as<boost::asio::ip::tcp::socket&>;
-        { t.remote_hostname_ } -> std::convertible_to<std::string>;
+        { t.remote_host_ } -> std::convertible_to<std::string>;
     };
 
     template <typename T>
     concept is_unix_socket_httpd_client = requires (T t)
     {
-        is_asio_io_object<T>;
+        { t.get_executor() };
         { t.unix_socket() } -> std::same_as<boost::asio::local::stream_protocol::socket&>;
-        { t.remote_hostname_ } -> std::convertible_to<std::string>;
+        { t.remote_host_ } -> std::convertible_to<std::string>;
     };
 
+    template <typename ServiceClass, typename AcceptedClientClass>
+    concept is_tcpsocket_server_class = requires (ServiceClass t)
+    {
+		{ detail::is_httpd_server<ServiceClass> };
+		// 访问 element_type 表明, AcceptedClientClass 必须得是一个智能指针类型.
+		{ detail::is_httpd_client<typename AcceptedClientClass::element_type> };
+    };
+
+    template <typename ServiceClass, typename AcceptedClientClass>
+    concept is_tcpssl_server_class = requires (ServiceClass t)
+    {
+		{ detail::is_httpsd_server<ServiceClass> };
+		// 访问 element_type 表明, AcceptedClientClass 必须得是一个智能指针类型.
+		{ detail::is_httpd_client<typename AcceptedClientClass::element_type> };
+    };
+
+    template <typename ServiceClass, typename AcceptedClientClass>
+    concept is_unixsocket_server_class = requires (ServiceClass t)
+    {
+		{ detail::is_httpsd_server<ServiceClass> };
+		// 访问 element_type 表明, AcceptedClientClass 必须得是一个智能指针类型.
+		{ detail::is_unix_socket_httpd_client<typename AcceptedClientClass::element_type> };
+    };
 }

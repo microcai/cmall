@@ -21,6 +21,8 @@ using namespace boost::asio::experimental::awaitable_operators;
 #include "utils/logging.hpp"
 #include "utils/scoped_exit.hpp"
 #include "utils/uawaitable.hpp"
+#include "utils/coroyield.hpp"
+
 #include "cmall/error_code.hpp"
 #include "sandbox.hpp"
 
@@ -93,6 +95,7 @@ namespace services
 
 		awaitable<std::string> run_script(std::string_view script_content, std::vector<std::string> script_arguments)
 		{
+			co_await this_coro::coro_yield();
 			using namespace boost::process;
 
 			async_pipe nodejs_output(io);

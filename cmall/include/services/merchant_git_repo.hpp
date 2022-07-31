@@ -59,7 +59,7 @@ namespace services
 		awaitable<std::string> get_file_content(std::filesystem::path path, boost::system::error_code& ec);
 
 		// 扫描用户仓库, 返回找到的商品定义.
-		awaitable<std::vector<product>> get_products(std::string_view merchant_name, std::string baseurl);
+		awaitable<std::vector<product>> get_products(std::string merchant_name, std::string baseurl);
 
 		// 从给定的 goods_id 找到商品定义.
 		awaitable<product> get_product(std::string goods_id, std::string_view merchant_name, std::string baseurl, boost::system::error_code& ec);
