@@ -158,40 +158,42 @@ namespace cmall
 			repo_dir = repo->repo_path().string();
 		}
 
-		dirmon::dirmon git_monitor(co_await boost::asio::this_coro::executor, repo_dir);
+		// dirmon::dirmon git_monitor(co_await boost::asio::this_coro::executor, repo_dir);
 
 		for (;;)
 		{
 			using namespace boost::asio::experimental::awaitable_operators;
 
 			awaitable_timer timer(co_await boost::asio::this_coro::executor);
-			timer.expires_from_now(300s);
+			timer.expires_from_now(30s);
 
-			auto awaited_result = co_await (
-				timer.async_wait()
-					||
-				git_monitor.async_wait_dirchange()
-			);
+			co_await timer.async_wait();
 
-			for (;;)
-			{
-				awaitable_timer timer(co_await boost::asio::this_coro::executor);
-				timer.expires_from_now(2s);
+			// auto awaited_result = co_await (
+			// 	timer.async_wait()
+			// 		||
+			// 	git_monitor.async_wait_dirchange()
+			// );
 
-				auto awaited_result = co_await (
-					timer.async_wait()
-						||
-					git_monitor.async_wait_dirchange()
-				);
+			// for (;;)
+			// {
+			// 	awaitable_timer timer(co_await boost::asio::this_coro::executor);
+			// 	timer.expires_from_now(2s);
 
-				// 只有持续 2s 左右的时间 git 仓库没有产生 inotify 消息，才认为 git 完成了动作.
-				// 不然就继续读取 inotify 获取消息.
+			// 	auto awaited_result = co_await (
+			// 		timer.async_wait()
+			// 			||
+			// 		git_monitor.async_wait_dirchange()
+			// 	);
 
-				if (awaited_result.index() == 0)
-				{
-					break;
-				}
-			}
+			// 	// 只有持续 2s 左右的时间 git 仓库没有产生 inotify 消息，才认为 git 完成了动作.
+			// 	// 不然就继续读取 inotify 获取消息.
+
+			// 	if (awaited_result.index() == 0)
+			// 	{
+			// 		break;
+			// 	}
+			// }
 
 			auto repo = repo_.lock();
 			if (!repo)
