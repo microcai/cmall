@@ -433,7 +433,7 @@ namespace cmall
 
 		for (auto& accept : make_iterator_range(req.equal_range(boost::beast::http::field::accept)))
 		{
-			return_md_type |= std::string::npos != accept.value().find("text/markdown");
+			return_md_type = true; //|= std::string::npos != accept.value().find("text/markdown");
 		}
 
 		std::map<boost::beast::http::field, std::string> headers;

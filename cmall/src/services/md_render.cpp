@@ -10,7 +10,7 @@
 
 static unsigned char * cmark_mem_strdup(std::string_view str, cmark_mem* mem)
 {
-	auto new_str = mem->calloc(str.length(), 1);
+	auto new_str = mem->calloc(1, str.length());
 	std::memcpy(new_str, str.data(), str.length() + 1);
 	return reinterpret_cast<unsigned char*>(new_str);
 }
@@ -61,8 +61,13 @@ std::string mdrender::markdown_to_html(std::string_view original, url_replacer r
 {
 	std::shared_ptr<cmark_node> ast;
 
+    auto ast_node = cmark_parse_document(original.data(), original.length(), CMARK_OPT_VALIDATE_UTF8 | CMARK_OPT_SAFE | CMARK_OPT_SMART);
+
+	if (!ast_node)
+		return "";
+
 	ast.reset(
-        cmark_parse_document(original.data(), original.length(), CMARK_OPT_VALIDATE_UTF8 | CMARK_OPT_UNSAFE | CMARK_OPT_SMART),
+		ast_node,
 		cmark_node_free
     );
 

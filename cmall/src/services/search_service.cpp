@@ -191,6 +191,7 @@ namespace services
 			{
 				keyword_set.insert(items.key_word);
 			}
+			l.unlock();
 
 			std::vector<std::string> result;
 
