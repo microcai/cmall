@@ -429,12 +429,12 @@ namespace cmall
 			}
 		}
 
-		bool return_md_type = false;
+		bool return_md_type = true;
 
-		for (auto& accept : make_iterator_range(req.equal_range(boost::beast::http::field::accept)))
-		{
-			return_md_type = true; //|= std::string::npos != accept.value().find("text/markdown");
-		}
+// 		for (auto& accept : make_iterator_range(req.equal_range(boost::beast::http::field::accept)))
+// 		{
+// 			return_md_type = true; //|= std::string::npos != accept.value().find("text/markdown");
+// 		}
 
 		std::map<boost::beast::http::field, std::string> headers;
 		headers.insert({boost::beast::http::field::expires, httpd::make_http_last_modified(std::time(0) + 60)});
