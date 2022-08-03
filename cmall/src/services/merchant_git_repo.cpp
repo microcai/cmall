@@ -223,7 +223,7 @@ namespace services
 					return false;
 				});
 
-			return ret.size();
+			return (int)ret.size();
 		}
 
 		std::string get_transpiled_md(std::filesystem::path md_file_path, std::string baseurl, boost::system::error_code& ec)
