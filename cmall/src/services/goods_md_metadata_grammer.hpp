@@ -116,12 +116,14 @@ struct goods_description_grammer : qi::grammar<Iterator, goods_description()>
 		price_line		 = qi::lit("price") >> *qi::space >> ':' >> *qi::space >> value[qi::_val = qi::_1] >> newline;
 		description_line = qi::lit("description") >> *qi::space >> ':' >> *qi::space >> value[qi::_val = qi::_1] >> newline;
 		picture_line	 = qi::lit("picture") >> *qi::space >> ':' >> *qi::space >> value[qi::_val = qi::_1] >> newline;
-		keyword_line	 = qi::lit("keyword") >> *qi::space >> ':' >> *qi::space >> values[qi::_val = qi::_1] >> newline;
+		keyword_line	 = qi::lit("keyword") >> *qi::space >> ':' >> *qi::space >> keywords[qi::_val = qi::_1] >> *qi::lit(' ') >> newline;
 
 		pair_line = key [ at_c<0>(qi::_val) = qi::_1 ] >> ':' >> *qi::space >> value [ at_c<1>(qi::_val) = qi::_1 ] >> newline;
 		key = qi::lexeme[ +(qi::char_ - ':' - '-' - ' ') ];
 		value = qi::lexeme[ +(qi::char_ - '\n') ];
+		keyword = qi::lexeme[ +(qi::char_ - '\n' - ' ') ];
 		values = token[qi::_val += qi::_1] >> * (+qi::lit(' ') >> token [qi::_val += qi::_1]);
+		keywords = keyword[qi::_val += qi::_1] >> * (+qi::lit(' ') >> keyword [qi::_val += qi::_1]);
 
 		token = qi::lexeme[ +(qi::char_ - '\n' - ' ') ];
 
@@ -135,8 +137,8 @@ struct goods_description_grammer : qi::grammar<Iterator, goods_description()>
 	qi::rule<Iterator, goods_description()> lines, line;
 	qi::rule<Iterator, KV()> pair_line;
 
-	qi::rule<Iterator, std::string()> key, value, token;
-	qi::rule<Iterator, magic_vector<std::string>()> values;
+	qi::rule<Iterator, std::string()> key, value, keyword, token;
+	qi::rule<Iterator, magic_vector<std::string>()> values, keywords;
 
 	qi::rule<Iterator, std::string()> title_line, price_line, description_line, picture_line;
 	qi::rule<Iterator, magic_vector<std::string>()> keyword_line;
