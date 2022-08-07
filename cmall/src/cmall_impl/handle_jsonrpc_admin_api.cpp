@@ -281,44 +281,43 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
         }
         case req_method::admin_list_index_goods:
         {
-			std::vector<cmall_merchant> merchants;
-			co_await m_database.async_load_all<cmall_merchant>(merchants);
-
-			std::map<std::uint64_t, cmall_merchant> cache;
-
-            for (const auto& m : merchants)
-            {
-                cache.insert(std::make_pair(m.uid_, m));
-            }
-
-            std::vector<cmall_index_page_goods> ret;
-
-            odb::query<cmall_index_page_goods> q = " 1=1 order by " + odb::query<cmall_index_page_goods>::order + " asc";
-
-            co_await m_database.async_load<cmall_index_page_goods>(q, ret);
-
-            std::vector<services::product> all_products;
-
-            for (auto gref : ret)
-            {
-                try {
-                    services::product hint_product = co_await get_merchant_git_repo(gref.merchant_id)->get_product(gref.goods, cache[gref.merchant_id].name_, this_client.ws_client->baseurl_);
-                    all_products.push_back(hint_product);
-                }catch(std::exception&)
-                {}
-            }
-
-            reply_message["result"] = boost::json::value_from(all_products);
-
-        }break;
+            reply_message["result"] = boost::json::value_from(co_await list_index_goods(this_client.ws_client->baseurl_));
+            break;
+        }
         case req_method::admin_add_index_goods:
         {
+            cmall_index_page_goods gref;
+            gref.goods = jsutil::json_accessor(params).get_string("goods_id");
+            gref.merchant_id = jsutil::json_accessor(params).get("merchant_id", -1).as_int64();
 
-        }break;
+            co_await get_merchant_git_repo(gref.merchant_id)->get_product(gref.goods, "x", "");
+
+            cmall_index_page_goods_max_order max_order;
+            using query_t = odb::query<cmall_index_page_goods_max_order>;
+
+            bool db_ok = co_await m_database.async_load<cmall_index_page_goods_max_order>(query_t{true}, max_order);
+            if (!db_ok)
+                gref.order = 0;
+            else
+                gref.order = max_order.max_order + 1;
+
+            co_await m_database.async_add(gref);
+
+            reply_message["result"] = true;
+            break;
+        }
         case req_method::admin_remove_index_goods:
         {
+            auto goods_id = jsutil::json_accessor(params).get_string("goods_id");
+            auto merchant_id = jsutil::json_accessor(params).get("merchant_id", -1).as_int64();
 
-        }break;
+            using query_t = odb::query<cmall_index_page_goods>;
+
+            co_await m_database.async_erase<cmall_index_page_goods>(query_t{ query_t::merchant_id == merchant_id && query_t::goods == goods_id });
+
+            reply_message["result"] = true;
+            break;
+        }
         default:
             throw "this should never be executed";
     }
