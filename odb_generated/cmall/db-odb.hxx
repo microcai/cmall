@@ -598,6 +598,25 @@ namespace odb
     static void
     callback (database&, const object_type&, callback_event);
   };
+
+  // cmall_index_page_goods_max_order
+  //
+  template <>
+  struct class_traits< ::cmall_index_page_goods_max_order >
+  {
+    static const class_kind kind = class_view;
+  };
+
+  template <>
+  class access::view_traits< ::cmall_index_page_goods_max_order >
+  {
+    public:
+    typedef ::cmall_index_page_goods_max_order view_type;
+    typedef ::boost::shared_ptr< ::cmall_index_page_goods_max_order > pointer_type;
+
+    static void
+    callback (database&, view_type&, callback_event);
+  };
 }
 
 #include <odb/details/buffer.hxx>
@@ -4644,6 +4663,60 @@ namespace odb
   {
   };
 
+  // cmall_index_page_goods_max_order
+  //
+  template <>
+  class access::view_traits_impl< ::cmall_index_page_goods_max_order, id_pgsql >:
+    public access::view_traits< ::cmall_index_page_goods_max_order >
+  {
+    public:
+    struct image_type
+    {
+      // max_order
+      //
+      int max_order_value;
+      bool max_order_null;
+
+      std::size_t version;
+    };
+
+    typedef pgsql::view_statements<view_type> statements_type;
+
+    typedef pgsql::query_base query_base_type;
+    struct query_columns;
+
+    static const bool versioned = false;
+
+    static bool
+    grow (image_type&,
+          bool*);
+
+    static void
+    bind (pgsql::bind*,
+          image_type&);
+
+    static void
+    init (view_type&,
+          const image_type&,
+          database*);
+
+    static const std::size_t column_count = 1UL;
+
+    static query_base_type
+    query_statement (const query_base_type&);
+
+    static result<view_type>
+    query (database&, const query_base_type&);
+
+    static const char query_statement_name[];
+  };
+
+  template <>
+  class access::view_traits_impl< ::cmall_index_page_goods_max_order, id_common >:
+    public access::view_traits_impl< ::cmall_index_page_goods_max_order, id_pgsql >
+  {
+  };
+
   // cmall_config
   //
   // cmall_user
@@ -4944,6 +5017,15 @@ namespace odb
 
   // cmall_index_page_goods
   //
+  // cmall_index_page_goods_max_order
+  //
+  struct access::view_traits_impl< ::cmall_index_page_goods_max_order, id_pgsql >::query_columns:
+    odb::pointer_query_columns<
+      ::cmall_index_page_goods,
+      id_pgsql,
+      odb::access::object_traits_impl< ::cmall_index_page_goods, id_pgsql > >
+  {
+  };
 }
 
 #include "cmall/db-odb.ihh"

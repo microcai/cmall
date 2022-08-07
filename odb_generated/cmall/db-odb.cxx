@@ -13192,6 +13192,138 @@ namespace odb
 
     return st.execute ();
   }
+
+  // cmall_index_page_goods_max_order
+  //
+
+  const char access::view_traits_impl< ::cmall_index_page_goods_max_order, id_pgsql >::
+  query_statement_name[] = "query_cmall_index_page_goods_max_order";
+
+  bool access::view_traits_impl< ::cmall_index_page_goods_max_order, id_pgsql >::
+  grow (image_type& i,
+        bool* t)
+  {
+    ODB_POTENTIALLY_UNUSED (i);
+    ODB_POTENTIALLY_UNUSED (t);
+
+    bool grew (false);
+
+    // max_order
+    //
+    t[0UL] = 0;
+
+    return grew;
+  }
+
+  void access::view_traits_impl< ::cmall_index_page_goods_max_order, id_pgsql >::
+  bind (pgsql::bind* b,
+        image_type& i)
+  {
+    using namespace pgsql;
+
+    pgsql::statement_kind sk (statement_select);
+    ODB_POTENTIALLY_UNUSED (sk);
+
+    std::size_t n (0);
+
+    // max_order
+    //
+    b[n].type = pgsql::bind::integer;
+    b[n].buffer = &i.max_order_value;
+    b[n].is_null = &i.max_order_null;
+    n++;
+  }
+
+  void access::view_traits_impl< ::cmall_index_page_goods_max_order, id_pgsql >::
+  init (view_type& o,
+        const image_type& i,
+        database* db)
+  {
+    ODB_POTENTIALLY_UNUSED (o);
+    ODB_POTENTIALLY_UNUSED (i);
+    ODB_POTENTIALLY_UNUSED (db);
+
+    // max_order
+    //
+    {
+      int& v =
+        o.max_order;
+
+      pgsql::value_traits<
+          int,
+          pgsql::id_integer >::set_value (
+        v,
+        i.max_order_value,
+        i.max_order_null);
+    }
+  }
+
+  access::view_traits_impl< ::cmall_index_page_goods_max_order, id_pgsql >::query_base_type
+  access::view_traits_impl< ::cmall_index_page_goods_max_order, id_pgsql >::
+  query_statement (const query_base_type& q)
+  {
+    query_base_type r (
+      "SELECT "
+      "max(\"cmall_index_page_goods\".\"order\") ");
+
+    r += "FROM \"cmall_index_page_goods\"";
+
+    if (!q.empty ())
+    {
+      r += " ";
+      r += q.clause_prefix ();
+      r += q;
+    }
+
+    return r;
+  }
+
+  result< access::view_traits_impl< ::cmall_index_page_goods_max_order, id_pgsql >::view_type >
+  access::view_traits_impl< ::cmall_index_page_goods_max_order, id_pgsql >::
+  query (database&, const query_base_type& q)
+  {
+    using namespace pgsql;
+    using odb::details::shared;
+    using odb::details::shared_ptr;
+
+    pgsql::connection& conn (
+      pgsql::transaction::current ().connection ());
+    statements_type& sts (
+      conn.statement_cache ().find_view<view_type> ());
+
+    image_type& im (sts.image ());
+    binding& imb (sts.image_binding ());
+
+    if (im.version != sts.image_version () || imb.version == 0)
+    {
+      bind (imb.bind, im);
+      sts.image_version (im.version);
+      imb.version++;
+    }
+
+    const query_base_type& qs (query_statement (q));
+    qs.init_parameters ();
+    shared_ptr<select_statement> st (
+      new (shared) select_statement (
+        sts.connection (),
+        query_statement_name,
+        qs.clause (),
+        false,
+        true,
+        qs.parameter_types (),
+        qs.parameter_count (),
+        qs.parameters_binding (),
+        imb));
+
+    st->execute ();
+    st->deallocate ();
+
+    shared_ptr< odb::view_result_impl<view_type> > r (
+      new (shared) pgsql::view_result_impl<view_type> (
+        qs, st, sts, 0));
+
+    return result<view_type> (r);
+  }
 }
 
 namespace odb

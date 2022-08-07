@@ -365,3 +365,10 @@ struct cmall_index_page_goods
 	std::string goods;
 	int order;
 };
+
+#pragma db view object(cmall_index_page_goods)
+struct cmall_index_page_goods_max_order
+{
+	#pragma db column("max(" + cmall_index_page_goods::order +")")
+	int max_order;
+};
