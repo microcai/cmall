@@ -377,15 +377,15 @@ namespace services
 	// 从给定的 goods_id 找到商品定义.
 	awaitable<product> merchant_git_repo::get_product(std::string goods_id, std::string_view merchant_name, std::string baseurl)
 	{
+		boost::system::error_code ec;
 		product ret;
 		co_await boost::asio::co_spawn(thread_pool, [&, this]() mutable -> awaitable<void> {
-			boost::system::error_code ec;
 			co_await this_coro::coro_yield();
 			ret = impl().get_product(goods_id, merchant_name, baseurl, ec);
-			if (ec)
-				boost::throw_exception(boost::system::system_error(ec));
 			co_return;
 		}, use_awaitable);
+		if (ec)
+			boost::throw_exception(boost::system::system_error(ec));
 		co_return ret;
 	}
 
@@ -413,14 +413,14 @@ namespace services
 	awaitable<std::string> merchant_git_repo::get_transpiled_md(std::string md_file_path, std::string baseurl)
 	{
 		std::string ret;
+		boost::system::error_code ec;
 		co_await boost::asio::co_spawn(thread_pool, [&, this]() mutable -> awaitable<void> {
-			boost::system::error_code ec;
 			co_await this_coro::coro_yield();
 			ret = impl().get_transpiled_md(md_file_path, baseurl, ec);
-			if (ec)
-				boost::throw_exception(boost::system::system_error(ec));
 			co_return;
 		}, use_awaitable);
+		if (ec)
+			boost::throw_exception(boost::system::system_error(ec));
 		co_return ret;
 	}
 
@@ -438,15 +438,15 @@ namespace services
 	awaitable<std::string> merchant_git_repo::get_product_detail(std::string goods_id, std::string baseurl)
 	{
 		std::string ret;
+		boost::system::error_code ec;
 
 		co_await boost::asio::co_spawn(thread_pool, [&, this]() mutable -> awaitable<void> {
 			co_await this_coro::coro_yield();
-			boost::system::error_code ec;
 			ret = impl().get_product_detail(goods_id, baseurl, ec);
-			if (ec)
-				boost::throw_exception(boost::system::system_error(ec));
 			co_return;
 		}, use_awaitable);
+		if (ec)
+			boost::throw_exception(boost::system::system_error(ec));
 		co_return ret;
 	}
 
@@ -464,14 +464,14 @@ namespace services
 	awaitable<std::string> merchant_git_repo::get_product_html(std::string goods_id, std::string baseurl)
 	{
 		std::string ret;
+		boost::system::error_code ec;
 		co_await boost::asio::co_spawn(thread_pool, [&, this]() mutable -> awaitable<void> {
 			co_await this_coro::coro_yield();
-			boost::system::error_code ec;
 			ret = impl().get_product_html(goods_id, baseurl, ec);
-			if (ec)
-				boost::throw_exception(boost::system::system_error(ec));
 			co_return;
 		}, use_awaitable);
+		if (ec)
+			boost::throw_exception(boost::system::system_error(ec));
 		co_return ret;
 	}
 
