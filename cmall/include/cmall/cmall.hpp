@@ -274,6 +274,8 @@ namespace cmall {
 		awaitable<boost::json::object> handle_jsonrpc_merchant_api(client_connection_ptr, const req_method method, boost::json::object params);
 		awaitable<boost::json::object> handle_jsonrpc_admin_api(client_connection_ptr, const req_method method, boost::json::object params);
 
+		awaitable<std::vector<services::product>> list_index_goods(std::string baseurl);
+
 		awaitable<void> send_notify_message(std::uint64_t uid_, const std::string&, std::int64_t exclude_connection);
 
 		// round robing for acceptor.

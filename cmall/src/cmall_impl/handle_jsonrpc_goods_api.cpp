@@ -141,3 +141,34 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_goods_api(
 
 	co_return reply_message;
 }
+
+awaitable<std::vector<services::product>> cmall::cmall_service::list_index_goods(std::string baseurl)
+{
+	std::vector<cmall_merchant> merchants;
+	co_await m_database.async_load_all<cmall_merchant>(merchants);
+
+	std::map<std::uint64_t, cmall_merchant> cache;
+
+	for (const auto& m : merchants)
+	{
+		cache.insert(std::make_pair(m.uid_, m));
+	}
+
+	std::vector<cmall_index_page_goods> ret;
+
+	odb::query<cmall_index_page_goods> q = " 1=1 order by " + odb::query<cmall_index_page_goods>::order + " asc";
+
+	co_await m_database.async_load<cmall_index_page_goods>(q, ret);
+
+	std::vector<services::product> all_products;
+
+	for (auto gref : ret)
+	{
+		try {
+			services::product hint_product = co_await get_merchant_git_repo(gref.merchant_id)->get_product(gref.goods, cache[gref.merchant_id].name_, baseurl);
+			all_products.push_back(hint_product);
+		}catch(std::exception&)
+		{}
+	}
+	co_return all_products;
+}
