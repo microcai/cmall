@@ -168,7 +168,12 @@ awaitable<std::vector<services::product>> cmall::cmall_service::list_index_goods
 			services::product hint_product = co_await get_merchant_git_repo(gref.merchant_id)->get_product(gref.goods, cache[gref.merchant_id].name_, baseurl);
 			all_products.push_back(hint_product);
 		}catch(std::exception&)
-		{}
+		{
+			services::product unhint_product;
+			unhint_product.product_id = gref.goods;
+			unhint_product.merchant_id = gref.merchant_id;
+			all_products.push_back(unhint_product);
+		}
 	}
 	co_return all_products;
 }
