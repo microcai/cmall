@@ -54,35 +54,39 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_goods_api(
 			auto merchant	 = jsutil::json_accessor(params).get_string("merchant");
 			auto merchant_id = parse_number<std::uint64_t>(merchant);
 
-			std::vector<cmall_merchant> merchants;
-			using query_t = odb::query<cmall_merchant>;
-			auto query	  = (query_t::state == merchant_state_t::normal) && (query_t::deleted_at.is_null());
 			if (merchant_id.has_value())
 			{
-				query = query_t::uid == merchant_id.value() && query;
-			}
-			query += " order by uid desc"; // 优先显示新商户的商品.
+				std::vector<cmall_merchant> merchants;
+				using query_t = odb::query<cmall_merchant>;
+				auto query	  = (
+					query_t::uid == merchant_id.value() && (query_t::state == merchant_state_t::normal) && (query_t::deleted_at.is_null())
+				);
 
-			co_await m_database.async_load<cmall_merchant>(query, merchants);
+				co_await m_database.async_load<cmall_merchant>(query, merchants);
 
-			std::map<std::uint64_t, cmall_merchant> cache;
+				std::map<std::uint64_t, cmall_merchant> cache;
 
-			std::vector<services::product> all_products;
-			if (merchants.size() > 0)
-			{
-				for (const auto& m : merchants)
+				std::vector<services::product> all_products;
+				if (merchants.size() > 0)
 				{
-					boost::system::error_code ec;
-					auto repo = get_merchant_git_repo(m.uid_, ec);
-					if (ec)
-						continue;
-					std::vector<services::product> products
-						= co_await repo->get_products(m.name_, this_client.ws_client->baseurl_);
-					std::copy(products.begin(), products.end(), std::back_inserter(all_products));
+					for (const auto& m : merchants)
+					{
+						boost::system::error_code ec;
+						auto repo = get_merchant_git_repo(m.uid_, ec);
+						if (ec)
+							continue;
+						std::vector<services::product> products
+							= co_await repo->get_products(m.name_, this_client.ws_client->baseurl_);
+						std::copy(products.begin(), products.end(), std::back_inserter(all_products));
+					}
 				}
-			}
 
-			reply_message["result"] = boost::json::value_from(all_products);
+				reply_message["result"] = boost::json::value_from(all_products);
+			}
+			else
+			{
+				reply_message["result"] = boost::json::value_from(co_await list_index_goods(this_client.ws_client->baseurl_));
+			}
 		}
 		break;
 		case req_method::goods_detail:
