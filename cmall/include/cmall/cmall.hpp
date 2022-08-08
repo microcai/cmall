@@ -209,6 +209,7 @@ namespace cmall {
 		admin_sudo,
 		admin_sudo_cancel,
 		admin_list_index_goods,
+		admin_set_index_goods,
 		admin_add_index_goods,
 		admin_remove_index_goods,
 	};

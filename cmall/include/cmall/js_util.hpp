@@ -40,6 +40,14 @@ namespace jsutil
 			return json::object{};
 		}
 
+		inline json::array get_array(char const* key) const noexcept
+		{
+			if (obj_.contains(key))
+				return obj_.at(key).as_array();
+
+			return json::array{};
+		}
+
 		inline std::string get_string(char const* key) const noexcept
 		{
 			if (obj_.contains(key))

@@ -284,6 +284,37 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
             reply_message["result"] = boost::json::value_from(co_await list_index_goods(this_client.ws_client->baseurl_));
             break;
         }
+        case req_method::admin_set_index_goods:
+        {
+            auto new_goods_list = jsutil::json_accessor(params).get_array("list");
+
+            std::vector<cmall_index_page_goods> goods_list_vector;
+
+            for (auto& ref : new_goods_list)
+            {
+                cmall_index_page_goods gref;
+                gref.goods = jsutil::json_accessor(ref).get_string("goods_id");
+                gref.merchant_id = jsutil::json_accessor(ref).get("merchant_id", -1).as_int64();
+                gref.order = goods_list_vector.size();
+                goods_list_vector.push_back(gref);
+            }
+
+            bool succeed = co_await m_database.async_transacton([&](const cmall_database::odb_transaction_ptr& tx) mutable -> awaitable<bool>
+            {
+                auto& db = tx->database();
+
+                bool erased = db.erase_query<cmall_index_page_goods>();
+                if (!erased)
+                    co_return false;
+
+                for (auto i : goods_list_vector)
+                    db.persist(i);
+                co_return true;
+            });
+
+            reply_message["result"] = succeed;
+            break;
+        }
         case req_method::admin_add_index_goods:
         {
             cmall_index_page_goods gref;

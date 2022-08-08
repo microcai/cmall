@@ -753,6 +753,7 @@ namespace cmall
 				}
 				break;
 			case req_method::admin_list_index_goods:
+			case req_method::admin_set_index_goods:
 			case req_method::admin_add_index_goods:
 			case req_method::admin_remove_index_goods:
 				co_await ensure_login(true);
