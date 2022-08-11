@@ -22,6 +22,8 @@
 
 #include "private_config.hpp"
 
+#include <boost/filesystem/detail/header.hpp> // must be the last #include
+
 //--------------------------------------------------------------------------------------//
 
 namespace boost {
@@ -32,7 +34,7 @@ namespace {
 #if (defined(BOOST_GCC) && BOOST_GCC >= 40600) || defined(BOOST_CLANG)
 #pragma GCC diagnostic push
 // '(anonymous namespace)::codecvt_error_cat' has virtual functions but non-virtual destructor
-// This is no a problem as instances of codecvt_error_cat are never destroyed through a pointer to base.
+// This is not a problem as instances of codecvt_error_cat are never destroyed through a pointer to base.
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
 #endif
 
@@ -114,3 +116,5 @@ const codecvt_error_category_initializer g_codecvt_error_category_initializer;
 
 } // namespace filesystem
 } // namespace boost
+
+#include <boost/filesystem/detail/footer.hpp>

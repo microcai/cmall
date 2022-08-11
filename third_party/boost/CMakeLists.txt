@@ -4,6 +4,8 @@ project(Boost)
 include(CMakeDetermineASMCompiler)
 include(CheckFunctionExists)
 
+set(CMAKE_CXX_STANDARD 20)
+
 if(WIN32)
 ENABLE_LANGUAGE(ASM_MASM)
 else()
@@ -65,17 +67,17 @@ set(BOOST_REGEX_SRC
 
 if(WIN32)
 	set(BOOST_THREAD_SRC
-		libs/thread/src/future.cpp
-		libs/thread/src/win32/tss_dll.cpp
 		libs/thread/src/win32/thread.cpp
+		libs/thread/src/win32/tss_dll.cpp
 		libs/thread/src/win32/tss_pe.cpp
+		libs/thread/src/win32/thread_primitives.cpp
+		libs/thread/src/future.cpp
 	)
 else()
 	set(BOOST_THREAD_SRC
-		libs/thread/src/future.cpp
-		libs/thread/src/pthread/once.cpp
 		libs/thread/src/pthread/thread.cpp
-		libs/thread/src/pthread/once_atomic.cpp
+		libs/thread/src/pthread/once.cpp
+		libs/thread/src/future.cpp
 	)
 endif()
 
@@ -152,7 +154,7 @@ list(APPEND BOOST_CONTEXT_SRC libs/context/src/asm/make_${ARCH}_${SYSABI}_${EXEU
 list(APPEND BOOST_CONTEXT_SRC libs/context/src/asm/ontop_${ARCH}_${SYSABI}_${EXEUCTABLEFORMAT}_${ASSEMBLER}.${ASM_FILE_EXT})
 
 if (HAVE_UCONTEXT)
-	list(APPEND BOOST_CONTEXT_SRC libs/context/src/continuation.cpp)
+	list(APPEND BOOST_CONTEXT_SRC libs/context/src/continuation.cpp libs/context/src/fiber.cpp)
 endif()
 
 set(BOOST_COROUTINE_SRC
@@ -177,25 +179,19 @@ set(BOOST_DATE_TIME_SRC
 set(BOOST_EXCEPTION_SRC libs/exception/src/clone_current_exception_non_intrusive.cpp)
 
 set(BOOST_FILESYSTEM_SRC
-	libs/filesystem/src/atomic_ref.hpp
-	libs/filesystem/src/atomic_tools.hpp
-	libs/filesystem/src/codecvt_error_category.cpp
-	libs/filesystem/src/directory.cpp
-	libs/filesystem/src/error_handling.hpp
-	libs/filesystem/src/exception.cpp
-	libs/filesystem/src/operations.cpp
-	libs/filesystem/src/path.cpp
-	libs/filesystem/src/path_traits.cpp
-	libs/filesystem/src/platform_config.hpp
-	libs/filesystem/src/portability.cpp
-	libs/filesystem/src/posix_tools.hpp
-	libs/filesystem/src/private_config.hpp
-	libs/filesystem/src/unique_path.cpp
-	libs/filesystem/src/utf8_codecvt_facet.cpp
-	libs/filesystem/src/windows_file_codecvt.cpp
-	libs/filesystem/src/windows_file_codecvt.hpp
-	libs/filesystem/src/windows_tools.hpp
+    libs/filesystem/src/codecvt_error_category.cpp
+    libs/filesystem/src/exception.cpp
+    libs/filesystem/src/operations.cpp
+    libs/filesystem/src/directory.cpp
+    libs/filesystem/src/path.cpp
+    libs/filesystem/src/path_traits.cpp
+    libs/filesystem/src/portability.cpp
+    libs/filesystem/src/unique_path.cpp
+    libs/filesystem/src/utf8_codecvt_facet.cpp
 )
+if(WIN32 OR CYGWIN)
+    list(APPEND BOOST_FILESYSTEM_SRC libs/filesystem/src/windows_file_codecvt.cpp)
+endif()
 
 set(BOOST_LOCALE_SRC
 	libs/locale/src/encoding/codepage.cpp
@@ -281,23 +277,22 @@ set(BOOST_TIMER_SRC
 set(BOOST_RANDOM_SRC libs/random/src/random_device.cpp)
 
 set(BOOST_FIBER_SRC
-	libs/fiber/src/scheduler.cpp
-	libs/fiber/src/fiber.cpp
-	libs/fiber/src/properties.cpp
-	libs/fiber/src/future.cpp
-	libs/fiber/src/recursive_mutex.cpp
-	libs/fiber/src/context.cpp
-	libs/fiber/src/timed_mutex.cpp
-	libs/fiber/src/condition_variable.cpp
-	libs/fiber/src/algo/shared_work.cpp
 	libs/fiber/src/algo/algorithm.cpp
-	libs/fiber/src/algo/work_stealing.cpp
 	libs/fiber/src/algo/round_robin.cpp
-	libs/fiber/src/recursive_timed_mutex.cpp
-	libs/fiber/src/mutex.cpp
+	libs/fiber/src/algo/shared_work.cpp
+	libs/fiber/src/algo/work_stealing.cpp
 	libs/fiber/src/barrier.cpp
-	libs/fiber/src/numa/algo/work_stealing.cpp
-	libs/fiber/src/numa/topology.cpp
+	libs/fiber/src/condition_variable.cpp
+	libs/fiber/src/context.cpp
+	libs/fiber/src/fiber.cpp
+	libs/fiber/src/future.cpp
+	libs/fiber/src/mutex.cpp
+	libs/fiber/src/properties.cpp
+	libs/fiber/src/recursive_mutex.cpp
+	libs/fiber/src/recursive_timed_mutex.cpp
+	libs/fiber/src/scheduler.cpp
+	libs/fiber/src/timed_mutex.cpp
+	libs/fiber/src/waker.cpp
 )
 
 if (WIN32)
@@ -479,9 +474,11 @@ endif()
 if(Boost_USE_STATIC_LIBS)
 add_library(boost_json_static STATIC ${BOOST_JSON_SRC} )
 add_library(Boost::json ALIAS boost_json_static)
+target_compile_definitions(boost_json_static PUBLIC -DBOOST_JSON_STATIC_LINK=1)
 else()
 add_library(boost_json_dll SHARED ${BOOST_JSON_SRC})
 add_library(Boost::json ALIAS boost_json_dll)
+target_compile_definitions(boost_json_dll PUBLIC -DBOOST_JSON_DYN_LINK=1)
 endif()
 
 if (USE_BOOST_FIBER)
@@ -535,21 +532,48 @@ endif()
 target_include_directories(boost_header INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(boost_header INTERFACE -DBOOST_ALL_NO_LIB -DBOOST_ALL_STATIC_LINK -DBOOST_THREAD_USE_LIB)
 
-target_compile_definitions(boost_thread_static PRIVATE -DBOOST_THREAD_BUILD_LIB)
-target_compile_definitions(boost_thread_static INTERFACE -DBOOST_THREAD_USE_LIB)
+if (Boost_USE_STATIC_LIBS)
+	target_compile_definitions(boost_thread_static PRIVATE -DBOOST_THREAD_BUILD_LIB)
+	target_compile_definitions(boost_thread_static INTERFACE -DBOOST_THREAD_USE_LIB)
 
+	if (WIN32)
+	target_compile_definitions(boost_thread_static PRIVATE -DBOOST_THREAD_WIN32)
+	else()
+	target_compile_definitions(boost_thread_static PRIVATE -DBOOST_THREAD_POSIX)
+	endif()
+else()
+	target_compile_definitions(boost_thread_dll PRIVATE -DBOOST_THREAD_BUILD_DLL)
+	target_compile_definitions(boost_thread_dll INTERFACE -DBOOST_THREAD_USE_DLL)
+
+	if (WIN32)
+	target_compile_definitions(boost_thread_dll PRIVATE -DBOOST_THREAD_WIN32)
+	else()
+	target_compile_definitions(boost_thread_dll PRIVATE -DBOOST_THREAD_POSIX)
+	endif()
+
+endif()
+
+if (Boost_USE_STATIC_LIBS)
 target_compile_definitions(boost_context_static PUBLIC -DBOOST_ALL_NO_LIB -DBOOST_ALL_STATIC_LINK)
 target_compile_definitions(boost_context_static PRIVATE -DBOOST_CONTEXT_EXPORT)
+endif()
 
-target_compile_definitions(boost_filesystem_static PUBLIC -DBOOST_FILESYSTEM_STATIC_LINK -DBOOST_FILESYSTEM_NO_CXX20_ATOMIC_REF)
+if (Boost_USE_STATIC_LIBS)
+target_compile_definitions(boost_filesystem_static PUBLIC -DBOOST_FILESYSTEM_STATIC_LINK -DBOOST_FILESYSTEM_NO_CXX20_ATOMIC_REF -DBOOST_FILESYSTEM_HAS_POSIX_AT_APIS)
+else()
+target_compile_definitions(boost_filesystem_dll PUBLIC -DBOOST_FILESYSTEM_NO_CXX20_ATOMIC_REF -DBOOST_FILESYSTEM_HAS_POSIX_AT_APIS)
+endif()
+
+if (Boost_USE_STATIC_LIBS)
 
 target_compile_definitions(boost_json_static PUBLIC -DBOOST_JSON_SOURCE -DBOOST_JSON_STATIC_LINK)
 target_compile_definitions(boost_json_static PRIVATE -DBOOST_JSON_SOURCE -DBOOST_JSON_STATIC_LINK)
+endif()
 
 if(Boost_USE_STATIC_LIBS)
 	target_compile_definitions(boost_test_static PUBLIC -DBOOST_TEST_STATIC_LINK)
 else()
-	target_compile_definitions(boost_test_static PUBLIC -DBOOST_TEST_DYN_LINK)
+	target_compile_definitions(boost_test_dll PUBLIC -DBOOST_TEST_DYN_LINK)
 endif()
 
 if(Boost_USE_STATIC_LIBS)
@@ -562,10 +586,10 @@ if(Boost_USE_STATIC_LIBS)
 	target_link_libraries(boost_thread_static boost_header Threads::Threads)
 	target_link_libraries(boost_context_static boost_header)
 if (USE_BOOST_FIBER)
-	target_link_libraries(boost_fiber_static boost_context_static boost_header)
+	target_link_libraries(boost_fiber_static Boost::context boost_header)
 endif()
 	target_link_libraries(boost_json_static boost_header)
-	target_link_libraries(boost_coroutine_static boost_context_static boost_header)
+	target_link_libraries(boost_coroutine_static Boost::context boost_header)
 	target_link_libraries(boost_chrono_static boost_header)
 	if(USE_BOOST_LOCALE)
 		target_link_libraries(boost_locale_static boost_header)
@@ -587,21 +611,21 @@ else()
 	target_link_libraries(boost_filesystem_dll boost_header)
 	target_link_libraries(boost_thread_dll boost_header Threads::Threads)
 	target_link_libraries(boost_context_dll boost_header)
-	target_link_libraries(boost_coroutine_dll boost_context_static boost_header)
+	target_link_libraries(boost_coroutine_dll Boost::context boost_header)
 if (USE_BOOST_FIBER)
-	target_link_libraries(boost_fiber_dll boost_context_static boost_header)
+	target_link_libraries(boost_fiber_dll Boost::context boost_header)
 endif()
 	target_link_libraries(boost_json_dll boost_header)
 	target_link_libraries(boost_chrono_dll boost_header)
 	if(USE_BOOST_LOCALE)
 		target_link_libraries(boost_locale_dll boost_header)
 	endif()
-	target_link_libraries(boost_date_time_dll boost_chrono_static boost_header)
+	target_link_libraries(boost_date_time_dll boost_chrono_dll boost_header)
 	target_link_libraries(boost_regex_dll boost_header)
-	target_link_libraries(boost_timer_dll boost_chrono_static boost_header)
+	target_link_libraries(boost_timer_dll boost_chrono_dll boost_header)
 	target_link_libraries(boost_exception_dll boost_header)
 	target_link_libraries(boost_random_dll boost_header)
-	target_link_libraries(boost_program_options_dll boost_filesystem_static boost_header)
+	target_link_libraries(boost_program_options_dll boost_filesystem_dll boost_header)
 	target_link_libraries(boost_asio_dll boost_thread_dll)
 	target_link_libraries(boost_beast_dll boost_asio_dll)
 endif()
@@ -678,7 +702,9 @@ else()
 	set_target_properties(boost_filesystem_dll PROPERTIES FOLDER "third_party/boost")
 	set_target_properties(boost_thread_dll PROPERTIES FOLDER "third_party/boost")
 	set_target_properties(boost_context_dll PROPERTIES FOLDER "third_party/boost")
-	set_target_properties(boost_fiber_dll PROPERTIES FOLDER "third_party/boost")
+	if (USE_BOOST_FIBER)
+		set_target_properties(boost_fiber_dll PROPERTIES FOLDER "third_party/boost")
+	endif()
 	set_target_properties(boost_json_dll PROPERTIES FOLDER "third_party/boost")
 	set_target_properties(boost_coroutine_dll PROPERTIES FOLDER "third_party/boost")
 	set_target_properties(boost_chrono_dll PROPERTIES FOLDER "third_party/boost")

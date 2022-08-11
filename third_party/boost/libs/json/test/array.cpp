@@ -1272,16 +1272,16 @@ public:
     void
     testIssue692()
     {
-	    array a;
-	    object obj;
-	    obj["test1"] = "hello";
-	    a.push_back(obj);
-	    a.push_back(obj);
-	    a.push_back(obj);
-	    a.push_back(obj);
-	    a.push_back(obj);
-	    while(a.size())
-		    a.erase(a.begin());
+        array a;
+        object obj;
+        obj["test1"] = "hello";
+        a.push_back(obj);
+        a.push_back(obj);
+        a.push_back(obj);
+        a.push_back(obj);
+        a.push_back(obj);
+        while(a.size())
+            a.erase(a.begin());
     }
 
     void
