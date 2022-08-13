@@ -122,10 +122,8 @@ namespace util {
 
 namespace log_compress__ {
 
-	const std::string GZ_SUFFIX = ".gz";
-	// const size_t SUFFIX_LEN = sizeof(GZ_SUFFIX) - 1;
-	const size_t BUFLEN = 65536;
-	// const size_t MAX_NAME_LEN = 4096;
+	const inline std::string LOGGING_GZ_SUFFIX = ".gz";
+	const inline size_t LOGGING_BUFLEN = 65536;
 
 	inline std::mutex& compress_lock()
 	{
@@ -135,7 +133,7 @@ namespace log_compress__ {
 
 	inline bool do_compress_gz(const std::string& infile)
 	{
-		std::string outfile = infile + GZ_SUFFIX;
+		std::string outfile = infile + LOGGING_GZ_SUFFIX;
 
 		gzFile out = gzopen(outfile.c_str(), "wb6f");
 		if (!out)
@@ -148,7 +146,7 @@ namespace log_compress__ {
 			return false;
 		std::unique_ptr<FILE, decltype(&fclose)> FILE_closer(in, &fclose);
 
-		char buf[BUFLEN];
+		char buf[LOGGING_BUFLEN];
 		int len;
 
 		for (;;) {
@@ -179,41 +177,13 @@ namespace log_compress__ {
 
 namespace logger_aux__ {
 
-	static const uint64_t epoch = 116444736000000000L; /* Jan 1, 1601 */
-	typedef union {
-		uint64_t ft_scalar;
-#if defined(WIN32) || defined(_WIN32)
-
-		FILETIME ft_struct;
-#else
-		timeval ft_struct;
-#endif
-	} LOGGING_FT;
-
 	inline int64_t gettime()
 	{
-#if defined(WIN32) || defined(_WIN32)
-		thread_local int64_t system_start_time = 0;
-		thread_local int64_t system_current_time = 0;
-		thread_local uint32_t last_time = 0;
+		using std::chrono::system_clock;
 
-		auto tmp = timeGetTime();
-
-		if (system_start_time == 0) {
-			LOGGING_FT nt_time;
-			GetSystemTimeAsFileTime(&(nt_time.ft_struct));
-			int64_t tim = (__int64)((nt_time.ft_scalar - logger_aux__::epoch) / (__int64)10000);
-			system_start_time = tim - tmp;
-		}
-
-		system_current_time += (tmp - last_time);
-		last_time = tmp;
-		return system_start_time + system_current_time;
-#elif defined(__linux__) || defined(__APPLE__)
-		struct timeval tv;
-		gettimeofday(&tv, NULL);
-		return ((int64_t)tv.tv_sec * 1000000 + tv.tv_usec) / 1000;
-#endif
+		auto now = system_clock::now() -
+			system_clock::time_point(std::chrono::milliseconds(0));
+		return std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
 	}
 
 	namespace internal {
@@ -474,7 +444,6 @@ public:
 
 	void write([[maybe_unused]] int64_t time, const char* str, std::streamsize size)
 	{
-#ifdef LOGGING_COMPRESS_LOGS
 		bool condition = false;
 		auto hours = time / 1000 / 3600;
 		auto last_hours = m_last_time / 1000 / 3600;
@@ -517,6 +486,8 @@ public:
 
 			std::filesystem::resize_file(m_log_path, 0, ec);
 			m_log_size = 0;
+
+#ifdef LOGGING_COMPRESS_LOGS
 			auto fn = filename.string();
 			std::thread th([fn]()
 				{
@@ -525,7 +496,7 @@ public:
 					std::lock_guard<std::mutex> lock(m);
 					if (!log_compress__::do_compress_gz(fn))
 					{
-						auto file = fn + log_compress__::GZ_SUFFIX;
+						auto file = fn + log_compress__::LOGGING_GZ_SUFFIX;
 						std::filesystem::remove(file, ignore_ec);
 						if (ignore_ec)
 							std::cout << "delete log failed: " << file
@@ -536,9 +507,9 @@ public:
 					std::filesystem::remove(fn, ignore_ec);
 				});
 			th.detach();
+#endif
 			break;
 		}
-#endif
 
 		if (!m_ofstream) {
 			m_ofstream.reset(new std::ofstream);
@@ -577,17 +548,17 @@ private:
 #endif // WIN32 && LOGGER_DBG_VIEW
 #endif // LOGGER_DBG_VIEW_
 
-const static int _logger_debug_id__ = 0;
-const static int _logger_info_id__ = 1;
-const static int _logger_warn_id__ = 2;
-const static int _logger_error_id__ = 3;
-const static int _logger_file_id__ = 4;
+const inline int _logger_debug_id__ = 0;
+const inline int _logger_info_id__ = 1;
+const inline int _logger_warn_id__ = 2;
+const inline int _logger_error_id__ = 3;
+const inline int _logger_file_id__ = 4;
 
-const static std::string _LOGGER_DEBUG_STR__ = "DEBUG";
-const static std::string _LOGGER_INFO_STR__ = "INFO";
-const static std::string _LOGGER_WARN_STR__ = "WARNING";
-const static std::string _LOGGER_ERR_STR__ = "ERROR";
-const static std::string _LOGGER_FILE_STR__ = "FILE";
+const inline std::string _LOGGER_DEBUG_STR__ = "DEBUG";
+const inline std::string _LOGGER_INFO_STR__ = "INFO";
+const inline std::string _LOGGER_WARN_STR__ = "WARNING";
+const inline std::string _LOGGER_ERR_STR__ = "ERROR";
+const inline std::string _LOGGER_FILE_STR__ = "FILE";
 
 inline void logger_output_console__([[maybe_unused]] bool disable_cout,
 	[[maybe_unused]] const int& level,
@@ -732,11 +703,8 @@ namespace logger_aux__ {
 	};
 }
 
-inline std::shared_ptr<logger_aux__::logger_internal>& logger_fetch_log_obj__()
-{
-	static std::shared_ptr<logger_aux__::logger_internal> logger_obj_;
-	return logger_obj_;
-}
+inline bool global_logging___ = true;
+inline std::shared_ptr<logger_aux__::logger_internal> global_logger_obj___;
 
 inline void init_logging(bool use_async = true, const std::string& path = "")
 {
@@ -744,7 +712,7 @@ inline void init_logging(bool use_async = true, const std::string& path = "")
 	if (!path.empty())
 		file.open(path.c_str());
 
-	auto& log_obj = logger_fetch_log_obj__();
+	auto& log_obj = global_logger_obj___;
 	if (use_async && !log_obj) {
 		log_obj.reset(new logger_aux__::logger_internal());
 	}
@@ -758,22 +726,16 @@ inline std::string log_path()
 
 inline void shutdown_logging()
 {
-	auto& log_obj = logger_fetch_log_obj__();
+	auto& log_obj = global_logger_obj___;
 	if (log_obj) {
 		log_obj->stop();
 		log_obj.reset();
 	}
 }
 
-inline bool& logging_flag()
-{
-	static bool logging_ = true;
-	return logging_;
-}
-
 inline void toggle_logging()
 {
-	logging_flag() = !logging_flag();
+	global_logging___ = !global_logging___;
 }
 
 struct auto_init_async_logger
@@ -796,16 +758,16 @@ public:
 		: level_(level)
 		, m_disable_cout(disable_cout)
 	{
-		if (!logging_flag())
+		if (!global_logging___)
 			return;
 	}
 	~logger___()
 	{
-		if (!logging_flag())
+		if (!global_logging___)
 			return;
 		std::string message = logger_aux__::string_utf8(out_);
-		if (logger_fetch_log_obj__())
-			logger_fetch_log_obj__()->post_log(level_, std::move(message), m_disable_cout);
+		if (global_logger_obj___)
+			global_logger_obj___->post_log(level_, std::move(message), m_disable_cout);
 		else
 			logger_writer__(logger_aux__::gettime(), level_, message, m_disable_cout);
 	}
@@ -813,7 +775,7 @@ public:
 	template <class... Args>
 	inline logger___& format_to(std::string_view fmt, Args&&... args)
 	{
-		if (!logging_flag())
+		if (!global_logging___)
 			return *this;
 		out_ += std::vformat(fmt, std::make_format_args(std::forward<Args>(args)...));
 		return *this;
@@ -822,7 +784,7 @@ public:
 	template <class T>
 	inline logger___& strcat_impl(T const& v) noexcept
 	{
-		if (!logging_flag())
+		if (!global_logging___)
 			return *this;
 		std::format_to(std::back_inserter(out_), "{}", v);
 		return *this;
@@ -898,56 +860,56 @@ public:
 	}
 	inline logger___& operator<<(const void *v)
 	{
-		if (!logging_flag())
+		if (!global_logging___)
 			return *this;
 		std::format_to(std::back_inserter(out_), "{:#010x}", (std::size_t)v);
 		return *this;
 	}
 	inline logger___& operator<<(const std::chrono::nanoseconds& v)
 	{
-		if (!logging_flag())
+		if (!global_logging___)
 			return *this;
 		std::format_to(std::back_inserter(out_), "{}ns", v.count());
 		return *this;
 	}
 	inline logger___& operator<<(const std::chrono::microseconds& v)
 	{
-		if (!logging_flag())
+		if (!global_logging___)
 			return *this;
 		std::format_to(std::back_inserter(out_), "{}us", v.count());
 		return *this;
 	}
 	inline logger___& operator<<(const std::chrono::milliseconds& v)
 	{
-		if (!logging_flag())
+		if (!global_logging___)
 			return *this;
 		std::format_to(std::back_inserter(out_), "{}ms", v.count());
 		return *this;
 	}
 	inline logger___& operator<<(const std::chrono::seconds& v)
 	{
-		if (!logging_flag())
+		if (!global_logging___)
 			return *this;
 		std::format_to(std::back_inserter(out_), "{}s", v.count());
 		return *this;
 	}
 	inline logger___& operator<<(const std::chrono::minutes& v)
 	{
-		if (!logging_flag())
+		if (!global_logging___)
 			return *this;
 		std::format_to(std::back_inserter(out_), "{}min", v.count());
 		return *this;
 	}
 	inline logger___& operator<<(const std::chrono::hours& v)
 	{
-		if (!logging_flag())
+		if (!global_logging___)
 			return *this;
 		std::format_to(std::back_inserter(out_), "{}h", v.count());
 		return *this;
 	}
 	inline logger___& operator<<(const boost::posix_time::ptime& p) noexcept
 	{
-		if (!logging_flag())
+		if (!global_logging___)
 			return *this;
 
 		if (!p.is_not_a_date_time())
