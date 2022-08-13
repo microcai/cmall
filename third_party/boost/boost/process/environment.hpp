@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Klemens D. Morgenstern
+﻿// Copyright (c) 2016 Klemens D. Morgenstern
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -263,7 +263,7 @@ public:
         auto st1 = key + ::boost::process::detail::equal_sign<Char>();
         while (*p != nullptr)
         {
-            const int len = std::char_traits<Char>::length(*p);
+            const int len = static_cast<int>(std::char_traits<Char>::length(*p));
             if ((std::distance(st1.begin(), st1.end()) < len)
                  && std::equal(st1.begin(), st1.end(), *p))
                 break;
@@ -277,7 +277,7 @@ public:
         auto st1 = key + ::boost::process::detail::equal_sign<Char>();
         while (*p != nullptr)
         {
-            const int len = std::char_traits<Char>::length(*p);
+            const int len = static_cast<int>(std::char_traits<Char>::length(*p));
             if ((std::distance(st1.begin(), st1.end()) < len)
                 && std::equal(st1.begin(), st1.end(), *p))
                 break;

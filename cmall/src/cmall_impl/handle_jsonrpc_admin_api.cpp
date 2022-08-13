@@ -1,4 +1,4 @@
-#include "stdafx.hpp"
+﻿#include "stdafx.hpp"
 
 #include "cmall/cmall.hpp"
 #include "cmall/js_util.hpp"
@@ -295,7 +295,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
                 cmall_index_page_goods gref;
                 gref.goods = jsutil::json_accessor(ref).get_string("goods_id");
                 gref.merchant_id = jsutil::json_accessor(ref).get("merchant_id", -1).as_int64();
-                gref.order = goods_list_vector.size();
+                gref.order = static_cast<int>(goods_list_vector.size());
                 goods_list_vector.push_back(gref);
             }
 

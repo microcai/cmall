@@ -42,7 +42,8 @@ macro(EMBED_TARGET Name Input)
 		set(Outputs ${OutputRC} ${OutputC})
 		set(RCCODE "${RES_ID} RCDATA \"${InputAbs}\"\n")
 		set(CODE
-"#include \"windows.h\"
+"#pragma warning(disable: 5105) // Avoid warning c5105 in \"windows.h\"
+#include \"windows.h\"
 ${STRUCT}
 struct Res ${Name}(void) {
 	HMODULE handle = GetModuleHandle(NULL)\;
