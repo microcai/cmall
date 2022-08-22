@@ -64,6 +64,8 @@ std::string cmall::error::cmall_category::message(int ev) const
 			return (const char*) u8"无法进入替身模式";
 		case kv_store_key_not_found:
 			return (const char*) u8"key不存在";
+		case object_too_large:
+			return (const char*) u8"文件太大";
 	}
 	return "error message";
 }
