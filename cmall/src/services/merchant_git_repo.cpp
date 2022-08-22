@@ -151,6 +151,11 @@ namespace services
 			if (!look_for_file_entry.empty())
 			{
 				auto file_blob = git_repo.get_blob(look_for_file_entry.get_oid());
+				if (file_blob.size() > 10000000)
+				{
+					ec = cmall::error::object_too_large;
+					return ret;
+				}
 				ret = file_blob.get_content();
 				ec = boost::system::error_code{};
 				return ret;
