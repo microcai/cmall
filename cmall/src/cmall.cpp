@@ -362,6 +362,8 @@ namespace cmall
 		auto res_body = co_await merchant_repo_ptr->get_file_content(path_in_repo, ec);
 		if (ec)
 		{
+			if (ec == cmall::error::object_too_large)
+				co_return 413; // 413 Payload Too Large
 			co_return 404;
 		}
 
