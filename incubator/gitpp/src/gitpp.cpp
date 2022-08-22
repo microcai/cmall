@@ -47,8 +47,13 @@ std::string_view gitpp::blob::get_content() const
 {
 	const char * content = (const char*) git_blob_rawcontent((git_blob*)obj_);
 	const auto content_size = git_blob_rawsize((git_blob*)obj_);
-
 	return std::string_view(content, content_size);
+}
+
+std::size_t gitpp::blob::size() const
+{
+	const auto content_size = git_blob_rawsize((git_blob*)obj_);
+	return content_size;
 }
 
 gitpp::tree::tree(git_tree* t)

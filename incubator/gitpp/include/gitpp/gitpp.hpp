@@ -113,6 +113,7 @@ namespace gitpp {
 		explicit blob(git_blob*);
 
 		std::string_view get_content() const;
+		std::size_t size() const;
 	};
 
 	class tree_entry
