@@ -20,7 +20,7 @@ namespace asio_util
 	struct uawaitable_t
 	{
 		inline boost::asio::redirect_error_t<typename boost::decay<decltype(boost::asio::use_awaitable)>::type>
-			operator[](boost::system::error_code& ec) noexcept
+			operator[](boost::system::error_code& ec) const noexcept
 		{
 			return boost::asio::redirect_error(boost::asio::use_awaitable, ec);
 		}
@@ -33,6 +33,6 @@ namespace asio_util
 	// stream.async_read(buffer, asio_util::use_awaitable[ec]);
 	//
 
-	static uawaitable_t use_awaitable;
+	constexpr uawaitable_t use_awaitable;
 }
 
