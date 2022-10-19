@@ -66,6 +66,8 @@ std::string cmall::error::cmall_category::message(int ev) const
 			return (const char*) u8"key不存在";
 		case object_too_large:
 			return (const char*) u8"文件太大";
+		case merchcant_git_error:
+			return (const char*) u8"商户 git 仓库操作错误";
 	}
 	return "error message";
 }

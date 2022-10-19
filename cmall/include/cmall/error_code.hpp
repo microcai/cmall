@@ -40,6 +40,7 @@ namespace cmall
 			cannot_sudo,
 			kv_store_key_not_found,
 			object_too_large,
+			merchcant_git_error,
 		};
 
 		class cmall_category : public boost::system::error_category

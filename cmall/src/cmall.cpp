@@ -117,7 +117,7 @@ namespace cmall
 		auto it = index_by_uid.find(merchant_uid);
 		if (it == index_by_uid.end())
 		{
-			ec = cmall::error::merchant_vanished;
+			ec = cmall::error::merchcant_git_error;
 			return {};
 		}
 		return * it;
