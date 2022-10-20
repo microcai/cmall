@@ -142,7 +142,7 @@ namespace cmall
 		auto it = index_by_uid.find(merchant_uid);
 		if (it == index_by_uid.end())
 		{
-			throw boost::system::system_error(cmall::error::merchant_vanished);
+			throw boost::system::system_error(cmall::error::merchcant_gitrepo_notfound);
 		}
 		return * it;
 	}

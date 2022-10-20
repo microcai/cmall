@@ -68,6 +68,8 @@ std::string cmall::error::cmall_category::message(int ev) const
 			return (const char*) u8"文件太大";
 		case merchcant_git_error:
 			return (const char*) u8"商户 git 仓库操作错误";
+		case merchcant_gitrepo_notfound:
+			return (const char*) u8"商户 git 仓库不存在";
 	}
 	return "error message";
 }

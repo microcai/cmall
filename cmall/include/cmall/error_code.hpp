@@ -41,6 +41,7 @@ namespace cmall
 			kv_store_key_not_found,
 			object_too_large,
 			merchcant_git_error,
+			merchcant_gitrepo_notfound,
 		};
 
 		class cmall_category : public boost::system::error_category
