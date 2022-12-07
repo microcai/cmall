@@ -22,6 +22,7 @@ file(GLOB cmall_SRCS
 	include/cmall/*.hpp
 	include/*.hpp
 	include/utils/*.hpp
+	include/services/*.hpp
 
 	src/*.cpp
 	src/services/*

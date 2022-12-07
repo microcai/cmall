@@ -232,3 +232,21 @@ inline std::string md5sum(const std::string& in)
 	MD5((unsigned char *)in.data(), in.size(), (unsigned char *)ret.data());
 	return to_hexstring(ret, 32);
 }
+
+inline std::string sha256sum(const std::string& in)
+{
+	std::vector<uint8_t> ret(SHA256_DIGEST_LENGTH, 0x0);
+	SHA256((unsigned char *)in.data(), in.size(), (unsigned char *)ret.data());
+	return to_hexstring(ret);
+}
+
+inline std::string hmac_sha256(const std::string& key, const std::string& data, bool hex = true)
+{
+	std::vector<uint8_t> ret(SHA256_DIGEST_LENGTH);
+	unsigned int len = ret.size();
+	HMAC(EVP_sha256(), key.data(), key.size(), (unsigned char *)data.data(), data.size(), ret.data(), &len);
+	if (hex) {
+		return to_hexstring(ret);
+	}
+	return std::string(ret.begin(), ret.end());
+}

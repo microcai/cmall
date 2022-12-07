@@ -8,6 +8,12 @@
 #include "httpd/http_misc_helper.hpp"
 #include "services/search_service.hpp"
 #include "services/neteasesdk.hpp"
+#include "services/tencentsdk.hpp"
+
+namespace
+{
+	std::string face_group_id = "cmall#face";
+}
 
 awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 	client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
@@ -228,6 +234,49 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 			co_await m_database.async_load<cmall_apply_for_mechant>(query, applys);
 
 			reply_message["result"] = boost::json::value_from(applys);
+		}
+		break;
+		case req_method::user_add_face:
+		{
+			auto uid = session_info.user_info->uid_;
+			auto uname = session_info.user_info->name_;
+			auto pid = std::to_string(uid);
+
+			std::string image = jsutil::json_accessor(params).get_string("image");
+
+			tencentsdk sdk(m_io_context, m_config.tencent_secret_id, m_config.tencent_secret_key);
+			// check if user in group
+			auto groups = co_await sdk.get_person_group(pid);
+			auto exist = std::find(groups.begin(), groups.end(), face_group_id) != groups.end();
+			if (exist)
+			{
+				co_await sdk.person_add_face(pid, image);
+			}
+			else
+			{
+				co_await sdk.group_add_person(face_group_id, pid, uname, image);
+			}
+			
+			reply_message["result"] = true;
+		}
+		break;
+		case req_method::user_search_by_face:
+		{
+			std::string image = jsutil::json_accessor(params).get_string("image");
+
+			tencentsdk sdk(m_io_context, m_config.tencent_secret_id, m_config.tencent_secret_key);
+			std::string pid = co_await sdk.person_search_by_face(face_group_id, image);
+
+			auto uid = parse_number<uint64_t>(pid);
+
+			if (!uid)
+				reply_message["result"] = boost::json::value{nullptr};
+			else
+			{
+				cmall_user uinfo;
+				co_await m_database.async_load<cmall_user>(uid.value(), uinfo);
+				reply_message["result"] = boost::json::value_from(uinfo);
+			}
 		}
 		break;
 		case req_method::user_list_recipient_address:

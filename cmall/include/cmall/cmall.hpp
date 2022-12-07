@@ -70,6 +70,9 @@ namespace cmall {
 		std::string netease_secret_id;
 		std::string netease_secret_key;
 		std::string netease_business_id;
+
+		std::string tencent_secret_id;
+		std::string tencent_secret_key;
 	};
 
 
@@ -145,6 +148,9 @@ namespace cmall {
 		user_info,
 		user_apply_merchant,
 		user_apply_info, // 审核状态.
+
+		user_add_face,
+		user_search_by_face, // demo
 
 		user_list_recipient_address,
 		user_add_recipient_address,

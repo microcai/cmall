@@ -170,6 +170,7 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 
 	std::string gitea_token, gitea_api_path = "http://localhost:3000", gitea_template_user, gitea_template_reponame = "shop-template";
 	std::string netease_secret_id, netease_secret_key, netease_business_id;
+	std::string tencent_secret_id, tentcent_secret_key;
 
 	std::string cert_file, key_file;
 
@@ -199,6 +200,8 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 		("netease_secret_id", po::value<std::string>(&netease_secret_id)->value_name("netease_secret_id"), "netease secret id")
 		("netease_secret_key", po::value<std::string>(&netease_secret_key)->value_name("netease_secret_key"), "netease secret key")
 		("netease_business_id", po::value<std::string>(&netease_business_id)->value_name("netease_business_id"), "netease business id")
+		("tencent_id", po::value<std::string>(&tencent_secret_id)->value_name("tencent_secret_id"), "tencent secret id")
+		("tencent_key", po::value<std::string>(&tentcent_secret_key)->value_name("tencent_secret_key"), "tencent secret key")
 		("cert", po::value<std::string>(&cert_file)->value_name("file"), "ssl cert file")
 		("key", po::value<std::string>(&key_file)->value_name("file"), "ssl private key file")
 		("site_name", po::value<std::string>(&site_name)->value_name("desc")->default_value("cmall"), "site name")
@@ -278,6 +281,8 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 	cfg.netease_business_id = netease_business_id;
 	cfg.netease_secret_key = netease_secret_key;
 	cfg.netease_secret_id = netease_secret_id;
+	cfg.tencent_secret_id = tencent_secret_id;
+	cfg.tencent_secret_key = tentcent_secret_key;
 
 	cmall::cmall_service xsrv(ios, cfg);
 
