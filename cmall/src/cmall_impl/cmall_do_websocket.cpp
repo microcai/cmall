@@ -11,7 +11,7 @@ awaitable<void> cmall::cmall_service::do_ws_read(size_t connection_id, client_co
 {
 	for (;;)
 	{
-		boost::beast::multi_buffer buffer{ 4 * 1024 * 1024 }; // max multi_buffer size 4M.
+		boost::beast::multi_buffer buffer{ 6 * 1024 * 1024 }; // max multi_buffer size 6M.
 		co_await connection_ptr->ws_client->ws_stream_.async_read(buffer, use_awaitable);
 
 		auto body = boost::beast::buffers_to_string(buffer.data());
