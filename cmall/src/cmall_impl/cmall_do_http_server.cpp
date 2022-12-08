@@ -172,7 +172,7 @@ namespace cmall
 				}
 
 				client_ptr->ws_client->ws_stream_.set_option(
-					boost::beast::websocket::stream_base::decorator([sec_websocket_protocol, cookie_line](auto& res)
+					boost::beast::websocket::stream_base::decorator([&sec_websocket_protocol, &cookie_line](auto& res)
 					{
 						res.set(header_field::server, HTTPD_VERSION_STRING);
 						if (!sec_websocket_protocol.empty())
