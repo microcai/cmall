@@ -158,7 +158,7 @@ namespace cmall
 				auto user_agent = req[header_field::user_agent];
 				auto sec_websocket_protocol = req[header_field::sec_websocket_protocol];
 
-				if (user_agent.length() && user_agent.find("Mozilla")!= std::string::npos && sec_websocket_protocol== "request_cookie")
+				if (user_agent.length() && (user_agent.find("Mozilla")!= std::string::npos) && sec_websocket_protocol== "request_cookie")
 				{
 					if (!client_ptr->session_info)
 					{
