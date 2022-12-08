@@ -33,6 +33,25 @@ auto is_browser(auto user_agent, auto sec_websocket_protocol)
 //	 user_agent.length() && (user_agent.find("Mozilla")!= std::string::npos) && sec_websocket_protocol== "request_cookie"
 }
 
+auto is_microapp(auto user_agent, auto sec_websocket_protocol)
+{
+	if (user_agent.empty())
+		return false;
+	if (sec_websocket_protocol== "request_cookie")
+	{
+		if (user_agent.find("Mozilla") != std::string::npos)
+		{
+			return true;
+		}
+	}
+	if (user_agent.find("ToutiaoMicroApp") != std::string::npos)
+		return true;
+	if (user_agent.find("wechat") != std::string::npos)
+		return true;
+	return false;
+//	 user_agent.length() && (user_agent.find("Mozilla")!= std::string::npos) && sec_websocket_protocol== "request_cookie"
+}
+
 namespace cmall
 {
 	awaitable<void> cmall_service::close_all_ws()
@@ -177,6 +196,18 @@ namespace cmall
 				auto sec_websocket_protocol = req[header_field::sec_websocket_protocol];
 
 				if (is_browser(user_agent, sec_websocket_protocol))
+				{
+					if (!client_ptr->session_info)
+					{
+						co_await alloca_sessionid(client_ptr);
+
+						cookie_line = std::format("Session={}; Path=/api; Expires={}",
+							client_ptr->session_info->session_id,
+							httpd::make_http_last_modified(std::time(NULL) + 31536000)
+						);
+					}
+				}
+				else if (is_microapp(user_agent, sec_websocket_protocol))
 				{
 					if (!client_ptr->session_info)
 					{
