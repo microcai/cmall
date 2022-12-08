@@ -606,6 +606,8 @@ namespace cmall
 						co_await load_user_info(connection_ptr);
 					}
 
+					std::string cookie_line = std::format("Session={}", this_client.session_info->session_id);
+
 					reply_message["result"] = {
 						{ "session_id", this_client.session_info->session_id },
 						{ "isAdmin", static_cast<bool>(this_client.session_info->isAdmin) },
@@ -613,6 +615,7 @@ namespace cmall
 						{ "isLogin", static_cast<bool>(this_client.session_info->user_info) },
 						{ "isSudo", this_client.session_info->sudo_mode },
 						{ "site_name", m_config.site_name },
+						{ "cookie", cookie_line },
 					};
 				}
 				else
