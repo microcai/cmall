@@ -16,6 +16,23 @@ auto make_iterator_range(std::pair<Iterator, Iterator> pair)
 	return boost::make_iterator_range(pair.first, pair.second);
 }
 
+auto is_browser(auto user_agent, auto sec_websocket_protocol)
+{
+	if (user_agent.empty())
+		return false;
+	if (sec_websocket_protocol== "request_cookie")
+	{
+		if (user_agent.find("Mozilla") != std::string::npos)
+		{
+			return true;
+		}
+	}
+	if (user_agent.find("Mozilla/5.0 (") == 0)
+		return true;
+	return false;
+//	 user_agent.length() && (user_agent.find("Mozilla")!= std::string::npos) && sec_websocket_protocol== "request_cookie"
+}
+
 namespace cmall
 {
 	awaitable<void> cmall_service::close_all_ws()
@@ -151,6 +168,7 @@ namespace cmall
 						{
 							co_await load_user_info(client_ptr);
 						}
+						break;
 					}
 				}
 
@@ -158,7 +176,7 @@ namespace cmall
 				auto user_agent = req[header_field::user_agent];
 				auto sec_websocket_protocol = req[header_field::sec_websocket_protocol];
 
-				if (user_agent.length() && (user_agent.find("Mozilla")!= std::string::npos) && sec_websocket_protocol== "request_cookie")
+				if (is_browser(user_agent, sec_websocket_protocol))
 				{
 					if (!client_ptr->session_info)
 					{
@@ -169,6 +187,10 @@ namespace cmall
 							httpd::make_http_last_modified(std::time(NULL) + 31536000)
 						);
 					}
+				}
+				else
+				{
+					LOG_WARN << "Non broswer accessed cmall with UA:" << user_agent;
 				}
 
 				client_ptr->ws_client->ws_stream_.set_option(
