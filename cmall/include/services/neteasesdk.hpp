@@ -12,8 +12,7 @@ namespace services
 	class neteasesdk
 	{
 	public:
-		neteasesdk(boost::asio::io_context& io,
-			const std::string& secret_id,
+		neteasesdk(const std::string& secret_id,
 			const std::string& secret_key,
 			const std::string& business_id);
 		~neteasesdk();

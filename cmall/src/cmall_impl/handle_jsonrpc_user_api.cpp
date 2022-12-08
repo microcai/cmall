@@ -142,7 +142,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 			std::string accessToken = jsutil::json_accessor(params).get_string("accessToken");
 
 			// TODO 调用 网易 SDK 获取用户真正的手机号.
-			neteasesdk netsdk(m_io_context, m_config.netease_secret_id, m_config.netease_secret_key, m_config.netease_business_id);
+			neteasesdk netsdk(m_config.netease_secret_id, m_config.netease_secret_key, m_config.netease_business_id);
 			std::string realphone = co_await netsdk.get_user_phone(token, accessToken);
 
 			if (!realphone.empty())
@@ -244,7 +244,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 
 			std::string image = jsutil::json_accessor(params).get_string("image");
 
-			tencentsdk sdk(m_io_context, m_config.tencent_secret_id, m_config.tencent_secret_key);
+			tencentsdk sdk(m_config.tencent_secret_id, m_config.tencent_secret_key);
 			// check if user in group
 			auto groups = co_await sdk.get_person_group(pid);
 			auto exist = std::find(groups.begin(), groups.end(), face_group_id) != groups.end();
@@ -264,7 +264,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 		{
 			std::string image = jsutil::json_accessor(params).get_string("image");
 
-			tencentsdk sdk(m_io_context, m_config.tencent_secret_id, m_config.tencent_secret_key);
+			tencentsdk sdk(m_config.tencent_secret_id, m_config.tencent_secret_key);
 			std::string pid = co_await sdk.person_search_by_face(face_group_id, image);
 
 			auto uid = parse_number<uint64_t>(pid);

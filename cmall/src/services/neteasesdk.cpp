@@ -22,13 +22,11 @@ namespace services
 {
 	struct neteasesdk_impl
 	{
-		neteasesdk_impl(boost::asio::io_context& io,
-			const std::string& secret_id,
+		neteasesdk_impl(const std::string& secret_id,
 			const std::string& secret_key,
 			const std::string& business_id
 		)
-			: io(io)
-			, secret_id(secret_id)
+			: secret_id(secret_id)
 			, secret_key(secret_key)
 			, business_id(business_id)
 		{}
@@ -120,7 +118,6 @@ namespace services
 			return md5sum(to_sign);
 		}
 
-		boost::asio::io_context& io;
 		std::string secret_id;
 		std::string secret_key;
 		std::string business_id;
@@ -132,13 +129,12 @@ namespace services
 		return impl().get_user_phone(token, key);
 	}
 
-	neteasesdk::neteasesdk(boost::asio::io_context& io,
-		const std::string& secret_id,
+	neteasesdk::neteasesdk(const std::string& secret_id,
 		const std::string& secret_key,
 		const std::string& business_id)
 	{
 		static_assert(sizeof(obj_stor) >= sizeof(neteasesdk_impl));
-		std::construct_at(reinterpret_cast<neteasesdk_impl*>(obj_stor.data()), io, secret_id, secret_key, business_id);
+		std::construct_at(reinterpret_cast<neteasesdk_impl*>(obj_stor.data()), secret_id, secret_key, business_id);
 	}
 
 	neteasesdk::~neteasesdk()

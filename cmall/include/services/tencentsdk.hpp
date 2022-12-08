@@ -12,9 +12,7 @@ namespace services
 	class tencentsdk
 	{
 	public:
-		tencentsdk(boost::asio::io_context& io,
-			const std::string& secret_id,
-			const std::string& secret_key);
+		tencentsdk(const std::string& secret_id, const std::string& secret_key);
 		~tencentsdk();
 
 		awaitable<bool> group_create(std::string gid, std::string gname);

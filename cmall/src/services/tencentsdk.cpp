@@ -22,12 +22,8 @@ namespace services
 {
 	struct tencentsdk_impl
 	{
-		tencentsdk_impl(boost::asio::io_context& io,
-			const std::string& secret_id,
-			const std::string& secret_key
-		)
-			: io(io)
-			, secret_id(secret_id)
+		tencentsdk_impl(const std::string& secret_id, const std::string& secret_key)
+			: secret_id(secret_id)
 			, secret_key(secret_key)
 		{}
 
@@ -83,18 +79,14 @@ namespace services
 			co_return ret;
 		}
 
-		boost::asio::io_context& io;
 		std::string secret_id;
 		std::string secret_key;
 	};
 
-	tencentsdk::tencentsdk(boost::asio::io_context& io,
-		const std::string& secret_id,
-		const std::string& secret_key)
-		
+	tencentsdk::tencentsdk(const std::string& secret_id, const std::string& secret_key)
 	{
 		static_assert(sizeof(obj_stor) >= sizeof(tencentsdk_impl));
-		std::construct_at(reinterpret_cast<tencentsdk_impl*>(obj_stor.data()), io, secret_id, secret_key);
+		std::construct_at(reinterpret_cast<tencentsdk_impl*>(obj_stor.data()), secret_id, secret_key);
 	}
 
 	tencentsdk::~tencentsdk()
