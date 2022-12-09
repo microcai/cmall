@@ -274,8 +274,8 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 			else
 			{
 				cmall_user uinfo;
-				co_await m_database.async_load<cmall_user>(uid.value(), uinfo);
-				reply_message["result"] = boost::json::value_from(uinfo);
+				auto found = co_await m_database.async_load<cmall_user>(uid.value(), uinfo);
+				reply_message["result"] = found ? boost::json::value_from(uinfo) : boost::json::value{nullptr};
 			}
 		}
 		break;
