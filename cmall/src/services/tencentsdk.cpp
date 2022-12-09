@@ -67,7 +67,7 @@ namespace services
 			auto kservice = hmac_sha256(kdate, service, false);
 			auto ksign = hmac_sha256(kservice, "tc3_request", false);
 			auto sign = hmac_sha256(ksign, to_sign);
-			std::string auth = std::format("TC3-HMAC-SHA256 Credential={}/{}, SignedHeaders={}, Signature=",secret_id, credential_scope, sign_headers, sign);
+			std::string auth = std::format("TC3-HMAC-SHA256 Credential={}/{}, SignedHeaders={}, Signature={}",secret_id, credential_scope, sign_headers, sign);
 			option.headers.insert(std::make_pair("Authorization", auth));
 
 			auto reply = co_await request(option);
