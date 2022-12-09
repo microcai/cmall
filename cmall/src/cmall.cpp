@@ -679,7 +679,9 @@ namespace cmall
 			case req_method::user_3rd_kv_get:
 			case req_method::user_3rd_kv_put_pubkey:
 			case req_method::user_3rd_kv_get_pubkey:
+			case req_method::user_add_face:
 				co_await ensure_login();
+			case req_method::user_search_by_face:
 				co_return co_await handle_jsonrpc_user_api(connection_ptr, method.value(), params);
 				break;
 
