@@ -165,7 +165,7 @@ namespace services
 		else
 			params["Image"] = input;
 
-		boost::json::value res = co_await impl().do_request("iai", "SearchPersionsReturnsByGroup", params);
+		boost::json::value res = co_await impl().do_request("iai", "SearchPersonsReturnsByGroup", params);
 		/*
 			{
 			  Response: {
