@@ -646,12 +646,16 @@ namespace cmall
 							this_client.session_info->isAdmin = true;
 							this_client.session_info->admin_info = db_admin;
 						}
+
+						std::string cookie_line = std::format("Session={}", this_client.session_info->session_id);
+	
 						reply_message["result"] = {
 							{ "login", "success" },
 							{ "isMerchant", this_client.session_info->isMerchant },
 							{ "isAdmin", this_client.session_info->isAdmin },
 							{ "isSudo", this_client.session_info->sudo_mode },
 							{ "site_name", m_config.site_name },
+							{ "cookie", cookie_line },
 						};
 					}
 				}
