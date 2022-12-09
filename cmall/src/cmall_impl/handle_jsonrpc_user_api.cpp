@@ -239,7 +239,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 		case req_method::user_add_face:
 		{
 			auto uid = session_info.user_info->uid_;
-			auto uname = session_info.user_info->name_;
+			auto pname = std::to_string(uid);
 			auto pid = std::to_string(uid);
 
 			std::string image = jsutil::json_accessor(params).get_string("image");
@@ -254,7 +254,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 			}
 			else
 			{
-				co_await sdk.group_add_person(face_group_id, pid, uname, image);
+				co_await sdk.group_add_person(face_group_id, pid, pname, image);
 			}
 			
 			reply_message["result"] = true;
