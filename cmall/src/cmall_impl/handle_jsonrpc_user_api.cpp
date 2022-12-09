@@ -270,7 +270,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 			auto uid = parse_number<uint64_t>(pid);
 
 			if (!uid)
-				reply_message["result"] = boost::json::value{nullptr};
+				reply_message["result"] = boost::json::value{};
 			else
 			{
 				cmall_user uinfo;
