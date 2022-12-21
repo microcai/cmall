@@ -377,11 +377,11 @@ namespace odb
 
     template <typename T>
     prepared_query<T>
-    lookup_query (const char* name) const;
+    lookup_query (const char* name);
 
     template <typename T, typename P>
     prepared_query<T>
-    lookup_query (const char* name, P*& params) const;
+    lookup_query (const char* name, P*& params);
 
     // Prepared query factory.
     //

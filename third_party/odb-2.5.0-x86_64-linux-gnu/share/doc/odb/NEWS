@@ -67,6 +67,16 @@ Version 2.5.0
  * Database classes are now move-constructible. This means they can be
    returned by value from a function in C++11.
 
+ * Support for bulk operations in PostgreSQL 14 using the new pipeline mode.
+   For details on bulk operations see Section 15.3, "Bulk Database Operations"
+   in the ODB manual. Note that while this functionality requires libpq
+   version 14 or later, it should be usable with PostgreSQL servers version
+   7.4 or later. The development of this support was sponsored by Qube
+   Research & Technologies Limited.
+
+ * Support for SQLite ATTACH DATABASE. Attached databases are represented as
+   special odb::sqlite::database instances. @@ TODO: doc ref.
+
  * Support for SQLite incremental BLOB/TEXT I/O (the sqlite3_blob_open()
    functionality). For details, refer to Section 18.1.3, "Incremental
    BLOB/TEXT I/O" in the ODB manual.

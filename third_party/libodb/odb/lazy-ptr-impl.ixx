@@ -84,14 +84,14 @@ namespace odb
     {
       reset_id ();
       id_ = r.id_;
-      db_ = r.db_;
-      loader_ = r.loader_;
       free_ = r.free_;
       copy_ = r.copy_;
 
       r.id_ = 0;
     }
 
+    db_ = r.db_;
+    loader_ = r.loader_;
     return *this;
   }
 #endif

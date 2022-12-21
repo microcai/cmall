@@ -249,10 +249,11 @@ namespace odb
 
       // Bind parameters and results.
       //
+      char* pbuf[1] = {const_cast<char*> (name.c_str ())};
       size_t psize[1] = {name.size ()};
       bool pnull[1] = {false};
       bind pbind[1] = {{bind::text,
-                        const_cast<char*> (name.c_str ()),
+                        &pbuf[0],
                         &psize[0],
                         psize[0],
                         &pnull[0],
@@ -262,13 +263,13 @@ namespace odb
 
       unsigned int param_types[1] = {text_oid};
 
-      char* values[1] = {nullptr};
-      int lengths[1] = {0};
-      int formats[1] = {0};
+      char* values[1];
+      int lengths[1];
+      int formats[1];
       native_binding nparam (values, lengths, formats, 1);
 
       long long version;
-      bool rnull[2] = {false, false};
+      bool rnull[2];
       bind rbind[2] = {{bind::bigint, &version, 0, 0, &rnull[0], 0},
                        {bind::boolean_, &svi.migration, 0, 0, &rnull[1], 0}};
       binding result (rbind, 2);
@@ -282,7 +283,9 @@ namespace odb
         cp = factory_->connect ();
 
       pgsql::connection& c (
-        cp != 0 ? *cp : transaction::current ().connection ());
+        cp != 0
+        ? *cp
+        : transaction::current ().connection (const_cast<database&> (*this)));
 
       // If we are in the user's transaction then things are complicated. When
       // we try to execute SELECT on a non-existent table, PG "poisons" the
@@ -300,10 +303,11 @@ namespace odb
       bool exists (true);
       if (cp == 0 && c.server_version () >= 90400)
       {
+        char* pbuf[1] = {const_cast<char*> (table)};
         size_t psize[1] = {strlen (table)};
         bool pnull[1] = {false};
         bind pbind[1] = {{bind::text,
-                          const_cast<char*> (table),
+                          &pbuf[0],
                           &psize[0],
                           psize[0],
                           &pnull[0],
@@ -313,12 +317,12 @@ namespace odb
 
         unsigned int param_types[1] = {text_oid};
 
-        char* values[1] = { nullptr };
-        int lengths[1] = { 0 };
-        int formats[1] = { 0 };
+        char* values[1];
+        int lengths[1];
+        int formats[1];
         native_binding nparam (values, lengths, formats, 1);
 
-        bool rnull[1] = {false};
+        bool rnull[1];
         bind rbind[1] = {{bind::boolean_, &exists, 0, 0, &rnull[0], 0}};
         binding result (rbind, 1);
         result.version++;

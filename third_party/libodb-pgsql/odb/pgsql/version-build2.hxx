@@ -22,9 +22,9 @@
 // 3.0.0-b.2    0000299999999995020
 // 2.2.0-a.1.z  0000200001999990011
 //
-#define LIBODB_PGSQL_VERSION       200004999995190ULL
-#define LIBODB_PGSQL_VERSION_STR   "2.5.0-b.19"
-#define LIBODB_PGSQL_VERSION_ID    "2.5.0-b.19"
+#define LIBODB_PGSQL_VERSION       200004999995230ULL
+#define LIBODB_PGSQL_VERSION_STR   "2.5.0-b.23"
+#define LIBODB_PGSQL_VERSION_ID    "2.5.0-b.23"
 
 #define LIBODB_PGSQL_VERSION_MAJOR 2
 #define LIBODB_PGSQL_VERSION_MINOR 5
@@ -38,8 +38,8 @@
 #include <odb/version.hxx>
 
 #ifdef LIBODB_VERSION
-#  if !(LIBODB_VERSION == 200004999995190ULL)
-#    error incompatible libodb version, libodb == 2.5.0-b.19 is required
+#  if !(LIBODB_VERSION == 200004999995230ULL)
+#    error incompatible libodb version, libodb == 2.5.0-b.23 is required
 #  endif
 #endif
 

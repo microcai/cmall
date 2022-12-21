@@ -2,6 +2,7 @@
 // license   : GNU GPL v2; see accompanying LICENSE file
 
 #include <odb/connection.hxx>
+#include <odb/transaction.hxx>
 #include <odb/prepared-query.hxx>
 
 namespace odb
@@ -24,6 +25,12 @@ namespace odb
 
     if (next_ != 0)
       next_->prev_ = this;
+  }
+
+  bool prepared_query_impl::
+  verify_connection (transaction& t)
+  {
+    return &t.connection () == &stmt->connection ();
   }
 
   void prepared_query_impl::

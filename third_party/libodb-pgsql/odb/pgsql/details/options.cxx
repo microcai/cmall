@@ -15,6 +15,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <utility>
 #include <ostream>
 #include <sstream>
 #include <cstring>
@@ -202,6 +203,7 @@ namespace odb
             else
               ++i_;
 
+            ++start_position_;
             return r;
           }
           else
@@ -212,9 +214,18 @@ namespace odb
         skip ()
         {
           if (i_ < argc_)
+          {
             ++i_;
+            ++start_position_;
+          }
           else
             throw eos_reached ();
+        }
+
+        std::size_t argv_scanner::
+        position ()
+        {
+          return start_position_;
         }
 
         // argv_file_scanner
@@ -327,6 +338,7 @@ namespace odb
           {
             hold_[i_ == 0 ? ++i_ : --i_].swap (args_.front ().value);
             args_.pop_front ();
+            ++start_position_;
             return hold_[i_].c_str ();
           }
         }
@@ -340,7 +352,10 @@ namespace odb
           if (args_.empty ())
             return base::skip ();
           else
+          {
             args_.pop_front ();
+            ++start_position_;
+          }
         }
 
         const argv_file_scanner::option_info* argv_file_scanner::
@@ -351,6 +366,12 @@ namespace odb
               return &options_[i];
 
           return 0;
+        }
+
+        std::size_t argv_file_scanner::
+        position ()
+        {
+          return start_position_;
         }
 
         void argv_file_scanner::
@@ -465,12 +486,28 @@ namespace odb
 
                 if (oi->search_func != 0)
                 {
-                  std::string f (oi->search_func (s2.c_str (), oi->arg));
+                  string f (oi->search_func (s2.c_str (), oi->arg));
                   if (!f.empty ())
                     load (f);
                 }
                 else
+                {
+                  // If the path of the file being parsed is not simple and the
+                  // path of the file that needs to be loaded is relative, then
+                  // complete the latter using the former as a base.
+                  //
+#ifndef _WIN32
+                  string::size_type p (file.find_last_of ('/'));
+                  bool c (p != string::npos && s2[0] != '/');
+#else
+                  string::size_type p (file.find_last_of ("/\\"));
+                  bool c (p != string::npos && s2[1] != ':');
+#endif
+                  if (c)
+                    s2.insert (0, file, 0, p + 1);
+
                   load (s2);
+                }
 
                 continue;
               }
@@ -511,10 +548,31 @@ namespace odb
         struct parser<bool>
         {
           static void
-          parse (bool& x, scanner& s)
+          parse (bool& x, bool& xs, scanner& s)
           {
-            s.next ();
-            x = true;
+            const char* o (s.next ());
+
+            if (s.more ())
+            {
+              const char* v (s.next ());
+
+              if (std::strcmp (v, "1")    == 0 ||
+                  std::strcmp (v, "true") == 0 ||
+                  std::strcmp (v, "TRUE") == 0 ||
+                  std::strcmp (v, "True") == 0)
+                x = true;
+              else if (std::strcmp (v, "0")     == 0 ||
+                       std::strcmp (v, "false") == 0 ||
+                       std::strcmp (v, "FALSE") == 0 ||
+                       std::strcmp (v, "False") == 0)
+                x = false;
+              else
+                throw invalid_value (o, v);
+            }
+            else
+              throw missing_value (o);
+
+            xs = true;
           }
         };
 
@@ -536,6 +594,17 @@ namespace odb
         };
 
         template <typename X>
+        struct parser<std::pair<X, std::size_t> >
+        {
+          static void
+          parse (std::pair<X, std::size_t>& x, bool& xs, scanner& s)
+          {
+            x.second = s.position ();
+            parser<X>::parse (x.first, xs, s);
+          }
+        };
+
+        template <typename X>
         struct parser<std::vector<X> >
         {
           static void
@@ -549,11 +618,11 @@ namespace odb
           }
         };
 
-        template <typename X>
-        struct parser<std::set<X> >
+        template <typename X, typename C>
+        struct parser<std::set<X, C> >
         {
           static void
-          parse (std::set<X>& c, bool& xs, scanner& s)
+          parse (std::set<X, C>& c, bool& xs, scanner& s)
           {
             X x;
             bool dummy;
@@ -563,16 +632,17 @@ namespace odb
           }
         };
 
-        template <typename K, typename V>
-        struct parser<std::map<K, V> >
+        template <typename K, typename V, typename C>
+        struct parser<std::map<K, V, C> >
         {
           static void
-          parse (std::map<K, V>& m, bool& xs, scanner& s)
+          parse (std::map<K, V, C>& m, bool& xs, scanner& s)
           {
             const char* o (s.next ());
 
             if (s.more ())
             {
+              std::size_t pos (s.position ());
               std::string ov (s.next ());
               std::string::size_type p = ov.find ('=');
 
@@ -592,14 +662,14 @@ namespace odb
               if (!kstr.empty ())
               {
                 av[1] = const_cast<char*> (kstr.c_str ());
-                argv_scanner s (0, ac, av);
+                argv_scanner s (0, ac, av, false, pos);
                 parser<K>::parse (k, dummy, s);
               }
 
               if (!vstr.empty ())
               {
                 av[1] = const_cast<char*> (vstr.c_str ());
-                argv_scanner s (0, ac, av);
+                argv_scanner s (0, ac, av, false, pos);
                 parser<V>::parse (v, dummy, s);
               }
 
@@ -619,6 +689,14 @@ namespace odb
           parser<T>::parse (x.*M, s);
         }
 
+        template <typename X, bool X::*M>
+        void
+        thunk (X& x, scanner& s)
+        {
+          s.next ();
+          x.*M = true;
+        }
+
         template <typename X, typename T, T X::*M, bool X::*S>
         void
         thunk (X& x, scanner& s)
@@ -631,7 +709,6 @@ namespace odb
 }
 
 #include <map>
-#include <cstring>
 
 namespace odb
 {

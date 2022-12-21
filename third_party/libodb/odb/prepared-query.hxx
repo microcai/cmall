@@ -24,6 +24,12 @@ namespace odb
 
     prepared_query_impl (connection&);
 
+    // Verify this prepared query and the specified transaction use the
+    // same connection.
+    //
+    virtual bool
+    verify_connection (transaction&);
+
     bool cached;
     connection& conn;
     const char* name;

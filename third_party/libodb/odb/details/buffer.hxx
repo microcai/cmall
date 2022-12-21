@@ -64,6 +64,22 @@ namespace odb
       {
         return static_cast<T*> (data_);
       }
+
+      // Note that strictly speaking the return type should be void* const*
+      // but that would make using this function too awkward since we often
+      // store the result as void*.
+      //
+      void**
+      data_ptr ()
+      {
+        return &data_;
+      }
+
+      const void* const*
+      data_ptr () const
+      {
+        return &data_;
+      }
     };
 
     typedef basic_buffer<char> buffer;

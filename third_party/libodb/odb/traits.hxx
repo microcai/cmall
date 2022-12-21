@@ -71,6 +71,14 @@ namespace odb
     typedef T value_type;
     typedef P pointer_type;
 
+
+    // Suppress bogus use-after-free introduced in GCC 12 (GCC bug #105327).
+    //
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 12
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuse-after-free"
+#endif
+
     static P
     create ()
     {
@@ -80,6 +88,10 @@ namespace odb
       g.release ();
       return p;
     }
+
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 12
+#pragma GCC diagnostic pop
+#endif
 
   private:
     struct mem_guard

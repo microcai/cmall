@@ -19,7 +19,7 @@ namespace odb
   unsigned long long database::
   execute (const char* st, std::size_t n)
   {
-    connection_type& c (transaction::current ().connection ());
+    connection_type& c (transaction::current ().connection (*this));
     return c.execute (st, n);
   }
 

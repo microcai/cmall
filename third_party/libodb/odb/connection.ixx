@@ -89,14 +89,14 @@ namespace odb
 
   template <typename T>
   inline prepared_query<T> connection::
-  lookup_query (const char* name) const
+  lookup_query (const char* name)
   {
     return prepared_query<T> (lookup_query_ (name, typeid (T), 0, 0));
   }
 
   template <typename T, typename P>
   inline prepared_query<T> connection::
-  lookup_query (const char* name, P*& params) const
+  lookup_query (const char* name, P*& params)
   {
     return prepared_query<T> (
       lookup_query_ (name,

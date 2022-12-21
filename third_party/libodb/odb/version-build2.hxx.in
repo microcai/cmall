@@ -5,7 +5,7 @@
 
 // For the ODB compiler (temporary).
 //
-#define ODB_VERSION     20469
+#define ODB_VERSION     20473
 
 // The numeric version format is AAAAABBBBBCCCCCDDDE where:
 //

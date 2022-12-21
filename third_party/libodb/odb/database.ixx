@@ -674,7 +674,7 @@ namespace odb
   inline prepared_query<T> database::
   prepare_query (const char* n, const odb::query<T>& q)
   {
-    connection_type& c (transaction::current ().connection ());
+    connection_type& c (transaction::current ().connection (*this));
     return c.prepare_query (n, q);
   }
 
@@ -682,7 +682,7 @@ namespace odb
   inline void database::
   cache_query (const prepared_query<T>& pq)
   {
-    connection_type& c (transaction::current ().connection ());
+    connection_type& c (transaction::current ().connection (*this));
     c.cache_query (pq);
   }
 
@@ -691,7 +691,7 @@ namespace odb
   inline void database::
   cache_query (const prepared_query<T>& pq, std::unique_ptr<P> params)
   {
-    connection_type& c (transaction::current ().connection ());
+    connection_type& c (transaction::current ().connection (*this));
     c.cache_query (pq, std::move (params));
   }
 #else
@@ -699,24 +699,24 @@ namespace odb
   inline void database::
   cache_query (const prepared_query<T>& pq, std::auto_ptr<P> params)
   {
-    connection_type& c (transaction::current ().connection ());
+    connection_type& c (transaction::current ().connection (*this));
     c.cache_query (pq, params);
   }
 #endif
 
   template <typename T>
   inline prepared_query<T> database::
-  lookup_query (const char* name) const
+  lookup_query (const char* name)
   {
-    connection_type& c (transaction::current ().connection ());
+    connection_type& c (transaction::current ().connection (*this));
     return c.lookup_query<T> (name);
   }
 
   template <typename T, typename P>
   inline prepared_query<T> database::
-  lookup_query (const char* name, P*& params) const
+  lookup_query (const char* name, P*& params)
   {
-    connection_type& c (transaction::current ().connection ());
+    connection_type& c (transaction::current ().connection (*this));
     return c.lookup_query<T, P> (name, params);
   }
 

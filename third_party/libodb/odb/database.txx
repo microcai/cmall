@@ -255,7 +255,7 @@ namespace odb
   void database::
   load_ (T& obj, section& s)
   {
-    connection_type& c (transaction::current ().connection ());
+    connection_type& c (transaction::current ().connection (*this));
 
     // T is always object_type.
     //
@@ -349,7 +349,7 @@ namespace odb
 
     // T is always object_type.
     //
-    if (object_traits_impl<T, DB>::update (t.connection (), obj, s))
+    if (object_traits_impl<T, DB>::update (t.connection (*this), obj, s))
     {
       if (s.changed ())
         s.reset (true, false, &t); // Clear the change flag.

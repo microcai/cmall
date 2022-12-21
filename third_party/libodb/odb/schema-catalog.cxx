@@ -267,6 +267,9 @@ namespace odb
 
     schema_version i (db.schema_version (name));
 
+    if (i > v)
+      throw unknown_schema_version (i); // Database too new.
+
     // If there is no schema, then "migrate" by creating it.
     //
     if (i == 0)

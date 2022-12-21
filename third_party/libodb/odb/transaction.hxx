@@ -61,8 +61,16 @@ namespace odb
 
     // Return the connection this transaction is on.
     //
+    // The second version verifies the connection is to the specified
+    // database. For database implementations that support attaching multiple
+    // databases it may also select the connection corresponding to the
+    // specified database.
+    //
     connection_type&
     connection ();
+
+    connection_type&
+    connection (database_type&);
 
     bool
     finalized () const {return finalized_;}
@@ -215,6 +223,7 @@ namespace odb
   class LIBODB_EXPORT transaction_impl
   {
   public:
+    typedef odb::tracer tracer_type;
     typedef odb::database database_type;
     typedef odb::connection connection_type;
 
@@ -236,11 +245,14 @@ namespace odb
       return database_;
     }
 
-    connection_type&
-    connection ()
-    {
-      return *connection_;
-    }
+    virtual connection_type&
+    connection (database_type*);
+
+    virtual void
+    tracer (tracer_type*);
+
+    virtual tracer_type*
+    tracer () const;
 
   protected:
     transaction_impl (database_type& db)

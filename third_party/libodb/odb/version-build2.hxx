@@ -5,7 +5,7 @@
 
 // For the ODB compiler (temporary).
 //
-#define ODB_VERSION     20469
+#define ODB_VERSION     20473
 
 // The numeric version format is AAAAABBBBBCCCCCDDDE where:
 //
@@ -26,9 +26,9 @@
 // 3.0.0-b.2    0000299999999995020
 // 2.2.0-a.1.z  0000200001999990011
 //
-#define LIBODB_VERSION       200004999995190ULL
-#define LIBODB_VERSION_STR   "2.5.0-b.19"
-#define LIBODB_VERSION_ID    "2.5.0-b.19"
+#define LIBODB_VERSION       200004999995230ULL
+#define LIBODB_VERSION_STR   "2.5.0-b.23"
+#define LIBODB_VERSION_ID    "2.5.0-b.23"
 
 #define LIBODB_VERSION_MAJOR 2
 #define LIBODB_VERSION_MINOR 5

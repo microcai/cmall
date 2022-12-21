@@ -33,7 +33,13 @@ namespace odb
   inline transaction::connection_type& transaction::
   connection ()
   {
-    return impl_->connection ();
+    return impl_->connection (0);
+  }
+
+  inline transaction::connection_type& transaction::
+  connection (database_type& db)
+  {
+    return impl_->connection (&db);
   }
 
   inline transaction_impl& transaction::
@@ -42,24 +48,21 @@ namespace odb
     return *impl_;
   }
 
-  // The transaction-specific tracer is stored in the connection. See
-  // the connection class for the reason.
-  //
   inline void transaction::
   tracer (tracer_type& t)
   {
-    impl_->connection ().transaction_tracer_ = &t;
+    impl_->tracer (&t);
   }
 
   inline void transaction::
   tracer (tracer_type* t)
   {
-    impl_->connection ().transaction_tracer_ = t;
+    impl_->tracer (t);
   }
 
   inline transaction::tracer_type* transaction::
   tracer () const
   {
-    return impl_->connection ().transaction_tracer_;
+    return impl_->tracer ();
   }
 }
