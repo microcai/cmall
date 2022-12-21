@@ -1,6 +1,0 @@
-Name: odb
-Version: 2.5.0-b.19+1
-Description: ODB compiler
-URL: https://www.codesynthesis.com/products/odb/
-Cflags: -I/opt/odb/include
-Libs: -L/opt/odb/lib -lodb
