@@ -618,6 +618,10 @@ namespace cmall
 						{ "cookie", cookie_line },
 					};
 				}
+				else if (co_await in_temp_api_token(api_token))
+				{
+
+				}
 				else
 				{
 					cmall_apptoken appid_info;
@@ -648,7 +652,7 @@ namespace cmall
 						}
 
 						std::string cookie_line = std::format("Session={}", this_client.session_info->session_id);
-	
+
 						reply_message["result"] = {
 							{ "login", "success" },
 							{ "isMerchant", this_client.session_info->isMerchant },
@@ -775,6 +779,11 @@ namespace cmall
 		}
 
 		co_return reply_message;
+	}
+
+	awaitable<bool> cmall_service::in_temp_api_token(std::string api_token)
+	{
+		co_return false;
 	}
 
 	awaitable<void> cmall_service::send_notify_message(
