@@ -618,50 +618,67 @@ namespace cmall
 						{ "cookie", cookie_line },
 					};
 				}
-				else if (co_await in_temp_api_token(api_token))
-				{
-
-				}
 				else
 				{
 					cmall_apptoken appid_info;
-					if (co_await m_database.async_load<cmall_apptoken>(odb::query<cmall_apptoken>::apptoken == api_token, appid_info))
+					cmall_user db_user;
+
+					if (co_await in_temp_api_token(api_token))
+					{
+						boost::smatch token_matched;
+
+						if (!boost::regex_match(api_token, token_matched, boost::regex("([0-9]+)-(.+)")))
+						{
+							throw boost::system::system_error(error::internal_server_error);
+						}
+
+						std::string token_uid_part = token_matched[1].str();
+						appid_info.uid_ = std::stoull(token_uid_part);
+
+					}
+					else if (co_await m_database.async_load<cmall_apptoken>(odb::query<cmall_apptoken>::apptoken == api_token, appid_info))
+					{
+						// load appid_info success!
+					}
+					else
+					{
+						throw boost::system::system_error(error::apitoken_invalid);
+					}
+
+					if (co_await m_database.async_load<cmall_user>(appid_info.uid_, db_user))
 					{
 						this_client.session_info = std::make_shared<services::client_session>();
-						cmall_user db_user;
-						if (co_await m_database.async_load<cmall_user>(appid_info.uid_, db_user))
-						{
-							this_client.session_info->user_info = db_user;
-						}
-						else
-						{
-							reply_message["result"] = { { "login", "failed" } };
-							break;
-						}
-						cmall_merchant db_merchant;
-						if (co_await m_database.async_load<cmall_merchant>(appid_info.uid_, db_merchant))
-						{
-							this_client.session_info->isMerchant = true;
-							this_client.session_info->merchant_info = db_merchant;
-						}
-						administrators db_admin;
-						if (co_await m_database.async_load<administrators>(appid_info.uid_, db_admin))
-						{
-							this_client.session_info->isAdmin = true;
-							this_client.session_info->admin_info = db_admin;
-						}
-
-						std::string cookie_line = std::format("Session={}", this_client.session_info->session_id);
-
-						reply_message["result"] = {
-							{ "login", "success" },
-							{ "isMerchant", this_client.session_info->isMerchant },
-							{ "isAdmin", this_client.session_info->isAdmin },
-							{ "isSudo", this_client.session_info->sudo_mode },
-							{ "site_name", m_config.site_name },
-							{ "cookie", cookie_line },
-						};
+						this_client.session_info->user_info = db_user;
 					}
+					else
+					{
+						reply_message["result"] = { { "login", "failed" } };
+						break;
+					}
+					cmall_merchant db_merchant;
+					if (co_await m_database.async_load<cmall_merchant>(appid_info.uid_, db_merchant))
+					{
+						this_client.session_info->isMerchant = true;
+						this_client.session_info->merchant_info = db_merchant;
+					}
+					administrators db_admin;
+					if (co_await m_database.async_load<administrators>(appid_info.uid_, db_admin))
+					{
+						this_client.session_info->isAdmin = true;
+						this_client.session_info->admin_info = db_admin;
+					}
+
+					std::string cookie_line = std::format("Session={}", this_client.session_info->session_id);
+
+					reply_message["result"] = {
+						{ "login", "success" },
+						{ "isMerchant", this_client.session_info->isMerchant },
+						{ "isAdmin", this_client.session_info->isAdmin },
+						{ "isSudo", this_client.session_info->sudo_mode },
+						{ "site_name", m_config.site_name },
+						{ "cookie", cookie_line },
+					};
+
 				}
 			}
 			break;
