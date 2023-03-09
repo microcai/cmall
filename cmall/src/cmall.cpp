@@ -800,7 +800,8 @@ namespace cmall
 
 	awaitable<bool> cmall_service::in_temp_api_token(std::string api_token)
 	{
-		co_return false;
+		std::shared_lock<std::shared_mutex> l (temp_api_token_mtx);
+		co_return temp_api_token.contains(api_token);
 	}
 
 	awaitable<void> cmall_service::send_notify_message(

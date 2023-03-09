@@ -316,6 +316,10 @@ namespace cmall {
 		std::shared_mutex active_users_mtx;
 		active_session_map active_users;
 
+		// api-token 相关.
+		std::shared_mutex temp_api_token_mtx;
+		std::set<std::string> temp_api_token;
+
 		std::once_flag check_admin_flag;
 
 		boost::asio::ssl::context sslctx_;
