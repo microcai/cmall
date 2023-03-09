@@ -391,6 +391,8 @@ namespace odb
   }
 }
 
+#include <odb/schema-version.hxx>
+
 namespace odb
 {
   // cmall_config

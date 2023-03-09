@@ -10,7 +10,7 @@
 // Begin prologue.
 //
 #include <odb/boost/version.hxx>
-#if ODB_BOOST_VERSION != 2046900 // 2.5.0-b.19
+#if ODB_BOOST_VERSION != 2047300 // 2.5.0-b.23
 #  error ODB and C++ compilers see different libodb-boost interface versions
 #endif
 #include <boost/shared_ptr.hpp>
@@ -28,7 +28,7 @@
 
 #include <odb/version.hxx>
 
-#if (ODB_VERSION != 20469UL)
+#if (ODB_VERSION != 20473UL)
 #error ODB runtime version mismatch
 #endif
 
@@ -775,6 +775,8 @@ namespace odb
     static const unsigned int persist_statement_types[];
     static const unsigned int find_statement_types[];
 
+    static const std::size_t batch = 1UL;
+
     public:
     static bool
     find_ (statements_type&,
@@ -1387,6 +1389,8 @@ namespace odb
     static const unsigned int find_statement_types[];
     static const unsigned int update_statement_types[];
 
+    static const std::size_t batch = 1UL;
+
     public:
     static bool
     find_ (statements_type&,
@@ -1570,6 +1574,8 @@ namespace odb
     static const unsigned int persist_statement_types[];
     static const unsigned int find_statement_types[];
     static const unsigned int update_statement_types[];
+
+    static const std::size_t batch = 1UL;
 
     public:
     static bool
@@ -1757,6 +1763,8 @@ namespace odb
     static const unsigned int persist_statement_types[];
     static const unsigned int find_statement_types[];
     static const unsigned int update_statement_types[];
+
+    static const std::size_t batch = 1UL;
 
     public:
     static bool
@@ -2100,6 +2108,8 @@ namespace odb
     static const unsigned int persist_statement_types[];
     static const unsigned int find_statement_types[];
     static const unsigned int update_statement_types[];
+
+    static const std::size_t batch = 1UL;
 
     public:
     static bool
@@ -2952,6 +2962,8 @@ namespace odb
     static const unsigned int find_statement_types[];
     static const unsigned int update_statement_types[];
 
+    static const std::size_t batch = 1UL;
+
     public:
     static bool
     find_ (statements_type&,
@@ -3305,6 +3317,8 @@ namespace odb
     static const unsigned int find_statement_types[];
     static const unsigned int update_statement_types[];
 
+    static const std::size_t batch = 1UL;
+
     public:
     static bool
     find_ (statements_type&,
@@ -3558,6 +3572,8 @@ namespace odb
     static const unsigned int persist_statement_types[];
     static const unsigned int find_statement_types[];
     static const unsigned int update_statement_types[];
+
+    static const std::size_t batch = 1UL;
 
     public:
     static bool
@@ -3876,6 +3892,8 @@ namespace odb
     static const unsigned int find_statement_types[];
     static const unsigned int update_statement_types[];
 
+    static const std::size_t batch = 1UL;
+
     public:
     static bool
     find_ (statements_type&,
@@ -4143,6 +4161,8 @@ namespace odb
     static const unsigned int find_statement_types[];
     static const unsigned int update_statement_types[];
 
+    static const std::size_t batch = 1UL;
+
     public:
     static bool
     find_ (statements_type&,
@@ -4358,6 +4378,8 @@ namespace odb
     static const unsigned int persist_statement_types[];
     static const unsigned int find_statement_types[];
     static const unsigned int update_statement_types[];
+
+    static const std::size_t batch = 1UL;
 
     public:
     static bool
@@ -4645,6 +4667,8 @@ namespace odb
     static const unsigned int persist_statement_types[];
     static const unsigned int find_statement_types[];
     static const unsigned int update_statement_types[];
+
+    static const std::size_t batch = 1UL;
 
     public:
     static bool

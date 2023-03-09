@@ -243,12 +243,10 @@ namespace odb
   void access::object_traits_impl< ::cmall_config, id_pgsql >::
   persist (database& db, object_type& obj)
   {
-    ODB_POTENTIALLY_UNUSED (db);
-
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -311,10 +309,8 @@ namespace odb
   {
     using namespace pgsql;
 
-    ODB_POTENTIALLY_UNUSED (db);
-
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -349,7 +345,7 @@ namespace odb
     }
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -397,7 +393,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -431,7 +427,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -493,14 +489,14 @@ namespace odb
 
   result< access::object_traits_impl< ::cmall_config, id_pgsql >::object_type >
   access::object_traits_impl< ::cmall_config, id_pgsql >::
-  query (database&, const query_base_type& q)
+  query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
     using odb::details::shared;
     using odb::details::shared_ptr;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
@@ -547,12 +543,12 @@ namespace odb
   }
 
   unsigned long long access::object_traits_impl< ::cmall_config, id_pgsql >::
-  erase_query (database&, const query_base_type& q)
+  erase_query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     std::string text (erase_query_statement);
     if (!q.empty ())
@@ -665,7 +661,7 @@ namespace odb
     // name
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.name_value.data ();
+    b[n].buffer = i.name_value.data_ptr ();
     b[n].capacity = i.name_value.capacity ();
     b[n].size = &i.name_size;
     b[n].is_null = &i.name_null;
@@ -674,7 +670,7 @@ namespace odb
     // telephone
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.telephone_value.data ();
+    b[n].buffer = i.telephone_value.data_ptr ();
     b[n].capacity = i.telephone_value.capacity ();
     b[n].size = &i.telephone_size;
     b[n].is_null = &i.telephone_null;
@@ -683,7 +679,7 @@ namespace odb
     // address
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.address_value.data ();
+    b[n].buffer = i.address_value.data_ptr ();
     b[n].capacity = i.address_value.capacity ();
     b[n].size = &i.address_size;
     b[n].is_null = &i.address_null;
@@ -692,7 +688,7 @@ namespace odb
     // province
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.province_value.data ();
+    b[n].buffer = i.province_value.data_ptr ();
     b[n].capacity = i.province_value.capacity ();
     b[n].size = &i.province_size;
     b[n].is_null = &i.province_null;
@@ -701,7 +697,7 @@ namespace odb
     // city
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.city_value.data ();
+    b[n].buffer = i.city_value.data_ptr ();
     b[n].capacity = i.city_value.capacity ();
     b[n].size = &i.city_size;
     b[n].is_null = &i.city_null;
@@ -710,7 +706,7 @@ namespace odb
     // district
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.district_value.data ();
+    b[n].buffer = i.district_value.data_ptr ();
     b[n].capacity = i.district_value.capacity ();
     b[n].size = &i.district_size;
     b[n].is_null = &i.district_null;
@@ -719,7 +715,7 @@ namespace odb
     // specific_address
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.specific_address_value.data ();
+    b[n].buffer = i.specific_address_value.data_ptr ();
     b[n].capacity = i.specific_address_value.capacity ();
     b[n].size = &i.specific_address_size;
     b[n].is_null = &i.specific_address_null;
@@ -1183,7 +1179,7 @@ namespace odb
     // value
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = d.value_value.data ();
+    b[n].buffer = d.value_value.data_ptr ();
     b[n].capacity = d.value_value.capacity ();
     b[n].size = &d.value_size;
     b[n].is_null = &d.value_null;
@@ -1857,7 +1853,7 @@ namespace odb
     // name_
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.name_value.data ();
+    b[n].buffer = i.name_value.data_ptr ();
     b[n].capacity = i.name_value.capacity ();
     b[n].size = &i.name_size;
     b[n].is_null = &i.name_null;
@@ -1866,7 +1862,7 @@ namespace odb
     // active_phone
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.active_phone_value.data ();
+    b[n].buffer = i.active_phone_value.data_ptr ();
     b[n].capacity = i.active_phone_value.capacity ();
     b[n].size = &i.active_phone_size;
     b[n].is_null = &i.active_phone_null;
@@ -1889,7 +1885,7 @@ namespace odb
     // desc_
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.desc_value.data ();
+    b[n].buffer = i.desc_value.data_ptr ();
     b[n].capacity = i.desc_value.capacity ();
     b[n].size = &i.desc_size;
     b[n].is_null = &i.desc_null;
@@ -2295,12 +2291,10 @@ namespace odb
   void access::object_traits_impl< ::cmall_user, id_pgsql >::
   persist (database& db, object_type& obj)
   {
-    ODB_POTENTIALLY_UNUSED (db);
-
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -2390,7 +2384,7 @@ namespace odb
     callback (db, obj, callback_event::pre_update);
 
     pgsql::transaction& tr (pgsql::transaction::current ());
-    pgsql::connection& conn (tr.connection ());
+    pgsql::connection& conn (tr.connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -2467,10 +2461,8 @@ namespace odb
   {
     using namespace pgsql;
 
-    ODB_POTENTIALLY_UNUSED (db);
-
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -2521,7 +2513,7 @@ namespace odb
     }
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -2569,7 +2561,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -2603,7 +2595,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -2711,14 +2703,14 @@ namespace odb
 
   result< access::object_traits_impl< ::cmall_user, id_pgsql >::object_type >
   access::object_traits_impl< ::cmall_user, id_pgsql >::
-  query (database&, const query_base_type& q)
+  query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
     using odb::details::shared;
     using odb::details::shared_ptr;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
@@ -2765,12 +2757,12 @@ namespace odb
   }
 
   unsigned long long access::object_traits_impl< ::cmall_user, id_pgsql >::
-  erase_query (database&, const query_base_type& q)
+  erase_query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     std::string text (erase_query_statement);
     if (!q.empty ())
@@ -3098,12 +3090,10 @@ namespace odb
   void access::object_traits_impl< ::administrators, id_pgsql >::
   persist (database& db, object_type& obj)
   {
-    ODB_POTENTIALLY_UNUSED (db);
-
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -3158,7 +3148,7 @@ namespace odb
     callback (db, obj, callback_event::pre_update);
 
     pgsql::transaction& tr (pgsql::transaction::current ());
-    pgsql::connection& conn (tr.connection ());
+    pgsql::connection& conn (tr.connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -3211,10 +3201,8 @@ namespace odb
   {
     using namespace pgsql;
 
-    ODB_POTENTIALLY_UNUSED (db);
-
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -3249,7 +3237,7 @@ namespace odb
     }
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -3297,7 +3285,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -3331,7 +3319,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -3393,14 +3381,14 @@ namespace odb
 
   result< access::object_traits_impl< ::administrators, id_pgsql >::object_type >
   access::object_traits_impl< ::administrators, id_pgsql >::
-  query (database&, const query_base_type& q)
+  query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
     using odb::details::shared;
     using odb::details::shared_ptr;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
@@ -3447,12 +3435,12 @@ namespace odb
   }
 
   unsigned long long access::object_traits_impl< ::administrators, id_pgsql >::
-  erase_query (database&, const query_base_type& q)
+  erase_query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     std::string text (erase_query_statement);
     if (!q.empty ())
@@ -3589,7 +3577,7 @@ namespace odb
     if (sk != statement_update)
     {
       b[n].type = pgsql::bind::text;
-      b[n].buffer = i.apptoken_value.data ();
+      b[n].buffer = i.apptoken_value.data_ptr ();
       b[n].capacity = i.apptoken_value.capacity ();
       b[n].size = &i.apptoken_size;
       b[n].is_null = &i.apptoken_null;
@@ -3609,7 +3597,7 @@ namespace odb
   {
     std::size_t n (0);
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.id_value.data ();
+    b[n].buffer = i.id_value.data_ptr ();
     b[n].capacity = i.id_value.capacity ();
     b[n].size = &i.id_size;
     b[n].is_null = &i.id_null;
@@ -3769,12 +3757,10 @@ namespace odb
   void access::object_traits_impl< ::cmall_apptoken, id_pgsql >::
   persist (database& db, const object_type& obj)
   {
-    ODB_POTENTIALLY_UNUSED (db);
-
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -3816,7 +3802,7 @@ namespace odb
     callback (db, obj, callback_event::pre_update);
 
     pgsql::transaction& tr (pgsql::transaction::current ());
-    pgsql::connection& conn (tr.connection ());
+    pgsql::connection& conn (tr.connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -3869,10 +3855,8 @@ namespace odb
   {
     using namespace pgsql;
 
-    ODB_POTENTIALLY_UNUSED (db);
-
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -3907,7 +3891,7 @@ namespace odb
     }
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -3955,7 +3939,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -3989,7 +3973,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -4065,14 +4049,14 @@ namespace odb
 
   result< access::object_traits_impl< ::cmall_apptoken, id_pgsql >::object_type >
   access::object_traits_impl< ::cmall_apptoken, id_pgsql >::
-  query (database&, const query_base_type& q)
+  query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
     using odb::details::shared;
     using odb::details::shared_ptr;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
@@ -4119,12 +4103,12 @@ namespace odb
   }
 
   unsigned long long access::object_traits_impl< ::cmall_apptoken, id_pgsql >::
-  erase_query (database&, const query_base_type& q)
+  erase_query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     std::string text (erase_query_statement);
     if (!q.empty ())
@@ -4322,7 +4306,7 @@ namespace odb
     // name_
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.name_value.data ();
+    b[n].buffer = i.name_value.data_ptr ();
     b[n].capacity = i.name_value.capacity ();
     b[n].size = &i.name_size;
     b[n].is_null = &i.name_null;
@@ -4338,7 +4322,7 @@ namespace odb
     // desc_
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.desc_value.data ();
+    b[n].buffer = i.desc_value.data_ptr ();
     b[n].capacity = i.desc_value.capacity ();
     b[n].size = &i.desc_size;
     b[n].is_null = &i.desc_null;
@@ -4347,7 +4331,7 @@ namespace odb
     // gitea_password
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.gitea_password_value.data ();
+    b[n].buffer = i.gitea_password_value.data_ptr ();
     b[n].capacity = i.gitea_password_value.capacity ();
     b[n].size = &i.gitea_password_size;
     b[n].is_null = &i.gitea_password_null;
@@ -4377,7 +4361,7 @@ namespace odb
     // repo_path
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.repo_path_value.data ();
+    b[n].buffer = i.repo_path_value.data_ptr ();
     b[n].capacity = i.repo_path_value.capacity ();
     b[n].size = &i.repo_path_size;
     b[n].is_null = &i.repo_path_null;
@@ -4784,12 +4768,10 @@ namespace odb
   void access::object_traits_impl< ::cmall_merchant, id_pgsql >::
   persist (database& db, const object_type& obj)
   {
-    ODB_POTENTIALLY_UNUSED (db);
-
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -4831,7 +4813,7 @@ namespace odb
     callback (db, obj, callback_event::pre_update);
 
     pgsql::transaction& tr (pgsql::transaction::current ());
-    pgsql::connection& conn (tr.connection ());
+    pgsql::connection& conn (tr.connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -4884,10 +4866,8 @@ namespace odb
   {
     using namespace pgsql;
 
-    ODB_POTENTIALLY_UNUSED (db);
-
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -4922,7 +4902,7 @@ namespace odb
     }
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -4970,7 +4950,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -5004,7 +4984,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -5080,14 +5060,14 @@ namespace odb
 
   result< access::object_traits_impl< ::cmall_merchant, id_pgsql >::object_type >
   access::object_traits_impl< ::cmall_merchant, id_pgsql >::
-  query (database&, const query_base_type& q)
+  query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
     using odb::details::shared;
     using odb::details::shared_ptr;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
@@ -5134,12 +5114,12 @@ namespace odb
   }
 
   unsigned long long access::object_traits_impl< ::cmall_merchant, id_pgsql >::
-  erase_query (database&, const query_base_type& q)
+  erase_query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     std::string text (erase_query_statement);
     if (!q.empty ())
@@ -5243,7 +5223,7 @@ namespace odb
     // goods_id
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.goods_id_value.data ();
+    b[n].buffer = i.goods_id_value.data_ptr ();
     b[n].capacity = i.goods_id_value.capacity ();
     b[n].size = &i.goods_id_size;
     b[n].is_null = &i.goods_id_null;
@@ -5252,7 +5232,7 @@ namespace odb
     // name_
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.name_value.data ();
+    b[n].buffer = i.name_value.data_ptr ();
     b[n].capacity = i.name_value.capacity ();
     b[n].size = &i.name_size;
     b[n].is_null = &i.name_null;
@@ -5261,7 +5241,7 @@ namespace odb
     // price_
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.price_value.data ();
+    b[n].buffer = i.price_value.data_ptr ();
     b[n].capacity = i.price_value.capacity ();
     b[n].size = &i.price_size;
     b[n].is_null = &i.price_null;
@@ -5270,7 +5250,7 @@ namespace odb
     // description_
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.description_value.data ();
+    b[n].buffer = i.description_value.data_ptr ();
     b[n].capacity = i.description_value.capacity ();
     b[n].size = &i.description_size;
     b[n].is_null = &i.description_null;
@@ -5279,7 +5259,7 @@ namespace odb
     // good_version_git
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.good_version_git_value.data ();
+    b[n].buffer = i.good_version_git_value.data_ptr ();
     b[n].capacity = i.good_version_git_value.capacity ();
     b[n].size = &i.good_version_git_size;
     b[n].is_null = &i.good_version_git_null;
@@ -5568,7 +5548,7 @@ namespace odb
     // kuaidihao
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.kuaidihao_value.data ();
+    b[n].buffer = i.kuaidihao_value.data_ptr ();
     b[n].capacity = i.kuaidihao_value.capacity ();
     b[n].size = &i.kuaidihao_size;
     b[n].is_null = &i.kuaidihao_null;
@@ -5577,7 +5557,7 @@ namespace odb
     // kuaidigongsi
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.kuaidigongsi_value.data ();
+    b[n].buffer = i.kuaidigongsi_value.data_ptr ();
     b[n].capacity = i.kuaidigongsi_value.capacity ();
     b[n].size = &i.kuaidigongsi_size;
     b[n].is_null = &i.kuaidigongsi_null;
@@ -6834,7 +6814,7 @@ namespace odb
     // oid_
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.oid_value.data ();
+    b[n].buffer = i.oid_value.data_ptr ();
     b[n].capacity = i.oid_value.capacity ();
     b[n].size = &i.oid_size;
     b[n].is_null = &i.oid_null;
@@ -6857,7 +6837,7 @@ namespace odb
     // price_
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.price_value.data ();
+    b[n].buffer = i.price_value.data_ptr ();
     b[n].capacity = i.price_value.capacity ();
     b[n].size = &i.price_size;
     b[n].is_null = &i.price_null;
@@ -6866,7 +6846,7 @@ namespace odb
     // pay_amount_
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.pay_amount_value.data ();
+    b[n].buffer = i.pay_amount_value.data_ptr ();
     b[n].capacity = i.pay_amount_value.capacity ();
     b[n].size = &i.pay_amount_size;
     b[n].is_null = &i.pay_amount_null;
@@ -6896,7 +6876,7 @@ namespace odb
     // snap_git_version
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.snap_git_version_value.data ();
+    b[n].buffer = i.snap_git_version_value.data_ptr ();
     b[n].capacity = i.snap_git_version_value.capacity ();
     b[n].size = &i.snap_git_version_size;
     b[n].is_null = &i.snap_git_version_null;
@@ -6905,7 +6885,7 @@ namespace odb
     // ext_
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.ext_value.data ();
+    b[n].buffer = i.ext_value.data_ptr ();
     b[n].capacity = i.ext_value.capacity ();
     b[n].size = &i.ext_size;
     b[n].is_null = &i.ext_null;
@@ -7487,12 +7467,10 @@ namespace odb
   void access::object_traits_impl< ::cmall_order, id_pgsql >::
   persist (database& db, object_type& obj)
   {
-    ODB_POTENTIALLY_UNUSED (db);
-
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -7593,7 +7571,7 @@ namespace odb
     callback (db, obj, callback_event::pre_update);
 
     pgsql::transaction& tr (pgsql::transaction::current ());
-    pgsql::connection& conn (tr.connection ());
+    pgsql::connection& conn (tr.connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -7681,10 +7659,8 @@ namespace odb
   {
     using namespace pgsql;
 
-    ODB_POTENTIALLY_UNUSED (db);
-
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -7742,7 +7718,7 @@ namespace odb
     }
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -7790,7 +7766,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -7824,7 +7800,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -7943,14 +7919,14 @@ namespace odb
 
   result< access::object_traits_impl< ::cmall_order, id_pgsql >::object_type >
   access::object_traits_impl< ::cmall_order, id_pgsql >::
-  query (database&, const query_base_type& q)
+  query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
     using odb::details::shared;
     using odb::details::shared_ptr;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
@@ -7997,12 +7973,12 @@ namespace odb
   }
 
   unsigned long long access::object_traits_impl< ::cmall_order, id_pgsql >::
-  erase_query (database&, const query_base_type& q)
+  erase_query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     std::string text (erase_query_statement);
     if (!q.empty ())
@@ -8110,14 +8086,14 @@ namespace odb
 
   result< access::view_traits_impl< ::cmall_order_stat, id_pgsql >::view_type >
   access::view_traits_impl< ::cmall_order_stat, id_pgsql >::
-  query (database&, const query_base_type& q)
+  query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
     using odb::details::shared;
     using odb::details::shared_ptr;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_view<view_type> ());
 
@@ -8341,7 +8317,7 @@ namespace odb
     // goods_id_
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.goods_id_value.data ();
+    b[n].buffer = i.goods_id_value.data_ptr ();
     b[n].capacity = i.goods_id_value.capacity ();
     b[n].size = &i.goods_id_size;
     b[n].is_null = &i.goods_id_null;
@@ -8667,12 +8643,10 @@ namespace odb
   void access::object_traits_impl< ::cmall_cart, id_pgsql >::
   persist (database& db, object_type& obj)
   {
-    ODB_POTENTIALLY_UNUSED (db);
-
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -8727,7 +8701,7 @@ namespace odb
     callback (db, obj, callback_event::pre_update);
 
     pgsql::transaction& tr (pgsql::transaction::current ());
-    pgsql::connection& conn (tr.connection ());
+    pgsql::connection& conn (tr.connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -8780,10 +8754,8 @@ namespace odb
   {
     using namespace pgsql;
 
-    ODB_POTENTIALLY_UNUSED (db);
-
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -8818,7 +8790,7 @@ namespace odb
     }
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -8866,7 +8838,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -8900,7 +8872,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -8976,14 +8948,14 @@ namespace odb
 
   result< access::object_traits_impl< ::cmall_cart, id_pgsql >::object_type >
   access::object_traits_impl< ::cmall_cart, id_pgsql >::
-  query (database&, const query_base_type& q)
+  query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
     using odb::details::shared;
     using odb::details::shared_ptr;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
@@ -9030,12 +9002,12 @@ namespace odb
   }
 
   unsigned long long access::object_traits_impl< ::cmall_cart, id_pgsql >::
-  erase_query (database&, const query_base_type& q)
+  erase_query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     std::string text (erase_query_statement);
     if (!q.empty ())
@@ -9464,12 +9436,10 @@ namespace odb
   void access::object_traits_impl< ::cmall_user_fav, id_pgsql >::
   persist (database& db, object_type& obj)
   {
-    ODB_POTENTIALLY_UNUSED (db);
-
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -9524,7 +9494,7 @@ namespace odb
     callback (db, obj, callback_event::pre_update);
 
     pgsql::transaction& tr (pgsql::transaction::current ());
-    pgsql::connection& conn (tr.connection ());
+    pgsql::connection& conn (tr.connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -9577,10 +9547,8 @@ namespace odb
   {
     using namespace pgsql;
 
-    ODB_POTENTIALLY_UNUSED (db);
-
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -9615,7 +9583,7 @@ namespace odb
     }
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -9663,7 +9631,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -9697,7 +9665,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -9759,14 +9727,14 @@ namespace odb
 
   result< access::object_traits_impl< ::cmall_user_fav, id_pgsql >::object_type >
   access::object_traits_impl< ::cmall_user_fav, id_pgsql >::
-  query (database&, const query_base_type& q)
+  query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
     using odb::details::shared;
     using odb::details::shared_ptr;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
@@ -9813,12 +9781,12 @@ namespace odb
   }
 
   unsigned long long access::object_traits_impl< ::cmall_user_fav, id_pgsql >::
-  erase_query (database&, const query_base_type& q)
+  erase_query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     std::string text (erase_query_statement);
     if (!q.empty ())
@@ -10043,7 +10011,7 @@ namespace odb
     // ext_
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.ext_value.data ();
+    b[n].buffer = i.ext_value.data_ptr ();
     b[n].capacity = i.ext_value.capacity ();
     b[n].size = &i.ext_size;
     b[n].is_null = &i.ext_null;
@@ -10430,12 +10398,10 @@ namespace odb
   void access::object_traits_impl< ::cmall_apply_for_mechant, id_pgsql >::
   persist (database& db, object_type& obj)
   {
-    ODB_POTENTIALLY_UNUSED (db);
-
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -10490,7 +10456,7 @@ namespace odb
     callback (db, obj, callback_event::pre_update);
 
     pgsql::transaction& tr (pgsql::transaction::current ());
-    pgsql::connection& conn (tr.connection ());
+    pgsql::connection& conn (tr.connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -10543,10 +10509,8 @@ namespace odb
   {
     using namespace pgsql;
 
-    ODB_POTENTIALLY_UNUSED (db);
-
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -10581,7 +10545,7 @@ namespace odb
     }
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -10629,7 +10593,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -10663,7 +10627,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -10739,14 +10703,14 @@ namespace odb
 
   result< access::object_traits_impl< ::cmall_apply_for_mechant, id_pgsql >::object_type >
   access::object_traits_impl< ::cmall_apply_for_mechant, id_pgsql >::
-  query (database&, const query_base_type& q)
+  query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
     using odb::details::shared;
     using odb::details::shared_ptr;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
@@ -10793,12 +10757,12 @@ namespace odb
   }
 
   unsigned long long access::object_traits_impl< ::cmall_apply_for_mechant, id_pgsql >::
-  erase_query (database&, const query_base_type& q)
+  erase_query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     std::string text (erase_query_statement);
     if (!q.empty ())
@@ -10870,7 +10834,7 @@ namespace odb
     // key_value_
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.key_value_value.data ();
+    b[n].buffer = i.key_value_value.data_ptr ();
     b[n].capacity = i.key_value_value.capacity ();
     b[n].size = &i.key_value_size;
     b[n].is_null = &i.key_value_null;
@@ -11092,7 +11056,7 @@ namespace odb
     // value_
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.value_value.data ();
+    b[n].buffer = i.value_value.data_ptr ();
     b[n].capacity = i.value_value.capacity ();
     b[n].size = &i.value_size;
     b[n].is_null = &i.value_null;
@@ -11255,12 +11219,10 @@ namespace odb
   void access::object_traits_impl< ::cmall_3rd_kv_store, id_pgsql >::
   persist (database& db, const object_type& obj)
   {
-    ODB_POTENTIALLY_UNUSED (db);
-
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -11302,7 +11264,7 @@ namespace odb
     callback (db, obj, callback_event::pre_update);
 
     pgsql::transaction& tr (pgsql::transaction::current ());
-    pgsql::connection& conn (tr.connection ());
+    pgsql::connection& conn (tr.connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -11355,10 +11317,8 @@ namespace odb
   {
     using namespace pgsql;
 
-    ODB_POTENTIALLY_UNUSED (db);
-
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -11393,7 +11353,7 @@ namespace odb
     }
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -11441,7 +11401,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -11475,7 +11435,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -11551,14 +11511,14 @@ namespace odb
 
   result< access::object_traits_impl< ::cmall_3rd_kv_store, id_pgsql >::object_type >
   access::object_traits_impl< ::cmall_3rd_kv_store, id_pgsql >::
-  query (database&, const query_base_type& q)
+  query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
     using odb::details::shared;
     using odb::details::shared_ptr;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
@@ -11605,12 +11565,12 @@ namespace odb
   }
 
   unsigned long long access::object_traits_impl< ::cmall_3rd_kv_store, id_pgsql >::
-  erase_query (database&, const query_base_type& q)
+  erase_query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     std::string text (erase_query_statement);
     if (!q.empty ())
@@ -11756,7 +11716,7 @@ namespace odb
     // value_
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.value_value.data ();
+    b[n].buffer = i.value_value.data_ptr ();
     b[n].capacity = i.value_value.capacity ();
     b[n].size = &i.value_size;
     b[n].is_null = &i.value_null;
@@ -11919,12 +11879,10 @@ namespace odb
   void access::object_traits_impl< ::cmall_3rd_public_kv_store, id_pgsql >::
   persist (database& db, const object_type& obj)
   {
-    ODB_POTENTIALLY_UNUSED (db);
-
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -11966,7 +11924,7 @@ namespace odb
     callback (db, obj, callback_event::pre_update);
 
     pgsql::transaction& tr (pgsql::transaction::current ());
-    pgsql::connection& conn (tr.connection ());
+    pgsql::connection& conn (tr.connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -12019,10 +11977,8 @@ namespace odb
   {
     using namespace pgsql;
 
-    ODB_POTENTIALLY_UNUSED (db);
-
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -12057,7 +12013,7 @@ namespace odb
     }
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -12105,7 +12061,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -12139,7 +12095,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -12215,14 +12171,14 @@ namespace odb
 
   result< access::object_traits_impl< ::cmall_3rd_public_kv_store, id_pgsql >::object_type >
   access::object_traits_impl< ::cmall_3rd_public_kv_store, id_pgsql >::
-  query (database&, const query_base_type& q)
+  query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
     using odb::details::shared;
     using odb::details::shared_ptr;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
@@ -12269,12 +12225,12 @@ namespace odb
   }
 
   unsigned long long access::object_traits_impl< ::cmall_3rd_public_kv_store, id_pgsql >::
-  erase_query (database&, const query_base_type& q)
+  erase_query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     std::string text (erase_query_statement);
     if (!q.empty ())
@@ -12382,14 +12338,14 @@ namespace odb
 
   result< access::view_traits_impl< ::max_application_seq, id_pgsql >::view_type >
   access::view_traits_impl< ::max_application_seq, id_pgsql >::
-  query (database&, const query_base_type& q)
+  query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
     using odb::details::shared;
     using odb::details::shared_ptr;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_view<view_type> ());
 
@@ -12588,7 +12544,7 @@ namespace odb
     // goods
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.goods_value.data ();
+    b[n].buffer = i.goods_value.data_ptr ();
     b[n].capacity = i.goods_value.capacity ();
     b[n].size = &i.goods_size;
     b[n].is_null = &i.goods_null;
@@ -12804,12 +12760,10 @@ namespace odb
   void access::object_traits_impl< ::cmall_index_page_goods, id_pgsql >::
   persist (database& db, object_type& obj)
   {
-    ODB_POTENTIALLY_UNUSED (db);
-
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -12864,7 +12818,7 @@ namespace odb
     callback (db, obj, callback_event::pre_update);
 
     pgsql::transaction& tr (pgsql::transaction::current ());
-    pgsql::connection& conn (tr.connection ());
+    pgsql::connection& conn (tr.connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -12917,10 +12871,8 @@ namespace odb
   {
     using namespace pgsql;
 
-    ODB_POTENTIALLY_UNUSED (db);
-
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -12955,7 +12907,7 @@ namespace odb
     }
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -13003,7 +12955,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -13037,7 +12989,7 @@ namespace odb
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
 
@@ -13113,14 +13065,14 @@ namespace odb
 
   result< access::object_traits_impl< ::cmall_index_page_goods, id_pgsql >::object_type >
   access::object_traits_impl< ::cmall_index_page_goods, id_pgsql >::
-  query (database&, const query_base_type& q)
+  query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
     using odb::details::shared;
     using odb::details::shared_ptr;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     statements_type& sts (
       conn.statement_cache ().find_object<object_type> ());
@@ -13167,12 +13119,12 @@ namespace odb
   }
 
   unsigned long long access::object_traits_impl< ::cmall_index_page_goods, id_pgsql >::
-  erase_query (database&, const query_base_type& q)
+  erase_query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
 
     std::string text (erase_query_statement);
     if (!q.empty ())
@@ -13280,14 +13232,14 @@ namespace odb
 
   result< access::view_traits_impl< ::cmall_index_page_goods_max_order, id_pgsql >::view_type >
   access::view_traits_impl< ::cmall_index_page_goods_max_order, id_pgsql >::
-  query (database&, const query_base_type& q)
+  query (database& db, const query_base_type& q)
   {
     using namespace pgsql;
     using odb::details::shared;
     using odb::details::shared_ptr;
 
     pgsql::connection& conn (
-      pgsql::transaction::current ().connection ());
+      pgsql::transaction::current ().connection (db));
     statements_type& sts (
       conn.statement_cache ().find_view<view_type> ());
 
