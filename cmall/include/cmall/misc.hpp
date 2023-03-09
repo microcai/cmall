@@ -20,7 +20,8 @@
 #include <boost/multiprecision/cpp_int.hpp>
 #include <type_traits>
 
-#include <openssl/md5.h>
+#include <openssl/evp.h>
+#include <openssl/hmac.h>
 
 #include "fmt_extra.hpp"
 
@@ -228,15 +229,31 @@ inline std::string base64_encode(const std::string& in)
 
 inline std::string md5sum(const std::string& in)
 {
-	std::vector<uint8_t> ret(MD5_DIGEST_LENGTH, 0x0);
-	MD5((unsigned char *)in.data(), in.size(), (unsigned char *)ret.data());
+	auto context = std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> (EVP_MD_CTX_new(), EVP_MD_CTX_free);
+
+	unsigned int hash_length = 0;
+
+	std::vector<uint8_t> ret(16, 0x0);
+
+	EVP_DigestInit_ex(context.get(), EVP_md5(), nullptr);
+	EVP_DigestUpdate(context.get(), in.data(), in.size());
+	EVP_DigestFinal_ex(context.get(), ret.data(), &hash_length);
+
 	return to_hexstring(ret, 32);
 }
 
 inline std::string sha256sum(const std::string& in)
 {
+	auto context = std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> (EVP_MD_CTX_new(), EVP_MD_CTX_free);
+
+	unsigned int hash_length = 0;
+
 	std::vector<uint8_t> ret(SHA256_DIGEST_LENGTH, 0x0);
-	SHA256((unsigned char *)in.data(), in.size(), (unsigned char *)ret.data());
+
+	EVP_DigestInit_ex(context.get(), EVP_sha256(), nullptr);
+	EVP_DigestUpdate(context.get(), in.data(), in.size());
+	EVP_DigestFinal_ex(context.get(), ret.data(), &hash_length);
+
 	return to_hexstring(ret);
 }
 
