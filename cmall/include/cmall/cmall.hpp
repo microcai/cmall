@@ -292,6 +292,8 @@ namespace cmall {
 		awaitable<bool> order_mark_payed(cmall_order& order, const cmall_merchant& seller);
 
 		awaitable<bool> in_temp_api_token(std::string api_token);
+		awaitable<std::string> gen_temp_api_token(std::string merchant_id);
+		awaitable<void> drop_temp_api_token(std::string api_token);
 
 	private:
 		io_context_pool& m_io_context_pool;

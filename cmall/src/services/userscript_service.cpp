@@ -192,7 +192,7 @@ namespace services
 
 		awaitable<std::string> run_script(std::string_view script_file_content, std::string_view http_request_body,
 			std::map<std::string, std::string> scriptenv, std::vector<std::string> script_arguments)
-		{
+		{try {
 			using namespace boost::process;
 
 			async_pipe nodejs_output(io);
@@ -301,7 +301,8 @@ namespace services
 #endif
 			cp.wait(stdec);
 			co_return out;
-
+		}catch(std::exception&){}
+			co_return "";
 		}
 
 		boost::asio::io_context& io;

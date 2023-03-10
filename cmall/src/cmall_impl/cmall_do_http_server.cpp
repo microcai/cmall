@@ -159,20 +159,10 @@ namespace cmall
 				co_await http_simple_error_page(
 					"Illegal request-target", boost::beast::http::status::bad_request, req.version());
 			}
-			// 处理 HTTP 请求.
-			else if (boost::beast::websocket::is_upgrade(req))
+
+			if (!client_ptr->session_info)
 			{
-				LOG_FMT("ws client incoming: [{}], remote: {}, real_remote: {}", connection_id, client_ptr->remote_host_, client_ptr->x_real_ip);
-
-				if (!target.starts_with("/api"))
-				{
-					co_await http_simple_error_page(
-						"not allowed", boost::beast::http::status::forbidden, req.version());
-					break;
-				}
-
-				client_ptr->ws_client.emplace(client_ptr->tcp_stream);
-
+				// 处理 cookie.
 				for (auto& cookie : make_iterator_range(req.equal_range(header_field::cookie)))
 				{
 					auto sessionid = httpd::parse_cookie(cookie.value())["Session"];
@@ -190,6 +180,21 @@ namespace cmall
 						break;
 					}
 				}
+			}
+
+			// 处理 HTTP 请求.
+			if (boost::beast::websocket::is_upgrade(req))
+			{
+				LOG_FMT("ws client incoming: [{}], remote: {}, real_remote: {}", connection_id, client_ptr->remote_host_, client_ptr->x_real_ip);
+
+				if (!target.starts_with("/api"))
+				{
+					co_await http_simple_error_page(
+						"not allowed", boost::beast::http::status::forbidden, req.version());
+					break;
+				}
+
+				client_ptr->ws_client.emplace(client_ptr->tcp_stream);
 
 				std::string cookie_line;
 				auto user_agent = req[header_field::user_agent];
@@ -269,8 +274,7 @@ namespace cmall
 				else if (target.starts_with("/repos"))
 				{
 					boost::match_results<std::string_view::const_iterator> w;
-					if (boost::regex_match(
-							target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/((images|css)/.+)")))
+					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/((images|css)/.+)")))
 					{
 						std::string merchant = w[1].str();
 						std::string remains = httpd::decodeURIComponent(w[2].str());
@@ -283,13 +287,12 @@ namespace cmall
 							co_await http_simple_error_page("ERRORED", status_code, req.version());
 						}
 					}
-					else if (boost::regex_match(
-							target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/callback.js(/.+)?")))
+					else if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/callback\\.js([?/](.+))?")))
 					{
 						std::string merchant = w[1].str();
 						std::string remains;
-						if (w.size() == 3)
-							remains = httpd::decodeURIComponent(w[2].str());
+						if (w.size() == 5)
+							remains = httpd::decodeURIComponent(w[4].str());
 
 						auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
 						boost::system::error_code ec;
@@ -314,12 +317,17 @@ namespace cmall
 						{
 							script_env.insert({std::string(kv.name_string()), std::string(kv.value())});
 						}
+
+						std::string template_api_token = co_await gen_temp_api_token(merchant);
 						script_env.insert({"_METHOD", std::string(req.method_string())});
 						script_env.insert({"_PATH", remains});
+						script_env.insert({"_API_TOKEN", template_api_token});
 
-						// TODO 然后运行 callback.js
+						// 然后运行 callback.js
 						std::string response_body = co_await script_runner.run_script(callback_js,
 							req.body(), script_env, {});
+
+						co_await drop_temp_api_token(template_api_token);
 
 						std::map<boost::beast::http::field, std::string> headers;
 
