@@ -138,4 +138,37 @@ enum class ChainType
 	CHAOS = 1001011,
 };
 
+// 微软的 STL 只有 足够的新才能 include fmt 不然会报错
+#ifdef __cpp_lib_format
+#	include <format>
+#endif
+
+#if !defined(__cpp_lib_format)
+#	ifdef _MSC_VER
+#		pragma warning(push)
+#		pragma warning(disable: 4244 4127)
+#	endif // _MSC_VER
+
+#	ifdef __clang__
+#		pragma clang diagnostic push
+#		pragma clang diagnostic ignored "-Wexpansion-to-defined"
+#	endif
+
+#	include <fmt/ostream.h>
+#	include <fmt/printf.h>
+#	include <fmt/format.h>
+
+#	ifdef __clang__
+#		pragma clang diagnostic pop
+#	endif
+
+	namespace std {
+		using namespace fmt;
+	}
+
+#	ifdef _MSC_VER
+#		pragma warning(pop)
+#	endif
+#endif
+
 #include "cmall/misc.hpp"
