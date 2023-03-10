@@ -804,6 +804,22 @@ namespace cmall
 		co_return temp_api_token.contains(api_token);
 	}
 
+	awaitable<std::string> cmall_service::gen_temp_api_token(std::string merchant_id)
+	{
+		std::string random_string = gen_rand_string();
+		std::string s = fmt::format("{1}{2}", merchant_id, random_string);
+		std::unique_lock<std::shared_mutex> l (temp_api_token_mtx);
+		temp_api_token.insert(s);
+		co_return s;
+	}
+
+	awaitable<void> cmall_service::drop_temp_api_token(std::string api_token)
+	{
+		std::unique_lock<std::shared_mutex> l (temp_api_token_mtx);
+		temp_api_token.erase(api_token);
+		co_return;
+	}
+
 	awaitable<void> cmall_service::send_notify_message(
 		std::uint64_t uid_, const std::string& msg, std::int64_t exclude_connection_id)
 	{
