@@ -343,6 +343,64 @@ namespace cmall
 							throw boost::system::system_error(ec);
 
 					}
+					else if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/scripts/([^\\.]+\\.js)([?/](.+))?")))
+					{
+						std::string merchant = w[1].str();
+						std::string script_name = w[2].str();
+						std::string remains;
+						if (w.size() == 5)
+							remains = httpd::decodeURIComponent(w[4].str());
+
+						auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
+						boost::system::error_code ec;
+						auto merchant_repo_ptr = get_merchant_git_repo(merchant_id, ec);
+
+						if (ec)
+						{
+							co_await http_simple_error_page("ERRORED", 404, req.version());
+							continue;
+						}
+
+						std::string callback_js = co_await merchant_repo_ptr->get_file_content("scripts/" + script_name, ec);
+						if (ec)
+						{
+							co_await http_simple_error_page("ERRORED", 404, req.version());
+							continue;
+						}
+
+						std::map<std::string, std::string> script_env;
+
+						for (auto& kv : req)
+						{
+							script_env.insert({std::string(kv.name_string()), std::string(kv.value())});
+						}
+
+						std::string template_api_token = co_await gen_temp_api_token(merchant);
+
+						script_env.insert({"_METHOD", std::string(req.method_string())});
+						script_env.insert({"_PATH", remains});
+						script_env.insert({"_API_TOKEN", template_api_token});
+
+						// 然后运行 script_name
+						std::string response_body = co_await script_runner.run_script(callback_js,
+							req.body(), script_env, {});
+
+						co_await drop_temp_api_token(template_api_token);
+
+						std::map<boost::beast::http::field, std::string> headers;
+
+						headers.insert({boost::beast::http::field::expires, httpd::make_http_last_modified(std::time(0) + 60)});
+						headers.insert({boost::beast::http::field::content_type, "text/plain"});
+
+						ec = co_await httpd::send_string_response_body(client_ptr->tcp_stream,
+							response_body,
+							std::move(headers),
+							req.version(),
+							keep_alive);
+						if (ec)
+							throw boost::system::system_error(ec);
+
+					}
 					else if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/(pages/.+)")))
 					{
 						std::string merchant = w[1].str();
