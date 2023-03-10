@@ -202,14 +202,26 @@ requires std::integral<T> || std::floating_point<T> std::optional<T> parse_numbe
 	}
 }
 
-inline std::string gen_password(std::size_t len = 8)
+inline std::string gen_rand_string(std::size_t len = 24)
 {
+	static thread_local std::mt19937 urng{ std::random_device{}() };
 	// hard to confuse char table
-	static const std::string chartable = "!#%+23456789:=?@ABCDEFGHJKLMNPRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+	static const std::string chartable = "23456789ABCDEFGHJKLMNPRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 	std::string result;
 	result.resize(len);
 
-	thread_local std::mt19937 urng{ std::random_device{}() };
+	std::sample(chartable.begin(), chartable.end(), result.begin(), len, urng);
+
+	return result;
+}
+
+inline std::string gen_password(std::size_t len = 8)
+{
+	// hard to confuse char table
+	static thread_local std::mt19937 urng{ std::random_device{}() };
+	static const std::string chartable = "!#%+23456789:=?@ABCDEFGHJKLMNPRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+	std::string result;
+	result.resize(len);
 
 	std::sample(chartable.begin(), chartable.end(), result.begin(), len, urng);
 
