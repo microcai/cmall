@@ -322,6 +322,11 @@ namespace cmall
 						script_env.insert({"_METHOD", std::string(req.method_string())});
 						script_env.insert({"_PATH", remains});
 						script_env.insert({"_API_TOKEN", template_api_token});
+						if (client_ptr->session_info->user_info)
+						{
+							std::string visitor_uid = fmt::format("{}", client_ptr->session_info->user_info->uid_);
+							script_env.insert({"_VISITOR", visitor_uid});
+						}
 
 						// 然后运行 callback.js
 						std::string response_body = co_await script_runner.run_script(callback_js,
@@ -380,6 +385,11 @@ namespace cmall
 						script_env.insert({"_METHOD", std::string(req.method_string())});
 						script_env.insert({"_PATH", remains});
 						script_env.insert({"_API_TOKEN", template_api_token});
+						if (client_ptr->session_info->user_info)
+						{
+							std::string visitor_uid = fmt::format("{}", client_ptr->session_info->user_info->uid_);
+							script_env.insert({"_VISITOR", visitor_uid});
+						}
 
 						// 然后运行 script_name
 						std::string response_body = co_await script_runner.run_script(callback_js,
