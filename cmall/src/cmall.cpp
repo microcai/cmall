@@ -807,7 +807,7 @@ namespace cmall
 	awaitable<std::string> cmall_service::gen_temp_api_token(std::string merchant_id)
 	{
 		std::string random_string = gen_rand_string();
-		std::string s = fmt::format("{1}-{2}", merchant_id, random_string);
+		std::string s = fmt::format("{}-{}", merchant_id, random_string);
 		std::unique_lock<std::shared_mutex> l (temp_api_token_mtx);
 		temp_api_token.insert(s);
 		co_return s;

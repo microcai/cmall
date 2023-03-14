@@ -192,7 +192,9 @@ namespace services
 
 		awaitable<std::string> run_script(std::string_view script_file_content, std::string_view http_request_body,
 			std::map<std::string, std::string> scriptenv, std::vector<std::string> script_arguments)
-		{try {
+		{
+			co_await this_coro::coro_yield();
+		try {
 			using namespace boost::process;
 
 			async_pipe nodejs_output(io);
@@ -310,7 +312,7 @@ namespace services
 
 	awaitable<std::string> userscript::run_script(std::string_view script_file_content, std::vector<std::string> script_arguments)
 	{
-		return impl().run_script(script_file_content, script_arguments);
+		co_return co_await  impl().run_script(script_file_content, script_arguments);
 	}
 
 	awaitable<std::string> userscript::run_script(
@@ -319,7 +321,7 @@ namespace services
 			std::map<std::string, std::string> scriptenv,
 			std::vector<std::string> script_arguments)
 	{
-		return impl().run_script(script_file_content, http_request_body, scriptenv, script_arguments);
+		co_return co_await impl().run_script(script_file_content, http_request_body, scriptenv, script_arguments);
 	}
 
 	userscript::userscript(boost::asio::io_context& io)

@@ -265,198 +265,185 @@ namespace cmall
 			}
 			else
 			{
-				if (target.starts_with("/api"))
+				boost::match_results<std::string_view::const_iterator> w;
+				if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/((images|css)/.+)")))
 				{
-					co_await http_simple_error_page(
-						"not allowed", boost::beast::http::status::forbidden, req.version());
-					continue;
+					std::string merchant = w[1].str();
+					std::string remains = httpd::decodeURIComponent(w[2].str());
+
+					int status_code = co_await render_git_repo_files(
+						connection_id, merchant, remains, client_ptr->tcp_stream, req);
+
+					if ((status_code != 200) && (status_code != 206))
+					{
+						co_await http_simple_error_page("ERRORED", status_code, req.version());
+					}
 				}
-				else if (target.starts_with("/repos"))
+				else if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/callback\\.js([?/](.+))?")))
 				{
-					boost::match_results<std::string_view::const_iterator> w;
-					if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/((images|css)/.+)")))
+					std::string merchant = w[1].str();
+					std::string remains;
+					if (w.size() == 5)
+						remains = httpd::decodeURIComponent(w[4].str());
+
+					auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
+					boost::system::error_code ec;
+					auto merchant_repo_ptr = get_merchant_git_repo(merchant_id, ec);
+
+					if (ec)
 					{
-						std::string merchant = w[1].str();
-						std::string remains = httpd::decodeURIComponent(w[2].str());
-
-						int status_code = co_await render_git_repo_files(
-							connection_id, merchant, remains, client_ptr->tcp_stream, req);
-
-						if ((status_code != 200) && (status_code != 206))
-						{
-							co_await http_simple_error_page("ERRORED", status_code, req.version());
-						}
+						co_await http_simple_error_page("ERRORED", 404, req.version());
+						continue;
 					}
-					else if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/callback\\.js([?/](.+))?")))
+
+					std::string callback_js = co_await merchant_repo_ptr->get_file_content("scripts/callback.js", ec);
+					if (ec)
 					{
-						std::string merchant = w[1].str();
-						std::string remains;
-						if (w.size() == 5)
-							remains = httpd::decodeURIComponent(w[4].str());
-
-						auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
-						boost::system::error_code ec;
-						auto merchant_repo_ptr = get_merchant_git_repo(merchant_id, ec);
-
-						if (ec)
-						{
-							co_await http_simple_error_page("ERRORED", 404, req.version());
-							continue;
-						}
-
-						std::string callback_js = co_await merchant_repo_ptr->get_file_content("scripts/callback.js", ec);
-						if (ec)
-						{
-							co_await http_simple_error_page("ERRORED", 404, req.version());
-							continue;
-						}
-
-						std::map<std::string, std::string> script_env;
-
-						for (auto& kv : req)
-						{
-							script_env.insert({std::string(kv.name_string()), std::string(kv.value())});
-						}
-
-						std::string template_api_token = co_await gen_temp_api_token(merchant);
-						script_env.insert({"_METHOD", std::string(req.method_string())});
-						script_env.insert({"_PATH", remains});
-						script_env.insert({"_API_TOKEN", template_api_token});
-						if (client_ptr->session_info->user_info)
-						{
-							std::string visitor_uid = fmt::format("{}", client_ptr->session_info->user_info->uid_);
-							script_env.insert({"_VISITOR", visitor_uid});
-						}
-
-						// 然后运行 callback.js
-						std::string response_body = co_await script_runner.run_script(callback_js,
-							req.body(), script_env, {});
-
-						co_await drop_temp_api_token(template_api_token);
-
-						std::map<boost::beast::http::field, std::string> headers;
-
-						headers.insert({boost::beast::http::field::expires, httpd::make_http_last_modified(std::time(0) + 60)});
-						headers.insert({boost::beast::http::field::content_type, "text/plain"});
-
-						ec = co_await httpd::send_string_response_body(client_ptr->tcp_stream,
-							response_body,
-							std::move(headers),
-							req.version(),
-							keep_alive);
-						if (ec)
-							throw boost::system::system_error(ec);
-
+						co_await http_simple_error_page("ERRORED", 404, req.version());
+						continue;
 					}
-					else if (
-						boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/scripts/([^\\.]+\\.js)([?/](.+))?"))
-						||
-						boost::regex_match(target.begin(), target.end(), w, boost::regex("/api/cgi-scripts/([0-9]+)/([^\\.]+\\.js)([?/](.+))?"))
-					)
+
+					std::map<std::string, std::string> script_env;
+
+					for (auto& kv : req)
 					{
-						std::string merchant = w[1].str();
-						std::string script_name = w[2].str();
-						std::string remains;
-						if (w.size() == 5)
-							remains = httpd::decodeURIComponent(w[4].str());
-
-						auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
-						boost::system::error_code ec;
-						auto merchant_repo_ptr = get_merchant_git_repo(merchant_id, ec);
-
-						if (ec)
-						{
-							co_await http_simple_error_page("ERRORED", 404, req.version());
-							continue;
-						}
-
-						std::string callback_js = co_await merchant_repo_ptr->get_file_content("scripts/" + script_name, ec);
-						if (ec)
-						{
-							co_await http_simple_error_page("ERRORED", 404, req.version());
-							continue;
-						}
-
-						std::map<std::string, std::string> script_env;
-
-						for (auto& kv : req)
-						{
-							script_env.insert({std::string(kv.name_string()), std::string(kv.value())});
-						}
-
-						std::string template_api_token = co_await gen_temp_api_token(merchant);
-
-						script_env.insert({"_METHOD", std::string(req.method_string())});
-						script_env.insert({"_PATH", remains});
-						script_env.insert({"_API_TOKEN", template_api_token});
-						if (client_ptr->session_info->user_info)
-						{
-							std::string visitor_uid = fmt::format("{}", client_ptr->session_info->user_info->uid_);
-							script_env.insert({"_VISITOR", visitor_uid});
-						}
-
-						// 然后运行 script_name
-						std::string response_body = co_await script_runner.run_script(callback_js,
-							req.body(), script_env, {});
-
-						co_await drop_temp_api_token(template_api_token);
-
-						std::map<boost::beast::http::field, std::string> headers;
-
-						headers.insert({boost::beast::http::field::expires, httpd::make_http_last_modified(std::time(0) + 60)});
-						headers.insert({boost::beast::http::field::content_type, "text/plain"});
-
-						ec = co_await httpd::send_string_response_body(client_ptr->tcp_stream,
-							response_body,
-							std::move(headers),
-							req.version(),
-							keep_alive);
-						if (ec)
-							throw boost::system::system_error(ec);
-
+						script_env.insert({std::string(kv.name_string()), std::string(kv.value())});
 					}
-					else if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/(pages/.+)")))
+
+					std::string template_api_token = co_await gen_temp_api_token(merchant);
+					script_env.insert({"_METHOD", std::string(req.method_string())});
+					script_env.insert({"_PATH", remains});
+					script_env.insert({"_API_TOKEN", template_api_token});
+					if (client_ptr->session_info && client_ptr->session_info->user_info)
 					{
-						std::string merchant = w[1].str();
-						std::string remains = httpd::decodeURIComponent(w[2].str());
-
-						if (remains.find_first_of('?') != std::string::npos)
-						{
-							remains = remains.substr(0, remains.find_first_of('?'));
-						}
-
-						int status_code = co_await render_git_repo_files(
-							connection_id, merchant, remains, client_ptr->tcp_stream, req);
-
-						if (status_code == 404)
-						{
-							status_code = co_await render_git_repo_files(connection_id, merchant, "pages/index.html", client_ptr->tcp_stream, req);
-						}
-
-						if ((status_code != 200) && (status_code != 206))
-						{
-							co_await http_simple_error_page("ERRORED", status_code, req.version());
-						}
+						std::string visitor_uid = fmt::format("{}", client_ptr->session_info->user_info->uid_);
+						script_env.insert({"_VISITOR", visitor_uid});
 					}
-					else if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/pages/")))
-					{
-						std::string merchant = w[1].str();
 
-						int status_code = co_await render_git_repo_files(
-							connection_id, merchant, "pages/index.html", client_ptr->tcp_stream, req);
+					// 然后运行 callback.js
+					std::string response_body = co_await script_runner.run_script(callback_js,
+						req.body(), script_env, {});
 
-						if ((status_code != 200) && (status_code != 206))
-						{
-							co_await http_simple_error_page("ERRORED", status_code, req.version());
-						}
-					}
-					else
-					{
-						co_await http_simple_error_page("ERRORED", 403, req.version());
-					}
-					continue;
+					co_await drop_temp_api_token(template_api_token);
+
+					std::map<boost::beast::http::field, std::string> headers;
+
+					headers.insert({boost::beast::http::field::expires, httpd::make_http_last_modified(std::time(0) + 60)});
+					headers.insert({boost::beast::http::field::content_type, "text/plain"});
+
+					ec = co_await httpd::send_string_response_body(client_ptr->tcp_stream,
+						response_body,
+						std::move(headers),
+						req.version(),
+						keep_alive);
+					if (ec)
+						throw boost::system::system_error(ec);
+
 				}
+				else if (
+					boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/scripts/([^\\.]+\\.js)([?/](.+))?"))
+					||
+					boost::regex_match(target.begin(), target.end(), w, boost::regex("/api/cgi-scripts/([0-9]+)/([^\\.]+\\.js)([?/](.+))?"))
+				)
+				{
+					std::string merchant = w[1].str();
+					std::string script_name = w[2].str();
+					std::string remains;
+					if (w.size() == 5)
+						remains = httpd::decodeURIComponent(w[4].str());
 
+					auto merchant_id = strtoll(merchant.c_str(), nullptr, 10);
+					boost::system::error_code ec;
+					auto merchant_repo_ptr = get_merchant_git_repo(merchant_id, ec);
+
+					if (ec)
+					{
+						co_await http_simple_error_page("ERRORED", 404, req.version());
+						continue;
+					}
+
+					std::string callback_js = co_await merchant_repo_ptr->get_file_content("scripts/" + script_name, ec);
+					if (ec)
+					{
+						co_await http_simple_error_page("ERRORED", 404, req.version());
+						continue;
+					}
+
+					std::map<std::string, std::string> script_env;
+
+					for (auto& kv : req)
+					{
+						script_env.insert({std::string(kv.name_string()), std::string(kv.value())});
+					}
+
+					std::string template_api_token = co_await gen_temp_api_token(merchant);
+
+					script_env.insert({"_METHOD", std::string(req.method_string())});
+					script_env.insert({"_PATH", remains});
+					script_env.insert({"_API_TOKEN", template_api_token});
+					if (client_ptr->session_info && client_ptr->session_info->user_info)
+					{
+						std::string visitor_uid = fmt::format("{}", client_ptr->session_info->user_info->uid_);
+						script_env.insert({"_VISITOR", visitor_uid});
+					}
+
+					LOG_DBG << "runing script: " << script_name;
+
+					// 然后运行 script_name
+					std::string response_body = co_await script_runner.run_script(callback_js,
+						req.body(), script_env, {});
+
+					co_await drop_temp_api_token(template_api_token);
+
+					std::map<boost::beast::http::field, std::string> headers;
+
+					headers.insert({boost::beast::http::field::expires, httpd::make_http_last_modified(std::time(0) + 60)});
+					headers.insert({boost::beast::http::field::content_type, "text/plain"});
+
+					ec = co_await httpd::send_string_response_body(client_ptr->tcp_stream,
+						response_body,
+						std::move(headers),
+						req.version(),
+						keep_alive);
+					if (ec)
+						throw boost::system::system_error(ec);
+
+				}
+				else if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/(pages/.+)")))
+				{
+					std::string merchant = w[1].str();
+					std::string remains = httpd::decodeURIComponent(w[2].str());
+
+					if (remains.find_first_of('?') != std::string::npos)
+					{
+						remains = remains.substr(0, remains.find_first_of('?'));
+					}
+
+					int status_code = co_await render_git_repo_files(
+						connection_id, merchant, remains, client_ptr->tcp_stream, req);
+
+					if (status_code == 404)
+					{
+						status_code = co_await render_git_repo_files(connection_id, merchant, "pages/index.html", client_ptr->tcp_stream, req);
+					}
+
+					if ((status_code != 200) && (status_code != 206))
+					{
+						co_await http_simple_error_page("ERRORED", status_code, req.version());
+					}
+				}
+				else if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/pages/")))
+				{
+					std::string merchant = w[1].str();
+
+					int status_code = co_await render_git_repo_files(
+						connection_id, merchant, "pages/index.html", client_ptr->tcp_stream, req);
+
+					if ((status_code != 200) && (status_code != 206))
+					{
+						co_await http_simple_error_page("ERRORED", status_code, req.version());
+					}
+				}
 				// 这个 /goods/${merchant}/${goods_id} 获取 富文本的商品描述.
 				else if (target.starts_with("/goods"))
 				{
@@ -471,12 +458,18 @@ namespace cmall
 						if (status_code != 200)
 						{
 							co_await http_simple_error_page("ERRORED", status_code, req.version());
+							continue;
 						}
 					}
 					else
 					{
 						co_await http_simple_error_page("access denied", 401, req.version());
 					}
+					continue;
+				}
+				else
+				{
+					co_await http_simple_error_page("ERRORED", 403, req.version());
 					continue;
 				}
 
