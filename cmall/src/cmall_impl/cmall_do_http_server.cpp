@@ -348,7 +348,11 @@ namespace cmall
 							throw boost::system::system_error(ec);
 
 					}
-					else if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/scripts/([^\\.]+\\.js)([?/](.+))?")))
+					else if (
+						boost::regex_match(target.begin(), target.end(), w, boost::regex("/repos/([0-9]+)/scripts/([^\\.]+\\.js)([?/](.+))?"))
+						||
+						boost::regex_match(target.begin(), target.end(), w, boost::regex("/api/cgi-scripts/([0-9]+)/([^\\.]+\\.js)([?/](.+))?"))
+					)
 					{
 						std::string merchant = w[1].str();
 						std::string script_name = w[2].str();
