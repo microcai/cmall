@@ -46,6 +46,7 @@ inline namespace conversion
 			{ "state", to_underlying(m.state_) },
 			{ "desc", m.desc_.null() ? "" : m.desc_.get() },
 			{ "created_at", ::to_string(m.created_at_) },
+			{ "wx_submerchant_id",  m.exinfo_wx_mchid.null() ? boost::json::value{nullptr} : boost::json::value{m.exinfo_wx_mchid.get()} },
 		};
 	}
 
