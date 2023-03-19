@@ -208,6 +208,84 @@ namespace cmall
 		}
 	}
 
+	awaitable<bool> cmall_service::load_configs()
+	{
+		std::vector<cmall_config> all_config;
+
+		if (!co_await m_database.async_load_all<cmall_config>(all_config))
+			co_return false;
+
+		struct {
+			std::string rsa;
+			std::string notify_url;
+			std::string appid;
+			std::string mchid;
+			int complete = 0;
+		} tencent_microapp_pay_cfg;
+
+		for (cmall_config config_item : all_config)
+		{
+			if (config_item.config_name == "gitea_template_user")
+			{
+				this->m_config.gitea_template_user = config_item.config_value;
+			}
+			else if (config_item.config_name == "gitea_template_reponame")
+			{
+				this->m_config.gitea_template_reponame = config_item.config_value;
+			}
+			else if (config_item.config_name == "site_name")
+			{
+				this->m_config.site_name = config_item.config_value;
+			}
+			else if (config_item.config_name == "netease_secret_id")
+			{
+				this->m_config.netease_secret_id = config_item.config_value;
+			}
+			else if (config_item.config_name == "netease_secret_key")
+			{
+				this->m_config.netease_secret_key = config_item.config_value;
+			}
+			else if (config_item.config_name == "netease_business_id")
+			{
+				this->m_config.netease_business_id = config_item.config_value;
+			}
+			else if (config_item.config_name == "tencent_id")
+			{
+				this->m_config.tencent_secret_id = config_item.config_value;
+			}
+			else if (config_item.config_name == "tencent_key")
+			{
+				this->m_config.tencent_secret_key = config_item.config_value;
+			}
+
+			else if (config_item.config_name == "wxpay_appid")
+			{
+				tencent_microapp_pay_cfg.appid = config_item.config_value;
+				tencent_microapp_pay_cfg.complete ++;
+			}
+			else if (config_item.config_name == "wxpay_rsa_key")
+			{
+				tencent_microapp_pay_cfg.rsa = config_item.config_value;
+				tencent_microapp_pay_cfg.complete ++;
+			}
+			else if (config_item.config_name == "wxpay_mchid")
+			{
+				tencent_microapp_pay_cfg.mchid = config_item.config_value;
+				tencent_microapp_pay_cfg.complete ++;
+			}
+			else if (config_item.config_name == "wxpay_notify_url")
+			{
+				tencent_microapp_pay_cfg.notify_url = config_item.config_value;
+				tencent_microapp_pay_cfg.complete ++;
+			}
+		}
+
+		if (tencent_microapp_pay_cfg.complete == 4)
+			wxpay_service.reset(new services::wxpay_service(tencent_microapp_pay_cfg.rsa, tencent_microapp_pay_cfg.appid, tencent_microapp_pay_cfg.mchid, tencent_microapp_pay_cfg.notify_url));
+
+		co_return true;
+	}
+
 	awaitable<bool> cmall_service::load_repos()
 	{
 		std::vector<cmall_merchant> all_merchant;
@@ -731,6 +809,8 @@ namespace cmall
 			case req_method::order_list:
 			case req_method::order_get_paymethods:
 			case req_method::order_get_pay_url:
+			case req_method::order_get_wxpay_prepay_id:
+			case req_method::order_get_wxpay_object:
 			case req_method::order_check_payment:
 				co_await ensure_login();
 				co_return co_await handle_jsonrpc_order_api(connection_ptr, method.value(), params);

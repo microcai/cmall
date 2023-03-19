@@ -70,6 +70,12 @@ std::string cmall::error::cmall_category::message(int ev) const
 			return (const char*) u8"商户 git 仓库操作错误";
 		case merchcant_gitrepo_notfound:
 			return (const char*) u8"商户 git 仓库不存在";
+		case combile_order_not_supported:
+			return (const char*) u8"不支持跨商户订单支付";
+		case merchant_does_not_support_microapp_wxpay:
+			return (const char*) u8"商户 不支持 小程序 微信支付";
+		case wxpay_server_error:
+			return (const char*) u8"获取微信支付信息失败!";
 	}
 	return "error message";
 }

@@ -35,6 +35,7 @@
 #include "services/userscript_service.hpp"
 #include "services/gitea_service.hpp"
 #include "services/search_service.hpp"
+#include "services/wxpay_service.hpp"
 
 #include "httpd/acceptor.hpp"
 #include "httpd/ssl_acceptor.hpp"
@@ -179,6 +180,9 @@ namespace cmall {
 		order_get_paymethods, // 获取支持的支付方式.
 		order_get_pay_url,
 		order_check_payment,
+		order_get_wxpay_prepay_id, // 获取微信预支付 id
+		order_get_wxpay_object, // 获取一个用于调用 wx.requestPayment(OBJECT) 的 OBJECT
+
 
 		search_goods,
 		goods_list,
@@ -237,6 +241,7 @@ namespace cmall {
 		awaitable<bool> init_ws_acceptors();
 		awaitable<bool> init_wss_acceptors(std::string_view cert, std::string_view key);
 		awaitable<bool> init_ws_unix_acceptors();
+		awaitable<bool> load_configs();
 		awaitable<bool> load_repos();
 		awaitable<void> run_httpd();
 		awaitable<void> stop();
@@ -310,6 +315,7 @@ namespace cmall {
 		services::userscript script_runner;
 		services::gitea gitea_service;
 		services::search search_service;
+		std::unique_ptr<services::wxpay_service> wxpay_service;
 
 		mutable std::shared_mutex merchant_repos_mtx;
 		loaded_merchant_map merchant_repos;

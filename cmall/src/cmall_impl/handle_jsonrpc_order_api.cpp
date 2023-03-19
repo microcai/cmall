@@ -11,6 +11,14 @@
 #include "cmall/conversion.hpp"
 #include "cmall/database.hpp"
 
+inline bool is_sigle_merchant_order(const cmall_order& order_to_pay)
+{
+    auto first_merchant_id =  order_to_pay.bought_goods[0].merchant_id;
+
+    auto finded = std::find_if(order_to_pay.bought_goods.begin(), order_to_pay.bought_goods.end(), [=](auto & item){ return item.merchant_id != first_merchant_id; });
+    return finded==order_to_pay.bought_goods.end();
+}
+
 awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_order_api(
     client_connection_ptr connection_ptr, const req_method method, boost::json::object params)
 {
@@ -164,6 +172,8 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_order_api(
 			{
 				throw boost::system::system_error(cmall::error::order_not_found);
 			}
+            if (!is_sigle_merchant_order(order_to_pay))
+                throw boost::system::system_error(cmall::error::combile_order_not_supported);
 
 			boost::system::error_code ec;
 			std::uint64_t merchant_id = order_to_pay.bought_goods[0].merchant_id;
@@ -188,6 +198,9 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_order_api(
                 throw boost::system::system_error(cmall::error::order_not_found);
             }
 
+            if (!is_sigle_merchant_order(order_to_pay))
+                throw boost::system::system_error(cmall::error::combile_order_not_supported);
+
             // 对已经存在的订单, 获取支付连接.
             boost::system::error_code ec;
             std::uint64_t merchant_id = order_to_pay.bought_goods[0].merchant_id;
@@ -197,6 +210,52 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_order_api(
             services::payment_url payurl = co_await payment_service.get_payurl(pay_script_content, orderid, 0, to_string(order_to_pay.price_), paymentmethod);
 
             reply_message["result"] = { { "type", "url" }, { "url", payurl.uri } };
+        }
+        break;
+        case req_method::order_get_wxpay_prepay_id:
+        {
+            auto orderid = jsutil::json_accessor(params).get_string("orderid");
+            auto payer_openid = jsutil::json_accessor(params).get_string("payer_openid");
+
+            cmall_order order_to_pay;
+            using query_t	   = odb::query<cmall_order>;
+            auto query		   = query_t::oid == orderid && query_t::buyer == this_user.uid_;
+            bool order_founded = co_await m_database.async_load<cmall_order>(query, order_to_pay);
+
+            if (!order_founded)
+            {
+                throw boost::system::system_error(cmall::error::order_not_found);
+            }
+
+            // 对已经存在的订单, 获取支付连接.
+            boost::system::error_code ec;
+            std::uint64_t merchant_id = order_to_pay.bought_goods[0].merchant_id;
+
+            if (!is_sigle_merchant_order(order_to_pay))
+                throw boost::system::system_error(cmall::error::combile_order_not_supported);
+
+            cmall_merchant order_merchant;
+
+            auto ok = co_await m_database.async_load<cmall_merchant>(merchant_id, order_merchant);
+            if (!ok)
+                throw boost::system::system_error(cmall::error::merchant_vanished);
+
+            if (!order_merchant.exinfo_wx_mchid || !wxpay_service)
+                throw boost::system::system_error(cmall::error::merchant_does_not_support_microapp_wxpay);
+
+            std::string prepay_id = co_await wxpay_service->get_prepay_id(order_merchant.exinfo_wx_mchid.get(), orderid, order_to_pay.price_, order_to_pay.bought_goods[0].description_, payer_openid);
+            if (prepay_id.empty())
+                throw boost::system::system_error(cmall::error::wxpay_server_error);
+            else
+                reply_message["result"] = { "prepay_id", prepay_id };
+
+        }break;
+        case req_method::order_get_wxpay_object:
+        {
+            if (!wxpay_service)
+                throw boost::system::system_error(cmall::error::merchant_does_not_support_microapp_wxpay);
+            auto prepay_id = jsutil::json_accessor(params).get_string("prepay_id");
+            reply_message["result"] = co_await wxpay_service->get_pay_object(prepay_id);
         }
         break;
         case req_method::order_check_payment:

@@ -256,7 +256,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 			{
 				co_await sdk.group_add_person(face_group_id, pid, pname, image);
 			}
-			
+
 			reply_message["result"] = true;
 		}
 		break;

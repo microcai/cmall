@@ -38,6 +38,9 @@ namespace odb
   find_statement_name[] = "find_cmall_config";
 
   const char access::object_traits_impl< ::cmall_config, id_pgsql >::
+  update_statement_name[] = "update_cmall_config";
+
+  const char access::object_traits_impl< ::cmall_config, id_pgsql >::
   erase_statement_name[] = "erase_cmall_config";
 
   const char access::object_traits_impl< ::cmall_config, id_pgsql >::
@@ -49,12 +52,21 @@ namespace odb
   const unsigned int access::object_traits_impl< ::cmall_config, id_pgsql >::
   persist_statement_types[] =
   {
-    0
+    pgsql::text_oid,
+    pgsql::text_oid
   };
 
   const unsigned int access::object_traits_impl< ::cmall_config, id_pgsql >::
   find_statement_types[] =
   {
+    pgsql::int8_oid
+  };
+
+  const unsigned int access::object_traits_impl< ::cmall_config, id_pgsql >::
+  update_statement_types[] =
+  {
+    pgsql::text_oid,
+    pgsql::text_oid,
     pgsql::int8_oid
   };
 
@@ -125,6 +137,22 @@ namespace odb
     //
     t[0UL] = 0;
 
+    // config_name
+    //
+    if (t[1UL])
+    {
+      i.config_name_value.capacity (i.config_name_size);
+      grew = true;
+    }
+
+    // config_value
+    //
+    if (t[2UL])
+    {
+      i.config_value_value.capacity (i.config_value_size);
+      grew = true;
+    }
+
     return grew;
   }
 
@@ -148,6 +176,24 @@ namespace odb
       b[n].is_null = &i.id_null;
       n++;
     }
+
+    // config_name
+    //
+    b[n].type = pgsql::bind::text;
+    b[n].buffer = i.config_name_value.data_ptr ();
+    b[n].capacity = i.config_name_value.capacity ();
+    b[n].size = &i.config_name_size;
+    b[n].is_null = &i.config_name_null;
+    n++;
+
+    // config_value
+    //
+    b[n].type = pgsql::bind::text;
+    b[n].buffer = i.config_value_value.data_ptr ();
+    b[n].capacity = i.config_value_value.capacity ();
+    b[n].size = &i.config_value_size;
+    b[n].is_null = &i.config_value_null;
+    n++;
   }
 
   void access::object_traits_impl< ::cmall_config, id_pgsql >::
@@ -171,6 +217,48 @@ namespace odb
     using namespace pgsql;
 
     bool grew (false);
+
+    // config_name
+    //
+    {
+      ::std::string const& v =
+        o.config_name;
+
+      bool is_null (false);
+      std::size_t size (0);
+      std::size_t cap (i.config_name_value.capacity ());
+      pgsql::value_traits<
+          ::std::string,
+          pgsql::id_string >::set_image (
+        i.config_name_value,
+        size,
+        is_null,
+        v);
+      i.config_name_null = is_null;
+      i.config_name_size = size;
+      grew = grew || (cap != i.config_name_value.capacity ());
+    }
+
+    // config_value
+    //
+    {
+      ::std::string const& v =
+        o.config_value;
+
+      bool is_null (false);
+      std::size_t size (0);
+      std::size_t cap (i.config_value_value.capacity ());
+      pgsql::value_traits<
+          ::std::string,
+          pgsql::id_string >::set_image (
+        i.config_value_value,
+        size,
+        is_null,
+        v);
+      i.config_value_null = is_null;
+      i.config_value_size = size;
+      grew = grew || (cap != i.config_value_value.capacity ());
+    }
 
     return grew;
   }
@@ -197,6 +285,36 @@ namespace odb
         i.id_value,
         i.id_null);
     }
+
+    // config_name
+    //
+    {
+      ::std::string& v =
+        o.config_name;
+
+      pgsql::value_traits<
+          ::std::string,
+          pgsql::id_string >::set_value (
+        v,
+        i.config_name_value,
+        i.config_name_size,
+        i.config_name_null);
+    }
+
+    // config_value
+    //
+    {
+      ::std::string& v =
+        o.config_value;
+
+      pgsql::value_traits<
+          ::std::string,
+          pgsql::id_string >::set_value (
+        v,
+        i.config_value_value,
+        i.config_value_size,
+        i.config_value_null);
+    }
   }
 
   void access::object_traits_impl< ::cmall_config, id_pgsql >::
@@ -214,16 +332,27 @@ namespace odb
 
   const char access::object_traits_impl< ::cmall_config, id_pgsql >::persist_statement[] =
   "INSERT INTO \"cmall_config\" "
-  "(\"id\") "
+  "(\"id\", "
+  "\"config_name\", "
+  "\"config_value\") "
   "VALUES "
-  "(DEFAULT) "
+  "(DEFAULT, $1, $2) "
   "RETURNING \"id\"";
 
   const char access::object_traits_impl< ::cmall_config, id_pgsql >::find_statement[] =
   "SELECT "
-  "\"cmall_config\".\"id\" "
+  "\"cmall_config\".\"id\", "
+  "\"cmall_config\".\"config_name\", "
+  "\"cmall_config\".\"config_value\" "
   "FROM \"cmall_config\" "
   "WHERE \"cmall_config\".\"id\"=$1";
+
+  const char access::object_traits_impl< ::cmall_config, id_pgsql >::update_statement[] =
+  "UPDATE \"cmall_config\" "
+  "SET "
+  "\"config_name\"=$1, "
+  "\"config_value\"=$2 "
+  "WHERE \"id\"=$3";
 
   const char access::object_traits_impl< ::cmall_config, id_pgsql >::erase_statement[] =
   "DELETE FROM \"cmall_config\" "
@@ -231,7 +360,9 @@ namespace odb
 
   const char access::object_traits_impl< ::cmall_config, id_pgsql >::query_statement[] =
   "SELECT "
-  "\"cmall_config\".\"id\" "
+  "\"cmall_config\".\"id\", "
+  "\"cmall_config\".\"config_name\", "
+  "\"cmall_config\".\"config_value\" "
   "FROM \"cmall_config\"";
 
   const char access::object_traits_impl< ::cmall_config, id_pgsql >::erase_query_statement[] =
@@ -299,6 +430,51 @@ namespace odb
     using pgsql::update_statement;
 
     callback (db, obj, callback_event::pre_update);
+
+    pgsql::transaction& tr (pgsql::transaction::current ());
+    pgsql::connection& conn (tr.connection (db));
+    statements_type& sts (
+      conn.statement_cache ().find_object<object_type> ());
+
+    id_image_type& idi (sts.id_image ());
+    init (idi, id (obj));
+
+    image_type& im (sts.image ());
+    if (init (im, obj, statement_update))
+      im.version++;
+
+    bool u (false);
+    binding& imb (sts.update_image_binding ());
+    if (im.version != sts.update_image_version () ||
+        imb.version == 0)
+    {
+      bind (imb.bind, im, statement_update);
+      sts.update_image_version (im.version);
+      imb.version++;
+      u = true;
+    }
+
+    binding& idb (sts.id_image_binding ());
+    if (idi.version != sts.update_id_image_version () ||
+        idb.version == 0)
+    {
+      if (idi.version != sts.id_image_version () ||
+          idb.version == 0)
+      {
+        bind (idb.bind, idi);
+        sts.id_image_version (idi.version);
+        idb.version++;
+      }
+
+      sts.update_id_image_version (idi.version);
+
+      if (!u)
+        imb.version++;
+    }
+
+    update_statement& st (sts.update_statement ());
+    if (st.execute () == 0)
+      throw object_not_persistent ();
 
     callback (db, obj, callback_event::post_update);
     pointer_cache_traits::update (db, obj);
@@ -483,6 +659,20 @@ namespace odb
     st.execute ();
     auto_result ar (st);
     select_statement::result r (st.fetch ());
+
+    if (r == select_statement::truncated)
+    {
+      if (grow (im, sts.select_image_truncated ()))
+        im.version++;
+
+      if (im.version != sts.select_image_version ())
+      {
+        bind (imb.bind, im, statement_select);
+        sts.select_image_version (im.version);
+        imb.version++;
+        st.refetch ();
+      }
+    }
 
     return r != select_statement::no_data;
   }
@@ -4161,6 +4351,7 @@ namespace odb
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
+    pgsql::text_oid,
     pgsql::text_oid
   };
 
@@ -4180,6 +4371,7 @@ namespace odb
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
+    pgsql::text_oid,
     pgsql::text_oid,
     pgsql::int8_oid
   };
@@ -4279,6 +4471,14 @@ namespace odb
       grew = true;
     }
 
+    // exinfo_wx_mchid
+    //
+    if (t[9UL])
+    {
+      i.exinfo_wx_mchid_value.capacity (i.exinfo_wx_mchid_size);
+      grew = true;
+    }
+
     return grew;
   }
 
@@ -4365,6 +4565,15 @@ namespace odb
     b[n].capacity = i.repo_path_value.capacity ();
     b[n].size = &i.repo_path_size;
     b[n].is_null = &i.repo_path_null;
+    n++;
+
+    // exinfo_wx_mchid
+    //
+    b[n].type = pgsql::bind::text;
+    b[n].buffer = i.exinfo_wx_mchid_value.data_ptr ();
+    b[n].capacity = i.exinfo_wx_mchid_value.capacity ();
+    b[n].size = &i.exinfo_wx_mchid_size;
+    b[n].is_null = &i.exinfo_wx_mchid_null;
     n++;
   }
 
@@ -4545,6 +4754,27 @@ namespace odb
       grew = grew || (cap != i.repo_path_value.capacity ());
     }
 
+    // exinfo_wx_mchid
+    //
+    {
+      ::odb::nullable< ::std::basic_string< char > > const& v =
+        o.exinfo_wx_mchid;
+
+      bool is_null (true);
+      std::size_t size (0);
+      std::size_t cap (i.exinfo_wx_mchid_value.capacity ());
+      pgsql::value_traits<
+          ::odb::nullable< ::std::basic_string< char > >,
+          pgsql::id_string >::set_image (
+        i.exinfo_wx_mchid_value,
+        size,
+        is_null,
+        v);
+      i.exinfo_wx_mchid_null = is_null;
+      i.exinfo_wx_mchid_size = size;
+      grew = grew || (cap != i.exinfo_wx_mchid_value.capacity ());
+    }
+
     return grew;
   }
 
@@ -4686,6 +4916,21 @@ namespace odb
         i.repo_path_size,
         i.repo_path_null);
     }
+
+    // exinfo_wx_mchid
+    //
+    {
+      ::odb::nullable< ::std::basic_string< char > >& v =
+        o.exinfo_wx_mchid;
+
+      pgsql::value_traits<
+          ::odb::nullable< ::std::basic_string< char > >,
+          pgsql::id_string >::set_value (
+        v,
+        i.exinfo_wx_mchid_value,
+        i.exinfo_wx_mchid_size,
+        i.exinfo_wx_mchid_null);
+    }
   }
 
   void access::object_traits_impl< ::cmall_merchant, id_pgsql >::
@@ -4711,9 +4956,10 @@ namespace odb
   "\"created_at\", "
   "\"updated_at\", "
   "\"deleted_at\", "
-  "\"repo_path\") "
+  "\"repo_path\", "
+  "\"exinfo_wx_mchid\") "
   "VALUES "
-  "($1, $2, $3, $4, $5, $6, $7, $8, $9)";
+  "($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)";
 
   const char access::object_traits_impl< ::cmall_merchant, id_pgsql >::find_statement[] =
   "SELECT "
@@ -4725,7 +4971,8 @@ namespace odb
   "\"cmall_merchant\".\"created_at\", "
   "\"cmall_merchant\".\"updated_at\", "
   "\"cmall_merchant\".\"deleted_at\", "
-  "\"cmall_merchant\".\"repo_path\" "
+  "\"cmall_merchant\".\"repo_path\", "
+  "\"cmall_merchant\".\"exinfo_wx_mchid\" "
   "FROM \"cmall_merchant\" "
   "WHERE \"cmall_merchant\".\"uid\"=$1";
 
@@ -4739,8 +4986,9 @@ namespace odb
   "\"created_at\"=$5, "
   "\"updated_at\"=$6, "
   "\"deleted_at\"=$7, "
-  "\"repo_path\"=$8 "
-  "WHERE \"uid\"=$9";
+  "\"repo_path\"=$8, "
+  "\"exinfo_wx_mchid\"=$9 "
+  "WHERE \"uid\"=$10";
 
   const char access::object_traits_impl< ::cmall_merchant, id_pgsql >::erase_statement[] =
   "DELETE FROM \"cmall_merchant\" "
@@ -4756,7 +5004,8 @@ namespace odb
   "\"cmall_merchant\".\"created_at\", "
   "\"cmall_merchant\".\"updated_at\", "
   "\"cmall_merchant\".\"deleted_at\", "
-  "\"cmall_merchant\".\"repo_path\" "
+  "\"cmall_merchant\".\"repo_path\", "
+  "\"cmall_merchant\".\"exinfo_wx_mchid\" "
   "FROM \"cmall_merchant\"";
 
   const char access::object_traits_impl< ::cmall_merchant, id_pgsql >::erase_query_statement[] =
@@ -13331,7 +13580,9 @@ namespace odb
         case 1:
         {
           db.execute ("CREATE TABLE \"cmall_config\" (\n"
-                      "  \"id\" BIGSERIAL NOT NULL PRIMARY KEY)");
+                      "  \"id\" BIGSERIAL NOT NULL PRIMARY KEY,\n"
+                      "  \"config_name\" TEXT NOT NULL,\n"
+                      "  \"config_value\" TEXT NOT NULL)");
           db.execute ("CREATE TABLE \"cmall_user\" (\n"
                       "  \"uid\" BIGSERIAL NOT NULL PRIMARY KEY,\n"
                       "  \"name\" TEXT NOT NULL,\n"
@@ -13398,7 +13649,8 @@ namespace odb
                       "  \"created_at\" TIMESTAMP NULL,\n"
                       "  \"updated_at\" TIMESTAMP NULL,\n"
                       "  \"deleted_at\" TIMESTAMP NULL,\n"
-                      "  \"repo_path\" TEXT NOT NULL)");
+                      "  \"repo_path\" TEXT NOT NULL,\n"
+                      "  \"exinfo_wx_mchid\" TEXT NULL)");
           db.execute ("CREATE INDEX \"cmall_merchant_name_i\"\n"
                       "  ON \"cmall_merchant\" (\"name\")");
           db.execute ("CREATE TABLE \"cmall_order\" (\n"
@@ -13539,7 +13791,7 @@ namespace odb
                       "  \"migration\" BOOLEAN NOT NULL)");
           db.execute ("INSERT INTO \"schema_version\" (\n"
                       "  \"name\", \"version\", \"migration\")\n"
-                      "  SELECT '', 26, FALSE\n"
+                      "  SELECT '', 28, FALSE\n"
                       "  WHERE NOT EXISTS (\n"
                       "    SELECT 1 FROM \"schema_version\" WHERE \"name\" = '')");
           return false;
@@ -13619,6 +13871,118 @@ namespace odb
     "",
     26ULL,
     &migrate_schema_26);
+
+  static bool
+  migrate_schema_27 (database& db, unsigned short pass, bool pre)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (pass);
+    ODB_POTENTIALLY_UNUSED (pre);
+
+    if (pre)
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          db.execute ("ALTER TABLE \"cmall_merchant\"\n"
+                      "  ADD COLUMN \"exinfo_wx_mchid\" TEXT NULL");
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"version\" = 27, \"migration\" = TRUE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+    else
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"migration\" = FALSE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  static const schema_catalog_migrate_entry
+  migrate_schema_entry_27_ (
+    id_pgsql,
+    "",
+    27ULL,
+    &migrate_schema_27);
+
+  static bool
+  migrate_schema_28 (database& db, unsigned short pass, bool pre)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (pass);
+    ODB_POTENTIALLY_UNUSED (pre);
+
+    if (pre)
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          db.execute ("ALTER TABLE \"cmall_config\"\n"
+                      "  ADD COLUMN \"config_name\" TEXT NULL,\n"
+                      "  ADD COLUMN \"config_value\" TEXT NULL");
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"version\" = 28, \"migration\" = TRUE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+    else
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("ALTER TABLE \"cmall_config\"\n"
+                      "  ALTER COLUMN \"config_name\" SET NOT NULL,\n"
+                      "  ALTER COLUMN \"config_value\" SET NOT NULL");
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"migration\" = FALSE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  static const schema_catalog_migrate_entry
+  migrate_schema_entry_28_ (
+    id_pgsql,
+    "",
+    28ULL,
+    &migrate_schema_28);
 }
 
 #include <odb/post.hxx>

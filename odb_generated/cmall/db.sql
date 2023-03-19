@@ -45,7 +45,9 @@ DELETE FROM "schema_version"
   WHERE "name" = '';
 
 CREATE TABLE "cmall_config" (
-  "id" BIGSERIAL NOT NULL PRIMARY KEY);
+  "id" BIGSERIAL NOT NULL PRIMARY KEY,
+  "config_name" TEXT NOT NULL,
+  "config_value" TEXT NOT NULL);
 
 CREATE TABLE "cmall_user" (
   "uid" BIGSERIAL NOT NULL PRIMARY KEY,
@@ -125,7 +127,8 @@ CREATE TABLE "cmall_merchant" (
   "created_at" TIMESTAMP NULL,
   "updated_at" TIMESTAMP NULL,
   "deleted_at" TIMESTAMP NULL,
-  "repo_path" TEXT NOT NULL);
+  "repo_path" TEXT NOT NULL,
+  "exinfo_wx_mchid" TEXT NULL);
 
 CREATE INDEX "cmall_merchant_name_i"
   ON "cmall_merchant" ("name");
@@ -285,7 +288,7 @@ CREATE TABLE "cmall_index_page_goods" (
 
 INSERT INTO "schema_version" (
   "name", "version", "migration")
-  SELECT '', 26, FALSE
+  SELECT '', 28, FALSE
   WHERE NOT EXISTS (
     SELECT 1 FROM "schema_version" WHERE "name" = '');
 

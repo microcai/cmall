@@ -41,7 +41,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(25, 26, open)
+#pragma db model version(25, 28, open)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -73,6 +73,9 @@ struct cmall_config {
 #pragma db id auto
 	std::uint64_t id_;
 	// long long id_{ -1 };
+
+	std::string config_name;
+	std::string config_value;
 };
 
 #pragma db value
@@ -179,6 +182,8 @@ struct cmall_merchant
 	odb::nullable<boost::posix_time::ptime> deleted_at_;
 
 	std::string repo_path;
+
+	odb::nullable<std::string> exinfo_wx_mchid;
 };
 
 #pragma db value

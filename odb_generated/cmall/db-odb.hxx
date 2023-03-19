@@ -645,12 +645,46 @@ namespace odb
     id_type_;
 
     static const id_type_ id;
+
+    // config_name
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::std::string,
+        pgsql::id_string >::query_type,
+      pgsql::id_string >
+    config_name_type_;
+
+    static const config_name_type_ config_name;
+
+    // config_value
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::std::string,
+        pgsql::id_string >::query_type,
+      pgsql::id_string >
+    config_value_type_;
+
+    static const config_value_type_ config_value;
   };
 
   template <typename A>
   const typename query_columns< ::cmall_config, id_pgsql, A >::id_type_
   query_columns< ::cmall_config, id_pgsql, A >::
   id (A::table_name, "\"id\"", 0);
+
+  template <typename A>
+  const typename query_columns< ::cmall_config, id_pgsql, A >::config_name_type_
+  query_columns< ::cmall_config, id_pgsql, A >::
+  config_name (A::table_name, "\"config_name\"", 0);
+
+  template <typename A>
+  const typename query_columns< ::cmall_config, id_pgsql, A >::config_value_type_
+  query_columns< ::cmall_config, id_pgsql, A >::
+  config_value (A::table_name, "\"config_value\"", 0);
 
   template <typename A>
   struct pointer_query_columns< ::cmall_config, id_pgsql, A >:
@@ -677,6 +711,18 @@ namespace odb
       //
       long long id_value;
       bool id_null;
+
+      // config_name
+      //
+      details::buffer config_name_value;
+      std::size_t config_name_size;
+      bool config_name_null;
+
+      // config_value
+      //
+      details::buffer config_value_value;
+      std::size_t config_value_size;
+      bool config_value_null;
 
       std::size_t version;
     };
@@ -720,7 +766,7 @@ namespace odb
 
     typedef pgsql::query_base query_base_type;
 
-    static const std::size_t column_count = 1UL;
+    static const std::size_t column_count = 3UL;
     static const std::size_t id_column_count = 1UL;
     static const std::size_t inverse_column_count = 0UL;
     static const std::size_t readonly_column_count = 0UL;
@@ -733,6 +779,7 @@ namespace odb
 
     static const char persist_statement[];
     static const char find_statement[];
+    static const char update_statement[];
     static const char erase_statement[];
     static const char query_statement[];
     static const char erase_query_statement[];
@@ -768,12 +815,14 @@ namespace odb
 
     static const char persist_statement_name[];
     static const char find_statement_name[];
+    static const char update_statement_name[];
     static const char erase_statement_name[];
     static const char query_statement_name[];
     static const char erase_query_statement_name[];
 
     static const unsigned int persist_statement_types[];
     static const unsigned int find_statement_types[];
+    static const unsigned int update_statement_types[];
 
     static const std::size_t batch = 1UL;
 
@@ -1895,6 +1944,18 @@ namespace odb
     repo_path_type_;
 
     static const repo_path_type_ repo_path;
+
+    // exinfo_wx_mchid
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::std::basic_string< char >,
+        pgsql::id_string >::query_type,
+      pgsql::id_string >
+    exinfo_wx_mchid_type_;
+
+    static const exinfo_wx_mchid_type_ exinfo_wx_mchid;
   };
 
   template <typename A>
@@ -1941,6 +2002,11 @@ namespace odb
   const typename query_columns< ::cmall_merchant, id_pgsql, A >::repo_path_type_
   query_columns< ::cmall_merchant, id_pgsql, A >::
   repo_path (A::table_name, "\"repo_path\"", 0);
+
+  template <typename A>
+  const typename query_columns< ::cmall_merchant, id_pgsql, A >::exinfo_wx_mchid_type_
+  query_columns< ::cmall_merchant, id_pgsql, A >::
+  exinfo_wx_mchid (A::table_name, "\"exinfo_wx_mchid\"", 0);
 
   template <typename A>
   struct pointer_query_columns< ::cmall_merchant, id_pgsql, A >:
@@ -2012,6 +2078,12 @@ namespace odb
       std::size_t repo_path_size;
       bool repo_path_null;
 
+      // exinfo_wx_mchid
+      //
+      details::buffer exinfo_wx_mchid_value;
+      std::size_t exinfo_wx_mchid_size;
+      bool exinfo_wx_mchid_null;
+
       std::size_t version;
     };
 
@@ -2051,7 +2123,7 @@ namespace odb
 
     typedef pgsql::query_base query_base_type;
 
-    static const std::size_t column_count = 9UL;
+    static const std::size_t column_count = 10UL;
     static const std::size_t id_column_count = 1UL;
     static const std::size_t inverse_column_count = 0UL;
     static const std::size_t readonly_column_count = 0UL;

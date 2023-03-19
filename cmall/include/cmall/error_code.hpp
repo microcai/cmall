@@ -42,6 +42,9 @@ namespace cmall
 			object_too_large,
 			merchcant_git_error,
 			merchcant_gitrepo_notfound,
+			combile_order_not_supported,
+			merchant_does_not_support_microapp_wxpay,
+			wxpay_server_error,
 		};
 
 		class cmall_category : public boost::system::error_category

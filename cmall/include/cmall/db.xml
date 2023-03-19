@@ -1,4 +1,17 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
+  <changeset version="28">
+    <alter-table name="cmall_config">
+      <add-column name="config_name" type="TEXT" null="false"/>
+      <add-column name="config_value" type="TEXT" null="false"/>
+    </alter-table>
+  </changeset>
+
+  <changeset version="27">
+    <alter-table name="cmall_merchant">
+      <add-column name="exinfo_wx_mchid" type="TEXT" null="true"/>
+    </alter-table>
+  </changeset>
+
   <changeset version="26">
     <add-table name="cmall_index_page_goods" kind="object">
       <column name="id" type="BIGINT" null="false"/>
