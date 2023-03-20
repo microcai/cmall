@@ -30,3 +30,4 @@ target_compile_definitions(libodb-pgsql PUBLIC -DLIBODB_STATIC_LIB -DLIBODB_BOOS
 target_link_libraries(libodb-pgsql libodb)
 set_target_properties(libodb-pgsql PROPERTIES FOLDER "third_party")
 set_target_properties(libodb-pgsql PROPERTIES OUTPUT_NAME odb-pgsql PREFIX "lib" CLEAN_DIRECT_OUTPUT 1)
+target_link_libraries(libodb-pgsql ${PostgreSQL_LIBRARIES})
