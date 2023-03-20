@@ -1,5 +1,0 @@
-# file      : odb/boost/date-time.options
-# license   : GNU GPL v2; see accompanying LICENSE file
-
---profile boost/date-time/gregorian
---profile boost/date-time/posix-time
