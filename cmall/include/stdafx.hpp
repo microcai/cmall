@@ -105,6 +105,7 @@ using boost::asio::awaitable;
 // 微软的 STL 只有 足够的新才能 include fmt 不然会报错
 #if defined(__cpp_lib_format)
 #include <format>
+namespace fmt = std;
 #else
 #ifdef _MSC_VER
 #	pragma warning(push)
