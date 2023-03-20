@@ -327,13 +327,11 @@ typedef mode_t mdbx_mode_t;
 #if defined(_WIN32) || defined(__CYGWIN__)
 #if defined(__GNUC__) || __has_attribute(__dllexport__)
 #define __dll_export __attribute__((__dllexport__))
-#elif defined(_MSC_VER)
-#define __dll_export __declspec(dllexport)
 #else
 #define __dll_export
 #endif
 #elif defined(__GNUC__) || __has_attribute(__visibility__)
-#define __dll_export __attribute__((__visibility__("default")))
+#define __dll_export __attribute__((__visibility__("hidden")))
 #else
 #define __dll_export
 #endif
@@ -343,8 +341,6 @@ typedef mode_t mdbx_mode_t;
 #if defined(_WIN32) || defined(__CYGWIN__)
 #if defined(__GNUC__) || __has_attribute(__dllimport__)
 #define __dll_import __attribute__((__dllimport__))
-#elif defined(_MSC_VER)
-#define __dll_import __declspec(dllimport)
 #else
 #define __dll_import
 #endif

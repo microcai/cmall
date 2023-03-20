@@ -37,10 +37,8 @@ typedef size_t size_t;
 /** Declare a public function exported for application use. */
 #if __GNUC__ >= 4
 # define GIT_EXTERN(type) extern \
-			 __attribute__((visibility("default"))) \
+			 __attribute__((visibility("hidden"))) \
 			 type
-#elif defined(_MSC_VER)
-# define GIT_EXTERN(type) __declspec(dllexport) type __cdecl
 #else
 # define GIT_EXTERN(type) extern type
 #endif
