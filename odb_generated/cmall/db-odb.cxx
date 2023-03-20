@@ -10338,12 +10338,12 @@ namespace odb
     // seq
     //
     {
-      ::odb::nullable< long unsigned int > const& v =
+      ::odb::nullable< uint64_t > const& v =
         o.seq;
 
       bool is_null (true);
       pgsql::value_traits<
-          ::odb::nullable< long unsigned int >,
+          ::odb::nullable< uint64_t >,
           pgsql::id_bigint >::set_image (
         i.seq_value, is_null, v);
       i.seq_null = is_null;
@@ -10486,11 +10486,11 @@ namespace odb
     // seq
     //
     {
-      ::odb::nullable< long unsigned int >& v =
+      ::odb::nullable< uint64_t >& v =
         o.seq;
 
       pgsql::value_traits<
-          ::odb::nullable< long unsigned int >,
+          ::odb::nullable< uint64_t >,
           pgsql::id_bigint >::set_value (
         v,
         i.seq_value,
@@ -12553,11 +12553,11 @@ namespace odb
     // last_seq
     //
     {
-      ::odb::nullable< long unsigned int >& v =
+      ::odb::nullable< uint64_t >& v =
         o.last_seq;
 
       pgsql::value_traits<
-          ::odb::nullable< long unsigned int >,
+          ::odb::nullable< uint64_t >,
           pgsql::id_bigint >::set_value (
         v,
         i.last_seq_value,
