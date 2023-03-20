@@ -1,6 +1,0 @@
-Name: libodb-sqlite
-Version: 2.5.0-b.19
-Description: SQLite ODB runtime library
-URL: https://www.codesynthesis.com/products/odb/
-Cflags: -IC:\\build2\\include -DLIBODB_SQLITE_BUILD2
-Libs: -LC:\\build2\\lib -lodb-sqlite -lodb -lsqlite3

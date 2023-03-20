@@ -1,6 +1,0 @@
-Name: libsqlite3
-Version: 3.27.2+1
-Description: SQL database engine as an in-process C library
-URL: https://sqlite.org/
-Cflags: -IC:\\build2\\include -DSQLITE_API=__declspec(dllimport)
-Libs: -LC:\\build2\\lib -lsqlite3
