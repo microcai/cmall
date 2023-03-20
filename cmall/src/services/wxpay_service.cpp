@@ -9,6 +9,7 @@
 
 #include "services/wxpay_service.hpp"
 
+#include "cmall/internal.hpp"
 #include "utils/timedmap.hpp"
 #include "utils/logging.hpp"
 
