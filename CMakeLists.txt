@@ -196,6 +196,7 @@ add_definitions(-DUSE_STD_STRING_VIEW)
 
 if (ENABLE_SYSTEM_OPENSSL)
 	find_package(OpenSSL)
+	include_directories(${OPENSSL_INCLUDE_DIR})
 else()
 	set(OpenSSL_FOUND TRUE)
 	add_subdirectory(third_party/openssl)
@@ -210,7 +211,6 @@ else()
 		endif()
 	endif()
 endif()
-include_directories(${OPENSSL_INCLUDE_DIR})
 
 find_package(IOUring)
 
