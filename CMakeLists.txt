@@ -315,6 +315,9 @@ add_subdirectory(third_party/libmdbx EXCLUDE_FROM_ALL)
 
 add_subdirectory(third_party/cmark EXCLUDE_FROM_ALL)
 
+set(MAGIC_ENUM_OPT_INSTALL OFF)
+add_subdirectory(third_party/magic_enum)
+
 link_libraries(
 		Boost::thread
 		Boost::date_time
@@ -331,6 +334,7 @@ link_libraries(
 
 		mdbx-static
 		cmark_static
+		magic_enum
 
 		${OPENSSL_LIBRARIES}
 		${PostgreSQL_LIBRARIES}
