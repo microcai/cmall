@@ -179,6 +179,24 @@ namespace cmall
 		}
 
 		template <typename T>
+		bool erase_and_insert(const odb::query<T> & deletequery, const std::vector<T> & values)
+		{
+			return retry_database_op(
+				[&, this]() mutable
+				{
+					odb::transaction t(m_db->begin());
+					m_db->erase(deletequery);
+					// 如果存在, 就 update.
+					// 不存在就抛, 下面接住.
+					for (auto & value: values)
+						m_db->persist(value);
+				
+					t.commit();
+					return true;
+				});
+		}
+
+		template <typename T>
 		bool reload(T& value)
 		{
 			return retry_database_op(
@@ -373,7 +391,7 @@ namespace cmall
 		template<typename T>
 		awaitable<bool> async_upset(T& value)
 		{
-			co_return co_await boost::asio::co_spawn(thread_pool, [&, this]()mutable -> awaitable<bool>
+			co_return co_await boost::asio::co_spawn(thread_pool, [&, this]() mutable -> awaitable<bool>
 			{
 				co_await this_coro::coro_yield();
 				co_return upset<T>(value);
@@ -381,9 +399,19 @@ namespace cmall
 		}
 
 		template<typename T>
+		awaitable<bool> async_erase_and_insert(const odb::query<T> & deletequery, const std::vector<T> & values)
+		{
+			co_return co_await boost::asio::co_spawn(thread_pool, [&, this]() mutable -> awaitable<bool>
+			{
+				co_await this_coro::coro_yield();
+				co_return erase_and_insert<T>(deletequery, values);
+			}, use_awaitable);
+		}
+
+		template<typename T>
 		awaitable<bool> async_reload(T& value)
 		{
-			co_return co_await boost::asio::co_spawn(thread_pool, [&, this]()mutable -> awaitable<bool>
+			co_return co_await boost::asio::co_spawn(thread_pool, [&, this]() mutable -> awaitable<bool>
 			{
 				co_await this_coro::coro_yield();
 				co_return reload<T>(value);
@@ -393,7 +421,7 @@ namespace cmall
 		template<typename T>
 		awaitable<bool> async_update(T& value)
 		{
-			co_return co_await boost::asio::co_spawn(thread_pool, [&, this]()mutable -> awaitable<bool>
+			co_return co_await boost::asio::co_spawn(thread_pool, [&, this]() mutable -> awaitable<bool>
 			{
 				co_await this_coro::coro_yield();
 				co_return update<T>(value);
@@ -403,7 +431,7 @@ namespace cmall
 		template<typename T, typename UPDATER>
 		awaitable<bool> async_update(const typename odb::object_traits<T>::id_type id, UPDATER && updater)
 		{
-			co_return co_await boost::asio::co_spawn(thread_pool, [&, this]()mutable -> awaitable<bool>
+			co_return co_await boost::asio::co_spawn(thread_pool, [&, this]() mutable -> awaitable<bool>
 			{
 				co_await this_coro::coro_yield();
 				co_return update<T>(id, std::forward<UPDATER>(updater));
@@ -413,7 +441,7 @@ namespace cmall
 		template<typename T, typename UPDATER>
 		awaitable<bool> async_update(const odb::query<T>& query, UPDATER && updater)
 		{
-			co_return co_await boost::asio::co_spawn(thread_pool, [&, this]()mutable -> awaitable<bool>
+			co_return co_await boost::asio::co_spawn(thread_pool, [&, this]() mutable -> awaitable<bool>
 			{
 				co_await this_coro::coro_yield();
 				co_return update<T>(query, std::forward<UPDATER>(updater));
