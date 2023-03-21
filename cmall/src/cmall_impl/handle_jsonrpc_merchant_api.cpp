@@ -253,18 +253,6 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api
 			}
             throw boost::system::system_error(cmall::error::kv_store_key_not_found);
         }break;
-        case req_method::merchant_set_wxpay_submchid:
-        {
-            auto sub_mchid	   = jsutil::json_accessor(params).get_string("sub_mchid");
-            bool db_ok = co_await m_database.async_update<cmall_merchant>(this_merchant.uid_, [=](cmall_merchant&& old_value)
-            {
-                old_value.exinfo_wx_mchid= sub_mchid;
-                return old_value;
-            });
-            if (db_ok)
-                this_merchant.exinfo_wx_mchid = sub_mchid;
-            reply_message["result"] = db_ok;
-        }break;
         default:
             throw "this should never be executed";
     }

@@ -206,7 +206,6 @@ namespace cmall {
 		merchant_delete_apptoken,
 		merchant_alter_name,
 		merchant_user_kv_get,
-		merchant_set_wxpay_submchid,
 
 		admin_user_detail,
 		admin_user_list,
@@ -217,6 +216,7 @@ namespace cmall {
 		admin_list_merchants,
 		admin_disable_merchants,
 		admin_reenable_merchants,
+		admin_set_merchant_wxpay_submchid,
 		admin_sudo,
 		admin_sudo_cancel,
 		admin_list_index_goods,

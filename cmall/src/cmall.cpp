@@ -838,7 +838,6 @@ namespace cmall
 			case req_method::merchant_delete_apptoken:
 			case req_method::merchant_alter_name:
 			case req_method::merchant_user_kv_get:
-			case req_method::merchant_set_wxpay_submchid:
 				co_await ensure_login(false, true);
 				co_return co_await handle_jsonrpc_merchant_api(connection_ptr, method.value(), params);
 				break;
@@ -851,6 +850,7 @@ namespace cmall
 			case req_method::admin_list_merchants:
 			case req_method::admin_disable_merchants:
 			case req_method::admin_reenable_merchants:
+			case req_method::admin_set_merchant_wxpay_submchid:
 			case req_method::admin_sudo:
 				co_await ensure_login(true);
 				co_return co_await handle_jsonrpc_admin_api(connection_ptr, method.value(), params);

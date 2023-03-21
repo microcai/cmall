@@ -185,6 +185,17 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
             reply_message["result"] = true;
         }
         break;
+        case req_method::admin_set_merchant_wxpay_submchid:
+        {
+            auto merchant_id	   = jsutil::json_accessor(params).get("merchant_id", -1).as_int64();
+            auto sub_mchid	   = jsutil::json_accessor(params).get_string("sub_mchid");
+            bool db_ok = co_await m_database.async_update<cmall_merchant>(merchant_id, [=](cmall_merchant&& old_value)
+            {
+                old_value.exinfo_wx_mchid= sub_mchid;
+                return old_value;
+            });
+            reply_message["result"] = db_ok;
+        }break;
         case req_method::admin_sudo:
         {
             std::uint64_t target_uid;
