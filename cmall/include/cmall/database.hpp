@@ -185,11 +185,11 @@ namespace cmall
 				[&, this]() mutable
 				{
 					odb::transaction t(m_db->begin());
-					m_db->erase(deletequery);
+					m_db->erase_query<T>(deletequery);
 					// 如果存在, 就 update.
 					// 不存在就抛, 下面接住.
-					for (auto & value: values)
-						m_db->persist(value);
+					for (T value: values)
+						m_db->persist<T>(value);
 				
 					t.commit();
 					return true;
@@ -399,7 +399,7 @@ namespace cmall
 		}
 
 		template<typename T>
-		awaitable<bool> async_erase_and_insert(const odb::query<T> & deletequery, const std::vector<T> & values)
+		awaitable<bool> async_erase_and_insert(odb::query<T> deletequery, const std::vector<T> & values)
 		{
 			co_return co_await boost::asio::co_spawn(thread_pool, [&, this]() mutable -> awaitable<bool>
 			{

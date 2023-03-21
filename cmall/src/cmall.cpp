@@ -851,6 +851,7 @@ namespace cmall
 			case req_method::admin_disable_merchants:
 			case req_method::admin_reenable_merchants:
 			case req_method::admin_set_merchant_wxpay_submchid:
+			case req_method::admin_set_wxpay_detail:
 			case req_method::admin_sudo:
 				co_await ensure_login(true);
 				co_return co_await handle_jsonrpc_admin_api(connection_ptr, method.value(), params);

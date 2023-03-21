@@ -217,6 +217,7 @@ namespace cmall {
 		admin_disable_merchants,
 		admin_reenable_merchants,
 		admin_set_merchant_wxpay_submchid,
+		admin_set_wxpay_detail,
 		admin_sudo,
 		admin_sudo_cancel,
 		admin_list_index_goods,

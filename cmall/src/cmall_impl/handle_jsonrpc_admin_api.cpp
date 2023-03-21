@@ -196,6 +196,28 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
             });
             reply_message["result"] = db_ok;
         }break;
+        case req_method::admin_set_wxpay_detail:
+        {
+            auto wxpay_rsa_key	   = jsutil::json_accessor(params).get_string("rsa_key");
+            auto sp_appid	   = jsutil::json_accessor(params).get_string("sp_appid");
+            auto sp_mchid	   = jsutil::json_accessor(params).get_string("sp_mchid");
+            auto notify_url	   = jsutil::json_accessor(params).get_string("notify_url");
+
+            std::vector<cmall_config> new_configs = {
+                { 0, "wxpay_appid", sp_appid },
+                { 0, "wxpay_rsa_key", wxpay_rsa_key },
+                { 0, "wxpay_mchid", sp_mchid },
+                { 0, "wxpay_notify_url", notify_url },
+            };
+
+            bool db_ok = co_await m_database.async_erase_and_insert<cmall_config>(
+                (odb::query<cmall_config>::config_name == "wxpay_appid") ||
+                (odb::query<cmall_config>::config_name == "wxpay_rsa_key") ||
+                (odb::query<cmall_config>::config_name == "wxpay_mchid") ||
+                (odb::query<cmall_config>::config_name == "wxpay_notify_url")
+                , new_configs);
+            reply_message["result"] = db_ok;
+        }break;
         case req_method::admin_sudo:
         {
             std::uint64_t target_uid;
