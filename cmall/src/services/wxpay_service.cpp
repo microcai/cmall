@@ -16,9 +16,11 @@
 #include "cmall/misc.hpp"
 #include "cmall/js_util.hpp"
 #include "utils/httpc.hpp"
+#include "magic_enum.hpp"
 
 using boost::asio::awaitable;
 using boost::asio::use_awaitable;
+using pay_status = services::wxpay_service::pay_status;
 
 static inline std::string rsa_sign(const std::string& rsa_key_pem, const std::string& in)
 {
@@ -136,6 +138,28 @@ namespace services
 			};
 
 			co_return params;
+		}
+
+		awaitable<wxpay_service::pay_status> is_payed(std::string orderid, std::string sub_mchid_of_weixin)
+		{
+			httpc::request_options_t option;
+
+			// DOC: https://pay.weixin.qq.com/wiki/doc/apiv3_partner/apis/chapter4_5_2.shtml
+			option.url = fmt::format("https://api.mch.weixin.qq.com/v3/pay/partner/transactions/out-trade-no/{}?sp_mchid={}&sub_mchid={}", orderid, sp_mchid, sub_mchid_of_weixin);
+			option.verb = httpc::http::verb::get;
+			option.headers.insert(std::make_pair("Connection", "Close"));
+
+			auto reply = co_await httpc::request(option);
+			boost::system::error_code ec;
+			auto wx_response = boost::json::parse(reply.body, ec, {}, { 64, false, false, true });
+
+            auto trade_state = jsutil::json_accessor(wx_response).get_string("trade_state");
+
+			auto trade_state_enum = magic_enum::enum_cast<pay_status>(trade_state);
+
+			if (trade_state_enum.has_value())
+				co_return trade_state_enum.value();
+			co_return pay_status::QUERY_FAILED;
 		}
 
 		std::string gen_nonce(std::size_t len = 32)

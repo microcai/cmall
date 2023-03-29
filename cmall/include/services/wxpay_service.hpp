@@ -26,6 +26,17 @@ namespace services
 		// 然后调用 wx.requestPayment(payobj), 小程序就会调用微信支付了.
 		awaitable<boost::json::object> get_pay_object(std::string prepay_id);
 
+		enum class pay_status{
+			SUCCESS,// 支付成功
+			REFUND, // 转入退款
+			NOTPAY, // 未支付
+			CLOSED, // 已关闭
+			REVOKED, //已撤销（仅付款码支付会返回）
+			USERPAYING, // 用户支付中（仅付款码支付会返回）
+			PAYERROR, // 支付失败（仅付款码支付会返回）
+			QUERY_FAILED, // 查询失败
+		};
+
 	private:
 		const wxpay_service_impl& impl() const;
 		wxpay_service_impl& impl();
