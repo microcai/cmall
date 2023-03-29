@@ -21,6 +21,7 @@
 using boost::asio::awaitable;
 using boost::asio::use_awaitable;
 using pay_status = services::wxpay_service::pay_status;
+using notify_message = services::wxpay_service::notify_message;
 
 static inline std::string rsa_sign(const std::string& rsa_key_pem, const std::string& in)
 {
@@ -47,6 +48,11 @@ static inline std::string rsa_sign(const std::string& rsa_key_pem, const std::st
 
 	return base64_encode(signed_data);
 }
+
+// 非 const, 初始化一个硬编码的代码写作日的最新版.
+// 然后开启一个定时任务, 每隔 12小时从腾讯获取新的证书.
+// 获取的文档在 https://pay.weixin.qq.com/wiki/doc/apiv3/wechatpay/wechatpay4_1.shtml
+static std::string Wechatpay_Signature_Key = "";
 
 namespace services
 {
@@ -160,6 +166,22 @@ namespace services
 			if (trade_state_enum.has_value())
 				co_return trade_state_enum.value();
 			co_return pay_status::QUERY_FAILED;
+		}
+
+		// 这个接口用于解码 微信 发送的回调信息.
+		// 并且需要使用 HTTP 请求头部里的 Wechatpay-Signature 字段来验证消息可靠性
+		// 验证 Wechatpay_Signature 所需的证书, 则需要定期从 腾讯刷.
+		// 刷 证书 的方式应该也由本 service 自动完成.
+		// 最好是程序硬编码一个 证书, 以便 刷新例程工作完成前使用.
+		awaitable<notify_message> decode_notify_message(std::string notify_body, std::string Wechatpay_Signature)
+		{
+			// DOC: https://pay.weixin.qq.com/wiki/doc/apiv3_partner/apis/chapter4_5_5.shtml
+			notify_message ret;
+
+
+
+
+			co_return ret;
 		}
 
 		std::string gen_nonce(std::size_t len = 32)

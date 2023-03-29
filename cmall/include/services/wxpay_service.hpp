@@ -37,6 +37,15 @@ namespace services
 			QUERY_FAILED, // 查询失败
 		};
 
+		struct notify_message
+		{
+			std::string out_trade_no;
+			pay_status trade_state;
+			cpp_numeric order_amount;
+			cpp_numeric payed_amount;
+			boost::posix_time::ptime success_time;
+		};
+
 	private:
 		const wxpay_service_impl& impl() const;
 		wxpay_service_impl& impl();
