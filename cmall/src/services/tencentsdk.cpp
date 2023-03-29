@@ -41,7 +41,7 @@ namespace services
 			std::time_t tm = boost::posix_time::to_time_t(tp);
 			auto ts = std::to_string(tm);
 			auto utc_date = boost::gregorian::to_iso_extended_string(tp.date());
-			
+
 			httpc::request_options_t option;
 			option.url = api_url;
 			option.verb = httpc::http::verb::post;
@@ -145,7 +145,7 @@ namespace services
 		boost::json::object params;
 		params["PersonId"] = pid;
 		boost::json::array in = { input };
-		if (input.starts_with("http")) 
+		if (input.starts_with("http"))
 			params["Urls"] = in;
 		else
 			params["Images"] = in;
@@ -160,7 +160,7 @@ namespace services
 		params["GroupIds"] = gids;
 		params["FaceMatchThreshold"] = 80;
 		params["NeedPersonInfo"] = 1;
-		if (input.starts_with("http")) 
+		if (input.starts_with("http"))
 			params["Url"] = input;
 		else
 			params["Image"] = input;
@@ -193,7 +193,7 @@ namespace services
 				]
 			  }
 			}
-		 */ 
+		 */
 		do {
 			try {
 				auto results = res.at("Response").at("ResultsReturnsByGroup").as_array();
