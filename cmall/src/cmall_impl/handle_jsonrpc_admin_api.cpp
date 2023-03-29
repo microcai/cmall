@@ -216,7 +216,12 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
                 (odb::query<cmall_config>::config_name == "wxpay_mchid") ||
                 (odb::query<cmall_config>::config_name == "wxpay_notify_url")
                 , new_configs);
+
+            if (db_ok)
+                boost::asio::co_spawn(m_io_context, load_configs(), [&](std::exception_ptr e, int ret){ if (e) std::rethrow_exception(e); });
+
             reply_message["result"] = db_ok;
+
         }break;
         case req_method::admin_sudo:
         {
