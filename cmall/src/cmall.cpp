@@ -281,7 +281,17 @@ namespace cmall
 		}
 
 		if (tencent_microapp_pay_cfg.complete == 4)
-			wxpay_service.reset(new services::wxpay_service(tencent_microapp_pay_cfg.rsa, tencent_microapp_pay_cfg.appid, tencent_microapp_pay_cfg.mchid, tencent_microapp_pay_cfg.notify_url));
+		{
+			if (wxpay_service)
+			{
+				wxpay_service->reinit(tencent_microapp_pay_cfg.rsa, tencent_microapp_pay_cfg.appid, tencent_microapp_pay_cfg.mchid, tencent_microapp_pay_cfg.notify_url);
+
+			}
+			else
+			{
+				wxpay_service.reset(new services::wxpay_service(tencent_microapp_pay_cfg.rsa, tencent_microapp_pay_cfg.appid, tencent_microapp_pay_cfg.mchid, tencent_microapp_pay_cfg.notify_url));
+			}
+		}
 
 		co_return true;
 	}

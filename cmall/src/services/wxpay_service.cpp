@@ -65,6 +65,14 @@ namespace services
 			, notify_url(notify_url)
 		{}
 
+		void reinit(const std::string& rsa_key, const std::string& sp_appid, const std::string& sp_mchid, const std::string& notify_url)
+		{
+			this->rsa_key = rsa_key;
+			this->sp_appid = sp_appid;
+			this->sp_mchid = sp_mchid;
+			this->notify_url = notify_url;
+		}
+
 		// verify the user input verify_code against verify_session
 		awaitable<std::string> get_prepay_id(std::string sub_mchid, std::string out_trade_no, cpp_numeric amount, std::string goods_description, std::string payer_openid)
 		{
@@ -222,6 +230,11 @@ namespace services
 	{
 		static_assert(sizeof(obj_stor) >= sizeof(wxpay_service_impl));
 		std::construct_at(reinterpret_cast<wxpay_service_impl*>(obj_stor.data()), rsa_key, sp_appid, sp_mchid, notify_url);
+	}
+
+	void wxpay_service::reinit(const std::string& rsa_key, const std::string& sp_appid, const std::string& sp_mchid, const std::string& notify_url)
+	{
+		impl().reinit(rsa_key, sp_appid, sp_mchid, notify_url);
 	}
 
 	wxpay_service::~wxpay_service()
