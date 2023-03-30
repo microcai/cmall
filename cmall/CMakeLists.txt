@@ -35,7 +35,7 @@ EMBED_TARGET(SITE site.zip)
 
 GOURP_FILES(${CMAKE_CURRENT_SOURCE_DIR})
 
-list(FILTER cmall_SRCS EXCLUDE REGEX src/main.cpp)
+list(FILTER cmall_SRCS EXCLUDE REGEX "src/main.cpp")
 
 add_library(cmall_service STATIC ${cmall_SRCS}
 	${ODB_GENERATED}
