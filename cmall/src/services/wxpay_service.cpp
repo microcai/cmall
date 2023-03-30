@@ -260,18 +260,20 @@ namespace services
 {
 	struct wxpay_service_impl
 	{
-		wxpay_service_impl(const std::string& rsa_key, const std::string& rsa_cert, const std::string& sp_appid, const std::string& sp_mchid, const std::string& notify_url)
+		wxpay_service_impl(const std::string& rsa_key, const std::string& rsa_cert, const std::string& apiv3_key, const std::string& sp_appid, const std::string& sp_mchid, const std::string& notify_url)
 			: rsa_key(rsa_key)
 			, rsa_cert(rsa_cert)
+			, apiv3_key(apiv3_key)
 			, sp_mchid(sp_mchid)
 			, sp_appid(sp_appid)
 			, notify_url(notify_url)
 		{}
 
-		void reinit(const std::string& rsa_key, const std::string& rsa_cert, const std::string& sp_appid, const std::string& sp_mchid, const std::string& notify_url)
+		void reinit(const std::string& rsa_key, const std::string& rsa_cert, const std::string& apiv3_key, const std::string& sp_appid, const std::string& sp_mchid, const std::string& notify_url)
 		{
 			this->rsa_key = rsa_key;
 			this->rsa_cert = rsa_cert;
+			this->apiv3_key = apiv3_key;
 			this->sp_appid = sp_appid;
 			this->sp_mchid = sp_mchid;
 			this->notify_url = notify_url;
@@ -436,7 +438,7 @@ namespace services
 
 		std::string decode_wx_encrypt_data(std::string_view ciphertext, std::string_view nonce, std::string_view associated_data)
 		{
-			auto decrypted = aes_gcm_decrypt(base64_decode(ciphertext), "daimage1CODINGE2DAIMAGE3codinge4", nonce, associated_data);
+			auto decrypted = aes_gcm_decrypt(base64_decode(ciphertext), apiv3_key, nonce, associated_data);
 
 			return decrypted;
 		}
@@ -503,6 +505,8 @@ namespace services
 		std::string rsa_key;
 		std::string rsa_cert;
 
+		std::string apiv3_key;
+
 		std::string sp_mchid;
 		std::string sp_appid;
 		std::string notify_url;
@@ -532,15 +536,15 @@ namespace services
 		co_return co_await impl().get_pay_object(prepay_id);
 	}
 
-	wxpay_service::wxpay_service(const std::string& rsa_key, const std::string& rsa_cert, const std::string& sp_appid, const std::string& sp_mchid, const std::string& notify_url)
+	wxpay_service::wxpay_service(const std::string& rsa_key, const std::string& rsa_cert, const std::string& apiv3_key, const std::string& sp_appid, const std::string& sp_mchid, const std::string& notify_url)
 	{
 		static_assert(sizeof(obj_stor) >= sizeof(wxpay_service_impl));
-		std::construct_at(reinterpret_cast<wxpay_service_impl*>(obj_stor.data()), rsa_key, rsa_cert, sp_appid, sp_mchid, notify_url);
+		std::construct_at(reinterpret_cast<wxpay_service_impl*>(obj_stor.data()), rsa_key, rsa_cert, apiv3_key, sp_appid, sp_mchid, notify_url);
 	}
 
-	void wxpay_service::reinit(const std::string& rsa_key, const std::string& rsa_cert, const std::string& sp_appid, const std::string& sp_mchid, const std::string& notify_url)
+	void wxpay_service::reinit(const std::string& rsa_key, const std::string& rsa_cert, const std::string& apiv3_key, const std::string& sp_appid, const std::string& sp_mchid, const std::string& notify_url)
 	{
-		impl().reinit(rsa_key, rsa_cert, sp_appid, sp_mchid, notify_url);
+		impl().reinit(rsa_key, rsa_cert, apiv3_key, sp_appid, sp_mchid, notify_url);
 	}
 
 	awaitable<notify_message> wxpay_service::decode_notify_message(std::string_view notify_body, std::string_view Wechatpay_Timestamp, std::string_view Wechatpay_Nonce, std::string_view Wechatpay_Signature)

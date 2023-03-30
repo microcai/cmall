@@ -40,10 +40,10 @@ namespace services
 	class wxpay_service
 	{
 	public:
-		wxpay_service(const std::string& rsa_key, const std::string& rsa_cert, const std::string& sp_appid, const std::string& sp_mchid, const std::string& notify_url);
+		wxpay_service(const std::string& rsa_key, const std::string& rsa_cert, const std::string& apiv3_key, const std::string& sp_appid, const std::string& sp_mchid, const std::string& notify_url);
 		~wxpay_service();
 
-		void reinit(const std::string& rsa_key, const std::string& rsa_cert, const std::string& sp_appid, const std::string& sp_mchid, const std::string& notify_url);
+		void reinit(const std::string& rsa_key, const std::string& rsa_cert, const std::string& apiv3_key, const std::string& sp_appid, const std::string& sp_mchid, const std::string& notify_url);
 
 		// 获取 prepay_id
 		awaitable<std::string> get_prepay_id(std::string sub_mchid, std::string out_trade_no, cpp_numeric amount, std::string goods_description, std::string payer_openid);

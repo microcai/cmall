@@ -218,6 +218,7 @@ namespace cmall
 		struct {
 			std::string rsa;
 			std::string rsa_cert;
+			std::string apiv3_key;
 			std::string notify_url;
 			std::string appid;
 			std::string mchid;
@@ -290,11 +291,11 @@ namespace cmall
 		{
 			if (wxpay_service)
 			{
-				wxpay_service->reinit(tencent_microapp_pay_cfg.rsa, tencent_microapp_pay_cfg.rsa_cert, tencent_microapp_pay_cfg.appid, tencent_microapp_pay_cfg.mchid, tencent_microapp_pay_cfg.notify_url);
+				wxpay_service->reinit(tencent_microapp_pay_cfg.rsa, tencent_microapp_pay_cfg.rsa_cert, tencent_microapp_pay_cfg.apiv3_key, tencent_microapp_pay_cfg.appid, tencent_microapp_pay_cfg.mchid, tencent_microapp_pay_cfg.notify_url);
 			}
 			else
 			{
-				wxpay_service.reset(new services::wxpay_service(tencent_microapp_pay_cfg.rsa, tencent_microapp_pay_cfg.rsa_cert, tencent_microapp_pay_cfg.appid, tencent_microapp_pay_cfg.mchid, tencent_microapp_pay_cfg.notify_url));
+				wxpay_service.reset(new services::wxpay_service(tencent_microapp_pay_cfg.rsa, tencent_microapp_pay_cfg.rsa_cert, tencent_microapp_pay_cfg.apiv3_key, tencent_microapp_pay_cfg.appid, tencent_microapp_pay_cfg.mchid, tencent_microapp_pay_cfg.notify_url));
 			}
 		}
 
