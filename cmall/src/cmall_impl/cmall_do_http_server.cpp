@@ -474,13 +474,15 @@ namespace cmall
 						auto nofity_msg = co_await wxpay_service->decode_notify_message(req.body(), req["Wechatpay-Timestamp"], req["Wechatpay-Nonce"], req["Wechatpay-Signature"]);
 
 						// TODO, 根据 notify_msg 的内容处理支付结果.
-
+						bool success = co_await handle_order_wx_callback(nofity_msg);
+						if (success)
+						{
+							co_await http_simple_error_page(R"json(SUCCESS)json", 200, req.version());
+							continue;
+						}
 					}
-					else
-					{
-						co_await http_simple_error_page(R"json({"code": "FAIL", "message": "失败"})json", 500, req.version());
-						continue;
-					}
+					co_await http_simple_error_page(R"json({"code": "FAIL", "message": "失败"})json", 500, req.version());
+					continue;
 				}
 				else
 				{

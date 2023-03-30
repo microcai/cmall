@@ -458,6 +458,8 @@ namespace services
 			return decrypted;
 		}
 
+		// 每调用一次, 下载一次最新的证书.
+		// TODO, 添加一个定时任务, 每12小时调用一次这个接口.
 		awaitable<void> download_latest_wxpay_cert()
 		{
 			httpc::request_options_t option;
@@ -528,7 +530,9 @@ namespace services
 				{
 					std::scoped_lock<std::mutex> l(key_protect);
 					this->Wechatpay_Signature_Key = latest_cert_decoded;
-					std::cerr << "tencent cert updated!\n";
+					std::cerr << "tencent cert update as \n";
+					std::cerr << latest_cert_decoded;
+					std::cerr << "tencent cert updated\n";
 				}
 			}
 			co_return ;
