@@ -35,35 +35,46 @@ EMBED_TARGET(SITE site.zip)
 
 GOURP_FILES(${CMAKE_CURRENT_SOURCE_DIR})
 
-add_executable(cmall ${cmall_SRCS}
+list(FILTER cmall_SRCS EXCLUDE REGEX src/main.cpp)
+
+add_library(cmall_service STATIC ${cmall_SRCS}
 	${ODB_GENERATED}
 	${EMBED_SITE_OUTPUTS}
 )
 
-target_link_libraries(cmall gitpp httpd dirmon)
+target_link_libraries(cmall_service gitpp httpd dirmon)
 
-target_precompile_headers(cmall PUBLIC
+
+target_precompile_headers(cmall_service PUBLIC
   "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/include/stdafx.hpp>"
 )
 
 if (SECCOMP_FOUND)
-	target_link_libraries(cmall ${SECCOMP_LIBRARY})
+	target_link_libraries(cmall_service ${SECCOMP_LIBRARY})
 endif()
 
-target_include_directories(cmall PRIVATE
-	${CMAKE_BINARY_DIR}
-	${CMAKE_CURRENT_SOURCE_DIR}
+
+target_include_directories(cmall_service PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+target_include_directories(cmall_service PRIVATE
+	${CMAKE_BINARY_DIR}
+	${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_executable(cmall src/main.cpp)
+target_link_libraries(cmall cmall_service Boost::asio)
+
 if(ENABLE_BUILD_WERROR)
 	if(MSVC)
-		target_compile_options(cmall PRIVATE /W4 /WX)
+	target_compile_options(cmall PRIVATE /W4 /WX)
+	target_compile_options(cmall_service PRIVATE /W4 /WX)
 	elseif(NOT APPLE AND NOT MINGW)
 		if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.1)
-			target_compile_options(cmall PRIVATE -Werror -Wall -Wno-unknown-pragmas -Wno-deprecated -Wno-unused-parameter -Wno-unused-variable)
+			target_compile_options(cmall_service PRIVATE -Werror -Wall -Wno-unknown-pragmas -Wno-deprecated -Wno-unused-parameter -Wno-unused-variable)
 		else()
-			target_compile_options(cmall PRIVATE -Werror -Wall -Wno-unknown-pragmas -Wno-deprecated -Wno-unused-parameter -Wno-unused-variable -Wno-deprecated-copy -Wno-error=deprecated-copy -Wno-pessimizing-move)
+			target_compile_options(cmall_service PRIVATE -Werror -Wall -Wno-unknown-pragmas -Wno-deprecated -Wno-unused-parameter -Wno-unused-variable -Wno-deprecated-copy -Wno-error=deprecated-copy -Wno-pessimizing-move)
 		endif()
 	endif()
 endif()

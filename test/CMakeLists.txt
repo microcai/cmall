@@ -15,3 +15,7 @@ add_executable(test_rsa_sign test_rsa.cpp)
 
 
 target_link_libraries(test_rsa_sign ${OPENSSL_LIBRARIES})
+
+add_executable(test_wx test_wx.cpp)
+
+target_link_libraries(test_wx cmall_service)
