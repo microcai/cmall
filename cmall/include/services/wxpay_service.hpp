@@ -55,6 +55,8 @@ namespace services
 
 		awaitable<weixin::notify_message> decode_notify_message(std::string_view notify_body, std::string_view Wechatpay_Timestamp, std::string_view Wechatpay_Nonce, std::string_view Wechatpay_Signature);
 
+		awaitable<void> download_latest_wxpay_cert();
+
 	private:
 		const wxpay_service_impl& impl() const;
 		wxpay_service_impl& impl();

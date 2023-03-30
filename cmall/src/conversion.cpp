@@ -168,6 +168,20 @@ namespace boost::posix_time {
 	boost::posix_time::ptime tag_invoke(const boost::json::value_to_tag<boost::posix_time::ptime>&, const boost::json::value& v)
 	{
 		std::string time_str = boost::json::value_to<std::string>(v);
-		return boost::posix_time::from_iso_string(time_str);
+
+		boost::smatch w;
+
+		// 2028-03-27T15:34:46+08:00
+		boost::regex_match(time_str, w, boost::regex(R"_regex_(([^T]+)T([0-9:]+)\+([0-9][0-9]:[0-9][0-9]))_regex_"));
+
+		std::string date_string, tod_string;
+		date_string = w[1];
+		tod_string = w[2];
+		//call parse_date with first string
+		auto  d = boost::date_time::parse_date<boost::posix_time::ptime::date_type>(date_string);
+		//call parse_time_duration with remaining string
+		auto td = boost::date_time::parse_delimited_time_duration<boost::posix_time::ptime::time_duration_type>(tod_string);
+		//construct a time
+		return boost::posix_time::ptime(d, td);
 	}
 }

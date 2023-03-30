@@ -60,13 +60,13 @@ static inline bool rsa_sign_verify(const std::string& rsa_cert_pem, const std::s
     EVP_PKEY * pkey = nullptr;
 
 	auto bio = std::unique_ptr<BIO, decltype(&BIO_free)> (BIO_new_mem_buf(rsa_cert_pem.data(), rsa_cert_pem.length()), BIO_free);
+	auto x509_cert = std::unique_ptr<X509, decltype(&X509_free)> ( PEM_read_bio_X509(bio.get(), nullptr, nullptr, nullptr) , X509_free);
 
-    pkey = PEM_read_bio_PUBKEY(bio.get(), &pkey, nullptr, nullptr);
+    pkey = X509_get0_pubkey(x509_cert.get());
 
-	auto evp_private_key = std::unique_ptr<EVP_PKEY, decltype(&EVP_PKEY_free)> (pkey, EVP_PKEY_free);
 	auto context = std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> (EVP_MD_CTX_new(), EVP_MD_CTX_free);
 
-	EVP_DigestVerifyInit(context.get(), nullptr,  EVP_sha256(), nullptr, evp_private_key.get());
+	EVP_DigestVerifyInit(context.get(), nullptr,  EVP_sha256(), nullptr, pkey);
 
 	return EVP_DigestVerify(context.get(), reinterpret_cast<const unsigned char*>(signature.data()), signature.length(), reinterpret_cast<const unsigned char*>(in.data()), in.length());
 }
@@ -85,7 +85,7 @@ static std::string aes_gcm_decrypt(std::string_view ciphertext_with_aead, std::s
 	const auto AUTH_TAG_LENGTH_BYTE = 16;
 
 	std::string_view tag = ciphertext_with_aead.substr(ciphertext_with_aead.length() - AUTH_TAG_LENGTH_BYTE, AUTH_TAG_LENGTH_BYTE);
-	std::string_view ciphertext = ciphertext_with_aead.substr(ciphertext_with_aead.length() - AUTH_TAG_LENGTH_BYTE);
+	std::string_view ciphertext = ciphertext_with_aead.substr(0, ciphertext_with_aead.length() - AUTH_TAG_LENGTH_BYTE);
 
     int len;
 	std::string plaintext;
@@ -103,7 +103,18 @@ static std::string aes_gcm_decrypt(std::string_view ciphertext_with_aead, std::s
 
     /* Initialise the decryption operation. and set key and IV and AEAD data */
     if(!EVP_DecryptInit_ex2(ctx.get(), EVP_aes_256_gcm(), reinterpret_cast<const unsigned char*>(key.data()), reinterpret_cast<const unsigned char*>(iv.data()), gcm_param))
+    {
+	    handleErrors();
+	}
+
+    /*
+     * Provide any AAD data. This can be called zero or more times as
+     * required
+     */
+    if(!EVP_DecryptUpdate(ctx.get(), nullptr, &len, reinterpret_cast<const unsigned char*>(aad.data()), aad.length()))
         handleErrors();
+
+    // EVP_CIPHER_CTX_set_padding(ctx.get(), 1);
 
     /*
      * Provide the message to be decrypted, and obtain the plaintext output.
@@ -113,22 +124,24 @@ static std::string aes_gcm_decrypt(std::string_view ciphertext_with_aead, std::s
         handleErrors();
     plaintext_len = len;
 
-    /* Set expected tag value. Works in OpenSSL 1.0.1d and later */
-    if(!EVP_CIPHER_CTX_ctrl(ctx.get(), EVP_CTRL_GCM_SET_TAG, 16, const_cast<char*>(tag.data())))
-        handleErrors();
-
     /*
      * Finalise the decryption. A positive return value indicates success,
      * anything else is a failure - the plaintext is not trustworthy.
      */
-    ret = EVP_DecryptFinal_ex(ctx.get(), reinterpret_cast<unsigned char*>(&plaintext[len]), &len);
+	int f_len = plaintext.length() - plaintext_len;
+    ret = EVP_DecryptFinal_ex(ctx.get(), reinterpret_cast<unsigned char*>(&plaintext[len]), &f_len);
 
-    if(ret > 0) {
+    if(ret > 0)
+	{
         /* Success */
-        plaintext_len += len;
+        plaintext_len += f_len;
 		plaintext.resize(plaintext_len);
 		return plaintext;
-    } else {
+    }
+	else
+	{
+		ERR_print_errors_fp(stderr);
+
         /* Verify failed */
         return "";
     }
@@ -220,8 +233,8 @@ inline namespace conversion
 		encrypt_certificate ret;
 
 		ret.serial_no = value_to<std::string>(obj.at("serial_no"));
-		ret.expire_time = value_to<boost::posix_time::ptime>(obj.at("expire_time"));
 		ret.certificate = value_to<wx_encrypt_data>(obj.at("encrypt_certificate"));
+		ret.expire_time = value_to<boost::posix_time::ptime>(obj.at("expire_time"));
 
 		return ret;
 	}
@@ -429,9 +442,11 @@ namespace services
 			return rsa_sign(rsa_key,to_sign);
 		}
 
-		bool verify_sig(std::string_view notify_body, std::string_view Wechatpay_Timestamp, std::string_view Wechatpay_Nonce, std::string_view Wechatpay_Signature)
+		bool verify_sig(std::string_view body, std::string_view Wechatpay_Timestamp, std::string_view Wechatpay_Nonce, std::string_view Wechatpay_Signature)
 		{
-			std::string to_verify = fmt::format("{}\n{}\n{}\n", Wechatpay_Timestamp, Wechatpay_Nonce, notify_body);
+			std::string to_verify = fmt::format("{}\n{}\n{}\n", Wechatpay_Timestamp, Wechatpay_Nonce, body);
+
+			std::scoped_lock<std::mutex> l(key_protect);
 
 			return rsa_sign_verify(Wechatpay_Signature_Key, to_verify, base64_decode(Wechatpay_Signature));
 		}
@@ -472,8 +487,19 @@ namespace services
 
 			auto wx_response = co_await httpc::request(option);
 
+			for (auto& h : wx_response)
+				std::cout << h.name_string() << ":" << h.value() << std::endl;
+			std::cerr << wx_response.body << std::endl;
+
 			if (wx_response.code == 200)
 			{
+				bool verify_ok = this->verify_sig(wx_response.body, wx_response["Wechatpay-Timestamp"], wx_response["Wechatpay-Nonce"], wx_response["Wechatpay-Signature"]);
+
+				if (verify_ok)
+				{
+					std::cerr << "wx response body is verified!\n";
+				}
+
 				auto response_body = boost::json::parse(wx_response.body, {}, { 64, false, false, true });
 				auto encryped_certs = jsutil::json_accessor(response_body).get_array("data");
 
@@ -493,12 +519,14 @@ namespace services
 						return a.expire_time > b.expire_time;
 					});
 
-				decode_wx_encrypt_data(certs[0].certificate.ciphertext, certs[0].certificate.nonce, certs[0].certificate.associated_data);
+				auto latest_cert_decoded = decode_wx_encrypt_data(certs[0].certificate.ciphertext, certs[0].certificate.nonce, certs[0].certificate.associated_data);
 
-
-
+				if (!latest_cert_decoded.empty())
+				{
+					std::scoped_lock<std::mutex> l(key_protect);
+					this->Wechatpay_Signature_Key = latest_cert_decoded;
+				}
 			}
-
 			co_return ;
 		}
 
@@ -514,15 +542,31 @@ namespace services
 		// 初始化一个硬编码的代码写作日的最新版.
 		// 然后开启一个定时任务, 每隔 12小时从腾讯获取新的证书.
 		// 获取的文档在 https://pay.weixin.qq.com/wiki/doc/apiv3/wechatpay/wechatpay4_1.shtml
-		std::string Wechatpay_Signature_Key = R"pubkey(-----BEGIN PUBLIC KEY-----
-		MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4zej1cqugGQtVSY2Ah8R
-		MCKcr2UpZ8Npo+5Ja9xpFPYkWHaF1Gjrn3d5kcwAFuHHcfdc3yxDYx6+9grvJnCA
-		2zQzWjzVRa3BJ5LTMj6yqvhEmtvjO9D1xbFTA2m3kyjxlaIar/RYHZSslT4VmjIa
-		tW9KJCDKkwpM6x/RIWL8wwfFwgz2q3Zcrff1y72nB8p8P12ndH7GSLoY6d2Tv0OB
-		2+We2Kyy2+QzfGXOmLp7UK/pFQjJjzhSf9jxaWJXYKIBxpGlddbRZj9PqvFPTiep
-		8rvfKGNZF9Q6QaMYTpTp/uKQ3YvpDlyeQlYe4rRFauH3mOE6j56QlYQWivknDX9V
-		rwIDAQAB
-		-----END PUBLIC KEY-----)pubkey";
+		std::string Wechatpay_Signature_Key = R"pubkey(-----BEGIN CERTIFICATE-----
+MIIEFDCCAvygAwIBAgIUUnfl6FXi41QzLxUx6CQeFEJcJZAwDQYJKoZIhvcNAQEL
+BQAwXjELMAkGA1UEBhMCQ04xEzARBgNVBAoTClRlbnBheS5jb20xHTAbBgNVBAsT
+FFRlbnBheS5jb20gQ0EgQ2VudGVyMRswGQYDVQQDExJUZW5wYXkuY29tIFJvb3Qg
+Q0EwHhcNMjMwMzI5MDczNDQ2WhcNMjgwMzI3MDczNDQ2WjBuMRgwFgYDVQQDDA9U
+ZW5wYXkuY29tIHNpZ24xEzARBgNVBAoMClRlbnBheS5jb20xHTAbBgNVBAsMFFRl
+bnBheS5jb20gQ0EgQ2VudGVyMQswCQYDVQQGDAJDTjERMA8GA1UEBwwIU2hlblpo
+ZW4wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCut23n2Z6pbZPDDKFM
+njvzOkFTuxhjYdlzTs98RXE+4cJtZurs8BcWea2HmVeI92zdoi8AtU9z0Ho9Y0HP
+V23YipGM7pKGmE8ZkKSt2uFrXFuAfYDIdRhsot5GhvzCblq50TnVD7VYvyV0+d4z
+nA/7DduJCvpjcWarFAzWQR3Lrar+566L0gkVbPmXzUNwTmPBH9Xmm60oyP4G1kVO
+Y2Dc+uwlriJbnrQY6n1SyC4FD1nuhii1Zo3vun1d6fPkHH+gaWnk61jXgrkY7m2l
+NxA2TjMEGhy5LLJ5EBcN6nagYd1C5G37dbAO1bjmQ1TVn1ttNrtwAuOQxgWHtKQx
+DlCXAgMBAAGjgbkwgbYwCQYDVR0TBAIwADALBgNVHQ8EBAMCA/gwgZsGA1UdHwSB
+kzCBkDCBjaCBiqCBh4aBhGh0dHA6Ly9ldmNhLml0cnVzLmNvbS5jbi9wdWJsaWMv
+aXRydXNjcmw/Q0E9MUJENDIyMEU1MERCQzA0QjA2QUQzOTc1NDk4NDZDMDFDM0U4
+RUJEMiZzZz1IQUNDNDcxQjY1NDIyRTEyQjI3QTlEMzNBODdBRDFDREY1OTI2RTE0
+MDM3MTANBgkqhkiG9w0BAQsFAAOCAQEAQ9LZ4vugkmAHEwrKv2b4jKfUWEo3BGbW
+NaMlEXjwBvut2PbZBf3q2xscCzqE+LGM9h4BSuvWTW7m8vvdB+vyMiDHcJcrXH+8
+xxvfYfDOc3uQfCgunz9WbZBaMHqy4daFXHqSHUivTMOcguR5TKCFdGprsH78HdfF
+ZzI1LpHqDbshfj+Khwfw/0/mRSycMbLL2eaFKFfh1yylhKZhC2BL0ypZLLSgLzmO
+C2qhuN3DwCgp9rUbfx+kh3GnOl6NDt5+HZmiw554i2YdcTUyNVEm07/vVUoNOHNP
+V739kLuz6XvUpJo3EzM0OGT1TjikmyUcNkNQjZj/yEeQwRkp+lVoew==
+-----END CERTIFICATE-----)pubkey";
+		std::mutex key_protect;
 	};
 
 	// verify the user input verify_code against verify_session
@@ -550,6 +594,11 @@ namespace services
 	awaitable<notify_message> wxpay_service::decode_notify_message(std::string_view notify_body, std::string_view Wechatpay_Timestamp, std::string_view Wechatpay_Nonce, std::string_view Wechatpay_Signature)
 	{
 		co_return co_await impl().decode_notify_message(notify_body, Wechatpay_Timestamp, Wechatpay_Nonce, Wechatpay_Signature);
+	}
+
+	awaitable<void> wxpay_service::download_latest_wxpay_cert()
+	{
+		co_return co_await impl().download_latest_wxpay_cert();
 	}
 
 	wxpay_service::~wxpay_service()

@@ -34,12 +34,12 @@ namespace httpc
 		std::unordered_map<std::string, std::string> headers;
 		std::optional<std::string> body;
 	};
-	struct response_t
+	struct response_t : public http::response<http::string_body>
 	{
 		std::optional<std::string> err;
 		int code;
-		std::string content_type;
-		std::string body;
+		std::string_view content_type;
+		std::string_view body;
 	};
 
 	namespace detail
@@ -157,6 +157,8 @@ namespace httpc
 				}
 				if (ec)
 					break;
+
+				static_cast<http::response<http::string_body>&>(ret) = res;
 
 				ret.code		 = static_cast<unsigned>(res.result());
 				ret.content_type = res[http::field::content_type];
