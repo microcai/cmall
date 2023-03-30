@@ -325,7 +325,10 @@ namespace services
 			option.url = api_uri;
 			option.verb = httpc::http::verb::post;
 			option.headers.insert(std::make_pair("Content-Type", "application/json"));
+			option.headers.insert(std::make_pair("Accept", "application/json"));
+			option.headers.insert(std::make_pair("User-Agent", "c++mall"));
 			option.body = boost::json::serialize(params);
+			option.headers.insert(std::make_pair("Authorization", gen_REST_auth_header("POST", "/v3/pay/partner/transactions/jsapi", option.body.value())));
 
 			auto reply = co_await request(option);
 			auto resp = reply.body;
@@ -418,6 +421,28 @@ namespace services
 			co_return boost::json::value_to<notify_message>(decoded_notify_msg_jv);
 		}
 
+		std::string gen_REST_auth_header(std::string VERB, std::string_view url, std::string_view body)
+		{
+			std::string timeStamp = fmt::format("{}", std::time(nullptr));
+			std::string nonceStr = gen_nonce();
+
+			auto signature = gen_sig_v3(VERB, url, timeStamp, nonceStr, body);
+
+			auto bio = std::unique_ptr<BIO, decltype(&BIO_free)> (BIO_new_mem_buf(rsa_cert.data(), rsa_cert.length()), BIO_free);
+			auto x509_cert = std::unique_ptr<X509, decltype(&X509_free)> ( PEM_read_bio_X509(bio.get(), nullptr, nullptr, nullptr) , X509_free);
+
+			auto asn1_serial_no = X509_get_serialNumber(x509_cert.get());
+			auto serial_no_bn = std::unique_ptr<BIGNUM, decltype(&BN_free)> ( ASN1_INTEGER_to_BN(asn1_serial_no, nullptr) , BN_free);
+			auto serial_no_char_xing = BN_bn2hex(serial_no_bn.get());
+			std::string serial_no = serial_no_char_xing;
+			OPENSSL_free(serial_no_char_xing);
+
+			std::string auth = std::format(R"auth(WECHATPAY2-SHA256-RSA2048 mchid="{}",nonce_str="{}",signature="{}",timestamp="{}",serial_no="{}")auth",
+				sp_mchid, nonceStr,  signature, timeStamp, serial_no);
+
+			return auth;
+		}
+
 		std::string gen_nonce(std::size_t len = 32)
 		{
 			static const std::string chartable = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -435,7 +460,7 @@ namespace services
 			return rsa_sign(rsa_key,to_sign);
 		}
 
-		std::string gen_sig_v3(std::string_view verb, std::string_view path, std::string timeStamp, std::string nonceStr, std::string body)
+		std::string gen_sig_v3(std::string_view verb, std::string_view path, std::string_view timeStamp, std::string_view nonceStr, std::string_view body)
 		{
 			std::string to_sign = fmt::format("{}\n{}\n{}\n{}\n{}\n", verb, path, timeStamp, nonceStr, body);
 
@@ -468,24 +493,7 @@ namespace services
 
 			option.headers.insert(std::make_pair("Accept", "application/json"));
 			option.headers.insert(std::make_pair("User-Agent", "c++mall"));
-
-			std::string timeStamp = fmt::format("{}", std::time(nullptr));
-			std::string nonceStr = gen_nonce();
-
-			auto signature = gen_sig_v3("GET", "/v3/certificates", timeStamp, nonceStr, "");
-
-			auto bio = std::unique_ptr<BIO, decltype(&BIO_free)> (BIO_new_mem_buf(rsa_cert.data(), rsa_cert.length()), BIO_free);
-			auto x509_cert = std::unique_ptr<X509, decltype(&X509_free)> ( PEM_read_bio_X509(bio.get(), nullptr, nullptr, nullptr) , X509_free);
-
-			auto asn1_serial_no = X509_get_serialNumber(x509_cert.get());
-			auto serial_no_bn = std::unique_ptr<BIGNUM, decltype(&BN_free)> ( ASN1_INTEGER_to_BN(asn1_serial_no, nullptr) , BN_free);
-			auto serial_no_char_xing = BN_bn2hex(serial_no_bn.get());
-			std::string serial_no = serial_no_char_xing;
-			OPENSSL_free(serial_no_char_xing);
-
-			std::string auth = std::format(R"auth(WECHATPAY2-SHA256-RSA2048 mchid="{}",nonce_str="{}",signature="{}",timestamp="{}",serial_no="{}")auth",
-				sp_mchid, nonceStr,  signature, timeStamp, serial_no);
-			option.headers.insert(std::make_pair("Authorization", auth));
+			option.headers.insert(std::make_pair("Authorization", gen_REST_auth_header("GET", "/v3/certificates", "")));
 
 			auto wx_response = co_await httpc::request(option);
 
