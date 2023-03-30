@@ -467,6 +467,21 @@ namespace cmall
 					}
 					continue;
 				}
+				else if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/api/wx/pay\\.action")))
+				{
+					if (this->wxpay_service)
+					{
+						auto nofity_msg = co_await wxpay_service->decode_notify_message(req.body(), req["Wechatpay-Timestamp"], req["Wechatpay-Nonce"], req["Wechatpay-Signature"]);
+
+						// TODO, 根据 notify_msg 的内容处理支付结果.
+
+					}
+					else
+					{
+						co_await http_simple_error_page(R"json({"code": "FAIL", "message": "失败"})json", 500, req.version());
+						continue;
+					}
+				}
 				else
 				{
 					co_await http_simple_error_page("ERRORED", 403, req.version());

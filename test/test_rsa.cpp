@@ -1,6 +1,7 @@
 
 #include <openssl/evp.h>
 #include <openssl/pem.h>
+#include <openssl/x509v3.h>
 
 #include <iostream>
 
@@ -97,9 +98,126 @@ ygFuJQV2xsXJY/SkUCynMDtZsCpYqwJfCSL/zW4tAEN00PVDI91vydDYB1YatCj8
 )_rkey";
 
 
+const std::string test_cert = R"xxx(
+-----BEGIN CERTIFICATE-----
+MIIEKzCCAxOgAwIBAgIUTelyqSnLP00JOb5v3HqWDEgo5zcwDQYJKoZIhvcNAQEL
+BQAwXjELMAkGA1UEBhMCQ04xEzARBgNVBAoTClRlbnBheS5jb20xHTAbBgNVBAsT
+FFRlbnBheS5jb20gQ0EgQ2VudGVyMRswGQYDVQQDExJUZW5wYXkuY29tIFJvb3Qg
+Q0EwHhcNMjMwMzI5MDczNDQ3WhcNMjgwMzI3MDczNDQ3WjCBhDETMBEGA1UEAwwK
+MTUwMjc2NTg2MTEbMBkGA1UECgwS5b6u5L+h5ZWG5oi357O757ufMTAwLgYDVQQL
+DCfmna3lt57ku6PnoIHpuL3mmbrog73np5HmioDmnInpmZDlhazlj7gxCzAJBgNV
+BAYMAkNOMREwDwYDVQQHDAhTaGVuWmhlbjCCASIwDQYJKoZIhvcNAQEBBQADggEP
+ADCCAQoCggEBAMc+g0yurzE77+AOQ7hsRzpiWN9bpW/f5JIgfRAw79doxF5a8oVm
+ncAMfbvSQSWu7/LvgykUaFsZGuyynxdRzcwcGGjOhffadDjGOugWD01RD3X7Q6oN
+bb2ocIiPtvIp2Ehn8VNxg70vLfGn9oj8pdA3P67vFcigSnP25xpKCiVQqOeVALGR
+fA5Y7cC2+m56FtnjX5zyhQSkEB7ipSFYN3PTVFbWnN2fondTNcMW5rjm27vCLvKP
+tPQAWAdv9r1o361fOVfLjnm5l6g9zkEWp+hrHP06ElJQfJHkfpffbj15lH/x6vkB
+2YGyeLdKWteiMPiMSlgijG2vo+P49jr7ZXUCAwEAAaOBuTCBtjAJBgNVHRMEAjAA
+MAsGA1UdDwQEAwID+DCBmwYDVR0fBIGTMIGQMIGNoIGKoIGHhoGEaHR0cDovL2V2
+Y2EuaXRydXMuY29tLmNuL3B1YmxpYy9pdHJ1c2NybD9DQT0xQkQ0MjIwRTUwREJD
+MDRCMDZBRDM5NzU0OTg0NkMwMUMzRThFQkQyJnNnPUhBQ0M0NzFCNjU0MjJFMTJC
+MjdBOUQzM0E4N0FEMUNERjU5MjZFMTQwMzcxMA0GCSqGSIb3DQEBCwUAA4IBAQB/
+zYz88CjCBqG+swXkzCvWTpvD4FMpE8IrdC8Fj7Nsw6YrD+zxZnbepkcXic3eswaa
+w2O1knQbax0NyEZAvb+Oxv04t4L9cTIKVwiGRSq4geRLMrn3AbCrQ4wI1Xlj/LCX
+fwonUZWjzrWdYtMdh5Fxr994SP/MZRbr5dxUv1t/eTEMcUyaAIE+PjNfoYQ5yZRH
+rZw3lPVbsXY8oE5E8vYaWB+SgCYi5ar9uBF/o5spk+cZoasdxZEU8Uhg39thMMU5
+EFWCZd09RNLs3EUv4MK7CPM72yujGFo2/F3MkR0Js+YvB4nD40fA4OWLxihb0daC
+tgh4C1zYeDvr0DkUAN9o
+-----END CERTIFICATE-----
+)xxx";
+
+std::string get_cert_serial(std::string rsa_cert)
+{
+	auto bio = std::unique_ptr<BIO, decltype(&BIO_free)> (BIO_new_mem_buf(rsa_cert.data(), rsa_cert.length()), BIO_free);
+	X509* x = nullptr;
+	auto x509_cert = std::unique_ptr<X509, decltype(&X509_free)> ( PEM_read_bio_X509(bio.get(), &x, nullptr, nullptr) , X509_free);
+
+	X509_CERT_AUX_it();
+
+	auto asn1_serial_no = X509_get_serialNumber(x509_cert.get());
+	auto serial_no_bn = std::unique_ptr<BIGNUM, decltype(&BN_free)> ( ASN1_INTEGER_to_BN(asn1_serial_no, nullptr) , BN_free);
+	auto serial_no_char_xing = BN_bn2hex(serial_no_bn.get());
+	std::string serial_no = serial_no_char_xing;
+	OPENSSL_free(serial_no_char_xing);
+	return serial_no;
+}
+
+static void handleErrors(){
+	throw "ssl error";
+}
+
+static std::string aes_gcm_decrypt(std::string_view ciphertext_with_aead, std::string_view key, std::string_view iv, std::string_view aad)
+{
+    /* Create and initialise the context */
+	auto ctx = std::unique_ptr<EVP_CIPHER_CTX, decltype(&EVP_CIPHER_CTX_free)> (
+		EVP_CIPHER_CTX_new(), &EVP_CIPHER_CTX_free
+	);
+
+	const auto AUTH_TAG_LENGTH_BYTE = 16;
+
+	std::string_view tag = ciphertext_with_aead.substr(ciphertext_with_aead.length() - AUTH_TAG_LENGTH_BYTE, AUTH_TAG_LENGTH_BYTE);
+	std::string_view ciphertext = ciphertext_with_aead.substr(ciphertext_with_aead.length() - AUTH_TAG_LENGTH_BYTE);
+
+    int len;
+	std::string plaintext;
+	plaintext.resize(ciphertext.length() + key.length() + iv.length() + tag.length() + aad.length());
+    int plaintext_len;
+    int ret;
+
+    /* Initialise the decryption operation. */
+    if(!EVP_DecryptInit_ex(ctx.get(), EVP_aes_256_gcm(), NULL, NULL, NULL))
+        handleErrors();
+
+    /* Set IV length. Not necessary if this is 12 bytes (96 bits) */
+    if(!EVP_CIPHER_CTX_ctrl(ctx.get(), EVP_CTRL_GCM_SET_IVLEN, iv.length(), NULL))
+        handleErrors();
+
+    /* Initialise key and IV */
+    if(!EVP_DecryptInit_ex(ctx.get(), NULL, NULL, reinterpret_cast<const unsigned char*>(key.data()), reinterpret_cast<const unsigned char*>(iv.data())))
+        handleErrors();
+
+    /*
+     * Provide any AAD data. This can be called zero or more times as
+     * required
+     */
+    if(!EVP_DecryptUpdate(ctx.get(), NULL, &len, reinterpret_cast<const unsigned char*>(aad.data()), aad.length()))
+        handleErrors();
+
+    /*
+     * Provide the message to be decrypted, and obtain the plaintext output.
+     * EVP_DecryptUpdate can be called multiple times if necessary
+     */
+    if(!EVP_DecryptUpdate(ctx.get(), reinterpret_cast<unsigned char*>(&plaintext[0]), &len, reinterpret_cast<const unsigned char*>(ciphertext.data()), ciphertext.length()))
+        handleErrors();
+    plaintext_len = len;
+
+    /* Set expected tag value. Works in OpenSSL 1.0.1d and later */
+    if(!EVP_CIPHER_CTX_ctrl(ctx.get(), EVP_CTRL_GCM_SET_TAG, 16, const_cast<char*>(tag.data())))
+        handleErrors();
+
+    /*
+     * Finalise the decryption. A positive return value indicates success,
+     * anything else is a failure - the plaintext is not trustworthy.
+     */
+    ret = EVP_DecryptFinal_ex(ctx.get(), reinterpret_cast<unsigned char*>(&plaintext[len]), &len);
+
+    if(ret > 0) {
+        /* Success */
+        plaintext_len += len;
+		plaintext.resize(plaintext_len);
+		return plaintext;
+    } else {
+        /* Verify failed */
+        return "";
+    }
+}
+
 int main()
 {
     const std::string data = "hello, world";
 
-    std::cerr << rsa_sign(key, data);
+    std::cerr << rsa_sign(key, data) << std::endl;
+
+    std::cerr << "test_cert serial no : "  << get_cert_serial(test_cert) << std::endl;
+
 }
