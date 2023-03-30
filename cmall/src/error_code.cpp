@@ -76,6 +76,8 @@ std::string cmall::error::cmall_category::message(int ev) const
 			return (const char*) u8"商户 不支持 小程序 微信支付";
 		case wxpay_server_error:
 			return (const char*) u8"获取微信支付信息失败!";
+		case nofity_message_signature_invalid:
+			return (const char*) u8"验签错误";
 	}
 	return "error message";
 }
