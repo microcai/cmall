@@ -158,11 +158,11 @@ namespace httpc
 				if (ec)
 					break;
 
-				static_cast<http::response<http::string_body>&>(ret) = res;
+				static_cast<http::response<http::string_body>&>(ret) = std::move(res);
 
 				ret.code		 = static_cast<unsigned>(res.result());
-				ret.content_type = res[http::field::content_type];
-				ret.body		 = res.body();
+				ret.content_type = ret[http::field::content_type];
+				ret.body		 = static_cast<http::response<http::string_body>&>(ret).body();
 
 				if (is_secure)
 				{

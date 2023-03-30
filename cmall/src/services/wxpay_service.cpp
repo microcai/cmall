@@ -495,10 +495,13 @@ namespace services
 			{
 				bool verify_ok = this->verify_sig(wx_response.body, wx_response["Wechatpay-Timestamp"], wx_response["Wechatpay-Nonce"], wx_response["Wechatpay-Signature"]);
 
-				if (verify_ok)
+				if (!verify_ok)
 				{
-					std::cerr << "wx response body is verified!\n";
+					std::cerr << "wx response body verify failed!\n";
+					co_return;
 				}
+
+				std::cerr << "wx response body is verified!\n";
 
 				auto response_body = boost::json::parse(wx_response.body, {}, { 64, false, false, true });
 				auto encryped_certs = jsutil::json_accessor(response_body).get_array("data");
@@ -525,6 +528,7 @@ namespace services
 				{
 					std::scoped_lock<std::mutex> l(key_protect);
 					this->Wechatpay_Signature_Key = latest_cert_decoded;
+					std::cerr << "tencent cert updated!\n";
 				}
 			}
 			co_return ;
