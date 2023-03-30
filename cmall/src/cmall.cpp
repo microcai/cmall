@@ -217,6 +217,7 @@ namespace cmall
 
 		struct {
 			std::string rsa;
+			std::string rsa_cert;
 			std::string notify_url;
 			std::string appid;
 			std::string mchid;
@@ -268,6 +269,11 @@ namespace cmall
 				tencent_microapp_pay_cfg.rsa = config_item.config_value;
 				tencent_microapp_pay_cfg.complete ++;
 			}
+			else if (config_item.config_name == "wxpay_rsa_cert")
+			{
+				tencent_microapp_pay_cfg.rsa_cert = config_item.config_value;
+				tencent_microapp_pay_cfg.complete ++;
+			}
 			else if (config_item.config_name == "wxpay_mchid")
 			{
 				tencent_microapp_pay_cfg.mchid = config_item.config_value;
@@ -280,16 +286,15 @@ namespace cmall
 			}
 		}
 
-		if (tencent_microapp_pay_cfg.complete == 4)
+		if (tencent_microapp_pay_cfg.complete == 5)
 		{
 			if (wxpay_service)
 			{
-				wxpay_service->reinit(tencent_microapp_pay_cfg.rsa, tencent_microapp_pay_cfg.appid, tencent_microapp_pay_cfg.mchid, tencent_microapp_pay_cfg.notify_url);
-
+				wxpay_service->reinit(tencent_microapp_pay_cfg.rsa, tencent_microapp_pay_cfg.rsa_cert, tencent_microapp_pay_cfg.appid, tencent_microapp_pay_cfg.mchid, tencent_microapp_pay_cfg.notify_url);
 			}
 			else
 			{
-				wxpay_service.reset(new services::wxpay_service(tencent_microapp_pay_cfg.rsa, tencent_microapp_pay_cfg.appid, tencent_microapp_pay_cfg.mchid, tencent_microapp_pay_cfg.notify_url));
+				wxpay_service.reset(new services::wxpay_service(tencent_microapp_pay_cfg.rsa, tencent_microapp_pay_cfg.rsa_cert, tencent_microapp_pay_cfg.appid, tencent_microapp_pay_cfg.mchid, tencent_microapp_pay_cfg.notify_url));
 			}
 		}
 
