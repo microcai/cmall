@@ -162,3 +162,12 @@ inline namespace conversion
 		return req;
 	}
 }
+
+
+namespace boost::posix_time {
+	boost::posix_time::ptime tag_invoke(const boost::json::value_to_tag<boost::posix_time::ptime>&, const boost::json::value& v)
+	{
+		std::string time_str = boost::json::value_to<std::string>(v);
+		return boost::posix_time::from_iso_string(time_str);
+	}
+}

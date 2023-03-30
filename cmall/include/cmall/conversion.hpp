@@ -40,3 +40,7 @@ inline namespace conversion
 	// deserialization
 	maybe_jsonrpc_request_t tag_invoke(const value_to_tag<maybe_jsonrpc_request_t>&, const value&);
 }
+
+namespace boost::posix_time {
+	boost::posix_time::ptime tag_invoke(const boost::json::value_to_tag<boost::posix_time::ptime>&, const boost::json::value&);
+}
