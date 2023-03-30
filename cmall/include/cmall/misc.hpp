@@ -234,8 +234,19 @@ inline std::string base64_encode(const std::string& in)
 	std::string ret;
 	ret.resize(b64_size);
 
-	boost::beast::detail::base64::encode(ret.data(), in.data(), in.size());
+	b64_size = boost::beast::detail::base64::encode(ret.data(), in.data(), in.size());
 
+	return ret;
+}
+
+inline std::string base64_decode(std::string_view in)
+{
+	auto b64_size = boost::beast::detail::base64::decoded_size(in.size());
+	std::string ret;
+	ret.resize(b64_size);
+
+	auto [outlen, comsume_len ] = boost::beast::detail::base64::decode(ret.data(), in.data(), in.size());
+	ret.resize(outlen);
 	return ret;
 }
 
