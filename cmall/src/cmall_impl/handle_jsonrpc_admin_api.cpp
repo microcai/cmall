@@ -200,6 +200,8 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
         {
             auto wxpay_rsa_key	   = jsutil::json_accessor(params).get_string("rsa_key");
             auto wxpay_rsa_cert	   = jsutil::json_accessor(params).get_string("rsa_cert");
+            auto wxpay_apiv3_key	   = jsutil::json_accessor(params).get_string("apiv3_key");
+
             auto sp_appid	   = jsutil::json_accessor(params).get_string("sp_appid");
             auto sp_mchid	   = jsutil::json_accessor(params).get_string("sp_mchid");
             auto notify_url	   = jsutil::json_accessor(params).get_string("notify_url");
@@ -208,6 +210,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
                 { 0, "wxpay_appid", sp_appid },
                 { 0, "wxpay_rsa_key", wxpay_rsa_key },
                 { 0, "wxpay_rsa_cert", wxpay_rsa_cert },
+                { 0, "wxpay_apiv3_key", wxpay_apiv3_key },
                 { 0, "wxpay_mchid", sp_mchid },
                 { 0, "wxpay_notify_url", notify_url },
             };

@@ -275,6 +275,11 @@ namespace cmall
 				tencent_microapp_pay_cfg.rsa_cert = config_item.config_value;
 				tencent_microapp_pay_cfg.complete ++;
 			}
+			else if (config_item.config_name == "wxpay_apiv3_key")
+			{
+				tencent_microapp_pay_cfg.apiv3_key = config_item.config_value;
+				tencent_microapp_pay_cfg.complete ++;
+			}
 			else if (config_item.config_name == "wxpay_mchid")
 			{
 				tencent_microapp_pay_cfg.mchid = config_item.config_value;
@@ -287,7 +292,7 @@ namespace cmall
 			}
 		}
 
-		if (tencent_microapp_pay_cfg.complete == 5)
+		if (tencent_microapp_pay_cfg.complete == 6)
 		{
 			if (wxpay_service)
 			{
