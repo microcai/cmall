@@ -191,7 +191,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
             auto sub_mchid	   = jsutil::json_accessor(params).get_string("sub_mchid");
             bool db_ok = co_await m_database.async_update<cmall_merchant>(merchant_id, [=](cmall_merchant&& old_value)
             {
-                old_value.exinfo_wx_mchid= sub_mchid;
+                old_value.exinfo_wx_mchid = sub_mchid;
                 return old_value;
             });
             reply_message["result"] = db_ok;

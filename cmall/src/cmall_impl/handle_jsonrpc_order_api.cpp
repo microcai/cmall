@@ -247,7 +247,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_order_api(
             if (prepay_id.empty())
                 throw boost::system::system_error(cmall::error::wxpay_server_error);
             else
-                reply_message["result"] = { "prepay_id", prepay_id };
+                reply_message["result"] = prepay_id;
 
         }break;
         case req_method::order_get_wxpay_object:
