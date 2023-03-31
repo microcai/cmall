@@ -20,29 +20,20 @@
 
 inline std::string numeric_to_string(const cpp_numeric& number)
 {
-	std::string str = number.str(0, std::ios_base::fixed);
+	std::stringstream oss;
 
-	auto pos = str.find_last_not_of('0');
-	if (pos == std::string::npos)
-		return str;
+	oss << std::fixed << std::setprecision(std::numeric_limits<cpp_numeric>::digits) << number;
 
-	auto pos_zeros = pos;
-	while (pos > 0)
+	std::string result = oss.str();
+
+	if (result.find('.') != std::string::npos)
 	{
-		if (str[pos] == '.')
-			break;
-		pos--;
+		boost::trim_right_if(result, boost::algorithm::is_any_of("0"));
+		if (*result.rbegin() == '.')
+			result.resize(result.length() - 1);
 	}
 
-	if (pos != 0)
-	{
-		if (pos == pos_zeros)
-			str.erase(pos_zeros);
-		else
-			str.erase(pos_zeros + 1);
-	}
-
-	return str;
+	return result;
 }
 
 namespace odb {
