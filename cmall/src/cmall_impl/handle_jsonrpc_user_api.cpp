@@ -337,7 +337,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 		{
 			if (!wxpay_service)
 				throw boost::system::system_error(cmall::error::make_error_code(cmall::error::merchant_does_not_support_microapp_wxpay));
-			auto jscode = params["jscode"].as_string();
+			std::string jscode = jsutil::json_accessor(params).get_string("jscode");
 
 			auto openid = co_await wxpay_service->get_wx_openid(jscode);
 			reply_message["result"] = openid;
