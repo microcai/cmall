@@ -132,12 +132,6 @@ namespace multiprecision = boost::multiprecision;
 #define APP_NAME "cmall"
 #define HTTPD_VERSION_STRING	     APP_NAME "/1.0"
 
-enum class ChainType
-{
-	ETHEREUM = 1,
-	CHAOS = 1001011,
-};
-
 // 微软的 STL 只有 足够的新才能 include fmt 不然会报错
 #ifdef __cpp_lib_format
 #	include <format>
