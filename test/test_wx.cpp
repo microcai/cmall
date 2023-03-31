@@ -9,17 +9,24 @@ namespace po = boost::program_options;
 
 #include "services/wxpay_service.hpp"
 
-std::string testkey;
-std::string test_cert;
-std::string test_api_key;
-std::string test_appid;
-std::string test_mchid;
+
+#include "./test_key.h"
 
 awaitable<int> co_main(int argc, char** argv, boost::asio::io_context& ios)
 {
-    services::wxpay_service wxpay_service(testkey, test_cert, test_api_key, test_appid, test_mchid, "https://cmall.chschain.com/api/wx/notify");
+	services::weixin::tencent_microapp_pay_cfg_t cfg;
+	cfg.notify_url_ = "https://cmall.chschain.com/api/wx/pay.action";
+	cfg.appid_ = "wx6f3464e4046cf192";
+	cfg.mchid_ = "1502765861";
 
-    std::cerr << co_await wxpay_service.get_pay_object("123") << std::endl;
+	cfg.appSecret_ = test_appSecret_;
+	cfg.apiv3_key_ = test_api_key;
+	cfg.rsa_key_ = testkey;
+	cfg.rsa_cert_ = test_cert;
+
+    services::wxpay_service wxpay_service(ios, cfg);
+
+    co_await wxpay_service.download_latest_wxpay_cert();
 
 	co_return EXIT_SUCCESS;
 }
