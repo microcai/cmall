@@ -798,6 +798,7 @@ namespace cmall
 			case req_method::user_add_recipient_address:
 			case req_method::user_modify_receipt_address:
 			case req_method::user_erase_receipt_address:
+			case req_method::user_get_wx_openid:
 			case req_method::user_3rd_kv_put:
 			case req_method::user_3rd_kv_get:
 			case req_method::user_3rd_kv_put_pubkey:

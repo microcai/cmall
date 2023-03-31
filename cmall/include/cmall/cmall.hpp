@@ -157,6 +157,7 @@ namespace cmall {
 		user_add_recipient_address,
 		user_modify_receipt_address,
 		user_erase_receipt_address,
+		user_get_wx_openid,
 		user_3rd_kv_put,
 		user_3rd_kv_get,
 		user_3rd_kv_put_pubkey,

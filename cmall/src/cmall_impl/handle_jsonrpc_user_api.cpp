@@ -333,6 +333,16 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 			reply_message["result"] = is_db_op_ok;
 		}
 		break;
+		case req_method::user_get_wx_openid:
+		{
+			if (!wxpay_service)
+				throw boost::system::system_error(cmall::error::make_error_code(cmall::error::merchant_does_not_support_microapp_wxpay));
+			auto jscode = params["jscode"].as_string();
+
+			auto openid = co_await wxpay_service->get_wx_openid(jscode);
+			reply_message["result"] = openid;
+		}
+		break;
 		case req_method::user_3rd_kv_put:
 		{
 			auto key_value = params["key_value"].as_string();

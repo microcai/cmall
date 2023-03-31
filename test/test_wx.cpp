@@ -26,7 +26,13 @@ awaitable<int> co_main(int argc, char** argv, boost::asio::io_context& ios)
 
     services::wxpay_service wxpay_service(ios, cfg);
 
-    co_await wxpay_service.download_latest_wxpay_cert();
+	auto openid = co_await wxpay_service.get_wx_openid("0c3tz7100TR3HP1AzG200U8gfk2tz71a");
+
+    std::cerr << "id is: " <<  openid << std::endl;
+
+	auto prepayid = co_await wxpay_service.get_prepay_id("1641053810", "test_order_2", 1, "测试一下哈", "oh4Rj467Rx42zvafj3OmRXNJtI2M");
+
+    std::cerr << "prepayid is: " <<  prepayid << std::endl;
 
 	co_return EXIT_SUCCESS;
 }
