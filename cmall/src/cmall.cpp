@@ -215,13 +215,7 @@ namespace cmall
 		if (!co_await m_database.async_load_all<cmall_config>(all_config))
 			co_return false;
 
-		struct {
-			std::string rsa;
-			std::string rsa_cert;
-			std::string apiv3_key;
-			std::string notify_url;
-			std::string appid;
-			std::string mchid;
+		struct : public services::weixin::tencent_microapp_pay_cfg_t{
 			int complete = 0;
 		} tencent_microapp_pay_cfg;
 
@@ -262,45 +256,50 @@ namespace cmall
 
 			else if (config_item.config_name == "wxpay_appid")
 			{
-				tencent_microapp_pay_cfg.appid = config_item.config_value;
+				tencent_microapp_pay_cfg.appid_ = config_item.config_value;
 				tencent_microapp_pay_cfg.complete ++;
 			}
 			else if (config_item.config_name == "wxpay_rsa_key")
 			{
-				tencent_microapp_pay_cfg.rsa = config_item.config_value;
+				tencent_microapp_pay_cfg.rsa_key_ = config_item.config_value;
 				tencent_microapp_pay_cfg.complete ++;
 			}
 			else if (config_item.config_name == "wxpay_rsa_cert")
 			{
-				tencent_microapp_pay_cfg.rsa_cert = config_item.config_value;
+				tencent_microapp_pay_cfg.rsa_cert_ = config_item.config_value;
 				tencent_microapp_pay_cfg.complete ++;
 			}
 			else if (config_item.config_name == "wxpay_apiv3_key")
 			{
-				tencent_microapp_pay_cfg.apiv3_key = config_item.config_value;
+				tencent_microapp_pay_cfg.apiv3_key_ = config_item.config_value;
 				tencent_microapp_pay_cfg.complete ++;
 			}
 			else if (config_item.config_name == "wxpay_mchid")
 			{
-				tencent_microapp_pay_cfg.mchid = config_item.config_value;
+				tencent_microapp_pay_cfg.mchid_ = config_item.config_value;
+				tencent_microapp_pay_cfg.complete ++;
+			}
+			else if (config_item.config_name == "wxpay_appSecret")
+			{
+				tencent_microapp_pay_cfg.appSecret_ = config_item.config_value;
 				tencent_microapp_pay_cfg.complete ++;
 			}
 			else if (config_item.config_name == "wxpay_notify_url")
 			{
-				tencent_microapp_pay_cfg.notify_url = config_item.config_value;
+				tencent_microapp_pay_cfg.notify_url_ = config_item.config_value;
 				tencent_microapp_pay_cfg.complete ++;
 			}
 		}
 
-		if (tencent_microapp_pay_cfg.complete == 6)
+		if (tencent_microapp_pay_cfg.complete == 7)
 		{
 			if (wxpay_service)
 			{
-				wxpay_service->reinit(tencent_microapp_pay_cfg.rsa, tencent_microapp_pay_cfg.rsa_cert, tencent_microapp_pay_cfg.apiv3_key, tencent_microapp_pay_cfg.appid, tencent_microapp_pay_cfg.mchid, tencent_microapp_pay_cfg.notify_url);
+				wxpay_service->reinit(tencent_microapp_pay_cfg);
 			}
 			else
 			{
-				wxpay_service.reset(new services::wxpay_service(tencent_microapp_pay_cfg.rsa, tencent_microapp_pay_cfg.rsa_cert, tencent_microapp_pay_cfg.apiv3_key, tencent_microapp_pay_cfg.appid, tencent_microapp_pay_cfg.mchid, tencent_microapp_pay_cfg.notify_url));
+				wxpay_service.reset(new services::wxpay_service(m_io_context, tencent_microapp_pay_cfg));
 			}
 		}
 

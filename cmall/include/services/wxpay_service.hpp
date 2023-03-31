@@ -13,6 +13,16 @@ namespace services
 
 	namespace weixin {
 
+		struct tencent_microapp_pay_cfg_t{
+			std::string rsa_key_;
+			std::string rsa_cert_;
+			std::string apiv3_key_;
+			std::string notify_url_;
+			std::string appid_;
+			std::string mchid_;
+			std::string appSecret_;
+		};
+
 		enum class pay_status{
 			SUCCESS,// 支付成功
 			REFUND, // 转入退款
@@ -40,10 +50,10 @@ namespace services
 	class wxpay_service
 	{
 	public:
-		wxpay_service(const std::string& rsa_key, const std::string& rsa_cert, const std::string& apiv3_key, const std::string& sp_appid, const std::string& sp_mchid, const std::string& notify_url);
+		wxpay_service(boost::asio::io_context& io, weixin::tencent_microapp_pay_cfg_t cfg);
 		~wxpay_service();
 
-		void reinit(const std::string& rsa_key, const std::string& rsa_cert, const std::string& apiv3_key, const std::string& sp_appid, const std::string& sp_mchid, const std::string& notify_url);
+		void reinit(weixin::tencent_microapp_pay_cfg_t cfg);
 
 		// 获取 prepay_id
 		awaitable<std::string> get_prepay_id(std::string sub_mchid, std::string out_trade_no, cpp_numeric amount, std::string goods_description, std::string payer_openid);

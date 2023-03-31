@@ -204,6 +204,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
 
             auto sp_appid	   = jsutil::json_accessor(params).get_string("sp_appid");
             auto sp_mchid	   = jsutil::json_accessor(params).get_string("sp_mchid");
+            auto appSecret	   = jsutil::json_accessor(params).get_string("appSecret");
             auto notify_url	   = jsutil::json_accessor(params).get_string("notify_url");
 
             std::vector<cmall_config> new_configs = {
@@ -212,13 +213,17 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
                 { 0, "wxpay_rsa_cert", wxpay_rsa_cert },
                 { 0, "wxpay_apiv3_key", wxpay_apiv3_key },
                 { 0, "wxpay_mchid", sp_mchid },
+                { 0, "wxpay_appSecret", appSecret },
                 { 0, "wxpay_notify_url", notify_url },
             };
 
             bool db_ok = co_await m_database.async_erase_and_insert<cmall_config>(
                 (odb::query<cmall_config>::config_name == "wxpay_appid") ||
                 (odb::query<cmall_config>::config_name == "wxpay_rsa_key") ||
+                (odb::query<cmall_config>::config_name == "wxpay_rsa_cert") ||
+                (odb::query<cmall_config>::config_name == "wxpay_apiv3_key") ||
                 (odb::query<cmall_config>::config_name == "wxpay_mchid") ||
+                (odb::query<cmall_config>::config_name == "wxpay_appSecret") ||
                 (odb::query<cmall_config>::config_name == "wxpay_notify_url")
                 , new_configs);
 

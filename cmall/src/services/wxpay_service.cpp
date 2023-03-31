@@ -273,23 +273,21 @@ namespace services
 {
 	struct wxpay_service_impl
 	{
-		wxpay_service_impl(const std::string& rsa_key, const std::string& rsa_cert, const std::string& apiv3_key, const std::string& sp_appid, const std::string& sp_mchid, const std::string& notify_url)
-			: rsa_key(rsa_key)
-			, rsa_cert(rsa_cert)
-			, apiv3_key(apiv3_key)
-			, sp_mchid(sp_mchid)
-			, sp_appid(sp_appid)
-			, notify_url(notify_url)
-		{}
-
-		void reinit(const std::string& rsa_key, const std::string& rsa_cert, const std::string& apiv3_key, const std::string& sp_appid, const std::string& sp_mchid, const std::string& notify_url)
+		wxpay_service_impl(boost::asio::io_context& io, weixin::tencent_microapp_pay_cfg_t cfg)
+			: io(io)
 		{
-			this->rsa_key = rsa_key;
-			this->rsa_cert = rsa_cert;
-			this->apiv3_key = apiv3_key;
-			this->sp_appid = sp_appid;
-			this->sp_mchid = sp_mchid;
-			this->notify_url = notify_url;
+			reinit(cfg);
+		}
+
+		void reinit(weixin::tencent_microapp_pay_cfg_t cfg)
+		{
+			this->rsa_key = cfg.rsa_key_;
+			this->rsa_cert = cfg.rsa_cert_;
+			this->apiv3_key = cfg.apiv3_key_;
+			this->sp_appid = cfg.appid_;
+			this->sp_mchid = cfg.mchid_;
+			this->notify_url = cfg.notify_url_;
+			this->appSecret = cfg.appSecret_;
 		}
 
 		// verify the user input verify_code against verify_session
@@ -546,6 +544,8 @@ namespace services
 			co_return ;
 		}
 
+		boost::asio::io_context& io;
+
 		std::string rsa_key;
 		std::string rsa_cert;
 
@@ -554,6 +554,7 @@ namespace services
 		std::string sp_mchid;
 		std::string sp_appid;
 		std::string notify_url;
+		std::string appSecret;
 
 		// 初始化一个硬编码的代码写作日的最新版.
 		// 然后开启一个定时任务, 每隔 12小时从腾讯获取新的证书.
@@ -596,15 +597,15 @@ V739kLuz6XvUpJo3EzM0OGT1TjikmyUcNkNQjZj/yEeQwRkp+lVoew==
 		co_return co_await impl().get_pay_object(prepay_id);
 	}
 
-	wxpay_service::wxpay_service(const std::string& rsa_key, const std::string& rsa_cert, const std::string& apiv3_key, const std::string& sp_appid, const std::string& sp_mchid, const std::string& notify_url)
+	wxpay_service::wxpay_service(boost::asio::io_context& io, weixin::tencent_microapp_pay_cfg_t cfg)
 	{
 		static_assert(sizeof(obj_stor) >= sizeof(wxpay_service_impl));
-		std::construct_at(reinterpret_cast<wxpay_service_impl*>(obj_stor.data()), rsa_key, rsa_cert, apiv3_key, sp_appid, sp_mchid, notify_url);
+		std::construct_at(reinterpret_cast<wxpay_service_impl*>(obj_stor.data()), io, cfg);
 	}
 
-	void wxpay_service::reinit(const std::string& rsa_key, const std::string& rsa_cert, const std::string& apiv3_key, const std::string& sp_appid, const std::string& sp_mchid, const std::string& notify_url)
+	void wxpay_service::reinit(weixin::tencent_microapp_pay_cfg_t cfg)
 	{
-		impl().reinit(rsa_key, rsa_cert, apiv3_key, sp_appid, sp_mchid, notify_url);
+		impl().reinit(cfg);
 	}
 
 	awaitable<notify_message> wxpay_service::decode_notify_message(std::string_view notify_body, std::string_view Wechatpay_Timestamp, std::string_view Wechatpay_Nonce, std::string_view Wechatpay_Signature)
