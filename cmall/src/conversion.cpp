@@ -40,7 +40,7 @@ inline namespace conversion
 
 	void tag_invoke(const value_from_tag&, value& jv, const cmall_merchant& m)
 	{
-		boost::json::value wx_submerchant_id{nullptr};
+		boost::json::value wx_submerchant_id;
 
 		if (!m.exinfo_wx_mchid.null())
 			wx_submerchant_id = boost::json::value(m.exinfo_wx_mchid.get());

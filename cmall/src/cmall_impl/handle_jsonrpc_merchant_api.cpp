@@ -187,7 +187,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api
         }
         break;
         case req_method::merchant_get_gitea_password:
-            reply_message["result"] = this_merchant.gitea_password.null() ? boost::json::value(nullptr) : boost::json::value(this_merchant.gitea_password.get());
+            reply_message["result"] = this_merchant.gitea_password.null() ? boost::json::value() : boost::json::value(this_merchant.gitea_password.get());
             break;
         case req_method::merchant_reset_gitea_password:
         {
