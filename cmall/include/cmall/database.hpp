@@ -261,15 +261,20 @@ namespace cmall
 			return retry_database_op(
 				[&, this]() mutable
 				{
-					odb::transaction t(m_db->begin());
-					T old_value;
-					m_db->load<T>(id, old_value);
-					T new_value = updater(std::move(old_value));
-					if constexpr (SupportUpdateAt<T>)
-						new_value.updated_at_ = boost::posix_time::second_clock::local_time();
-					m_db->update(new_value);
-					t.commit();
-					return true;
+					try {
+						odb::transaction t(m_db->begin());
+						T old_value;
+						m_db->load<T>(id, old_value);
+						T new_value = updater(std::move(old_value));
+						if constexpr (SupportUpdateAt<T>)
+							new_value.updated_at_ = boost::posix_time::second_clock::local_time();
+						m_db->update(new_value);
+						t.commit();
+						return true;
+					}catch(odb::object_not_persistent& e)
+					{
+						return false;
+					}
 				});
 		}
 
