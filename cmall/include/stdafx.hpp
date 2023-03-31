@@ -5,6 +5,7 @@
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
 #include <boost/asio/experimental/promise.hpp>
+#include <boost/asio/experimental/use_promise.hpp>
 
 using boost::asio::experimental::use_promise;
 using boost::asio::experimental::promise;

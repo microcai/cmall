@@ -8,6 +8,11 @@
 
 void services::tag_invoke(const boost::json::value_from_tag&, boost::json::value& jv, const services::product& p)
 {
+	boost::json::array pics;
+
+	for (auto & p : p.pics)
+		pics.push_back(boost::json::value(p));
+
 	jv = {
 		{ "goods_id", p.product_id },
 		{ "merchant_id", p.merchant_id },
@@ -15,7 +20,7 @@ void services::tag_invoke(const boost::json::value_from_tag&, boost::json::value
 		{ "name", p.product_title },
 		{ "price", p.product_price },
 		{ "description", p.product_description },
-		{ "pictures", p.pics },
+		{ "pictures", pics },
 	};
 }
 
@@ -32,7 +37,7 @@ inline namespace conversion
 			{ "name", u.name_ },
 			{ "phone", u.active_phone },
 			{ "verified", u.verified_ },
-			{ "state", u.state_ },
+			{ "state", static_cast<int>(u.state_) },
 			{ "desc", u.desc_.null() ? "" : u.desc_.get() },
 			{ "created_at", ::to_string(u.created_at_) },
 		};
@@ -71,6 +76,12 @@ inline namespace conversion
 
 	void tag_invoke(const value_from_tag&, value& jv, const cmall_order& o)
 	{
+		boost::json::array bought_goods, recipient;
+		for (auto& g : o.bought_goods)
+			bought_goods.push_back(value_from(g));
+		for (auto& g : o.recipient)
+			recipient.push_back(value_from(g));
+
 		jv = {
 			{ "orderid", o.oid_ },
 			{ "buyer", o.buyer_ },
@@ -80,8 +91,8 @@ inline namespace conversion
 			{ "payed_at", o.payed_at_.null() ? "" : ::to_string(o.payed_at_.get()) },
 			{ "close_at", o.close_at_.null() ? "" : ::to_string(o.close_at_.get()) },
 			{ "created_at", ::to_string(o.created_at_) },
-			{ "bought_goods", o.bought_goods },
-			{ "recipients", o.recipient },
+			{ "bought_goods", bought_goods },
+			{ "recipients", recipient },
 			{ "git_version", o.snap_git_version },
 			{ "kuaidiinfo", value_from(o.kuaidi) },
 			{ "ext", o.ext_.null() ? "" : o.ext_.get() },

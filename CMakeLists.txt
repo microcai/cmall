@@ -37,6 +37,7 @@ include(CheckCXXSymbolExists)
 include(CheckCXXLinkerFlag)
 
 option(ENABLE_BUILD_WERROR "All warnings being treated as errors" ON)
+option(ENABLE_SYSTEM_BOOST "Build with system boost support" OFF)
 
 if (WIN32)
 	option(ENABLE_SYSTEM_OPENSSL "Build with system openssl support" OFF)
@@ -183,17 +184,6 @@ check_cxx_symbol_exists(__cpp_lib_format "version" HAS_LIBCPP_FORMAT)
 find_package(Threads)
 link_libraries(${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
 
-set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_STATIC_RUNTIME ON)
-
-set(Boost_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/boost)
-
-add_definitions(-DBOOST_LOCALE_HIDE_AUTO_PTR)
-add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)
-add_definitions(-DBOOST_DISABLE_PRAGMA_MESSAGE)
-add_definitions(-DBOOST_COROUTINES_NO_DEPRECATION_WARNING)
-add_definitions(-DUSE_STD_STRING_VIEW)
-
 if (ENABLE_SYSTEM_OPENSSL)
 	find_package(OpenSSL)
 	include_directories(${OPENSSL_INCLUDE_DIR})
@@ -219,8 +209,29 @@ if (IOUring_FOUND AND ENABLE_IOURING)
 	add_definitions(-DBOOST_ASIO_HAS_IO_URING -DBOOST_ASIO_DISABLE_EPOLL)
 	link_libraries(${IOUring_LIBRARIES})
 endif()
+
 add_definitions(-DBOOST_BEAST_USE_STD_STRING_VIEW)
-add_subdirectory(third_party/boost EXCLUDE_FROM_ALL)
+
+add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)
+add_definitions(-DUSE_STD_STRING_VIEW)
+add_definitions(-DBOOST_LOCALE_HIDE_AUTO_PTR)
+add_definitions(-DBOOST_DISABLE_PRAGMA_MESSAGE)
+add_definitions(-DBOOST_COROUTINES_NO_DEPRECATION_WARNING)
+
+if (ENABLE_SYSTEM_BOOST)
+	find_package(Boost 1.81 REQUIRED COMPONENTS thread date_time program_options filesystem regex json timer)
+	add_library(boost_asio_static INTERFACE)
+	add_library(Boost::asio ALIAS boost_asio_static)
+	add_library(boost_beast_static INTERFACE)
+	add_library(Boost::beast ALIAS boost_beast_static)
+else()
+	set(Boost_USE_STATIC_LIBS ON)
+	set(Boost_USE_STATIC_RUNTIME ON)
+
+	set(Boost_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/boost)
+
+	add_subdirectory(third_party/boost EXCLUDE_FROM_ALL)
+endif()
 
 if (ENABLE_TCMALLOC_STATIC)
 	find_package(Tcmalloc)

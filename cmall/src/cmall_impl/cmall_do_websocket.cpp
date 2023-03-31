@@ -34,7 +34,7 @@ awaitable<void> cmall::cmall_service::do_ws_read(size_t connection_id, client_co
 			if (jv.as_object().contains("id"))
 				reply_message["id"] = jv.at("id");
 			reply_message["error"] = { { "code", -32600 }, { "message", "Invalid Request" } };
-			co_await websocket_write(connection_ptr, jsutil::json_to_string(reply_message)).async_wait(use_awaitable);
+			co_await websocket_write(connection_ptr, jsutil::json_to_string(reply_message))(use_awaitable);
 			continue;
 		}
 
@@ -67,7 +67,7 @@ awaitable<void> cmall::cmall_service::do_ws_read(size_t connection_id, client_co
 			}
 			if (jv.as_object().contains("id"))
 				replay_message.insert_or_assign("id", jv.at("id"));
-			co_await websocket_write(connection_ptr, jsutil::json_to_string(replay_message)).async_wait(use_awaitable);
+			co_await websocket_write(connection_ptr, jsutil::json_to_string(replay_message))(use_awaitable);
 			continue;
 		}
 
@@ -103,7 +103,7 @@ awaitable<void> cmall::cmall_service::do_ws_read(size_t connection_id, client_co
 					if (jv.as_object().contains("id"))
 						replay_message.insert_or_assign("id", jv.at("id"));
 					co_await websocket_write(connection_ptr, jsutil::json_to_string(replay_message))
-						.async_wait(use_awaitable);
+						(use_awaitable);
 				},
 				boost::asio::bind_cancellation_slot(cancel_signal->slot(), [last_processed_req_id, connection_ptr](std::exception_ptr)
 				{

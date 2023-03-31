@@ -35,6 +35,6 @@ namespace httpd::detail {
 
         // 然后等待所有的协程工作完毕.
         for (auto&& co : co_threads)
-            co_await co.async_wait(boost::asio::use_awaitable);
+            co_await co(boost::asio::use_awaitable);
     }
 }

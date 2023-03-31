@@ -162,7 +162,7 @@ namespace services
 			t.expires_from_now(std::chrono::seconds(5));
 
 			auto out_size = co_await (
-				read_promis.async_wait(use_awaitable) || t.async_wait()
+				read_promis(use_awaitable) || t.async_wait()
 			);
 			if (out_size.index() == 0)
 			{
@@ -277,7 +277,7 @@ namespace services
 			t.expires_from_now(std::chrono::seconds(20));
 
 			auto out_size = co_await (
-				read_promis.async_wait(use_awaitable) || t.async_wait()
+				read_promis(use_awaitable) || t.async_wait()
 			);
 			if (out_size.index() == 0)
 			{

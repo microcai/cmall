@@ -38,6 +38,12 @@ namespace httpd::detail {
     };
 
     template <typename T>
+    concept is_awaitable = requires (T t)
+    {
+        { t(boost::asio::use_awaitable) }; // 有 async_wait() 成员函数的就是 waitable 对象.
+    };
+
+    template <typename T>
     concept is_httpd_server = requires (T t)
     {
         { t.get_executor() };

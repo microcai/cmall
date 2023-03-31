@@ -197,7 +197,7 @@ namespace cmall
 				client_ptr->ws_client.emplace(client_ptr->tcp_stream);
 
 				std::string cookie_line;
-				auto user_agent = req[header_field::user_agent];
+				std::string_view user_agent = req[header_field::user_agent];
 				auto sec_websocket_protocol = req[header_field::sec_websocket_protocol];
 
 				if (is_browser(user_agent, sec_websocket_protocol))

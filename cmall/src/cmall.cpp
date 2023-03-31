@@ -344,7 +344,7 @@ namespace cmall
 
         // 然后等待所有的协程工作完毕.
         for (auto&& co : co_threads)
-            co_await co.async_wait(use_awaitable);
+            co_await co(use_awaitable);
 	}
 
 	awaitable<bool> cmall_service::init_ws_acceptors()
