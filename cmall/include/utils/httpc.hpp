@@ -110,7 +110,7 @@ namespace httpc
 					co_await s.async_handshake(net::ssl::stream_base::client, asio_util::use_awaitable[ec]);
 				}
 
-				auto path = url.path();
+				auto path = url.path_query();
 				if (path.empty())
 					path = "/";
 				http::request<http::string_body> req{ option.verb, path, 11 };

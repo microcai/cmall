@@ -171,6 +171,13 @@ namespace util {
 			return query_;
 		}
 
+		std::string path_query() noexcept
+		{
+			if (query_.empty())
+				return std::string(path_.begin(), path_.end());
+			return std::string(path_.begin(), path_.end()) + "?" + std::string(query_.begin(), query_.end());
+		}
+
 		string_view fragment() noexcept
 		{
 			return fragment_;
