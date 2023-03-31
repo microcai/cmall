@@ -96,6 +96,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_order_api(
                 good_snap.name_			   = product_in_mall.product_title;
                 good_snap.merchant_id	   = merchant_id_of_goods;
                 good_snap.goods_id		   = product_in_mall.product_id;
+                std::cerr << "xxxxxxxxxxxx goods price str is: " << product_in_mall.product_price << std::endl;
                 good_snap.price_		   = cpp_numeric(product_in_mall.product_price);
                 new_order.bought_goods.push_back(good_snap);
 
