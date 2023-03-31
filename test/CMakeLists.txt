@@ -19,3 +19,6 @@ target_link_libraries(test_rsa_sign ${OPENSSL_LIBRARIES})
 add_executable(test_wx test_wx.cpp)
 
 target_link_libraries(test_wx cmall_service)
+
+add_executable(test_decimal test_decimal.cpp)
+target_link_libraries(test_decimal Boost::system)
