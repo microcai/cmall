@@ -267,7 +267,7 @@ set_target_properties(git2 PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_
 
 # Workaround for Cmake bug #0011240 (see http://public.kitware.com/Bug/view.php?id=11240)
 # Win64+MSVC+static libs = linker error
-if(MSVC AND GIT_ARCH_64 AND NOT BUILD_SHARED_LIBS)
+if(MSVC AND GIT_ARCH_64 AND NOT BUILD_SHARED_LIBS AND NOT CLANGCL)
 	set_target_properties(git2 PROPERTIES STATIC_LIBRARY_FLAGS "/MACHINE:x64")
 endif()
 
