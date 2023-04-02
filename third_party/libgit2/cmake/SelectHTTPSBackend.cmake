@@ -2,7 +2,6 @@ include(SanitizeBool)
 
 # We try to find any packages our backends might use
 find_package(OpenSSL)
-find_package(mbedTLS)
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
 	find_package(Security)
 	find_package(CoreFoundation)
@@ -12,6 +11,7 @@ if(USE_HTTPS)
 	# Auto-select TLS backend
 	sanitizebool(USE_HTTPS)
 	if(USE_HTTPS STREQUAL ON)
+		find_package(mbedTLS)
 		if(SECURITY_FOUND)
 			if(SECURITY_HAS_SSLCREATECONTEXT)
 				set(USE_HTTPS "SecureTransport")
