@@ -158,7 +158,7 @@ endif()
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
-find_package(Threads REQUIRED)
+find_package(Threads)
 
 include(cmake/utils.cmake)
 include(cmake/compiler.cmake)
@@ -580,7 +580,7 @@ macro(target_setup_options TARGET)
 endmacro()
 
 macro(libmdbx_setup_libs TARGET MODE)
-  target_link_libraries(${TARGET} ${MODE} Threads::Threads)
+  target_link_libraries(${TARGET} ${MODE} ${CMAKE_THREAD_LIBS_INIT})
   if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     target_link_libraries(${TARGET} ${MODE} ntdll)
     if(MDBX_NTDLL_EXTRA_IMPLIB AND MDBX_WITHOUT_MSVC_CRT)
