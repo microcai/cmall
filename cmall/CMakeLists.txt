@@ -44,10 +44,11 @@ add_library(cmall_service STATIC ${cmall_SRCS}
 
 target_link_libraries(cmall_service gitpp httpd dirmon)
 
-
+if (NOT CLANGCL)
 target_precompile_headers(cmall_service PUBLIC
   "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/include/stdafx.hpp>"
 )
+endif()
 
 if (SECCOMP_FOUND)
 	target_link_libraries(cmall_service ${SECCOMP_LIBRARY})
@@ -67,10 +68,10 @@ add_executable(cmall src/main.cpp)
 target_link_libraries(cmall cmall_service Boost::asio)
 
 if(ENABLE_BUILD_WERROR)
-	if(MSVC)
+	if(MSVC AND NOT CLANGCL)
 	target_compile_options(cmall PRIVATE /W4 /WX)
 	target_compile_options(cmall_service PRIVATE /W4 /WX)
-	elseif(NOT APPLE AND NOT MINGW)
+	elseif(NOT APPLE AND NOT MINGW AND NOT CLANGCL)
 		if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.1)
 			target_compile_options(cmall_service PRIVATE -Werror -Wall -Wno-unknown-pragmas -Wno-deprecated -Wno-unused-parameter -Wno-unused-variable)
 		else()
