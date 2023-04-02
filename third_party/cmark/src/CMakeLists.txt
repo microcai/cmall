@@ -52,20 +52,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmark_version.h.in
 include(GNUInstallDirs)
 include (GenerateExportHeader)
 
-add_executable(${PROGRAM} ${PROGRAM_SOURCES})
-cmark_add_compile_options(${PROGRAM})
-set_target_properties(${PROGRAM} PROPERTIES
-  OUTPUT_NAME "cmark")
-
-if (CMARK_STATIC)
-  target_link_libraries(${PROGRAM} ${STATICLIBRARY})
-  # Disable the PUBLIC declarations when compiling the executable:
-  set_target_properties(${PROGRAM} PROPERTIES
-    COMPILE_FLAGS -DCMARK_STATIC_DEFINE)
-elseif (CMARK_SHARED)
-  target_link_libraries(${PROGRAM} ${LIBRARY})
-endif()
-
 # -fvisibility=hidden
 set(CMAKE_C_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
@@ -121,62 +107,9 @@ if (CMARK_STATIC)
   list(APPEND CMARK_INSTALL ${STATICLIBRARY})
 endif()
 
-if (MSVC)
-  set_property(TARGET ${PROGRAM}
-    APPEND PROPERTY LINK_FLAGS /INCREMENTAL:NO)
-endif(MSVC)
-
 if(NOT MSVC OR CMAKE_HOST_SYSTEM_NAME STREQUAL Windows)
   set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_NO_WARNINGS ON)
   include(InstallRequiredSystemLibraries)
-endif()
-
-install(TARGETS ${PROGRAM} ${CMARK_INSTALL}
-  EXPORT cmark-targets
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  )
-
-if(CMARK_SHARED OR CMARK_STATIC)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libcmark.pc.in
-    ${CMAKE_CURRENT_BINARY_DIR}/libcmark.pc @ONLY)
-  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libcmark.pc
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-
-  install(FILES
-    cmark.h
-    ${CMAKE_CURRENT_BINARY_DIR}/cmark_export.h
-    ${CMAKE_CURRENT_BINARY_DIR}/cmark_version.h
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    )
-
-  # Include module for functions
-  # - 'write_basic_package_version_file'
-  # - 'configure_package_config_file'
-  include(CMakePackageConfigHelpers)
-  # generate cmark-config.cmake and cmark-config-version.cmake files
-  configure_package_config_file(
-    "cmarkConfig.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/generated/cmark-config.cmake"
-    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cmark")
-  write_basic_package_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/generated/cmark-config-version.cmake"
-    VERSION ${PROJECT_VERSION}
-    COMPATIBILITY SameMajorVersion)
-  # install config and version file
-  install(
-    FILES "${CMAKE_CURRENT_BINARY_DIR}/generated/cmark-config.cmake"
-          "${CMAKE_CURRENT_BINARY_DIR}/generated/cmark-config-version.cmake"
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cmark"
-  )
-  # install targets file
-  install(
-    EXPORT "cmark-targets"
-    NAMESPACE "cmark::"
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/cmark"
-  )
-
 endif()
 
 # Feature tests
