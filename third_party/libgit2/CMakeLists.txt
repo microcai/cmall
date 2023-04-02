@@ -21,7 +21,7 @@ option(BUILD_EXAMPLES          "Build library usage example apps"               
 option(BUILD_FUZZERS           "Build the fuzz targets"                                OFF)
 
 # Suggested functionality that may not be available on a per-platform basis
-option(USE_THREADS             "Use threads for parallel processing when possible"      OFF)
+option(USE_THREADS             "Use threads for parallel processing when possible"      ON)
 option(USE_NSEC                "Support nanosecond precision file mtimes and ctimes"    OFF)
 
 # Backend selection
