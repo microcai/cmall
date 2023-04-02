@@ -25,6 +25,8 @@ file(GLOB SRCS
     fips/fipsprovc.c
 )
 
+list(FILTER SRCS EXCLUDE REGEX "securitycheck_default.c")
+
 list(FILTER SRCS EXCLUDE REGEX "md2_*")
 
 list(FILTER SRCS EXCLUDE REGEX "blake2_mac_impl*")

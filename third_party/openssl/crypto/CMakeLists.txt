@@ -34,7 +34,7 @@ file(GLOB SRCS
 	buffer/*.c
 	camellia/*.c
 	cast/*.c
-	chacha/*.c
+	chacha/chacha_enc.c
 	cmac/*.c
 	cmp/*.c
 	cms/*.c
@@ -151,6 +151,13 @@ list(FILTER SRCS EXCLUDE REGEX "evp/legacy_meth.*")
 list(FILTER SRCS EXCLUDE REGEX "ecp_nistz256_table.c")
 list(FILTER SRCS EXCLUDE REGEX ".*_test_.*")
 list(FILTER SRCS EXCLUDE REGEX "ncbc_enc.c")
+list(FILTER SRCS EXCLUDE REGEX "bn_asm.c")
+list(FILTER SRCS EXCLUDE REGEX "bn_sparc.c")
+list(FILTER SRCS EXCLUDE REGEX "aes_x86core.c")
+
+if (MSVC)
+	list(FILTER SRCS EXCLUDE REGEX "ecp_nistp.+.c")
+endif()
 
 list(APPEND SRCS 	self_test_core.c)
 
