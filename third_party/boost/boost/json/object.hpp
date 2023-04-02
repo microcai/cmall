@@ -23,7 +23,8 @@
 #include <type_traits>
 #include <utility>
 
-BOOST_JSON_NS_BEGIN
+namespace boost {
+namespace json {
 
 class value;
 class value_ref;
@@ -1648,10 +1649,27 @@ private:
         key_value_pair* dst) noexcept;
 };
 
-BOOST_JSON_NS_END
+} // namespace json
+} // namespace boost
+
+#ifndef BOOST_JSON_DOCS
+// boost::hash trait
+namespace boost
+{
+namespace container_hash
+{
+
+template< class T > struct is_unordered_range;
+
+template<>
+struct is_unordered_range< json::object >
+    : std::true_type
+{};
+
+} // namespace container_hash
+} // namespace boost
 
 // std::hash specialization
-#ifndef BOOST_JSON_DOCS
 namespace std {
 template <>
 struct hash< ::boost::json::object > {

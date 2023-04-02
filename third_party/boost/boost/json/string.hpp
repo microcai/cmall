@@ -29,7 +29,8 @@
 #include <type_traits>
 #include <utility>
 
-BOOST_JSON_NS_BEGIN
+namespace boost {
+namespace json {
 
 class value;
 
@@ -904,8 +905,7 @@ public:
     at(std::size_t pos)
     {
         if(pos >= size())
-            detail::throw_out_of_range(
-                BOOST_CURRENT_LOCATION);
+            detail::throw_out_of_range();
         return impl_.data()[pos];
     }
 
@@ -930,8 +930,7 @@ public:
     at(std::size_t pos) const
     {
         if(pos >= size())
-            detail::throw_out_of_range(
-                BOOST_CURRENT_LOCATION);
+            detail::throw_out_of_range();
         return impl_.data()[pos];
     }
 
@@ -2902,7 +2901,8 @@ operator>(T const& lhs, U const& rhs) noexcept
     return detail::to_string_view(lhs) > detail::to_string_view(rhs);
 }
 
-BOOST_JSON_NS_END
+} // namespace json
+} // namespace boost
 
 // std::hash specialization
 #ifndef BOOST_JSON_DOCS
@@ -2910,25 +2910,9 @@ namespace std {
 template<>
 struct hash< ::boost::json::string >
 {
-    hash() = default;
-    hash(hash const&) = default;
-    hash& operator=(hash const&) = default;
-
-    explicit
-    hash(std::size_t salt) noexcept
-        : salt_(salt)
-    {
-    }
-
+    BOOST_JSON_DECL
     std::size_t
-    operator()(::boost::json::string const& js) const noexcept
-    {
-        return ::boost::json::detail::digest(
-            js.begin(), js.end(), salt_);
-    }
-
-private:
-    std::size_t salt_ = 0;
+    operator()( ::boost::json::string const& js ) const noexcept;
 };
 } // std
 #endif
