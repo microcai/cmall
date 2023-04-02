@@ -1,32 +1,40 @@
 
 include(CheckSymbolExists)
 include(CheckFunctionExists)
-include(AlignOf.cmake)
 include(CheckTypeSize)
 include(CheckIncludeFile)
 include(CheckVariableExists)
 include(CheckCSourceCompiles)
+include(AlignOf.cmake)
 
 find_package(Threads)
 
 list(APPEND CMAKE_MESSAGE_INDENT "libpq: ")
 
-ALIGNOF(double C DOUBLE)
+if (NOT MSVC)
 
-ALIGNOF(short C SHORT)
-ALIGNOF("long long" C LONG_LONG_INT)
-ALIGNOF(long C LONG)
-ALIGNOF(int C INT)
+	ALIGNOF(double C DOUBLE)
 
-check_type_size("__int128_t" SIZE_OF_INT128)
+	ALIGNOF(short C SHORT)
+	ALIGNOF("long long" C LONG_LONG_INT)
+	ALIGNOF(long C LONG)
+	ALIGNOF(int C INT)
+	check_type_size("__int128_t" SIZE_OF_INT128)
 
-if (SIZE_OF_INT128)
-	ALIGNOF(__int128_t C PG_INT128_TYPE)
-else()
-	check_type_size("__int128" SIZE_OF__INT128)
-	if (SIZE_OF__INT128)
-		ALIGNOF(__int128 C PG_INT128_TYPE)
+	if (SIZE_OF_INT128)
+		ALIGNOF(__int128_t C PG_INT128_TYPE)
+	else()
+		check_type_size("__int128" SIZE_OF__INT128)
+		if (SIZE_OF__INT128)
+			ALIGNOF(__int128 C PG_INT128_TYPE)
+		endif()
 	endif()
+else()
+	set(ALIGNOF_DOUBLE "__alignof(double)")
+	set(ALIGNOF_SHORT "__alignof(short)")
+	set(ALIGNOF_LONG_LONG_INT "__alignof(long long)")
+	set(ALIGNOF_LONG "__alignof(long)")
+	set(ALIGNOF_INT "__alignof(int)")
 endif()
 
 set(BLCKSZ 8192)
@@ -104,18 +112,30 @@ check_c_source_compiles("int main(){ volatile char a, b ,c ; __sync_val_compare_
 
 check_c_source_compiles("#include <string.h>\nint main(){ char buf[100];  switch (strerror_r(1, buf, sizeof(buf))) { case 0: break; default: break; } return 0;}" STRERROR_R_INT )
 
+if (CLANGCL)
 
-check_type_size("long int" SIZE_OF_LONG_INT BUILTIN_TYPES_ONLY)
-check_type_size("long long int" SIZE_OF_LONG_LONG_INT BUILTIN_TYPES_ONLY)
-
-if (${SIZE_OF_LONG_INT} EQUAL 8)
 	set(HAVE_LONG_INT_64 1)
 	set(PG_INT64_TYPE "long")
-endif()
 
-if (${SIZE_OF_LONG_LONG_INT} EQUAL 8)
-set(PG_INT64_TYPE "long long")
-set(HAVE_LONG_LONG_INT_64 1)
+	set(PG_INT64_TYPE "long long")
+	set(HAVE_LONG_LONG_INT_64 1)
+
+else(CLANGCL)
+
+	check_type_size("long int" SIZE_OF_LONG_INT BUILTIN_TYPES_ONLY)
+	check_type_size("long long int" SIZE_OF_LONG_LONG_INT BUILTIN_TYPES_ONLY)
+
+	if (${SIZE_OF_LONG_INT} EQUAL 8)
+		set(HAVE_LONG_INT_64 1)
+		set(PG_INT64_TYPE "long")
+	endif()
+
+
+	if (${SIZE_OF_LONG_LONG_INT} EQUAL 8)
+		set(PG_INT64_TYPE "long long")
+		set(HAVE_LONG_LONG_INT_64 1)
+	endif()
+
 endif()
 
 check_include_file(netinet/tcp.h HAVE_NETINET_TCP_H)
