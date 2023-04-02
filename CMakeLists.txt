@@ -332,6 +332,7 @@ set(REGEX_BACKEND "builtin")
 set(USE_HTTPS OFF)
 set(USE_THREADS ON)
 set(USE_HTTP_PARSER "builtin")
+set(USE_SHA1 "CollisionDetection")
 add_subdirectory(third_party/libgit2 EXCLUDE_FROM_ALL)
 
 set_target_properties(git2 PROPERTIES FOLDER "third_party/")
