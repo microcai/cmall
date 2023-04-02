@@ -21,12 +21,12 @@ option(BUILD_EXAMPLES          "Build library usage example apps"               
 option(BUILD_FUZZERS           "Build the fuzz targets"                                OFF)
 
 # Suggested functionality that may not be available on a per-platform basis
-option(USE_THREADS             "Use threads for parallel processing when possible"      ON)
-option(USE_NSEC                "Support nanosecond precision file mtimes and ctimes"    ON)
+option(USE_THREADS             "Use threads for parallel processing when possible"      OFF)
+option(USE_NSEC                "Support nanosecond precision file mtimes and ctimes"    OFF)
 
 # Backend selection
 option(USE_SSH                 "Link with libssh2 to enable SSH support"               OFF)
-option(USE_HTTPS               "Enable HTTPS support. Can be set to a specific backend" ON)
+option(USE_HTTPS               "Enable HTTPS support. Can be set to a specific backend" OFF)
 option(USE_SHA1                "Enable SHA1. Can be set to CollisionDetection(ON)/HTTPS/Generic" ON)
 option(USE_GSSAPI              "Link with libgssapi for SPNEGO auth"      OFF)
    set(USE_HTTP_PARSER         "" CACHE STRING "Specifies the HTTP Parser implementation; either system or builtin.")
@@ -41,7 +41,7 @@ option(DEBUG_STRICT_ALLOC      "Enable strict allocator behavior"               
 option(DEBUG_STRICT_OPEN       "Enable path validation in open"                        OFF)
 
 # Output options
-option(SONAME                  "Set the (SO)VERSION of the target"                      ON)
+option(SONAME                  "Set the (SO)VERSION of the target"                      OFF)
    set(LIBGIT2_FILENAME        "git2" CACHE STRING "Name of the produced binary")
 option(DEPRECATE_HARD          "Do not include deprecated functions in the library"    OFF)
 
