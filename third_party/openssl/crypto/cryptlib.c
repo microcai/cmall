@@ -280,3 +280,15 @@ void OPENSSL_die(const char *message, const char *file, int line)
 # define OPENSSL_VPROC_FUNC          OPENSSL_VPROC_STRING(OPENSSL_VPROC)
 void OPENSSL_VPROC_FUNC(void) {}
 #endif /* __TANDEM */
+
+#ifdef _MSC_VER
+
+#pragma comment( lib, "user32" )
+#pragma comment( lib, "kernel32" )
+#pragma comment( lib, "secur32" )
+#pragma comment( lib, "bcrypt" )
+#pragma comment( lib, "winmm" )
+#pragma comment( lib, "mswsock" )
+#pragma comment( lib, "advapi32" )
+
+#endif

@@ -212,4 +212,3 @@ endif()
 if(NOT MSVC AND NOT APPLE)
 	target_link_libraries(crypto PUBLIC)
 endif()
-
