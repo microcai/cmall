@@ -22,7 +22,7 @@ namespace boost {
 namespace beast {
 
 /// The type of string view used by the library
-using string_view = boost::core::string_view;
+using string_view = std::string_view;
 
 /// The type of `basic_string_view` used by the library
 template<class CharT>
