@@ -151,8 +151,9 @@ list(FILTER SRCS EXCLUDE REGEX "evp/legacy_meth.*")
 list(FILTER SRCS EXCLUDE REGEX "ecp_nistz256_table.c")
 list(FILTER SRCS EXCLUDE REGEX ".*_test_.*")
 list(FILTER SRCS EXCLUDE REGEX "ncbc_enc.c")
-list(FILTER SRCS EXCLUDE REGEX "bn_asm.c")
+#list(FILTER SRCS EXCLUDE REGEX "bn_asm.c")
 list(FILTER SRCS EXCLUDE REGEX "bn_sparc.c")
+list(FILTER SRCS EXCLUDE REGEX "bn_ppc.c")
 list(FILTER SRCS EXCLUDE REGEX "aes_x86core.c")
 
 if (MSVC)
@@ -193,7 +194,11 @@ target_compile_definitions(crypto PRIVATE
 	-DCRYPTO_memcmp=memcmp
 )
 
-
+if (MSVC)
+target_compile_definitions(crypto PUBLIC
+	-DOPENSSL_NO_EC_NISTP_64_GCC_128
+)
+endif()
 target_include_directories(crypto PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include/)
 
 # target_compile_definitions(crypto PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include/)
