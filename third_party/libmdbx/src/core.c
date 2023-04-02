@@ -14800,7 +14800,7 @@ static int mdbx_cursor_touch(MDBX_cursor *mc) {
 }
 
 int mdbx_cursor_put(MDBX_cursor *mc, const MDBX_val *key, MDBX_val *data,
-                    unsigned flags) {
+                    MDBX_put_flags_t flags) {
   MDBX_env *env;
   MDBX_page *sub_root = NULL;
   MDBX_val xdata, *rdata, dkey, olddata;
@@ -18607,7 +18607,7 @@ done:
 }
 
 int mdbx_put(MDBX_txn *txn, MDBX_dbi dbi, const MDBX_val *key, MDBX_val *data,
-             unsigned flags) {
+             MDBX_put_flags_t flags) {
   int rc = check_txn_rw(txn, MDBX_TXN_BLOCKED);
   if (unlikely(rc != MDBX_SUCCESS))
     return rc;
@@ -19222,7 +19222,7 @@ __cold static int mdbx_env_copy_asis(MDBX_env *env, MDBX_txn *read_txn,
 }
 
 __cold int mdbx_env_copy2fd(MDBX_env *env, mdbx_filehandle_t fd,
-                            unsigned flags) {
+                            MDBX_copy_flags_t flags) {
   int rc = check_env(env, true);
   if (unlikely(rc != MDBX_SUCCESS))
     return rc;
@@ -22112,11 +22112,11 @@ int64_t mdbx_int64_from_key(const MDBX_val v) {
                    UINT64_C(0x8000000000000000));
 }
 
-__cold MDBX_cmp_func *mdbx_get_keycmp(unsigned flags) {
+__cold MDBX_cmp_func *mdbx_get_keycmp(MDBX_db_flags_t flags) {
   return get_default_keycmp(flags);
 }
 
-__cold MDBX_cmp_func *mdbx_get_datacmp(unsigned flags) {
+__cold MDBX_cmp_func *mdbx_get_datacmp(MDBX_db_flags_t flags) {
   return get_default_datacmp(flags);
 }
 
