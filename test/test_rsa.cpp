@@ -132,8 +132,6 @@ std::string get_cert_serial(std::string rsa_cert)
 	X509* x = nullptr;
 	auto x509_cert = std::unique_ptr<X509, decltype(&X509_free)> ( PEM_read_bio_X509(bio.get(), &x, nullptr, nullptr) , X509_free);
 
-	X509_CERT_AUX_it();
-
 	auto asn1_serial_no = X509_get_serialNumber(x509_cert.get());
 	auto serial_no_bn = std::unique_ptr<BIGNUM, decltype(&BN_free)> ( ASN1_INTEGER_to_BN(asn1_serial_no, nullptr) , BN_free);
 	auto serial_no_char_xing = BN_bn2hex(serial_no_bn.get());
