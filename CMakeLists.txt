@@ -335,6 +335,7 @@ set(USE_HTTP_PARSER "builtin")
 set(USE_SHA1 "CollisionDetection")
 set(DEPRECATE_HARD ON)
 set(STATIC_CRT ON)
+set(USE_NTLMCLIENT OFF)
 add_subdirectory(third_party/libgit2 EXCLUDE_FROM_ALL)
 
 set_target_properties(libgit2 PROPERTIES FOLDER "third_party/")

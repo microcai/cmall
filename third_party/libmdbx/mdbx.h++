@@ -1,7 +1,7 @@
 ﻿/// \file mdbx.h++
 /// \brief The libmdbx C++ API header file.
 ///
-/// \author Copyright (c) 2020-2022, Leonid Yuriev <leo@yuriev.ru>.
+/// \author Copyright (c) 2020-2023, Leonid Yuriev <leo@yuriev.ru>.
 /// \copyright SPDX-License-Identifier: Apache-2.0
 ///
 /// Tested with:
@@ -11,6 +11,14 @@
 ///  - MSVC >= 14.0 (Visual Studio 2015),
 ///    but 19.2x could hang due optimizer bug;
 ///  - AppleClang, but without C++20 concepts.
+///
+
+///
+/// The origin has been migrated to https://gitflic.ru/project/erthink/libmdbx
+/// since on 2022-04-15 the Github administration, without any warning nor
+/// explanation, deleted libmdbx along with a lot of other projects,
+/// simultaneously blocking access for many developers.
+/// For the same reason Github is blacklisted forever.
 ///
 
 #pragma once
@@ -72,6 +80,13 @@
 
 #if defined(__cpp_lib_filesystem) && __cpp_lib_filesystem >= 201703L
 #include <filesystem>
+#elif __has_include(<experimental/filesystem>)
+#include <experimental/filesystem>
+#endif
+
+#if __cplusplus >= 201103L
+#include <chrono>
+#include <ratio>
 #endif
 
 #include "mdbx.h"
@@ -119,26 +134,35 @@
 #endif
 #endif /* Byte Order */
 
-#if defined(DOXYGEN) ||                                                        \
-    defined(__cpp_constexpr) && __cpp_constexpr >= 201603L &&                  \
-        ((defined(_MSC_VER) && _MSC_VER >= 1915) ||                            \
-         (defined(__clang__) && __clang_major__ > 5) ||                        \
-         (defined(__GNUC__) && __GNUC__ > 7) ||                                \
-         (!defined(__GNUC__) && !defined(__clang__) && !defined(_MSC_VER)))
+/** Workaround for old compilers without properly support for `C++17 constexpr`.
+ */
+#if defined(DOXYGEN)
+#define MDBX_CXX17_CONSTEXPR constexpr
+#elif defined(__cpp_constexpr) && __cpp_constexpr >= 201603L &&                \
+    ((defined(_MSC_VER) && _MSC_VER >= 1915) ||                                \
+     (defined(__clang__) && __clang_major__ > 5) ||                            \
+     (defined(__GNUC__) && __GNUC__ > 7) ||                                    \
+     (!defined(__GNUC__) && !defined(__clang__) && !defined(_MSC_VER)))
 #define MDBX_CXX17_CONSTEXPR constexpr
 #else
 #define MDBX_CXX17_CONSTEXPR inline
 #endif /* MDBX_CXX17_CONSTEXPR */
 
-#if defined(DOXYGEN) || defined(__cpp_lib_is_constant_evaluated) &&            \
-                            __cpp_lib_is_constant_evaluated >= 201811L &&      \
-                            defined(__cpp_lib_constexpr_string) &&             \
-                            __cpp_lib_constexpr_string >= 201907L
+/** Workaround for old compilers without properly support for C++20 `constexpr`.
+ */
+#if defined(DOXYGEN)
+#define MDBX_CXX20_CONSTEXPR constexpr
+#elif defined(__cpp_lib_is_constant_evaluated) &&                              \
+    __cpp_lib_is_constant_evaluated >= 201811L &&                              \
+    defined(__cpp_lib_constexpr_string) &&                                     \
+    __cpp_lib_constexpr_string >= 201907L
 #define MDBX_CXX20_CONSTEXPR constexpr
 #else
 #define MDBX_CXX20_CONSTEXPR inline
 #endif /* MDBX_CXX20_CONSTEXPR */
 
+/** Workaround for old compilers without support assertion inside `constexpr`
+ * functions. */
 #if defined(CONSTEXPR_ASSERT)
 #define MDBX_CONSTEXPR_ASSERT(expr) CONSTEXPR_ASSERT(expr)
 #elif defined NDEBUG
@@ -168,7 +192,11 @@
 #endif
 #endif /* MDBX_UNLIKELY */
 
-#if defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L
+/** Workaround for old compilers without properly support for C++20 `if
+ * constexpr`. */
+#if defined(DOXYGEN)
+#define MDBX_IF_CONSTEXPR constexpr
+#elif defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L
 #define MDBX_IF_CONSTEXPR constexpr
 #else
 #define MDBX_IF_CONSTEXPR
@@ -199,14 +227,19 @@
 #endif
 #endif /* MDBX_CXX20_UNLIKELY */
 
+#ifndef MDBX_HAVE_CXX20_CONCEPTS
+#if defined(__cpp_lib_concepts) && __cpp_lib_concepts >= 202002L
+#include <concepts>
+#define MDBX_HAVE_CXX20_CONCEPTS 1
+#elif defined(DOXYGEN)
+#define MDBX_HAVE_CXX20_CONCEPTS 1
+#else
+#define MDBX_HAVE_CXX20_CONCEPTS 0
+#endif /* <concepts> */
+#endif /* MDBX_HAVE_CXX20_CONCEPTS */
+
 #ifndef MDBX_CXX20_CONCEPT
-#if defined(DOXYGEN) ||                                                        \
-    (defined(__cpp_concepts) && __cpp_concepts >= 201907L &&                   \
-     (!defined(__clang__) ||                                                   \
-      (__clang_major__ >= 12 && !defined(__APPLE__) &&                         \
-       !defined(__ANDROID_API__)) ||                                           \
-      __clang_major__ >=                                                       \
-          /* Hope Apple will fix concepts in AppleClang 14 */ 14))
+#if MDBX_HAVE_CXX20_CONCEPTS || defined(DOXYGEN)
 #define MDBX_CXX20_CONCEPT(CONCEPT, NAME) CONCEPT NAME
 #else
 #define MDBX_CXX20_CONCEPT(CONCEPT, NAME) typename NAME
@@ -214,13 +247,7 @@
 #endif /* MDBX_CXX20_CONCEPT */
 
 #ifndef MDBX_ASSERT_CXX20_CONCEPT_SATISFIED
-#if defined(DOXYGEN) ||                                                        \
-    (defined(__cpp_concepts) && __cpp_concepts >= 201907L &&                   \
-     (!defined(__clang__) ||                                                   \
-      (__clang_major__ >= 12 && !defined(__APPLE__) &&                         \
-       !defined(__ANDROID_API__)) ||                                           \
-      __clang_major__ >=                                                       \
-          /* Hope Apple will fix concepts in AppleClang 14 */ 14))
+#if MDBX_HAVE_CXX20_CONCEPTS || defined(DOXYGEN)
 #define MDBX_ASSERT_CXX20_CONCEPT_SATISFIED(CONCEPT, TYPE)                     \
   static_assert(CONCEPT<TYPE>)
 #else
@@ -242,11 +269,23 @@
 #pragma warning(disable : 4702) /* unreachable code */
 #endif                          /* _MSC_VER (warnings) */
 
+#if defined(__LCC__) && __LCC__ >= 126
+#pragma diagnostic push
+#if __LCC__ < 127
+#pragma diag_suppress 3058 /* workaround: call to is_constant_evaluated()      \
+                              appearing in a constant expression `true` */
+#pragma diag_suppress 3060 /* workaround: call to is_constant_evaluated()      \
+                              appearing in a constant expression `false` */
+#endif
+#endif /* E2K LCC (warnings) */
+
 //------------------------------------------------------------------------------
+/// \brief The libmdbx C++ API namespace
+/// \ingroup cxx_api
+namespace mdbx {
+
 /// \defgroup cxx_api C++ API
 /// @{
-
-namespace mdbx {
 
 // Functions whose signature depends on the `mdbx::byte` type
 // must be strictly defined as inline!
@@ -254,7 +293,7 @@ namespace mdbx {
 // To enable all kinds of an compiler optimizations we use a byte-like type
 // that don't presumes aliases for pointers as does the `char` type and its
 // derivatives/typedefs.
-// Please see https://github.com/erthink/libmdbx/issues/263
+// Please see https://libmdbx.dqdkfa.ru/dead-github/issues/263
 // for reasoning of the use of `char8_t` type and switching to `__restrict__`.
 using byte = char8_t;
 #else
@@ -286,8 +325,15 @@ using build_info = ::MDBX_build_info;
 /// \brief Returns libmdbx build information.
 MDBX_CXX11_CONSTEXPR const build_info &get_build() noexcept;
 
-/// \brief constexpr-compatible strlen().
+/// \brief constexpr-enabled strlen().
 static MDBX_CXX17_CONSTEXPR size_t strlen(const char *c_str) noexcept;
+
+/// \brief constexpr-enabled memcpy().
+static MDBX_CXX20_CONSTEXPR void *memcpy(void *dest, const void *src,
+                                         size_t bytes) noexcept;
+/// \brief constexpr-enabled memcmp().
+static MDBX_CXX20_CONSTEXPR int memcmp(const void *a, const void *b,
+                                       size_t bytes) noexcept;
 
 /// \brief Legacy default allocator
 /// but it is recommended to use \ref polymorphic_allocator.
@@ -323,13 +369,35 @@ using filehandle = ::mdbx_filehandle_t;
       __MAC_OS_X_VERSION_MIN_REQUIRED >= 101500) &&                            \
      (!defined(__IPHONE_OS_VERSION_MIN_REQUIRED) ||                            \
       __IPHONE_OS_VERSION_MIN_REQUIRED >= 130100))
-#define MDBX_STD_FILESYSTEM_PATH
-using path = ::std::filesystem::path;
+namespace filesystem = ::std::filesystem;
+/// \brief Defined if `mdbx::filesystem::path` is available.
+/// \details If defined, it is always `mdbx::filesystem::path`,
+/// which in turn can be refs to `std::filesystem::path`
+/// or `std::experimental::filesystem::path`.
+/// Nonetheless `MDBX_STD_FILESYSTEM_PATH` not defined if the `::mdbx::path`
+/// is fallbacked to c `std::string` or `std::wstring`.
+#define MDBX_STD_FILESYSTEM_PATH ::mdbx::filesystem::path
+#elif defined(__cpp_lib_experimental_filesystem) &&                            \
+    __cpp_lib_experimental_filesystem >= 201406L
+namespace filesystem = ::std::experimental::filesystem;
+#define MDBX_STD_FILESYSTEM_PATH ::mdbx::filesystem::path
+#endif /* MDBX_STD_FILESYSTEM_PATH */
+
+#ifdef MDBX_STD_FILESYSTEM_PATH
+using path = MDBX_STD_FILESYSTEM_PATH;
 #elif defined(_WIN32) || defined(_WIN64)
 using path = ::std::wstring;
 #else
 using path = ::std::string;
-#endif
+#endif /* mdbx::path */
+
+#if __cplusplus >= 201103L || defined(DOXYGEN)
+/// \brief Duration in 1/65536 units of second.
+using duration = ::std::chrono::duration<unsigned, ::std::ratio<1, 65536>>;
+#endif /* Duration for C++11 */
+
+/// \defgroup cxx_exceptions exceptions and errors
+/// @{
 
 /// \brief Transfers C++ exceptions thru C callbacks.
 /// \details Implements saving exceptions before returning
@@ -486,19 +554,19 @@ static MDBX_CXX14_CONSTEXPR size_t check_length(size_t headroom,
                                                 size_t payload);
 static MDBX_CXX14_CONSTEXPR size_t check_length(size_t headroom, size_t payload,
                                                 size_t tailroom);
-static MDBX_CXX17_CONSTEXPR size_t strlen(const char *c_str) noexcept;
-static MDBX_CXX20_CONSTEXPR void *memcpy(void *dest, const void *src,
-                                         size_t bytes) noexcept;
+
+/// end of cxx_exceptions @}
+
 //------------------------------------------------------------------------------
 
-#if defined(DOXYGEN) ||                                                        \
-    (defined(__cpp_concepts) && __cpp_concepts >= 201907L &&                   \
-     (!defined(__clang__) ||                                                   \
-      (__clang_major__ >= 12 && !defined(__APPLE__) &&                         \
-       !defined(__ANDROID_API__)) ||                                           \
-      __clang_major__ >=                                                       \
-          /* Hope Apple will fix concepts in AppleClang 14 */ 14))
+/// \defgroup cxx_data slices and buffers
+/// @{
 
+#if MDBX_HAVE_CXX20_CONCEPTS || defined(DOXYGEN)
+
+/** \concept MutableByteProducer
+ *  \interface MutableByteProducer
+ *  \brief MutableByteProducer C++20 concept */
 template <typename T>
 concept MutableByteProducer = requires(T a, char array[42]) {
   { a.is_empty() } -> std::same_as<bool>;
@@ -506,6 +574,9 @@ concept MutableByteProducer = requires(T a, char array[42]) {
   { a.write_bytes(&array[0], size_t(42)) } -> std::same_as<char *>;
 };
 
+/** \concept ImmutableByteProducer
+ *  \interface ImmutableByteProducer
+ *  \brief ImmutableByteProducer C++20 concept */
 template <typename T>
 concept ImmutableByteProducer = requires(const T &a, char array[42]) {
   { a.is_empty() } -> std::same_as<bool>;
@@ -513,6 +584,9 @@ concept ImmutableByteProducer = requires(const T &a, char array[42]) {
   { a.write_bytes(&array[0], size_t(42)) } -> std::same_as<char *>;
 };
 
+/** \concept SliceTranscoder
+ *  \interface SliceTranscoder
+ *  \brief SliceTranscoder C++20 concept */
 template <typename T>
 concept SliceTranscoder = ImmutableByteProducer<T> &&
     requires(const slice &source, const T &a) {
@@ -520,7 +594,7 @@ concept SliceTranscoder = ImmutableByteProducer<T> &&
   { a.is_erroneous() } -> std::same_as<bool>;
 };
 
-#endif /* __cpp_concepts >= 201907L*/
+#endif /* MDBX_HAVE_CXX20_CONCEPTS */
 
 template <class ALLOCATOR = legacy_allocator,
           typename CAPACITY_POLICY = default_capacity_policy,
@@ -911,20 +985,21 @@ struct LIBMDBX_API_TYPE slice : public ::MDBX_val {
   hash_value() const noexcept;
 
   /// \brief Three-way fast non-lexicographically length-based comparison.
-  /// \return value:
-  ///   == 0 if "a" == "b",
-  ///   <  0 if "a" shorter than "b",
-  ///   >  0 if "a" longer than "b",
-  ///   <  0 if "a" length-equal and lexicographically less than "b",
-  ///   >  0 if "a" length-equal and lexicographically great than "b".
+  /// \details Firstly compares length and if it equal then compare content
+  /// lexicographically. \return value:
+  ///  `== 0` if `a` the same as `b`;
+  ///   `< 0` if `a` shorter than `b`,
+  ///             or the same length and lexicographically less than `b`;
+  ///   `> 0` if `a` longer than `b`,
+  ///             or the same length and lexicographically great than `b`.
   MDBX_NOTHROW_PURE_FUNCTION static MDBX_CXX14_CONSTEXPR intptr_t
   compare_fast(const slice &a, const slice &b) noexcept;
 
   /// \brief Three-way lexicographically comparison.
   /// \return value:
-  ///   <  0 if "a" <  "b",
-  ///   == 0 if "a" == "b",
-  ///   >  0 if "a" >  "b".
+  ///  `== 0` if `a` lexicographically equal `b`;
+  ///   `< 0` if `a` lexicographically less than `b`;
+  ///   `> 0` if `a` lexicographically great than `b`.
   MDBX_NOTHROW_PURE_FUNCTION static MDBX_CXX14_CONSTEXPR intptr_t
   compare_lexicographically(const slice &a, const slice &b) noexcept;
   friend MDBX_CXX14_CONSTEXPR bool operator==(const slice &a,
@@ -2584,7 +2659,7 @@ public:
     return buffer(src, make_reference);
   }
 
-  static buffer key_from(const silo &&src) noexcept {
+  static buffer key_from(silo &&src) noexcept {
     return buffer(::std::move(src));
   }
 
@@ -2725,6 +2800,8 @@ struct pair_result : public pair {
     return done;
   }
 };
+
+/// end of cxx_data @}
 
 //------------------------------------------------------------------------------
 
@@ -2960,6 +3037,18 @@ public:
     inline geometry &make_fixed(intptr_t size) noexcept;
     inline geometry &make_dynamic(intptr_t lower = minimal_value,
                                   intptr_t upper = maximal_value) noexcept;
+    MDBX_CXX11_CONSTEXPR geometry() noexcept {}
+    MDBX_CXX11_CONSTEXPR
+    geometry(const geometry &) noexcept = default;
+    MDBX_CXX11_CONSTEXPR geometry(intptr_t size_lower,
+                                  intptr_t size_now = default_value,
+                                  intptr_t size_upper = maximal_value,
+                                  intptr_t growth_step = default_value,
+                                  intptr_t shrink_threshold = default_value,
+                                  intptr_t pagesize = default_value) noexcept
+        : size_lower(size_lower), size_now(size_now), size_upper(size_upper),
+          growth_step(growth_step), shrink_threshold(shrink_threshold),
+          pagesize(pagesize) {}
   };
 
   /// \brief Operation mode.
@@ -2984,6 +3073,10 @@ public:
     /// \copydoc MDBX_COALESCE
     bool coalesce{false};
     MDBX_CXX11_CONSTEXPR reclaiming_options() noexcept {}
+    MDBX_CXX11_CONSTEXPR
+    reclaiming_options(const reclaiming_options &) noexcept = default;
+    MDBX_CXX14_CONSTEXPR reclaiming_options &
+    operator=(const reclaiming_options &) noexcept = default;
     reclaiming_options(MDBX_env_flags_t) noexcept;
   };
 
@@ -2999,6 +3092,10 @@ public:
     /// \copydoc MDBX_NOMEMINIT
     bool disable_clear_memory{false};
     MDBX_CXX11_CONSTEXPR operate_options() noexcept {}
+    MDBX_CXX11_CONSTEXPR
+    operate_options(const operate_options &) noexcept = default;
+    MDBX_CXX14_CONSTEXPR operate_options &
+    operator=(const operate_options &) noexcept = default;
     operate_options(MDBX_env_flags_t) noexcept;
   };
 
@@ -3016,10 +3113,25 @@ public:
     env::operate_options options;
 
     MDBX_CXX11_CONSTEXPR operate_parameters() noexcept {}
-    MDBX_env_flags_t
-    make_flags(bool accede = true, ///< \copydoc MDBX_ACCEDE
-               bool use_subdirectory =
-                   false ///< use subdirectory to place the DB files
+    MDBX_CXX11_CONSTEXPR
+    operate_parameters(
+        const unsigned max_maps, const unsigned max_readers = 0,
+        const env::mode mode = env::mode::write_mapped_io,
+        env::durability durability = env::durability::robust_synchronous,
+        const env::reclaiming_options &reclaiming = env::reclaiming_options(),
+        const env::operate_options &options = env::operate_options()) noexcept
+        : max_maps(max_maps), max_readers(max_readers), mode(mode),
+          durability(durability), reclaiming(reclaiming), options(options) {}
+    MDBX_CXX11_CONSTEXPR
+    operate_parameters(const operate_parameters &) noexcept = default;
+    MDBX_CXX14_CONSTEXPR operate_parameters &
+    operator=(const operate_parameters &) noexcept = default;
+    MDBX_env_flags_t make_flags(
+        bool accede = true, ///< Allows accepting incompatible operating options
+                            ///< in case the database is already being used by
+                            ///< another process(es) \see MDBX_ACCEDE
+        bool use_subdirectory =
+            false ///< use subdirectory to place the DB files
     ) const;
     static env::mode mode_from_flags(MDBX_env_flags_t) noexcept;
     static env::durability durability_from_flags(MDBX_env_flags_t) noexcept;
@@ -3027,7 +3139,6 @@ public:
     reclaiming_from_flags(MDBX_env_flags_t flags) noexcept;
     inline static env::operate_options
     options_from_flags(MDBX_env_flags_t flags) noexcept;
-    operate_parameters(const env &);
   };
 
   /// \brief Returns current operation parameters.
@@ -3088,6 +3199,7 @@ public:
     /// \brief Returns the minimal values size in bytes for specified values
     /// mode.
     static inline size_t value_min(value_mode) noexcept;
+
     /// \brief Returns the maximal value size in bytes for specified page size
     /// and database flags.
     static inline size_t value_max(intptr_t pagesize, MDBX_db_flags_t flags);
@@ -3100,6 +3212,35 @@ public:
     /// \brief Returns the maximal value size in bytes for specified page size
     /// and values mode.
     static inline size_t value_max(const env &, value_mode);
+
+    /// \brief Returns maximal size of key-value pair to fit in a single page
+    /// for specified size and database flags.
+    static inline size_t pairsize4page_max(intptr_t pagesize,
+                                           MDBX_db_flags_t flags);
+    /// \brief Returns maximal size of key-value pair to fit in a single page
+    /// for specified page size and values mode.
+    static inline size_t pairsize4page_max(intptr_t pagesize, value_mode);
+    /// \brief Returns maximal size of key-value pair to fit in a single page
+    /// for given environment and database flags.
+    static inline size_t pairsize4page_max(const env &, MDBX_db_flags_t flags);
+    /// \brief Returns maximal size of key-value pair to fit in a single page
+    /// for specified page size and values mode.
+    static inline size_t pairsize4page_max(const env &, value_mode);
+
+    /// \brief Returns maximal data size in bytes to fit in a leaf-page or
+    /// single overflow/large-page for specified size and database flags.
+    static inline size_t valsize4page_max(intptr_t pagesize,
+                                          MDBX_db_flags_t flags);
+    /// \brief Returns maximal data size in bytes to fit in a leaf-page or
+    /// single overflow/large-page for specified page size and values mode.
+    static inline size_t valsize4page_max(intptr_t pagesize, value_mode);
+    /// \brief Returns maximal data size in bytes to fit in a leaf-page or
+    /// single overflow/large-page for given environment and database flags.
+    static inline size_t valsize4page_max(const env &, MDBX_db_flags_t flags);
+    /// \brief Returns maximal data size in bytes to fit in a leaf-page or
+    /// single overflow/large-page for specified page size and values mode.
+    static inline size_t valsize4page_max(const env &, value_mode);
+
     /// \brief Returns the maximal write transaction size (i.e. limit for
     /// summary volume of dirty pages) in bytes for specified page size.
     static inline size_t transaction_size_max(intptr_t pagesize);
@@ -3130,14 +3271,18 @@ public:
   /// \brief Make a copy (backup) of an existing environment to the specified
   /// path.
 #ifdef MDBX_STD_FILESYSTEM_PATH
-  env &copy(const ::std::filesystem::path &destination, bool compactify,
+  env &copy(const MDBX_STD_FILESYSTEM_PATH &destination, bool compactify,
             bool force_dynamic_size = false);
 #endif /* MDBX_STD_FILESYSTEM_PATH */
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32) || defined(_WIN64) || defined(DOXYGEN)
   env &copy(const ::std::wstring &destination, bool compactify,
+            bool force_dynamic_size = false);
+  env &copy(const wchar_t *destination, bool compactify,
             bool force_dynamic_size = false);
 #endif /* Windows */
   env &copy(const ::std::string &destination, bool compactify,
+            bool force_dynamic_size = false);
+  env &copy(const char *destination, bool compactify,
             bool force_dynamic_size = false);
 
   /// \brief Copy an environment to the specified file descriptor.
@@ -3163,14 +3308,18 @@ public:
   /// \brief Removes the environment's files in a proper and multiprocess-safe
   /// way.
 #ifdef MDBX_STD_FILESYSTEM_PATH
-  static bool remove(const ::std::filesystem::path &,
+  static bool remove(const MDBX_STD_FILESYSTEM_PATH &pathname,
                      const remove_mode mode = just_remove);
 #endif /* MDBX_STD_FILESYSTEM_PATH */
-#if defined(_WIN32) || defined(_WIN64)
-  static bool remove(const ::std::wstring &,
+#if defined(_WIN32) || defined(_WIN64) || defined(DOXYGEN)
+  static bool remove(const ::std::wstring &pathname,
+                     const remove_mode mode = just_remove);
+  static bool remove(const wchar_t *pathname,
                      const remove_mode mode = just_remove);
 #endif /* Windows */
-  static bool remove(const ::std::string &,
+  static bool remove(const ::std::string &pathname,
+                     const remove_mode mode = just_remove);
+  static bool remove(const char *pathname,
                      const remove_mode mode = just_remove);
 
   /// \brief Statistics for a database in the MDBX environment.
@@ -3207,9 +3356,11 @@ public:
 
   /// \brief Returns the maximum number of threads/reader slots for the
   /// environment.
+  /// \see extra_runtime_option::max_readers
   inline unsigned max_readers() const;
 
   /// \brief Returns the maximum number of named databases for the environment.
+  /// \see extra_runtime_option::max_maps
   inline unsigned max_maps() const;
 
   /// \brief Returns the application context associated with the environment.
@@ -3221,59 +3372,117 @@ public:
   /// \brief Sets threshold to force flush the data buffers to disk, for
   /// non-sync durability modes.
   ///
-  /// The threshold value affects all processes which operates with given
-  /// environment until the last process close environment or a new value will
-  /// be settled.
-  /// Data is always written to disk when \ref txn_managed::commit() is called,
-  /// but the operating system may keep it buffered. MDBX always flushes the OS
-  /// buffers upon commit as well, unless the environment was opened with \ref
-  /// whole_fragile, \ref lazy_weak_tail or in part \ref
-  /// half_synchronous_weak_last. The default is 0, than mean no any threshold
-  /// checked, and no additional flush will be made.
+  /// \details The threshold value affects all processes which operates with
+  /// given environment until the last process close environment or a new value
+  /// will be settled. Data is always written to disk when \ref
+  /// txn_managed::commit() is called, but the operating system may keep it
+  /// buffered. MDBX always flushes the OS buffers upon commit as well, unless
+  /// the environment was opened with \ref whole_fragile, \ref lazy_weak_tail or
+  /// in part \ref half_synchronous_weak_last.
   ///
+  /// The default is 0, than mean no any threshold checked, and no additional
+  /// flush will be made.
+  /// \see extra_runtime_option::sync_bytes
   inline env &set_sync_threshold(size_t bytes);
 
+  /// \brief Gets threshold used to force flush the data buffers to disk, for
+  /// non-sync durability modes.
+  ///
+  /// \copydetails set_sync_threshold()
+  /// \see extra_runtime_option::sync_bytes
+  inline size_t sync_threshold() const;
+
+#if __cplusplus >= 201103L || defined(DOXYGEN)
   /// \brief Sets relative period since the last unsteady commit to force flush
   /// the data buffers to disk, for non-sync durability modes.
   ///
-  /// The relative period value affects all processes which operates with given
-  /// environment until the last process close environment or a new value will
-  /// be settled.
-  /// Data is always written to disk when \ref txn_managed::commit() is called,
-  /// but the operating system may keep it buffered. MDBX always flushes the OS
-  /// buffers upon commit as well, unless the environment was opened with \ref
-  /// whole_fragile, \ref lazy_weak_tail or in part \ref
-  /// half_synchronous_weak_last. Settled period don't checked asynchronously,
-  /// but only by the \ref txn_managed::commit() and \ref env::sync_to_disk()
-  /// functions. Therefore, in cases where transactions are committed
-  /// infrequently and/or irregularly, polling by \ref env::poll_sync_to_disk()
-  /// may be a reasonable solution to timeout enforcement. The default is 0,
-  /// than mean no any timeout checked, and no additional flush will be made.
+  /// \details The relative period value affects all processes which operates
+  /// with given environment until the last process close environment or a new
+  /// value will be settled. Data is always written to disk when \ref
+  /// txn_managed::commit() is called, but the operating system may keep it
+  /// buffered. MDBX always flushes the OS buffers upon commit as well, unless
+  /// the environment was opened with \ref whole_fragile, \ref lazy_weak_tail or
+  /// in part \ref half_synchronous_weak_last. Settled period don't checked
+  /// asynchronously, but only by the \ref txn_managed::commit() and \ref
+  /// env::sync_to_disk() functions. Therefore, in cases where transactions are
+  /// committed infrequently and/or irregularly, polling by \ref
+  /// env::poll_sync_to_disk() may be a reasonable solution to timeout
+  /// enforcement.
   ///
+  /// The default is 0, than mean no any timeout checked, and no additional
+  /// flush will be made.
+  /// \see extra_runtime_option::sync_period
+  inline env &set_sync_period(const duration &period);
+
+  /// \brief Gets relative period since the last unsteady commit that used to
+  /// force flush the data buffers to disk, for non-sync durability modes.
+  /// \copydetails set_sync_period(const duration&)
+  /// \see set_sync_period(const duration&)
+  /// \see extra_runtime_option::sync_period
+  inline duration sync_period() const;
+#endif
+
+  /// \copydoc set_sync_period(const duration&)
   /// \param [in] seconds_16dot16  The period in 1/65536 of second when a
   /// synchronous flush would be made since the last unsteady commit.
-  inline env &set_sync_period(unsigned seconds_16dot16);
+  inline env &set_sync_period__seconds_16dot16(unsigned seconds_16dot16);
 
-  /// \brief Sets relative period since the last unsteady commit to force flush
-  /// the data buffers to disk, for non-sync durability modes.
-  ///
-  /// The relative period value affects all processes which operates with given
-  /// environment until the last process close environment or a new value will
-  /// be settled.
-  /// Data is always written to disk when \ref txn_managed::commit() is called,
-  /// but the operating system may keep it buffered. MDBX always flushes the OS
-  /// buffers upon commit as well, unless the environment was opened with \ref
-  /// whole_fragile, \ref lazy_weak_tail or in part \ref
-  /// half_synchronous_weak_last. Settled period don't checked asynchronously,
-  /// but only by the \ref txn_managed::commit() and \ref env::sync_to_disk()
-  /// functions. Therefore, in cases where transactions are committed
-  /// infrequently and/or irregularly, polling by \ref env::poll_sync_to_disk()
-  /// may be a reasonable solution to timeout enforcement. The default is 0,
-  /// than mean no any timeout checked, and no additional flush will be made.
-  ///
+  /// \copydoc sync_period()
+  /// \see sync_period__seconds_16dot16(unsigned)
+  inline unsigned sync_period__seconds_16dot16() const;
+
+  /// \copydoc set_sync_period(const duration&)
   /// \param [in] seconds  The period in second when a synchronous flush would
   /// be made since the last unsteady commit.
-  inline env &set_sync_period(double seconds);
+  inline env &set_sync_period__seconds_double(double seconds);
+
+  /// \copydoc sync_period()
+  /// \see set_sync_period__seconds_double(double)
+  inline double sync_period__seconds_double() const;
+
+  /// \copydoc MDBX_option_t
+  enum class extra_runtime_option {
+    /// \copydoc MDBX_opt_max_db
+    /// \see max_maps() \see env::operate_parameters::max_maps
+    max_maps = MDBX_opt_max_db,
+    /// \copydoc MDBX_opt_max_readers
+    /// \see max_readers() \see env::operate_parameters::max_readers
+    max_readers = MDBX_opt_max_readers,
+    /// \copydoc MDBX_opt_sync_bytes
+    /// \see sync_threshold() \see set_sync_threshold()
+    sync_bytes = MDBX_opt_sync_bytes,
+    /// \copydoc MDBX_opt_sync_period
+    /// \see sync_period() \see set_sync_period()
+    sync_period = MDBX_opt_sync_period,
+    /// \copydoc MDBX_opt_rp_augment_limit
+    rp_augment_limit = MDBX_opt_rp_augment_limit,
+    /// \copydoc MDBX_opt_loose_limit
+    loose_limit = MDBX_opt_loose_limit,
+    /// \copydoc MDBX_opt_dp_reserve_limit
+    dp_reserve_limit = MDBX_opt_dp_reserve_limit,
+    /// \copydoc MDBX_opt_txn_dp_limit
+    dp_limit = MDBX_opt_txn_dp_limit,
+    /// \copydoc MDBX_opt_txn_dp_initial
+    dp_initial = MDBX_opt_txn_dp_initial,
+    /// \copydoc MDBX_opt_spill_max_denominator
+    spill_max_denominator = MDBX_opt_spill_max_denominator,
+    /// \copydoc MDBX_opt_spill_min_denominator
+    spill_min_denominator = MDBX_opt_spill_min_denominator,
+    /// \copydoc MDBX_opt_spill_parent4child_denominator
+    spill_parent4child_denominator = MDBX_opt_spill_parent4child_denominator,
+    /// \copydoc MDBX_opt_merge_threshold_16dot16_percent
+    merge_threshold_16dot16_percent = MDBX_opt_merge_threshold_16dot16_percent,
+    /// \copydoc MDBX_opt_writethrough_threshold
+    writethrough_threshold = MDBX_opt_writethrough_threshold,
+    /// \copydoc MDBX_opt_prefault_write_enable
+    prefault_write_enable = MDBX_opt_prefault_write_enable,
+  };
+
+  /// \copybrief mdbx_env_set_option()
+  inline env &set_extra_option(extra_runtime_option option, uint64_t value);
+
+  /// \copybrief mdbx_env_get_option()
+  inline uint64_t extra_option(extra_runtime_option option) const;
 
   /// \brief Alter environment flags.
   inline env &alter_flags(MDBX_env_flags_t flags, bool on_off);
@@ -3323,7 +3532,7 @@ public:
                               /// transactions since the current read
                               /// transaction started.
     size_t bytes_used; ///< The number of last used page in the MVCC-snapshot
-                       ///< which being read, i.e. database file can't shrinked
+                       ///< which being read, i.e. database file can't be shrunk
                        ///< beyond this.
     size_t bytes_retained; ///< The total size of the database pages that
                            ///< were retired by committed write transactions
@@ -3408,34 +3617,45 @@ public:
 
   /// \brief Open existing database.
 #ifdef MDBX_STD_FILESYSTEM_PATH
-  env_managed(const ::std::filesystem::path &, const operate_parameters &,
-              bool accede = true);
+  env_managed(const MDBX_STD_FILESYSTEM_PATH &pathname,
+              const operate_parameters &, bool accede = true);
 #endif /* MDBX_STD_FILESYSTEM_PATH */
-#if defined(_WIN32) || defined(_WIN64)
-  env_managed(const ::std::wstring &, const operate_parameters &,
+#if defined(_WIN32) || defined(_WIN64) || defined(DOXYGEN)
+  env_managed(const ::std::wstring &pathname, const operate_parameters &,
               bool accede = true);
+  explicit env_managed(const wchar_t *pathname, const operate_parameters &,
+                       bool accede = true);
 #endif /* Windows */
-  env_managed(const ::std::string &, const operate_parameters &,
+  env_managed(const ::std::string &pathname, const operate_parameters &,
               bool accede = true);
+  explicit env_managed(const char *pathname, const operate_parameters &,
+                       bool accede = true);
 
   /// \brief Additional parameters for creating a new database.
   struct create_parameters {
     env::geometry geometry;
     mdbx_mode_t file_mode_bits{0640};
     bool use_subdirectory{false};
+    MDBX_CXX11_CONSTEXPR create_parameters() noexcept = default;
+    create_parameters(const create_parameters &) noexcept = default;
   };
 
   /// \brief Create new or open existing database.
 #ifdef MDBX_STD_FILESYSTEM_PATH
-  env_managed(const ::std::filesystem::path &, const create_parameters &,
-              const operate_parameters &, bool accede = true);
+  env_managed(const MDBX_STD_FILESYSTEM_PATH &pathname,
+              const create_parameters &, const operate_parameters &,
+              bool accede = true);
 #endif /* MDBX_STD_FILESYSTEM_PATH */
-#if defined(_WIN32) || defined(_WIN64)
-  env_managed(const ::std::wstring &, const create_parameters &,
+#if defined(_WIN32) || defined(_WIN64) || defined(DOXYGEN)
+  env_managed(const ::std::wstring &pathname, const create_parameters &,
               const operate_parameters &, bool accede = true);
+  explicit env_managed(const wchar_t *pathname, const create_parameters &,
+                       const operate_parameters &, bool accede = true);
 #endif /* Windows */
-  env_managed(const ::std::string &, const create_parameters &,
+  env_managed(const ::std::string &pathname, const create_parameters &,
               const operate_parameters &, bool accede = true);
+  explicit env_managed(const char *pathname, const create_parameters &,
+                       const operate_parameters &, bool accede = true);
 
   /// \brief Explicitly closes the environment and release the memory map.
   ///
@@ -3453,7 +3673,15 @@ public:
   void close(bool dont_sync = false);
 
   env_managed(env_managed &&) = default;
-  env_managed &operator=(env_managed &&) = default;
+  env_managed &operator=(env_managed &&other) noexcept {
+    if (MDBX_UNLIKELY(handle_))
+      MDBX_CXX20_UNLIKELY {
+        assert(handle_ != other.handle_);
+        close();
+      }
+    inherited::operator=(std::move(other));
+    return *this;
+  }
   env_managed(const env_managed &) = delete;
   env_managed &operator=(const env_managed &) = delete;
   virtual ~env_managed() noexcept;
@@ -3744,19 +3972,46 @@ class LIBMDBX_API_TYPE txn_managed : public txn {
 public:
   MDBX_CXX11_CONSTEXPR txn_managed() noexcept = default;
   txn_managed(txn_managed &&) = default;
-  txn_managed &operator=(txn_managed &&) = default;
+  txn_managed &operator=(txn_managed &&other) noexcept {
+    if (MDBX_UNLIKELY(handle_))
+      MDBX_CXX20_UNLIKELY {
+        assert(handle_ != other.handle_);
+        abort();
+      }
+    inherited::operator=(std::move(other));
+    return *this;
+  }
   txn_managed(const txn_managed &) = delete;
   txn_managed &operator=(const txn_managed &) = delete;
   ~txn_managed() noexcept;
 
   //----------------------------------------------------------------------------
 
-  /// \brief Abandon all the operations of the transaction instead of saving
-  /// them.
+  /// \brief Abandon all the operations of the transaction
+  /// instead of saving ones.
   void abort();
 
   /// \brief Commit all the operations of a transaction into the database.
   void commit();
+
+  using commit_latency = MDBX_commit_latency;
+
+  /// \brief Commit all the operations of a transaction into the database
+  /// and collect latency information.
+  void commit(commit_latency *);
+
+  /// \brief Commit all the operations of a transaction into the database
+  /// and collect latency information.
+  void commit(commit_latency &latency) { return commit(&latency); }
+
+  /// \brief Commit all the operations of a transaction into the database
+  /// and return latency information.
+  /// \returns latency information of commit stages.
+  commit_latency commit_get_latency() {
+    commit_latency result;
+    commit(&result);
+    return result;
+  }
 };
 
 /// \brief Unmanaged cursor.
@@ -3939,7 +4194,16 @@ public:
   void close();
 
   cursor_managed(cursor_managed &&) = default;
-  cursor_managed &operator=(cursor_managed &&) = default;
+  cursor_managed &operator=(cursor_managed &&other) noexcept {
+    if (MDBX_UNLIKELY(handle_))
+      MDBX_CXX20_UNLIKELY {
+        assert(handle_ != other.handle_);
+        close();
+      }
+    inherited::operator=(std::move(other));
+    return *this;
+  }
+
   cursor_managed(const cursor_managed &) = delete;
   cursor_managed &operator=(const cursor_managed &) = delete;
   ~cursor_managed() noexcept { ::mdbx_cursor_close(handle_); }
@@ -4012,8 +4276,8 @@ static MDBX_CXX17_CONSTEXPR size_t strlen(const char *c_str) noexcept {
 #endif
 }
 
-static MDBX_CXX20_CONSTEXPR void *memcpy(void *dest, const void *src,
-                                         size_t bytes) noexcept {
+MDBX_MAYBE_UNUSED static MDBX_CXX20_CONSTEXPR void *
+memcpy(void *dest, const void *src, size_t bytes) noexcept {
 #if defined(__cpp_lib_is_constant_evaluated) &&                                \
     __cpp_lib_is_constant_evaluated >= 201811L
   if (::std::is_constant_evaluated()) {
@@ -4053,8 +4317,8 @@ static MDBX_CXX14_CONSTEXPR size_t check_length(size_t headroom,
   return check_length(check_length(headroom) + check_length(payload));
 }
 
-static MDBX_CXX14_CONSTEXPR size_t check_length(size_t headroom, size_t payload,
-                                                size_t tailroom) {
+MDBX_MAYBE_UNUSED static MDBX_CXX14_CONSTEXPR size_t
+check_length(size_t headroom, size_t payload, size_t tailroom) {
   return check_length(check_length(headroom, payload) + check_length(tailroom));
 }
 
@@ -4730,6 +4994,56 @@ inline size_t env::limits::value_max(const env &env, value_mode mode) {
   return value_max(env, MDBX_db_flags_t(mode));
 }
 
+inline size_t env::limits::pairsize4page_max(intptr_t pagesize,
+                                             MDBX_db_flags_t flags) {
+  const intptr_t result = mdbx_limits_pairsize4page_max(pagesize, flags);
+  if (result < 0)
+    MDBX_CXX20_UNLIKELY error::throw_exception(MDBX_EINVAL);
+  return static_cast<size_t>(result);
+}
+
+inline size_t env::limits::pairsize4page_max(intptr_t pagesize,
+                                             value_mode mode) {
+  return pairsize4page_max(pagesize, MDBX_db_flags_t(mode));
+}
+
+inline size_t env::limits::pairsize4page_max(const env &env,
+                                             MDBX_db_flags_t flags) {
+  const intptr_t result = mdbx_env_get_pairsize4page_max(env, flags);
+  if (result < 0)
+    MDBX_CXX20_UNLIKELY error::throw_exception(MDBX_EINVAL);
+  return static_cast<size_t>(result);
+}
+
+inline size_t env::limits::pairsize4page_max(const env &env, value_mode mode) {
+  return pairsize4page_max(env, MDBX_db_flags_t(mode));
+}
+
+inline size_t env::limits::valsize4page_max(intptr_t pagesize,
+                                            MDBX_db_flags_t flags) {
+  const intptr_t result = mdbx_limits_valsize4page_max(pagesize, flags);
+  if (result < 0)
+    MDBX_CXX20_UNLIKELY error::throw_exception(MDBX_EINVAL);
+  return static_cast<size_t>(result);
+}
+
+inline size_t env::limits::valsize4page_max(intptr_t pagesize,
+                                            value_mode mode) {
+  return valsize4page_max(pagesize, MDBX_db_flags_t(mode));
+}
+
+inline size_t env::limits::valsize4page_max(const env &env,
+                                            MDBX_db_flags_t flags) {
+  const intptr_t result = mdbx_env_get_valsize4page_max(env, flags);
+  if (result < 0)
+    MDBX_CXX20_UNLIKELY error::throw_exception(MDBX_EINVAL);
+  return static_cast<size_t>(result);
+}
+
+inline size_t env::limits::valsize4page_max(const env &env, value_mode mode) {
+  return valsize4page_max(env, MDBX_db_flags_t(mode));
+}
+
 inline size_t env::limits::transaction_size_max(intptr_t pagesize) {
   const intptr_t result = mdbx_limits_txnsize_max(pagesize);
   if (result < 0)
@@ -4738,7 +5052,12 @@ inline size_t env::limits::transaction_size_max(intptr_t pagesize) {
 }
 
 inline env::operate_parameters env::get_operation_parameters() const {
-  return env::operate_parameters(*this);
+  const auto flags = get_flags();
+  return operate_parameters(max_maps(), max_readers(),
+                            operate_parameters::mode_from_flags(flags),
+                            operate_parameters::durability_from_flags(flags),
+                            operate_parameters::reclaiming_from_flags(flags),
+                            operate_parameters::options_from_flags(flags));
 }
 
 inline env::mode env::get_mode() const {
@@ -4819,13 +5138,53 @@ inline env &env::set_sync_threshold(size_t bytes) {
   return *this;
 }
 
-inline env &env::set_sync_period(unsigned seconds_16dot16) {
+inline size_t env::sync_threshold() const {
+  size_t bytes;
+  error::success_or_throw(::mdbx_env_get_syncbytes(handle_, &bytes));
+  return bytes;
+}
+
+inline env &env::set_sync_period__seconds_16dot16(unsigned seconds_16dot16) {
   error::success_or_throw(::mdbx_env_set_syncperiod(handle_, seconds_16dot16));
   return *this;
 }
 
-inline env &env::set_sync_period(double seconds) {
-  return set_sync_period(unsigned(seconds * 65536));
+inline unsigned env::sync_period__seconds_16dot16() const {
+  unsigned seconds_16dot16;
+  error::success_or_throw(::mdbx_env_get_syncperiod(handle_, &seconds_16dot16));
+  return seconds_16dot16;
+}
+
+inline env &env::set_sync_period__seconds_double(double seconds) {
+  return set_sync_period__seconds_16dot16(unsigned(seconds * 65536));
+}
+
+inline double env::sync_period__seconds_double() const {
+  return sync_period__seconds_16dot16() / 65536.0;
+}
+
+#if __cplusplus >= 201103L
+inline env &env::set_sync_period(const duration &period) {
+  return set_sync_period__seconds_16dot16(period.count());
+}
+
+inline duration env::sync_period() const {
+  return duration(sync_period__seconds_16dot16());
+}
+#endif
+
+inline env &env::set_extra_option(enum env::extra_runtime_option option,
+                                  uint64_t value) {
+  error::success_or_throw(
+      ::mdbx_env_set_option(handle_, ::MDBX_option_t(option), value));
+  return *this;
+}
+
+inline uint64_t env::extra_option(enum env::extra_runtime_option option) const {
+  uint64_t value;
+  error::success_or_throw(
+      ::mdbx_env_get_option(handle_, ::MDBX_option_t(option), &value));
+  return value;
 }
 
 inline env &env::alter_flags(MDBX_env_flags_t flags, bool on_off) {
@@ -5399,6 +5758,7 @@ inline size_t txn::put_multiple(map_handle map, const slice &key,
     if (allow_partial)
       break;
     mdbx_txn_break(handle_);
+    MDBX_CXX17_FALLTHROUGH /* fallthrough */;
   default:
     MDBX_CXX20_UNLIKELY error::throw_exception(err);
   }
@@ -5603,7 +5963,7 @@ inline cursor::move_result cursor::move(move_operation operation,
 inline cursor::move_result cursor::find_multivalue(const slice &key,
                                                    const slice &value,
                                                    bool throw_notfound) {
-  return move(key_exact, key, value, throw_notfound);
+  return move(multi_find_pair, key, value, throw_notfound);
 }
 
 inline cursor::move_result cursor::lower_bound_multivalue(const slice &key,
@@ -5794,14 +6154,20 @@ inline bool cursor::erase(const slice &key, bool whole_multivalue) {
 
 inline bool cursor::erase(const slice &key, const slice &value) {
   move_result data = find_multivalue(key, value, false);
-  return data.done ? erase() : data.done;
+  return data.done && erase();
 }
 
+/// end cxx_api @}
 } // namespace mdbx
 
 //------------------------------------------------------------------------------
 
+/// \brief The `std:: namespace part of libmdbx C++ API
+/// \ingroup cxx_api
 namespace std {
+
+/// \defgroup cxx_api C++ API
+/// @{
 
 inline string to_string(const ::mdbx::slice &value) {
   ostringstream out;
@@ -5894,10 +6260,13 @@ template <> struct hash<::mdbx::slice> {
   }
 };
 
+/// end cxx_api @}
 } // namespace std
+
+#if defined(__LCC__) && __LCC__ >= 126
+#pragma diagnostic pop
+#endif
 
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
-
-/// @} end of C++ API
