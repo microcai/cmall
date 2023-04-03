@@ -34,7 +34,7 @@
 #	endif // !WIN32_LEAN_AND_MEAN
 #	include <mmsystem.h>
 #	include <windows.h>
-#	pragma comment(lib, "Winmm.lib")
+#	pragma comment(lib, "winmm.lib")
 #endif // _WIN32
 
 #ifdef USE_SYSTEMD_LOGGING

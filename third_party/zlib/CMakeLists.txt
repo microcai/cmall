@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 project(zlib)
-find_program(ML64 ml64)
+find_program(ML64 ml64.exe)
 
 if("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "x86|AMD64")
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)

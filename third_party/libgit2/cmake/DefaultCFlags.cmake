@@ -55,9 +55,6 @@ if(MSVC)
 	# /O1 - Optimize for size
 	set(CMAKE_C_FLAGS_MINSIZEREL "/DNDEBUG /O1 /Oy /GL /Gy ${CRT_FLAG_RELEASE}")
 
-	# /IGNORE:4221 - Ignore empty compilation units
-	set(CMAKE_STATIC_LINKER_FLAGS "/IGNORE:4221")
-
 	# /DYNAMICBASE - Address space load randomization (ASLR)
 	# /NXCOMPAT - Data execution prevention (DEP)
 	# /LARGEADDRESSAWARE - >2GB user address space on x86
