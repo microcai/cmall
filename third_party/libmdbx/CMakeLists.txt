@@ -400,7 +400,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows" AND EXISTS "${MDBX_SOURCE_DIR}/ntdll.
       PROPERTIES
       FOLDER "third_party/mdbx"
       IMPORTED_LOCATION "${MDBX_NTDLL_EXTRA_IMPLIB}")
-    link_libraries(${MDBX_NTDLL_EXTRA_IMPLIB})
+    link_libraries(ntdll_extra)
   endif()
 endif()
 
@@ -600,6 +600,9 @@ endmacro()
 # build static library
 if(MDBX_INSTALL_STATIC)
   add_library(mdbx-static STATIC ${LIBMDBX_SOURCES})
+  if (MDBX_NTDLL_EXTRA_IMPLIB)
+    add_dependencies(mdbx-static ntdll_extra_target)
+  endif()
 else()
   add_library(mdbx-static STATIC EXCLUDE_FROM_ALL ${LIBMDBX_SOURCES})
 endif()
