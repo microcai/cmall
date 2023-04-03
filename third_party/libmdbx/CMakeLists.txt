@@ -579,10 +579,6 @@ macro(target_setup_options TARGET)
   endif()
 endmacro()
 
-if (WIN32)
-  link_libraries(${MDBX_NTDLL_EXTRA_IMPLIB})
-endif()
-
 macro(libmdbx_setup_libs TARGET MODE)
   target_link_libraries(${TARGET} ${MODE} ${CMAKE_THREAD_LIBS_INIT})
   if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")

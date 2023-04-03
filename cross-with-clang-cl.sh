@@ -44,6 +44,7 @@ cmake   -DCMAKE_BUILD_TYPE:STRING=Release \
         -DMSVC=ON \
         -DCMAKE_AR=${LLVMAR} \
         -DMSVC_LIB_EXE=${LINK} \
+        -DCMAKE_SYSTEM_NAME:STRING="Windows" \
         -DENABLE_SYSTEM_OPENSSL=OFF \
         -DWIN32=ON \
         -DCMAKE_SIZEOF_VOID_P=8 \
@@ -53,3 +54,4 @@ cmake   -DCMAKE_BUILD_TYPE:STRING=Release \
         -DML64=OFF \
         -DENABLE_LLD=ON \
         "${SCRIPT_PATH}"
+
