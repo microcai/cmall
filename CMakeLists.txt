@@ -321,7 +321,6 @@ add_subdirectory(third_party/libodb-boost)
 
 set(BUILD_SHARED_LIBS OFF)
 set(BUILD_TESTS OFF)
-set(BUILD_CLI OFF)
 set(USE_NSEC OFF)
 set(USE_SSH OFF)
 set(SONAME OFF)
@@ -338,7 +337,7 @@ set(STATIC_CRT ON)
 set(USE_NTLMCLIENT OFF)
 add_subdirectory(third_party/libgit2 EXCLUDE_FROM_ALL)
 
-set_target_properties(libgit2 PROPERTIES FOLDER "third_party/")
+set_target_properties(git2 PROPERTIES FOLDER "third_party/")
 
 set(MDBX_BUILD_TOOLS OFF)
 set(MDBX_BUILD_SHARED_LIBRARY OFF)
