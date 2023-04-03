@@ -508,7 +508,7 @@ if (OpenSSL_FOUND)
 	target_compile_definitions(boost_asio_static PRIVATE -DHAVE_OPENSSL)
 	target_link_libraries(boost_asio_static ${OpenSSL_LIBRARIES})
 endif()
-if (CLANGCL)
+if (MSVC)
 	target_compile_definitions(boost_asio_static PUBLIC -DBOOST_ASIO_HAS_CO_AWAIT=1 -DBOOST_ASIO_HAS_STD_COROUTINE=1)
 endif()
 
@@ -531,6 +531,10 @@ add_library(boost_beast_dll SHARED beast.cpp)
 add_library(Boost::beast ALIAS boost_beast_dll)
 target_compile_definitions(boost_beast_dll PUBLIC -DBOOST_BEAST_SEPARATE_COMPILATION)
 endif()
+
+add_library(boost_url_static STATIC libs/url/src/src.cpp)
+add_library(Boost::url ALIAS boost_url_static)
+target_link_libraries(boost_url_static PUBLIC boost_header)
 
 target_include_directories(boost_header INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(boost_header INTERFACE -DBOOST_ALL_NO_LIB -DBOOST_ALL_STATIC_LINK -DBOOST_THREAD_USE_LIB)
@@ -668,6 +672,7 @@ set(BOOST_LIBRARIES
 	Boost::asio
 	Boost::beast
 	Boost::test
+	Boost::url
 PARENT_SCOPE)
 
 if(Boost_USE_STATIC_LIBS)
