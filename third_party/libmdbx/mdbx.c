@@ -2195,6 +2195,10 @@ extern LIBMDBX_API const char *const mdbx_sourcery_anchor;
 #error MDBX_HAVE_BUILTIN_CPU_SUPPORTS must be defined as 0 or 1
 #endif /* MDBX_HAVE_BUILTIN_CPU_SUPPORTS */
 
+#ifdef _MSC_VER
+#define MDBX_HAVE_BUILTIN_CPU_SUPPORTS 0
+#endif
+
 //------------------------------------------------------------------------------
 
 /** Win32 File Locking API for \ref MDBX_LOCKING */

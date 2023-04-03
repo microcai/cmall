@@ -1239,7 +1239,6 @@ wcspbrk
 wcsrchr
 wcsspn
 wcsstr
-wcstol
 wcstombs
 wcstoul
 __C_specific_handler
