@@ -1688,4 +1688,10 @@ int git_smart_subtransport_http(git_smart_subtransport **out, git_transport *own
 	return 0;
 }
 
+#	pragma comment(lib, "winhttp.lib")
+#	pragma comment(lib, "ole32.lib")
+#	pragma comment(lib, "crypt32.lib")
+#	pragma comment(lib, "shell32.lib")
+#	pragma comment(lib, "rpcrt4.lib")
+
 #endif /* GIT_WINHTTP */
