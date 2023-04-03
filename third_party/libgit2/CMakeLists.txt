@@ -19,9 +19,9 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
 option(EXPERIMENTAL_SHA256     "Enable experimental SHA256 support (for R&D/testing)"  OFF)
 
 # Optional subsystems
-option(BUILD_SHARED_LIBS       "Build Shared Library (OFF for Static)"                  ON)
-option(BUILD_TESTS             "Build Tests using the Clar suite"                       ON)
-option(BUILD_CLI               "Build the command-line interface"                       ON)
+option(BUILD_SHARED_LIBS       "Build Shared Library (OFF for Static)"                  OFF)
+option(BUILD_TESTS             "Build Tests using the Clar suite"                       OFF)
+option(BUILD_CLI               "Build the command-line interface"                       OFF)
 option(BUILD_EXAMPLES          "Build library usage example apps"                      OFF)
 option(BUILD_FUZZERS           "Build the fuzz targets"                                OFF)
 
@@ -118,11 +118,6 @@ include(ExperimentalFeatures)
 #
 
 add_subdirectory(src)
-
-if(BUILD_TESTS)
-	enable_testing()
-	add_subdirectory(tests)
-endif()
 
 if(BUILD_EXAMPLES)
 	add_subdirectory(examples)
