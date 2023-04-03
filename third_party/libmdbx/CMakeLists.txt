@@ -400,6 +400,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows" AND EXISTS "${MDBX_SOURCE_DIR}/ntdll.
       PROPERTIES
       FOLDER "third_party/mdbx"
       IMPORTED_LOCATION "${MDBX_NTDLL_EXTRA_IMPLIB}")
+    link_libraries(${MDBX_NTDLL_EXTRA_IMPLIB})
   endif()
 endif()
 
