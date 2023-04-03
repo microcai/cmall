@@ -13,29 +13,15 @@ BUILD_PATH=${BUILD_PATH:=$PATH}
 CMAKE=$(which cmake)
 CMAKE_GENERATOR=${CMAKE_GENERATOR:-Unix Makefiles}
 
-indent() { sed "s/^/    /"; }
-
-cygfullpath() {
-	result=$(echo "${1}" | tr \; \\n | while read -r element; do
-		if [ "${last}" != "" ]; then echo -n ":"; fi
-		echo -n $(cygpath "${element}")
-		last="${element}"
-	done)
-	if [ "${result}" = "" ]; then exit 1; fi
-        echo "${result}"
-}
-
 if [[ "$(uname -s)" == MINGW* ]]; then
-	BUILD_PATH=$(cygfullpath "${BUILD_PATH}")
+	BUILD_PATH=$(cygpath "$BUILD_PATH")
 fi
 
+indent() { sed "s/^/    /"; }
 
 echo "Source directory: ${SOURCE_DIR}"
 echo "Build directory:  ${BUILD_DIR}"
 echo ""
-
-echo "Platform:"
-uname -s | indent
 
 if [ "$(uname -s)" = "Darwin" ]; then
 	echo "macOS version:"
@@ -54,7 +40,7 @@ echo "Kernel version:"
 uname -a 2>&1 | indent
 
 echo "CMake version:"
-env PATH="${BUILD_PATH}" "${CMAKE}" --version | head -1 2>&1 | indent
+env PATH="${BUILD_PATH}" "${CMAKE}" --version 2>&1 | indent
 
 if test -n "${CC}"; then
 	echo "Compiler version:"
@@ -73,7 +59,7 @@ echo "##########################################################################
 echo "## Configuring build environment"
 echo "##############################################################################"
 
-echo "${CMAKE}" -DENABLE_WERROR=ON -DBUILD_EXAMPLES=ON -DBUILD_FUZZERS=ON -DUSE_STANDALONE_FUZZERS=ON -G \"${CMAKE_GENERATOR}\" ${CMAKE_OPTIONS} -S \"${SOURCE_DIR}\"
+echo cmake -DENABLE_WERROR=ON -DBUILD_EXAMPLES=ON -DBUILD_FUZZERS=ON -DUSE_STANDALONE_FUZZERS=ON -G \"${CMAKE_GENERATOR}\" ${CMAKE_OPTIONS} -S \"${SOURCE_DIR}\"
 env PATH="${BUILD_PATH}" "${CMAKE}" -DENABLE_WERROR=ON -DBUILD_EXAMPLES=ON -DBUILD_FUZZERS=ON -DUSE_STANDALONE_FUZZERS=ON -G "${CMAKE_GENERATOR}" ${CMAKE_OPTIONS} -S "${SOURCE_DIR}"
 
 echo ""
@@ -83,11 +69,10 @@ echo "##########################################################################
 
 # Determine parallelism; newer cmake supports `--build --parallel` but
 # we cannot yet rely on that.
-if [ "${CMAKE_GENERATOR}" = "Unix Makefiles" -a "${CORES}" != "" -a "${CMAKE_BUILD_OPTIONS}" = "" ]; then
+if [ "${CMAKE_GENERATOR}" = "Unix Makefiles" -a "${CORES}" != "" ]; then
 	BUILDER=(make -j ${CORES})
 else
-	BUILDER=("${CMAKE}" --build . ${CMAKE_BUILD_OPTIONS})
+	BUILDER=("${CMAKE}" --build .)
 fi
 
-echo "${BUILDER[@]}"
 env PATH="${BUILD_PATH}" "${BUILDER[@]}"

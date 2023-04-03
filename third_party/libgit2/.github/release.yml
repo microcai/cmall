@@ -6,13 +6,10 @@ changelog:
   - title: Bug fixes
     labels:
     - bug
-  - title: Security fixes
-    labels:
-    - security
   - title: Code cleanups
     labels:
     - cleanup
-  - title: Build and CI improvements
+  - title: CI improvements
     labels:
     - build
   - title: Documentation improvements

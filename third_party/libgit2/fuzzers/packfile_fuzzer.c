@@ -36,19 +36,10 @@ int LLVMFuzzerInitialize(int *argc, char ***argv)
 		fprintf(stderr, "Failed to limit maximum pack object count\n");
 		abort();
 	}
-
-#ifdef GIT_EXPERIMENTAL_SHA256
-	if (git_odb_new(&odb, NULL) < 0) {
-		fprintf(stderr, "Failed to create the odb\n");
-		abort();
-	}
-#else
 	if (git_odb_new(&odb) < 0) {
 		fprintf(stderr, "Failed to create the odb\n");
 		abort();
 	}
-#endif
-
 	if (git_mempack_new(&mempack) < 0) {
 		fprintf(stderr, "Failed to create the mempack\n");
 		abort();
@@ -67,7 +58,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	git_str path = GIT_STR_INIT;
 	git_oid oid;
 	bool append_hash = false;
-	int error;
 
 	if (size == 0)
 		return 0;
@@ -83,13 +73,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 		abort();
 	}
 
-#ifdef GIT_EXPERIMENTAL_SHA256
-	error = git_indexer_new(&indexer, ".", GIT_OID_SHA1, NULL);
-#else
-	error = git_indexer_new(&indexer, ".", 0, odb, NULL);
-#endif
-
-	if (error < 0) {
+	if (git_indexer_new(&indexer, ".", 0, odb, NULL) < 0) {
 		fprintf(stderr, "Failed to create the indexer: %s\n",
 			git_error_last()->message);
 		abort();
@@ -106,19 +90,11 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	if (git_indexer_append(indexer, data, size, &stats) < 0)
 		goto cleanup;
 	if (append_hash) {
-#ifdef GIT_EXPERIMENTAL_SHA256
-		if (git_odb_hash(&oid, data, size, GIT_OBJECT_BLOB, GIT_OID_SHA1) < 0) {
-			fprintf(stderr, "Failed to compute the SHA1 hash\n");
-			abort();
-		}
-#else
 		if (git_odb_hash(&oid, data, size, GIT_OBJECT_BLOB) < 0) {
 			fprintf(stderr, "Failed to compute the SHA1 hash\n");
 			abort();
 		}
-#endif
-
-		if (git_indexer_append(indexer, &oid.id, GIT_OID_SHA1_SIZE, &stats) < 0) {
+		if (git_indexer_append(indexer, &oid, sizeof(oid), &stats) < 0) {
 			goto cleanup;
 		}
 	}

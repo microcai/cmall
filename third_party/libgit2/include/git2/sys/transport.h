@@ -9,11 +9,10 @@
 #define INCLUDE_sys_git_transport_h
 
 #include "git2/net.h"
-#include "git2/proxy.h"
-#include "git2/remote.h"
-#include "git2/strarray.h"
 #include "git2/transport.h"
 #include "git2/types.h"
+#include "git2/strarray.h"
+#include "git2/proxy.h"
 
 /**
  * @file git2/sys/transport.h
@@ -56,18 +55,6 @@ struct git_transport {
 	int GIT_CALLBACK(capabilities)(
 		unsigned int *capabilities,
 		git_transport *transport);
-
-#ifdef GIT_EXPERIMENTAL_SHA256
-	/**
-	 * Gets the object type for the remote repository.
-	 *
-	 * This function may be called after a successful call to
-	 * `connect()`.
-	 */
-	int GIT_CALLBACK(oid_type)(
-		git_oid_t *object_type,
-		git_transport *transport);
-#endif
 
 	/**
 	 * Get the list of available references in the remote repository.
@@ -274,17 +261,14 @@ GIT_EXTERN(int) git_transport_smart_certificate_check(git_transport *transport, 
 GIT_EXTERN(int) git_transport_smart_credentials(git_credential **out, git_transport *transport, const char *user, int methods);
 
 /**
- * Get a copy of the remote connect options
+ * Get a copy of the proxy options
  *
- * All data is copied and must be freed by the caller by calling
- * `git_remote_connect_options_dispose`.
+ * The url is copied and must be freed by the caller.
  *
  * @param out options struct to fill
  * @param transport the transport to extract the data from.
  */
-GIT_EXTERN(int) git_transport_remote_connect_options(
-		git_remote_connect_options *out,
-		git_transport *transport);
+GIT_EXTERN(int) git_transport_smart_proxy_options(git_proxy_options *out, git_transport *transport);
 
 /*
  *** End of base transport interface ***

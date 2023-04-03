@@ -16,7 +16,7 @@
 # PCRE2_FOUND	- True if pcre found.
 
 # Look for the header file.
-find_path(PCRE2_INCLUDE_DIR NAMES pcre2.h)
+find_path(PCRE2_INCLUDE_DIR NAMES pcre2posix.h)
 
 # Look for the library.
 find_library(PCRE2_LIBRARY NAMES pcre2-8)
