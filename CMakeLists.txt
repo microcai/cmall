@@ -6,9 +6,10 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 # set(CMAKE_DISABLE_SOURCE_CHANGES ON)
-set (CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 
 project(cmall)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	if (CMAKE_CXX_SIMULATE_ID MATCHES "MSVC")
@@ -16,12 +17,10 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 		set (WIN32 TRUE)
 		set (CMAKE_SIZEOF_VOID_P 8)
 		set (CLANGCL TRUE)
-		set (CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 		add_compile_options(/EHs)
-		add_definitions(-D__STDC_NO_ATOMICS__)
 		set (CMAKE_SYSTEM_NAME "Windows")
 	else()
-		set(CMAKE_CXX_STANDARD 23)
+		set (CLANGCL FALSE)
 	endif()
 endif()
 
@@ -47,13 +46,16 @@ include(CheckLibraryExists)
 include(CheckCXXSymbolExists)
 include(CheckCXXLinkerFlag)
 
-option(ENABLE_BUILD_WERROR "All warnings being treated as errors" ON)
 option(ENABLE_SYSTEM_BOOST "Build with system boost support" OFF)
 
 if (WIN32)
+	option(ENABLE_BUILD_WERROR "All warnings being treated as errors" OFF)
+	option(USE_BUNDLED_ODB_FILE "build using pre generated odb file" ON)
 	option(ENABLE_SYSTEM_OPENSSL "Build with system openssl support" OFF)
 	option(ENABLE_SYSTEM_ZLIB "Build with system zlib support" OFF)
 else()
+	option(ENABLE_BUILD_WERROR "All warnings being treated as errors" ON)
+	option(USE_BUNDLED_ODB_FILE "build using pre generated odb file" OFF)
 	option(ENABLE_SYSTEM_OPENSSL "Build with system openssl support" ON)
 	option(ENABLE_SYSTEM_ZLIB "Build with system zlib support" ON)
 endif()
@@ -62,7 +64,6 @@ option(ENABLE_TCMALLOC_STATIC "Build with Tcmalloc support" OFF)
 option(ENABLE_JEMALLOC_STATIC "Build with Jemalloc support" OFF)
 option(ENABLE_LLD "build using lld" OFF)
 option(ENABLE_MOLD "build using mold" OFF)
-option(USE_BUNDLED_ODB_FILE "build using pre generated odb file" OFF)
 option(ENABLE_IOURING "build with liburing" ON)
 option(ENABLE_LTO "enable LTO support" OFF)
 
@@ -125,6 +126,17 @@ if (COMPILER_HAS_FCOROUTINES)
 	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fcoroutines>)
 endif()
 
+if (WIN32)
+	add_definitions(
+		-DWIN32_LEAN_AND_MEAN
+		-D_WIN32_WINNT=0x0601
+		-DNOMINMAX
+		-DUNICODE
+		-D_UNICODE
+		-D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
+	)
+endif()
+
 if (MSVC)
 	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 	add_compile_options("/utf-8")
@@ -137,36 +149,20 @@ if (MSVC)
 		-D_SCL_SECURE_NO_WARNINGS
 	)
 
-	add_definitions(
-		-DWIN32_LEAN_AND_MEAN
-		-D_WIN32_WINNT=0x0601
-		-DNOMINMAX
-		-DUNICODE
-		-D_UNICODE
-		-D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
-	)
+	if (MSVC AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 
-	if (CLANGCL)
-
-	else()
+	elseif(MSVC)
 		add_compile_options(/IGNORE:4267,4244,4005)
-		add_compile_options(/bigobj /MP /Zc:__cplusplus)
+		add_compile_options(/bigobj /Zc:__cplusplus)
 		MESSAGE(STATUS "Using parallel compiling (/MP)")
 		set(CMAKE_CXX_STACK_SIZE "100000000")
 		MESSAGE(STATUS "Set stack size: 100000000")
+		if (NOT CMAKE_GENERATOR STREQUAL "Ninja")
+			add_compile_options(/bigobj /Zc:__cplusplus)
+		endif()
 	endif()
 
 elseif(WIN32)
-	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-
-	add_definitions(
-		-DWIN32_LEAN_AND_MEAN
-		-D_WIN32_WINNT=0x0601
-		-DNOMINMAX
-		-DUNICODE
-		-D_UNICODE
-		-D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
-	)
 
 elseif (ANDROID)
 	set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -199,7 +195,7 @@ find_package(Threads)
 link_libraries(${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
 
 if (ENABLE_SYSTEM_OPENSSL)
-	find_package(OpenSSL)
+	find_package(OpenSSL REQUIRED)
 	include_directories(${OPENSSL_INCLUDE_DIR})
 else()
 	set(OpenSSL_FOUND TRUE)
