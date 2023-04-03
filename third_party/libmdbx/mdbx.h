@@ -359,35 +359,11 @@ typedef mode_t mdbx_mode_t;
 #endif /* MDBX_DEPRECATED */
 
 #ifndef __dll_export
-#if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__) ||               \
-    defined(__MINGW__) || defined(__MINGW32__) || defined(__MINGW64__)
-#if defined(__GNUC__) || __has_attribute(__dllexport__)
-#define __dll_export __attribute__((__dllexport__))
-#elif defined(_MSC_VER)
-#define __dll_export __declspec(dllexport)
-#else
 #define __dll_export
-#endif
-#elif defined(__GNUC__) || __has_attribute(__visibility__)
-#define __dll_export __attribute__((__visibility__("default")))
-#else
-#define __dll_export
-#endif
 #endif /* __dll_export */
 
 #ifndef __dll_import
-#if defined(_WIN32) || defined(_WIN64) || defined(__CYGWIN__) ||               \
-    defined(__MINGW__) || defined(__MINGW32__) || defined(__MINGW64__)
-#if defined(__GNUC__) || __has_attribute(__dllimport__)
-#define __dll_import __attribute__((__dllimport__))
-#elif defined(_MSC_VER)
-#define __dll_import __declspec(dllimport)
-#else
 #define __dll_import
-#endif
-#else
-#define __dll_import
-#endif
 #endif /* __dll_import */
 
 /** \brief Auxiliary macro for robustly define the both inline version of API
@@ -640,9 +616,9 @@ extern "C" {
 
 #ifndef LIBMDBX_API
 #if defined(LIBMDBX_EXPORTS)
-#define LIBMDBX_API __dll_export
+#define LIBMDBX_API
 #elif defined(LIBMDBX_IMPORTS)
-#define LIBMDBX_API __dll_import
+#define LIBMDBX_API
 #else
 #define LIBMDBX_API
 #endif
@@ -650,7 +626,7 @@ extern "C" {
 
 #ifdef __cplusplus
 #if defined(__clang__) || __has_attribute(type_visibility)
-#define LIBMDBX_API_TYPE LIBMDBX_API __attribute__((type_visibility("default")))
+#define LIBMDBX_API_TYPE LIBMDBX_API
 #else
 #define LIBMDBX_API_TYPE LIBMDBX_API
 #endif
@@ -659,9 +635,9 @@ extern "C" {
 #endif /* LIBMDBX_API_TYPE */
 
 #if defined(LIBMDBX_IMPORTS)
-#define LIBMDBX_VERINFO_API __dll_import
+#define LIBMDBX_VERINFO_API
 #else
-#define LIBMDBX_VERINFO_API __dll_export
+#define LIBMDBX_VERINFO_API
 #endif /* LIBMDBX_VERINFO_API */
 
 /** \brief libmdbx version information */
