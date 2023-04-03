@@ -2621,3 +2621,8 @@ __cold int mdbx_get_sysraminfo(intptr_t *page_size, intptr_t *total_pages,
 
   return MDBX_SUCCESS;
 }
+
+
+#if defined (_WIN32) && defined (_MSC_VER)
+#	pragma comment(lib, "mdbx_ntdll_extra.lib")
+#endif
