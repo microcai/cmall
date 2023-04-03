@@ -137,9 +137,9 @@ if (WIN32)
 	)
 endif()
 
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
 if (MSVC)
-	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-	add_compile_options("/utf-8")
 	add_definitions(
 		-D_CRT_SECURE_NO_DEPRECATE
 		-D_CRT_SECURE_NO_WARNINGS
@@ -149,16 +149,18 @@ if (MSVC)
 		-D_SCL_SECURE_NO_WARNINGS
 	)
 
+	add_compile_options(/utf-8)
 	if (MSVC AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 
 	elseif(MSVC)
 		add_compile_options(/IGNORE:4267,4244,4005)
-		add_compile_options(/bigobj /Zc:__cplusplus)
-		MESSAGE(STATUS "Using parallel compiling (/MP)")
+		add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/bigobj>)
+		add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>)
 		set(CMAKE_CXX_STACK_SIZE "100000000")
 		MESSAGE(STATUS "Set stack size: 100000000")
 		if (NOT CMAKE_GENERATOR STREQUAL "Ninja")
-			add_compile_options(/bigobj /Zc:__cplusplus)
+			MESSAGE(STATUS "Using parallel compiling (/MP)")
+			add_compile_options(/MP)
 		endif()
 	endif()
 
