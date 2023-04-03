@@ -56,12 +56,7 @@ option(ENABLE_WERROR           "Enable compilation with -Werror"                
 
 if(UNIX)
 	# NTLM client requires crypto libraries from the system HTTPS stack
-	if(NOT USE_HTTPS)
-		option(USE_NTLMCLIENT  "Enable NTLM support on Unix."                  OFF)
-	else()
-		option(USE_NTLMCLIENT  "Enable NTLM support on Unix."                   ON)
-	endif()
-
+	option(USE_NTLMCLIENT  "Enable NTLM support on Unix."                  OFF)
 	option(ENABLE_REPRODUCIBLE_BUILDS "Enable reproducible builds"                 OFF)
 endif()
 
