@@ -12,7 +12,9 @@ endif()
 
 add_definitions(-DLOGGING_COMPRESS_LOGS)
 
+if (NOT WIN32)
 find_package(seccomp)
+endif()
 
 file(GLOB cmall_SRCS
 	LIST_DIRECTORIES false

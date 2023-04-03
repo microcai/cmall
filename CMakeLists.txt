@@ -381,10 +381,10 @@ endif()
 
 if (WIN32)
 	link_libraries(
-		Secur32.lib
-		Bcrypt.lib
-		Winmm.lib
-		Mswsock.lib
+		secur32.lib
+		bcrypt.lib
+		winmm.lib
+		mswsock.lib
 	)
 endif()
 
