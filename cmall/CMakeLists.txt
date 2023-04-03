@@ -37,18 +37,16 @@ GOURP_FILES(${CMAKE_CURRENT_SOURCE_DIR})
 
 list(FILTER cmall_SRCS EXCLUDE REGEX "src/main.cpp")
 
-add_library(cmall_service STATIC ${cmall_SRCS}
+add_library(cmall_service OBJECT ${cmall_SRCS}
 	${ODB_GENERATED}
 	${EMBED_SITE_OUTPUTS}
 )
 
 target_link_libraries(cmall_service gitpp httpd dirmon)
 
-if (NOT CLANGCL)
 target_precompile_headers(cmall_service PUBLIC
   "$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/include/stdafx.hpp>"
 )
-endif()
 
 if (SECCOMP_FOUND)
 	target_link_libraries(cmall_service ${SECCOMP_LIBRARY})
