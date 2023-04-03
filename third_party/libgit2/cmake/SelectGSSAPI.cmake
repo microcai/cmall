@@ -1,12 +1,12 @@
 include(SanitizeBool)
 
 # We try to find any packages our backends might use
+find_package(GSSAPI)
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
 	include(FindGSSFramework)
 endif()
 
 if(USE_GSSAPI)
-	find_package(GSSAPI)
 	# Auto-select GSS backend
 	sanitizebool(USE_GSSAPI)
 	if(USE_GSSAPI STREQUAL ON)
