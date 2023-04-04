@@ -321,6 +321,7 @@ add_subdirectory(third_party/libodb-boost)
 
 if (ENABLE_SYSTEM_GIT2)
 	find_package(libgit2 REQUIRED)
+	include_directories(${LIBGIT2_INCLUDE_DIR})
 else()
 	set(BUILD_SHARED_LIBS OFF)
 	set(BUILD_TESTS OFF)
