@@ -81,6 +81,8 @@ namespace services
 
 		std::filesystem::path repo_path() const;
 
+		static std::filesystem::path repo_path(std::filesystem::path repo_root_dir, std::uint64_t merchant_id);
+
 	private:
 		boost::asio::thread_pool& thread_pool;
 

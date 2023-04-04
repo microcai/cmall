@@ -70,11 +70,12 @@ namespace cmall
 	// false if no git repo for merchant
 	awaitable<bool> cmall_service::load_merchant_git(const cmall_merchant& merchant)
 	{
-		if (services::merchant_git_repo::is_git_repo(merchant.repo_path))
+		auto merchant_repo_path = services::merchant_git_repo::repo_path(m_config.repo_root, merchant.uid_);
+		if (services::merchant_git_repo::is_git_repo(merchant_repo_path))
 		{
 			{
 				auto repo = std::make_shared<services::merchant_git_repo>(
-					background_task_thread_pool, merchant.uid_, merchant.repo_path);
+					background_task_thread_pool, merchant.uid_, merchant_repo_path);
 				std::unique_lock<std::shared_mutex> l(merchant_repos_mtx);
 				merchant_repos.get<tag::merchant_uid_tag>().erase(merchant.uid_);
 				auto insert_result = merchant_repos.get<tag::merchant_uid_tag>().insert(repo);
@@ -105,7 +106,7 @@ namespace cmall
 		{
 			std::unique_lock<std::shared_mutex> l(merchant_repos_mtx);
 			merchant_repos.get<tag::merchant_uid_tag>().erase(merchant.uid_);
-			LOG_ERR << "no bare git repos @(" << merchant.repo_path << ") for merchant <<" << merchant.name_;
+			LOG_ERR << "no bare git repos for merchant <<" << merchant.name_;
 		}
 		co_return false;
 	}

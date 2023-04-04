@@ -552,4 +552,9 @@ namespace services
 		return gitpp::is_git_repo(repo_path);
 	}
 
+	std::filesystem::path merchant_git_repo::repo_path(std::filesystem::path repo_root_dir, std::uint64_t merchant_id)
+	{
+		return repo_root_dir / (std::format("m{}", merchant_id)) / "shop.git" ;
+	}
+
 }
