@@ -86,7 +86,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 			{ "isSudo", session_info.sudo_mode },
 		};
 
-		std::unique_lock<std::shared_mutex> l(active_users_mtx);
+		std::unique_lock<std::shared_mutex> l(active_users);
 		active_users.push_back(connection_ptr);
 		co_return;
 	};
@@ -161,7 +161,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 		case req_method::user_logout:
 		{
 			{
-				std::unique_lock<std::shared_mutex> l(active_users_mtx);
+				std::unique_lock<std::shared_mutex> l(active_users);
 				active_users.get<1>().erase(connection_ptr->connection_id_);
 			}
 			this_client.session_info->clear();

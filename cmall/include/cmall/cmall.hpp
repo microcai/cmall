@@ -44,6 +44,7 @@
 #include "httpd/http_stream.hpp"
 
 #include "cmall/client_connection.hpp"
+#include "utils/std_container_with_lock.hpp"
 
 using boost::asio::awaitable;
 using boost::asio::experimental::promise;
@@ -323,18 +324,16 @@ namespace cmall {
 		services::userscript script_runner;
 		services::gitea gitea_service;
 		services::search search_service;
-		std::unique_ptr<services::wxpay_service> wxpay_service;
+		std::shared_ptr<services::wxpay_service> wxpay_service;
+		utility::shared_mutex::map<std::string, std::shared_ptr<services::wxpay_service>> wxpay_services;
 
-		mutable std::shared_mutex merchant_repos_mtx;
-		loaded_merchant_map merchant_repos;
+		utility::shared_mutex::container_with_mutex<loaded_merchant_map> merchant_repos;
 
 		// ws 服务端相关.
-		std::shared_mutex active_users_mtx;
-		active_session_map active_users;
+		utility::shared_mutex::container_with_mutex<active_session_map> active_users;
 
 		// api-token 相关.
-		std::shared_mutex temp_api_token_mtx;
-		std::set<std::string> temp_api_token;
+		utility::shared_mutex::set<std::string> temp_api_token;
 
 		std::once_flag check_admin_flag;
 

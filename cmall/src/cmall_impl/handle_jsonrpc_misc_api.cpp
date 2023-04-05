@@ -76,7 +76,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_misc_api(cli
 			{ "isSudo", session_info.sudo_mode },
 		};
 
-		std::unique_lock<std::shared_mutex> l(active_users_mtx);
+		std::unique_lock<std::shared_mutex> l(active_users);
 		active_users.push_back(connection_ptr);
 		co_return;
 	};
@@ -85,15 +85,25 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_misc_api(cli
 	{
 		case req_method::wx_direct_pay:
 		{
+            auto appid = jsutil::json_accessor(params).get_string("appid");
+			std::shared_ptr<services::wxpay_service> wxpay_for_selected_appid;
+			{
+				std::shared_lock<std::shared_mutex> l (wxpay_services);
+				wxpay_for_selected_appid = wxpay_services[appid];
+			}
+
+			if (!wxpay_for_selected_appid)
+                throw boost::system::system_error(cmall::error::merchant_does_not_support_microapp_wxpay);
+
             auto amount_str = jsutil::json_accessor(params).get_string("amount");
             auto payer_openid = jsutil::json_accessor(params).get_string("payer_openid");
             auto sub_mchid = jsutil::json_accessor(params).get_string("sub_mchid");
 			auto orderid = gen_uuid();
-            std::string prepay_id = co_await wxpay_service->get_prepay_id(sub_mchid, orderid, cpp_numeric(amount_str), std::string("向商户直接付款"), payer_openid);
+            std::string prepay_id = co_await wxpay_for_selected_appid->get_prepay_id(sub_mchid, orderid, cpp_numeric(amount_str), std::string("向商户直接付款"), payer_openid);
             if (prepay_id.empty())
                 throw boost::system::system_error(cmall::error::wxpay_server_error);
             else
-                reply_message["result"] = co_await wxpay_service->get_pay_object(prepay_id);
+                reply_message["result"] = co_await wxpay_for_selected_appid->get_pay_object(prepay_id);
 		}
 		break;
 		default:

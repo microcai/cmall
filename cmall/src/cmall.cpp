@@ -76,7 +76,7 @@ namespace cmall
 			{
 				auto repo = std::make_shared<services::merchant_git_repo>(
 					background_task_thread_pool, merchant.uid_, merchant_repo_path);
-				std::unique_lock<std::shared_mutex> l(merchant_repos_mtx);
+				std::unique_lock<std::shared_mutex> l(merchant_repos);
 				merchant_repos.get<tag::merchant_uid_tag>().erase(merchant.uid_);
 				auto insert_result = merchant_repos.get<tag::merchant_uid_tag>().insert(repo);
 				BOOST_ASSERT_MSG(insert_result.second, "insert should always success!");
@@ -87,7 +87,7 @@ namespace cmall
 			{
 				co_await this_coro::coro_yield();
 
-				std::unique_lock<std::shared_mutex> l(merchant_repos_mtx);
+				std::unique_lock<std::shared_mutex> l(merchant_repos);
 
 				auto it = merchant_repos.get<tag::merchant_uid_tag>().find(merchant_id);
 
@@ -104,7 +104,7 @@ namespace cmall
 		}
 		else
 		{
-			std::unique_lock<std::shared_mutex> l(merchant_repos_mtx);
+			std::unique_lock<std::shared_mutex> l(merchant_repos);
 			merchant_repos.get<tag::merchant_uid_tag>().erase(merchant.uid_);
 			LOG_ERR << "no bare git repos for merchant <<" << merchant.name_;
 		}
@@ -113,7 +113,7 @@ namespace cmall
 
 	std::shared_ptr<services::merchant_git_repo> cmall_service::get_merchant_git_repo(std::uint64_t merchant_uid, boost::system::error_code& ec) const
 	{
-		std::shared_lock<std::shared_mutex> l(merchant_repos_mtx);
+		std::shared_lock<std::shared_mutex> l(merchant_repos);
 		auto& index_by_uid = merchant_repos.get<tag::merchant_uid_tag>();
 		auto it = index_by_uid.find(merchant_uid);
 		if (it == index_by_uid.end())
@@ -138,7 +138,7 @@ namespace cmall
 	 // will throw if not found
 	std::shared_ptr<services::merchant_git_repo> cmall_service::get_merchant_git_repo(std::uint64_t merchant_uid) const
 	{
-		std::shared_lock<std::shared_mutex> l(merchant_repos_mtx);
+		std::shared_lock<std::shared_mutex> l(merchant_repos);
 		auto& index_by_uid = merchant_repos.get<tag::merchant_uid_tag>();
 		auto it = index_by_uid.find(merchant_uid);
 		if (it == index_by_uid.end())
@@ -620,7 +620,7 @@ namespace cmall
 				this_client.session_info->original_user = original_user;
 			}
 
-			std::unique_lock<std::shared_mutex> l(active_users_mtx);
+			std::unique_lock<std::shared_mutex> l(active_users);
 			active_users.push_back(connection_ptr);
 		}
 	}
@@ -907,7 +907,7 @@ namespace cmall
 
 	awaitable<bool> cmall_service::in_temp_api_token(std::string api_token)
 	{
-		std::shared_lock<std::shared_mutex> l (temp_api_token_mtx);
+		std::shared_lock<std::shared_mutex> l (temp_api_token);
 		co_return temp_api_token.contains(api_token);
 	}
 
@@ -915,14 +915,14 @@ namespace cmall
 	{
 		std::string random_string = gen_rand_string();
 		std::string s = fmt::format("{}-{}", merchant_id, random_string);
-		std::unique_lock<std::shared_mutex> l (temp_api_token_mtx);
+		std::unique_lock<std::shared_mutex> l (temp_api_token);
 		temp_api_token.insert(s);
 		co_return s;
 	}
 
 	awaitable<void> cmall_service::drop_temp_api_token(std::string api_token)
 	{
-		std::unique_lock<std::shared_mutex> l (temp_api_token_mtx);
+		std::unique_lock<std::shared_mutex> l (temp_api_token);
 		temp_api_token.erase(api_token);
 		co_return;
 	}
@@ -932,7 +932,7 @@ namespace cmall
 	{
 		std::vector<client_connection_ptr> active_user_connections;
 		{
-			std::shared_lock<std::shared_mutex> l(active_users_mtx);
+			std::shared_lock<std::shared_mutex> l(active_users);
 			for (auto c : boost::make_iterator_range(active_users.get<2>().equal_range(uid_)))
 			{
 				active_user_connections.push_back(c);

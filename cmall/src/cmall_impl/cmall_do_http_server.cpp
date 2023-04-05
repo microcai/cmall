@@ -514,7 +514,7 @@ namespace cmall
 
 	awaitable<void> cmall_service::client_disconnected(client_connection_ptr c)
 	{
-		std::unique_lock<std::shared_mutex> l(active_users_mtx);
+		std::unique_lock<std::shared_mutex> l(active_users);
 		active_users.get<1>().erase(c->connection_id_);
 		co_return;
 	}
