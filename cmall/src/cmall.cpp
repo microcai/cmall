@@ -895,6 +895,9 @@ namespace cmall
 				co_await ensure_login(true);
 				co_return co_await handle_jsonrpc_admin_api(connection_ptr, method.value(), params);
 				break;
+			case req_method::wx_direct_pay:
+				co_return co_await handle_jsonrpc_misc_api(connection_ptr, method.value(), params);
+				break;
 			default:
 				throw boost::system::system_error(error::not_implemented);
 		}

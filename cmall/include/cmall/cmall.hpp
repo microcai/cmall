@@ -225,6 +225,8 @@ namespace cmall {
 		admin_set_index_goods,
 		admin_add_index_goods,
 		admin_remove_index_goods,
+
+		wx_direct_pay,
 	};
 
 	class cmall_service
@@ -288,6 +290,7 @@ namespace cmall {
 
 		awaitable<boost::json::object> handle_jsonrpc_merchant_api(client_connection_ptr, const req_method method, boost::json::object params);
 		awaitable<boost::json::object> handle_jsonrpc_admin_api(client_connection_ptr, const req_method method, boost::json::object params);
+		awaitable<boost::json::object> handle_jsonrpc_misc_api(client_connection_ptr, const req_method method, boost::json::object params);
 
 		awaitable<bool> handle_order_wx_callback(services::weixin::notify_message msg);
 
