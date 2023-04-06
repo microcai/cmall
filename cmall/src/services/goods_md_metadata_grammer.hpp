@@ -51,6 +51,7 @@ public:
 struct goods_description {
 	std::string title;
 	std::string price;
+	std::string kuaidifei;
 	magic_vector<std::string> picture;
 	magic_vector<std::string> keywords;
 	std::string description;
@@ -64,6 +65,7 @@ struct goods_description {
 			title = other.title;
 		if (price.empty())
 			price = other.price;
+		kuaidifei = other.kuaidifei;
 		picture += other.picture;
 		keywords += other.keywords;
 		if (description.empty())
@@ -85,6 +87,7 @@ BOOST_FUSION_ADAPT_STRUCT(
 	goods_description,
 	(std::string, title)
 	(std::string, price)
+	(std::string, kuaidifei)
 	(std::string, description)
 	(magic_vector<std::string>, picture)
 	(magic_vector<std::string>, keywords)
@@ -106,9 +109,10 @@ struct goods_description_grammer : qi::grammar<Iterator, goods_description()>
 		line = title_line  [ at_c<0>(qi::_val) = qi::_1 ]
 			| price_line  [ at_c<1>(qi::_val) = qi::_1 ]
 			| description_line  [ at_c<2>(qi::_val) = qi::_1 ]
-			| picture_line [ at_c<3>(qi::_val) += qi::_1 ]
-			| keyword_line [ at_c<4>(qi::_val) += qi::_1 ]
-			| pair_line [ at_c<5>(qi::_val) += qi::_1 ];
+			| kuaidife_line [ at_c<3>(qi::_val) = qi::_1 ]
+			| picture_line [ at_c<4>(qi::_val) += qi::_1 ]
+			| keyword_line [ at_c<5>(qi::_val) += qi::_1 ]
+			| pair_line [ at_c<6>(qi::_val) += qi::_1 ];
 
 		document_sperator = qi::lit("---") >> newline;
 
@@ -117,6 +121,7 @@ struct goods_description_grammer : qi::grammar<Iterator, goods_description()>
 		description_line = qi::lit("description") >> *qi::space >> ':' >> *qi::space >> value[qi::_val = qi::_1] >> newline;
 		picture_line	 = qi::lit("picture") >> *qi::space >> ':' >> *qi::space >> value[qi::_val = qi::_1] >> newline;
 		keyword_line	 = qi::lit("keyword") >> *qi::space >> ':' >> *qi::space >> keywords[qi::_val = qi::_1] >> *qi::lit(' ') >> newline;
+		kuaidife_line	 = qi::lit("kuaidifei") >> *qi::space >> ':' >> *qi::space >> value[qi::_val = qi::_1] >> newline;
 
 		pair_line = key [ at_c<0>(qi::_val) = qi::_1 ] >> ':' >> *qi::space >> value [ at_c<1>(qi::_val) = qi::_1 ] >> newline;
 		key = qi::lexeme[ +(qi::char_ - ':' - '-' - ' ') ];
@@ -140,7 +145,7 @@ struct goods_description_grammer : qi::grammar<Iterator, goods_description()>
 	qi::rule<Iterator, std::string()> key, value, keyword, token;
 	qi::rule<Iterator, magic_vector<std::string>()> values, keywords;
 
-	qi::rule<Iterator, std::string()> title_line, price_line, description_line, picture_line;
+	qi::rule<Iterator, std::string()> title_line, price_line, description_line, picture_line, kuaidife_line;
 	qi::rule<Iterator, magic_vector<std::string>()> keyword_line;
 };
 
