@@ -335,11 +335,21 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 		break;
 		case req_method::user_get_wx_openid:
 		{
-			if (!wxpay_service)
-				throw boost::system::system_error(cmall::error::make_error_code(cmall::error::merchant_does_not_support_microapp_wxpay));
+            auto appid = jsutil::json_accessor(params).get_string("appid");
+			std::shared_ptr<services::wxpay_service> wxpay_for_selected_appid;
+			{
+				std::shared_lock<std::shared_mutex> l (wxpay_services);
+				auto it = wxpay_services.find(appid);
+				if (wxpay_services.end() != it)
+					wxpay_for_selected_appid = it->second;
+			}
+
+			if (!wxpay_for_selected_appid)
+                throw boost::system::system_error(cmall::error::merchant_does_not_support_microapp_wxpay);
+
 			std::string jscode = jsutil::json_accessor(params).get_string("jscode");
 
-			auto openid = co_await wxpay_service->get_wx_openid(jscode);
+			auto openid = co_await wxpay_for_selected_appid->get_wx_openid(jscode);
 			reply_message["result"] = openid;
 		}
 		break;

@@ -324,7 +324,7 @@ namespace cmall {
 		services::userscript script_runner;
 		services::gitea gitea_service;
 		services::search search_service;
-		std::shared_ptr<services::wxpay_service> wxpay_service;
+		// std::shared_ptr<services::wxpay_service> wxpay_service;
 		utility::shared_mutex::map<std::string, std::shared_ptr<services::wxpay_service>> wxpay_services;
 
 		utility::shared_mutex::container_with_mutex<loaded_merchant_map> merchant_repos;

@@ -469,19 +469,30 @@ namespace cmall
 				}
 				else if (boost::regex_match(target.begin(), target.end(), w, boost::regex("/api/wx/pay\\.action")))
 				{
-					if (this->wxpay_service)
+					bool callback_handled = false;
+					for (auto wxpay_service : wxpay_services)
 					{
-						auto nofity_msg = co_await wxpay_service->decode_notify_message(req.body(), req["Wechatpay-Timestamp"], req["Wechatpay-Nonce"], req["Wechatpay-Signature"]);
+						services::weixin::notify_message nofity_msg;
+						try
+						{
+							nofity_msg = co_await wxpay_service.second->decode_notify_message(req.body(), req["Wechatpay-Timestamp"], req["Wechatpay-Nonce"], req["Wechatpay-Signature"]);
+						}catch(std::exception& e)
+						{
+							// if e == nofity_message_decode_failed
+							continue;
+						}
 
 						// TODO, 根据 notify_msg 的内容处理支付结果.
 						bool success = co_await handle_order_wx_callback(nofity_msg);
 						if (success)
 						{
 							co_await http_simple_error_page(R"json(SUCCESS)json", 200, req.version());
-							continue;
+							callback_handled = true;
+							break;
 						}
 					}
-					co_await http_simple_error_page(R"json({"code": "FAIL", "message": "失败"})json", 500, req.version());
+					if (!callback_handled)
+						co_await http_simple_error_page(R"json({"code": "FAIL", "message": "失败"})json", 500, req.version());
 					continue;
 				}
 				else

@@ -295,15 +295,14 @@ namespace cmall
 		if (tencent_microapp_pay_cfg.complete == 7)
 		{
 			std::unique_lock<std::shared_mutex> l(wxpay_services);
+			auto wxpay_service = wxpay_services[tencent_microapp_pay_cfg.appid_];
 			if (wxpay_service)
 			{
 				wxpay_service->reinit(tencent_microapp_pay_cfg);
-				wxpay_services[tencent_microapp_pay_cfg.appid_] = wxpay_service;
 			}
 			else
 			{
-				wxpay_service.reset(new services::wxpay_service(m_io_context, tencent_microapp_pay_cfg));
-				wxpay_services[tencent_microapp_pay_cfg.appid_] = wxpay_service;
+				wxpay_services[tencent_microapp_pay_cfg.appid_] = std::make_shared<services::wxpay_service>(m_io_context, tencent_microapp_pay_cfg);
 			}
 		}
 

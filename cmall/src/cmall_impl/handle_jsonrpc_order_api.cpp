@@ -215,6 +215,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_order_api(
         break;
         case req_method::order_get_wxpay_prepay_id:
         {
+            auto wx_microapp_appid = jsutil::json_accessor(params).get_string("wx_microapp_appid");
             auto orderid = jsutil::json_accessor(params).get_string("orderid");
             auto payer_openid = jsutil::json_accessor(params).get_string("payer_openid");
 
@@ -241,10 +242,21 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_order_api(
             if (!ok)
                 throw boost::system::system_error(cmall::error::merchant_vanished);
 
-            if (!order_merchant.exinfo_wx_mchid || !wxpay_service)
+            if (!order_merchant.exinfo_wx_mchid)
                 throw boost::system::system_error(cmall::error::merchant_does_not_support_microapp_wxpay);
 
-            std::string prepay_id = co_await wxpay_service->get_prepay_id(order_merchant.exinfo_wx_mchid.get(), orderid, order_to_pay.price_, order_to_pay.bought_goods[0].description_, payer_openid);
+			std::shared_ptr<services::wxpay_service> wxpay_for_selected_appid;
+			{
+				std::shared_lock<std::shared_mutex> l (wxpay_services);
+				auto it = wxpay_services.find(wx_microapp_appid);
+				if (wxpay_services.end() != it)
+					wxpay_for_selected_appid = it->second;
+			}
+
+			if (!wxpay_for_selected_appid)
+                throw boost::system::system_error(cmall::error::merchant_does_not_support_microapp_wxpay);
+
+            std::string prepay_id = co_await wxpay_for_selected_appid->get_prepay_id(order_merchant.exinfo_wx_mchid.get(), orderid, order_to_pay.price_, order_to_pay.bought_goods[0].description_, payer_openid);
             if (prepay_id.empty())
                 throw boost::system::system_error(cmall::error::wxpay_server_error);
             else
@@ -253,10 +265,19 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_order_api(
         }break;
         case req_method::order_get_wxpay_object:
         {
-            if (!wxpay_service)
+            auto appid = jsutil::json_accessor(params).get_string("appid");
+			std::shared_ptr<services::wxpay_service> wxpay_for_selected_appid;
+			{
+				std::shared_lock<std::shared_mutex> l (wxpay_services);
+				auto it = wxpay_services.find(appid);
+				if (wxpay_services.end() != it)
+					wxpay_for_selected_appid = it->second;
+			}
+
+			if (!wxpay_for_selected_appid)
                 throw boost::system::system_error(cmall::error::merchant_does_not_support_microapp_wxpay);
             auto prepay_id = jsutil::json_accessor(params).get_string("prepay_id");
-            reply_message["result"] = co_await wxpay_service->get_pay_object(prepay_id);
+            reply_message["result"] = co_await wxpay_for_selected_appid->get_pay_object(prepay_id);
         }
         break;
         case req_method::order_check_payment:

@@ -445,6 +445,9 @@ namespace services
 
 			auto decoded_notify_msg_str = decode_wx_encrypt_data(notify_obj->resource.ciphertext, notify_obj->resource.nonce, notify_obj->resource.associated_data);
 
+			if (decoded_notify_msg_str.empty())
+				throw boost::system::system_error(cmall::error::make_error_code(cmall::error::nofity_message_decode_failed));
+
 			auto decoded_notify_msg_jv = boost::json::parse(decoded_notify_msg_str);
 
 			co_return boost::json::value_to<notify_message>(decoded_notify_msg_jv);
