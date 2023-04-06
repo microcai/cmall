@@ -196,6 +196,7 @@ namespace cmall {
 		merchant_get_sold_order_detail,
 		merchant_sold_orders_check_payment,
 		merchant_sold_orders_mark_payed,
+		merchant_alter_order_price,
 		merchant_goods_list,
 		merchant_keywords_list,
 		merchant_list_sold_orders,
@@ -226,6 +227,8 @@ namespace cmall {
 		admin_set_index_goods,
 		admin_add_index_goods,
 		admin_remove_index_goods,
+
+		admin_set_profit_sharing,
 
 		wx_direct_pay,
 	};

@@ -850,6 +850,7 @@ namespace cmall
 			case req_method::merchant_get_sold_order_detail:
 			case req_method::merchant_sold_orders_check_payment:
 			case req_method::merchant_sold_orders_mark_payed:
+			case req_method::merchant_alter_order_price:
 			case req_method::merchant_goods_list:
 			case req_method::merchant_keywords_list:
 			case req_method::merchant_list_sold_orders:

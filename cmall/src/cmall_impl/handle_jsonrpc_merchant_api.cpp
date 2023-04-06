@@ -92,6 +92,25 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api
             }
         }
         break;
+        case req_method::merchant_alter_order_price:
+        {
+            auto orderid = jsutil::json_accessor(params).get_string("orderid");
+            auto new_price = jsutil::json_accessor(params).get_string("new_price");
+
+            std::vector<cmall_order> orders;
+            using query_t = odb::query<cmall_order>;
+            auto query	  = (query_t::oid == orderid && query_t::seller == this_user.uid_ && query_t::deleted_at.is_null());
+            co_await m_database.async_load<cmall_order>(query, orders);
+
+            LOG_DBG << "order_list retrieved, " << orders.size() << " items";
+            if (orders.size() != 1)
+                throw boost::system::system_error(cmall::error::order_not_found);
+
+            orders[0].price_ = cpp_numeric(new_price);
+
+            reply_message["result"] = co_await m_database.async_update<cmall_order>(orders[0]);
+        }
+        break;
         case req_method::merchant_goods_list:
         {
             std::vector<services::product> all_products = co_await get_merchant_git_repo(this_merchant)->get_products(this_merchant.name_, this_client.ws_client->baseurl_);
