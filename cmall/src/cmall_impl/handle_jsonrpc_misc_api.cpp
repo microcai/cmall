@@ -89,7 +89,9 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_misc_api(cli
 			std::shared_ptr<services::wxpay_service> wxpay_for_selected_appid;
 			{
 				std::shared_lock<std::shared_mutex> l (wxpay_services);
-				wxpay_for_selected_appid = wxpay_services[appid];
+				auto it = wxpay_services.find(appid);
+				if (wxpay_services.end() != it)
+					wxpay_for_selected_appid = it->second;
 			}
 
 			if (!wxpay_for_selected_appid)
