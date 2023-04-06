@@ -265,7 +265,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_order_api(
         }break;
         case req_method::order_get_wxpay_object:
         {
-            auto appid = jsutil::json_accessor(params).get_string("appid");
+            auto appid = jsutil::json_accessor(params).get_string("wx_microapp_appid");
 			std::shared_ptr<services::wxpay_service> wxpay_for_selected_appid;
 			{
 				std::shared_lock<std::shared_mutex> l (wxpay_services);
