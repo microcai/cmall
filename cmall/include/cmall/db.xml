@@ -1,4 +1,10 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
+  <changeset version="29">
+    <alter-table name="cmall_merchant">
+      <drop-column name="repo_path"/>
+    </alter-table>
+  </changeset>
+
   <changeset version="28">
     <alter-table name="cmall_config">
       <add-column name="config_name" type="TEXT" null="false"/>

@@ -108,7 +108,6 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
                 m.name_ = apply.applicant_->name_;
                 m.state_ = merchant_state_t::normal;
                 m.gitea_password = gitea_password;
-                m.repo_path = std::filesystem::path(m_config.repo_root / std::format("m{}", m.uid_)  / "shop.git").string();
                 db.persist(m);
 
                 co_return true;

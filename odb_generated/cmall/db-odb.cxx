@@ -4351,7 +4351,6 @@ namespace odb
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
-    pgsql::text_oid,
     pgsql::text_oid
   };
 
@@ -4371,7 +4370,6 @@ namespace odb
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
-    pgsql::text_oid,
     pgsql::text_oid,
     pgsql::int8_oid
   };
@@ -4463,17 +4461,9 @@ namespace odb
     //
     t[7UL] = 0;
 
-    // repo_path
-    //
-    if (t[8UL])
-    {
-      i.repo_path_value.capacity (i.repo_path_size);
-      grew = true;
-    }
-
     // exinfo_wx_mchid
     //
-    if (t[9UL])
+    if (t[8UL])
     {
       i.exinfo_wx_mchid_value.capacity (i.exinfo_wx_mchid_size);
       grew = true;
@@ -4556,15 +4546,6 @@ namespace odb
     b[n].type = pgsql::bind::timestamp;
     b[n].buffer = &i.deleted_at_value;
     b[n].is_null = &i.deleted_at_null;
-    n++;
-
-    // repo_path
-    //
-    b[n].type = pgsql::bind::text;
-    b[n].buffer = i.repo_path_value.data_ptr ();
-    b[n].capacity = i.repo_path_value.capacity ();
-    b[n].size = &i.repo_path_size;
-    b[n].is_null = &i.repo_path_null;
     n++;
 
     // exinfo_wx_mchid
@@ -4733,27 +4714,6 @@ namespace odb
       i.deleted_at_null = is_null;
     }
 
-    // repo_path
-    //
-    {
-      ::std::string const& v =
-        o.repo_path;
-
-      bool is_null (false);
-      std::size_t size (0);
-      std::size_t cap (i.repo_path_value.capacity ());
-      pgsql::value_traits<
-          ::std::string,
-          pgsql::id_string >::set_image (
-        i.repo_path_value,
-        size,
-        is_null,
-        v);
-      i.repo_path_null = is_null;
-      i.repo_path_size = size;
-      grew = grew || (cap != i.repo_path_value.capacity ());
-    }
-
     // exinfo_wx_mchid
     //
     {
@@ -4902,21 +4862,6 @@ namespace odb
         i.deleted_at_null);
     }
 
-    // repo_path
-    //
-    {
-      ::std::string& v =
-        o.repo_path;
-
-      pgsql::value_traits<
-          ::std::string,
-          pgsql::id_string >::set_value (
-        v,
-        i.repo_path_value,
-        i.repo_path_size,
-        i.repo_path_null);
-    }
-
     // exinfo_wx_mchid
     //
     {
@@ -4956,10 +4901,9 @@ namespace odb
   "\"created_at\", "
   "\"updated_at\", "
   "\"deleted_at\", "
-  "\"repo_path\", "
   "\"exinfo_wx_mchid\") "
   "VALUES "
-  "($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)";
+  "($1, $2, $3, $4, $5, $6, $7, $8, $9)";
 
   const char access::object_traits_impl< ::cmall_merchant, id_pgsql >::find_statement[] =
   "SELECT "
@@ -4971,7 +4915,6 @@ namespace odb
   "\"cmall_merchant\".\"created_at\", "
   "\"cmall_merchant\".\"updated_at\", "
   "\"cmall_merchant\".\"deleted_at\", "
-  "\"cmall_merchant\".\"repo_path\", "
   "\"cmall_merchant\".\"exinfo_wx_mchid\" "
   "FROM \"cmall_merchant\" "
   "WHERE \"cmall_merchant\".\"uid\"=$1";
@@ -4986,9 +4929,8 @@ namespace odb
   "\"created_at\"=$5, "
   "\"updated_at\"=$6, "
   "\"deleted_at\"=$7, "
-  "\"repo_path\"=$8, "
-  "\"exinfo_wx_mchid\"=$9 "
-  "WHERE \"uid\"=$10";
+  "\"exinfo_wx_mchid\"=$8 "
+  "WHERE \"uid\"=$9";
 
   const char access::object_traits_impl< ::cmall_merchant, id_pgsql >::erase_statement[] =
   "DELETE FROM \"cmall_merchant\" "
@@ -5004,7 +4946,6 @@ namespace odb
   "\"cmall_merchant\".\"created_at\", "
   "\"cmall_merchant\".\"updated_at\", "
   "\"cmall_merchant\".\"deleted_at\", "
-  "\"cmall_merchant\".\"repo_path\", "
   "\"cmall_merchant\".\"exinfo_wx_mchid\" "
   "FROM \"cmall_merchant\"";
 
@@ -10338,12 +10279,12 @@ namespace odb
     // seq
     //
     {
-      ::odb::nullable< uint64_t > const& v =
+      ::odb::nullable< long unsigned int > const& v =
         o.seq;
 
       bool is_null (true);
       pgsql::value_traits<
-          ::odb::nullable< uint64_t >,
+          ::odb::nullable< long unsigned int >,
           pgsql::id_bigint >::set_image (
         i.seq_value, is_null, v);
       i.seq_null = is_null;
@@ -10486,11 +10427,11 @@ namespace odb
     // seq
     //
     {
-      ::odb::nullable< uint64_t >& v =
+      ::odb::nullable< long unsigned int >& v =
         o.seq;
 
       pgsql::value_traits<
-          ::odb::nullable< uint64_t >,
+          ::odb::nullable< long unsigned int >,
           pgsql::id_bigint >::set_value (
         v,
         i.seq_value,
@@ -12553,11 +12494,11 @@ namespace odb
     // last_seq
     //
     {
-      ::odb::nullable< uint64_t >& v =
+      ::odb::nullable< long unsigned int >& v =
         o.last_seq;
 
       pgsql::value_traits<
-          ::odb::nullable< uint64_t >,
+          ::odb::nullable< long unsigned int >,
           pgsql::id_bigint >::set_value (
         v,
         i.last_seq_value,
@@ -13649,7 +13590,6 @@ namespace odb
                       "  \"created_at\" TIMESTAMP NULL,\n"
                       "  \"updated_at\" TIMESTAMP NULL,\n"
                       "  \"deleted_at\" TIMESTAMP NULL,\n"
-                      "  \"repo_path\" TEXT NOT NULL,\n"
                       "  \"exinfo_wx_mchid\" TEXT NULL)");
           db.execute ("CREATE INDEX \"cmall_merchant_name_i\"\n"
                       "  ON \"cmall_merchant\" (\"name\")");
@@ -13791,7 +13731,7 @@ namespace odb
                       "  \"migration\" BOOLEAN NOT NULL)");
           db.execute ("INSERT INTO \"schema_version\" (\n"
                       "  \"name\", \"version\", \"migration\")\n"
-                      "  SELECT '', 28, FALSE\n"
+                      "  SELECT '', 29, FALSE\n"
                       "  WHERE NOT EXISTS (\n"
                       "    SELECT 1 FROM \"schema_version\" WHERE \"name\" = '')");
           return false;
@@ -13983,6 +13923,60 @@ namespace odb
     "",
     28ULL,
     &migrate_schema_28);
+
+  static bool
+  migrate_schema_29 (database& db, unsigned short pass, bool pre)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (pass);
+    ODB_POTENTIALLY_UNUSED (pre);
+
+    if (pre)
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"version\" = 29, \"migration\" = TRUE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+    else
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("ALTER TABLE \"cmall_merchant\"\n"
+                      "  DROP COLUMN \"repo_path\"");
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"migration\" = FALSE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  static const schema_catalog_migrate_entry
+  migrate_schema_entry_29_ (
+    id_pgsql,
+    "",
+    29ULL,
+    &migrate_schema_29);
 }
 
 #include <odb/post.hxx>

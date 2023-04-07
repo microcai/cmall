@@ -1933,18 +1933,6 @@ namespace odb
 
     static const deleted_at_type_ deleted_at;
 
-    // repo_path
-    //
-    typedef
-    pgsql::query_column<
-      pgsql::value_traits<
-        ::std::string,
-        pgsql::id_string >::query_type,
-      pgsql::id_string >
-    repo_path_type_;
-
-    static const repo_path_type_ repo_path;
-
     // exinfo_wx_mchid
     //
     typedef
@@ -1997,11 +1985,6 @@ namespace odb
   const typename query_columns< ::cmall_merchant, id_pgsql, A >::deleted_at_type_
   query_columns< ::cmall_merchant, id_pgsql, A >::
   deleted_at (A::table_name, "\"deleted_at\"", 0);
-
-  template <typename A>
-  const typename query_columns< ::cmall_merchant, id_pgsql, A >::repo_path_type_
-  query_columns< ::cmall_merchant, id_pgsql, A >::
-  repo_path (A::table_name, "\"repo_path\"", 0);
 
   template <typename A>
   const typename query_columns< ::cmall_merchant, id_pgsql, A >::exinfo_wx_mchid_type_
@@ -2072,12 +2055,6 @@ namespace odb
       long long deleted_at_value;
       bool deleted_at_null;
 
-      // repo_path
-      //
-      details::buffer repo_path_value;
-      std::size_t repo_path_size;
-      bool repo_path_null;
-
       // exinfo_wx_mchid
       //
       details::buffer exinfo_wx_mchid_value;
@@ -2123,7 +2100,7 @@ namespace odb
 
     typedef pgsql::query_base query_base_type;
 
-    static const std::size_t column_count = 10UL;
+    static const std::size_t column_count = 9UL;
     static const std::size_t id_column_count = 1UL;
     static const std::size_t inverse_column_count = 0UL;
     static const std::size_t readonly_column_count = 0UL;

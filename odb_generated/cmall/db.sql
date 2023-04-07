@@ -127,7 +127,6 @@ CREATE TABLE "cmall_merchant" (
   "created_at" TIMESTAMP NULL,
   "updated_at" TIMESTAMP NULL,
   "deleted_at" TIMESTAMP NULL,
-  "repo_path" TEXT NOT NULL,
   "exinfo_wx_mchid" TEXT NULL);
 
 CREATE INDEX "cmall_merchant_name_i"
@@ -288,7 +287,7 @@ CREATE TABLE "cmall_index_page_goods" (
 
 INSERT INTO "schema_version" (
   "name", "version", "migration")
-  SELECT '', 28, FALSE
+  SELECT '', 29, FALSE
   WHERE NOT EXISTS (
     SELECT 1 FROM "schema_version" WHERE "name" = '');
 
