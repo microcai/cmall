@@ -386,7 +386,7 @@ namespace services
 			};
 
 			if (profit_sharing)
-				params.insert({ "settle_info"s, settle_info });
+				params.insert_or_assign("settle_info", settle_info);
 
 			httpc::request_options_t option;
 			option.url = api_uri;
