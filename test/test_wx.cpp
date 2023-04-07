@@ -16,7 +16,7 @@ awaitable<int> co_main(int argc, char** argv, boost::asio::io_context& ios)
 {
 	services::weixin::tencent_microapp_pay_cfg_t cfg;
 	cfg.notify_url_ = "https://cmall.chschain.com/api/wx/pay.action";
-	cfg.appid_ = "wx6f3464e4046cf192";
+	cfg.appid_ = "wxa47d223ea0df497c";
 	cfg.mchid_ = "1502765861";
 
 	cfg.appSecret_ = test_appSecret_;
@@ -26,11 +26,11 @@ awaitable<int> co_main(int argc, char** argv, boost::asio::io_context& ios)
 
     services::wxpay_service wxpay_service(ios, cfg);
 
-	auto openid = co_await wxpay_service.get_wx_openid("0c3tz7100TR3HP1AzG200U8gfk2tz71a");
+	auto openid = co_await wxpay_service.gongzhonghao_get_wx_openid("081VVJGa1yo34F0kVbHa1qbaf83VVJGq");
 
     std::cerr << "id is: " <<  openid << std::endl;
 
-	auto prepayid = co_await wxpay_service.get_prepay_id("1641053810", "test_order_2", 1, "测试一下哈", "oh4Rj467Rx42zvafj3OmRXNJtI2M");
+	auto prepayid = co_await wxpay_service.get_prepay_id("1641053810", "test_order_3", 1, "测试一下哈", "ogmIh5neNuRtzc-1ymY2HJbVSNgw");//"oh4Rj467Rx42zvafj3OmRXNJtI2M");
 
     std::cerr << "prepayid is: " <<  prepayid << std::endl;
 
