@@ -53,7 +53,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_order_api(
             new_order.stage_ = order_unpay;
             new_order.seller_ = 0;
 
-            cpp_numeric total_price = 0;
+            cpp_numeric total_price = 0, total_kuaidifei = 0;
 
             std::map<std::uint64_t, cmall_merchant> cache;
 
@@ -96,14 +96,16 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_order_api(
                 good_snap.name_			   = product_in_mall.product_title;
                 good_snap.merchant_id	   = merchant_id_of_goods;
                 good_snap.goods_id		   = product_in_mall.product_id;
-                std::cerr << "xxxxxxxxxxxx goods price str is: " << product_in_mall.product_price << std::endl;
                 good_snap.price_		   = cpp_numeric(product_in_mall.product_price);
                 new_order.bought_goods.push_back(good_snap);
 
                 total_price += good_snap.price_;
+                if (!product_in_mall.kuaidifei.empty())
+                    total_kuaidifei += cpp_numeric(product_in_mall.kuaidifei);
             }
 
             new_order.price_ = total_price;
+            new_order.kuaidifei = total_kuaidifei;
 
             co_await m_database.async_add(new_order);
 

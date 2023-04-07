@@ -125,6 +125,7 @@ namespace services
 				founded.product_title = result->title;
 				founded.product_price = result->price;
 				founded.product_description = result->description;
+				founded.kuaidifei = result->kuaidifei;
 				for (auto pic_url : result->picture)
 					founded.pics.push_back(correct_url(pic_url, baseurl));
 				founded.merchant_id = merchant_id;

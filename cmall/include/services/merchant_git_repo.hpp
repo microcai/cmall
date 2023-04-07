@@ -36,6 +36,8 @@ namespace services
 
 		std::string product_price;
 
+		std::string kuaidifei;
+
 		std::string git_version;
 
 		std::uint64_t merchant_id;
