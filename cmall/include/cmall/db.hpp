@@ -41,7 +41,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(25, 29, open)
+#pragma db model version(28, 29, open)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\

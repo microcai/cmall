@@ -5,34 +5,11 @@
     </alter-table>
   </changeset>
 
-  <changeset version="28">
-    <alter-table name="cmall_config">
-      <add-column name="config_name" type="TEXT" null="false"/>
-      <add-column name="config_value" type="TEXT" null="false"/>
-    </alter-table>
-  </changeset>
-
-  <changeset version="27">
-    <alter-table name="cmall_merchant">
-      <add-column name="exinfo_wx_mchid" type="TEXT" null="true"/>
-    </alter-table>
-  </changeset>
-
-  <changeset version="26">
-    <add-table name="cmall_index_page_goods" kind="object">
-      <column name="id" type="BIGINT" null="false"/>
-      <column name="merchant_id" type="BIGINT" null="false"/>
-      <column name="goods" type="TEXT" null="false"/>
-      <column name="order" type="INTEGER" null="false"/>
-      <primary-key auto="true">
-        <column name="id"/>
-      </primary-key>
-    </add-table>
-  </changeset>
-
-  <model version="25">
+  <model version="28">
     <table name="cmall_config" kind="object">
       <column name="id" type="BIGINT" null="false"/>
+      <column name="config_name" type="TEXT" null="false"/>
+      <column name="config_value" type="TEXT" null="false"/>
       <primary-key auto="true">
         <column name="id"/>
       </primary-key>
@@ -108,6 +85,7 @@
       <column name="deleted_at" type="TIMESTAMP" null="true"/>
       <column name="repo_path" type="TEXT" null="false"/>
       <column name="gitea_password" type="TEXT" null="true"/>
+      <column name="exinfo_wx_mchid" type="TEXT" null="true"/>
       <primary-key>
         <column name="uid"/>
       </primary-key>
@@ -307,6 +285,15 @@
       <index name="cmall_user_fav_uid_i">
         <column name="uid"/>
       </index>
+    </table>
+    <table name="cmall_index_page_goods" kind="object">
+      <column name="id" type="BIGINT" null="false"/>
+      <column name="merchant_id" type="BIGINT" null="false"/>
+      <column name="goods" type="TEXT" null="false"/>
+      <column name="order" type="INTEGER" null="false"/>
+      <primary-key auto="true">
+        <column name="id"/>
+      </primary-key>
     </table>
   </model>
 </changelog>
