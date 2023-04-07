@@ -321,6 +321,37 @@ namespace services
 			co_return "";
 		}
 
+		awaitable<std::string> gongzhonghao_get_wx_openid(std::string jscode)
+		{
+			auto api_url = fmt::format("https://api.weixin.qq.com/sns/oauth2/access_token?appid={}&secret={}&code={}&grant_type=authorization_code",
+				sp_appid, appSecret, jscode
+			);
+			httpc::request_options_t option;
+			option.url = api_url;
+			option.verb = httpc::http::verb::get;
+			option.headers.insert(std::make_pair("Accept", "application/json"));
+			option.headers.insert(std::make_pair("User-Agent", "c++mall"));
+//			option.headers.insert(std::make_pair("Authorization", gen_REST_auth_header("GET", "sns/jscode2session", option.body.value())));
+
+			auto reply = co_await request(option);
+			auto resp = reply.body;
+
+			LOG_DBG << "wxpay resp:" << reply.body;
+
+			do {
+				boost::system::error_code ec;
+				auto jv = boost::json::parse(resp, ec, {}, { 64, false, false, true });
+				if (ec)
+					break;
+
+				auto openid = jsutil::json_accessor(jv).get_string("openid");
+				co_return openid;
+
+			} while (false);
+
+			co_return "";
+		}
+
 		// verify the user input verify_code against verify_session
 		awaitable<std::string> get_prepay_id(std::string sub_mchid, std::string out_trade_no, cpp_numeric amount, std::string goods_description, std::string payer_openid)
 		{
@@ -624,6 +655,12 @@ V739kLuz6XvUpJo3EzM0OGT1TjikmyUcNkNQjZj/yEeQwRkp+lVoew==
 	{
 		co_return co_await impl().get_wx_openid(jscode);
 	}
+
+	awaitable<std::string> wxpay_service::gongzhonghao_get_wx_openid(std::string jscode)
+	{
+		co_return co_await impl().gongzhonghao_get_wx_openid(jscode);
+	}
+
 
 	// verify the user input verify_code against verify_session
 	awaitable<std::string> wxpay_service::get_prepay_id(std::string sub_mchid, std::string out_trade_no, cpp_numeric amount, std::string goods_description, std::string payer_openid)

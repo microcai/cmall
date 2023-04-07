@@ -58,6 +58,9 @@ namespace services
 		// 获取 openid
 		awaitable<std::string> get_wx_openid(std::string jscode);
 
+		// 获取 openid
+		awaitable<std::string> gongzhonghao_get_wx_openid(std::string jscode);
+
 		// 获取 prepay_id
 		awaitable<std::string> get_prepay_id(std::string sub_mchid, std::string out_trade_no, cpp_numeric amount, std::string goods_description, std::string payer_openid);
 
