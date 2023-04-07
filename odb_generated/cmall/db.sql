@@ -139,6 +139,7 @@ CREATE TABLE "cmall_order" (
   "seller" BIGINT NOT NULL,
   "price" NUMERIC NOT NULL,
   "pay_amount" numeric NOT NULL DEFAULT '0',
+  "kuaidifei" numeric NOT NULL DEFAULT '0',
   "stage" SMALLINT NOT NULL,
   "payed_at" TIMESTAMP NULL,
   "close_at" TIMESTAMP NULL,
@@ -287,7 +288,7 @@ CREATE TABLE "cmall_index_page_goods" (
 
 INSERT INTO "schema_version" (
   "name", "version", "migration")
-  SELECT '', 29, FALSE
+  SELECT '', 30, FALSE
   WHERE NOT EXISTS (
     SELECT 1 FROM "schema_version" WHERE "name" = '');
 

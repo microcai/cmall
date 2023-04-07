@@ -5881,6 +5881,7 @@ namespace odb
     pgsql::int8_oid,
     pgsql::text_oid,
     pgsql::text_oid,
+    pgsql::text_oid,
     pgsql::int2_oid,
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
@@ -5903,6 +5904,7 @@ namespace odb
     pgsql::text_oid,
     pgsql::int8_oid,
     pgsql::int8_oid,
+    pgsql::text_oid,
     pgsql::text_oid,
     pgsql::text_oid,
     pgsql::int2_oid,
@@ -6937,21 +6939,29 @@ namespace odb
       grew = true;
     }
 
-    // stage_
+    // kuaidifei
     //
-    t[6UL] = 0;
+    if (t[6UL])
+    {
+      i.kuaidifei_value.capacity (i.kuaidifei_size);
+      grew = true;
+    }
 
-    // payed_at_
+    // stage_
     //
     t[7UL] = 0;
 
-    // close_at_
+    // payed_at_
     //
     t[8UL] = 0;
 
+    // close_at_
+    //
+    t[9UL] = 0;
+
     // snap_git_version
     //
-    if (t[9UL])
+    if (t[10UL])
     {
       i.snap_git_version_value.capacity (i.snap_git_version_size);
       grew = true;
@@ -6959,7 +6969,7 @@ namespace odb
 
     // ext_
     //
-    if (t[10UL])
+    if (t[11UL])
     {
       i.ext_value.capacity (i.ext_size);
       grew = true;
@@ -6967,15 +6977,15 @@ namespace odb
 
     // created_at_
     //
-    t[11UL] = 0;
+    t[12UL] = 0;
 
     // updated_at_
     //
-    t[12UL] = 0;
+    t[13UL] = 0;
 
     // deleted_at_
     //
-    t[13UL] = 0;
+    t[14UL] = 0;
 
     return grew;
   }
@@ -7040,6 +7050,15 @@ namespace odb
     b[n].capacity = i.pay_amount_value.capacity ();
     b[n].size = &i.pay_amount_size;
     b[n].is_null = &i.pay_amount_null;
+    n++;
+
+    // kuaidifei
+    //
+    b[n].type = pgsql::bind::text;
+    b[n].buffer = i.kuaidifei_value.data_ptr ();
+    b[n].capacity = i.kuaidifei_value.capacity ();
+    b[n].size = &i.kuaidifei_size;
+    b[n].is_null = &i.kuaidifei_null;
     n++;
 
     // stage_
@@ -7214,6 +7233,27 @@ namespace odb
       i.pay_amount_null = is_null;
       i.pay_amount_size = size;
       grew = grew || (cap != i.pay_amount_value.capacity ());
+    }
+
+    // kuaidifei
+    //
+    {
+      ::cpp_numeric const& v =
+        o.kuaidifei;
+
+      bool is_null (false);
+      std::size_t size (0);
+      std::size_t cap (i.kuaidifei_value.capacity ());
+      pgsql::value_traits<
+          ::cpp_numeric,
+          pgsql::id_string >::set_image (
+        i.kuaidifei_value,
+        size,
+        is_null,
+        v);
+      i.kuaidifei_null = is_null;
+      i.kuaidifei_size = size;
+      grew = grew || (cap != i.kuaidifei_value.capacity ());
     }
 
     // stage_
@@ -7441,6 +7481,21 @@ namespace odb
         i.pay_amount_null);
     }
 
+    // kuaidifei
+    //
+    {
+      ::cpp_numeric& v =
+        o.kuaidifei;
+
+      pgsql::value_traits<
+          ::cpp_numeric,
+          pgsql::id_string >::set_value (
+        v,
+        i.kuaidifei_value,
+        i.kuaidifei_size,
+        i.kuaidifei_null);
+    }
+
     // stage_
     //
     {
@@ -7577,6 +7632,7 @@ namespace odb
   "\"seller\", "
   "\"price\", "
   "\"pay_amount\", "
+  "\"kuaidifei\", "
   "\"stage\", "
   "\"payed_at\", "
   "\"close_at\", "
@@ -7586,7 +7642,7 @@ namespace odb
   "\"updated_at\", "
   "\"deleted_at\") "
   "VALUES "
-  "(DEFAULT, $1, $2, $3, $4::numeric, $5::numeric, $6, $7, $8, $9, $10, $11, $12, $13) "
+  "(DEFAULT, $1, $2, $3, $4::numeric, $5::numeric, $6::numeric, $7, $8, $9, $10, $11, $12, $13, $14) "
   "RETURNING \"id\"";
 
   const char access::object_traits_impl< ::cmall_order, id_pgsql >::find_statement[] =
@@ -7597,6 +7653,7 @@ namespace odb
   "\"cmall_order\".\"seller\", "
   "\"cmall_order\".\"price\"::TEXT, "
   "\"cmall_order\".\"pay_amount\"::TEXT, "
+  "\"cmall_order\".\"kuaidifei\"::TEXT, "
   "\"cmall_order\".\"stage\", "
   "\"cmall_order\".\"payed_at\", "
   "\"cmall_order\".\"close_at\", "
@@ -7616,15 +7673,16 @@ namespace odb
   "\"seller\"=$3, "
   "\"price\"=$4::numeric, "
   "\"pay_amount\"=$5::numeric, "
-  "\"stage\"=$6, "
-  "\"payed_at\"=$7, "
-  "\"close_at\"=$8, "
-  "\"snap_git_version\"=$9, "
-  "\"ext\"=$10, "
-  "\"created_at\"=$11, "
-  "\"updated_at\"=$12, "
-  "\"deleted_at\"=$13 "
-  "WHERE \"id\"=$14";
+  "\"kuaidifei\"=$6::numeric, "
+  "\"stage\"=$7, "
+  "\"payed_at\"=$8, "
+  "\"close_at\"=$9, "
+  "\"snap_git_version\"=$10, "
+  "\"ext\"=$11, "
+  "\"created_at\"=$12, "
+  "\"updated_at\"=$13, "
+  "\"deleted_at\"=$14 "
+  "WHERE \"id\"=$15";
 
   const char access::object_traits_impl< ::cmall_order, id_pgsql >::erase_statement[] =
   "DELETE FROM \"cmall_order\" "
@@ -7638,6 +7696,7 @@ namespace odb
   "\"cmall_order\".\"seller\", "
   "\"cmall_order\".\"price\"::TEXT, "
   "\"cmall_order\".\"pay_amount\"::TEXT, "
+  "\"cmall_order\".\"kuaidifei\"::TEXT, "
   "\"cmall_order\".\"stage\", "
   "\"cmall_order\".\"payed_at\", "
   "\"cmall_order\".\"close_at\", "
@@ -13600,6 +13659,7 @@ namespace odb
                       "  \"seller\" BIGINT NOT NULL,\n"
                       "  \"price\" NUMERIC NOT NULL,\n"
                       "  \"pay_amount\" numeric NOT NULL DEFAULT '0',\n"
+                      "  \"kuaidifei\" numeric NOT NULL DEFAULT '0',\n"
                       "  \"stage\" SMALLINT NOT NULL,\n"
                       "  \"payed_at\" TIMESTAMP NULL,\n"
                       "  \"close_at\" TIMESTAMP NULL,\n"
@@ -13731,7 +13791,7 @@ namespace odb
                       "  \"migration\" BOOLEAN NOT NULL)");
           db.execute ("INSERT INTO \"schema_version\" (\n"
                       "  \"name\", \"version\", \"migration\")\n"
-                      "  SELECT '', 29, FALSE\n"
+                      "  SELECT '', 30, FALSE\n"
                       "  WHERE NOT EXISTS (\n"
                       "    SELECT 1 FROM \"schema_version\" WHERE \"name\" = '')");
           return false;
@@ -13808,6 +13868,60 @@ namespace odb
     "",
     29ULL,
     &migrate_schema_29);
+
+  static bool
+  migrate_schema_30 (database& db, unsigned short pass, bool pre)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (pass);
+    ODB_POTENTIALLY_UNUSED (pre);
+
+    if (pre)
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          db.execute ("ALTER TABLE \"cmall_order\"\n"
+                      "  ADD COLUMN \"kuaidifei\" numeric NOT NULL DEFAULT '0'");
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"version\" = 30, \"migration\" = TRUE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+    else
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"migration\" = FALSE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  static const schema_catalog_migrate_entry
+  migrate_schema_entry_30_ (
+    id_pgsql,
+    "",
+    30ULL,
+    &migrate_schema_30);
 }
 
 #include <odb/post.hxx>

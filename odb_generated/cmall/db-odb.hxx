@@ -2381,6 +2381,18 @@ namespace odb
 
     static const pay_amount_type_ pay_amount;
 
+    // kuaidifei
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::cpp_numeric,
+        pgsql::id_string >::query_type,
+      pgsql::id_string >
+    kuaidifei_type_;
+
+    static const kuaidifei_type_ kuaidifei;
+
     // stage
     //
     typedef
@@ -2509,6 +2521,11 @@ namespace odb
   pay_amount (A::table_name, "\"pay_amount\"", "(?)::numeric");
 
   template <typename A>
+  const typename query_columns< ::cmall_order, id_pgsql, A >::kuaidifei_type_
+  query_columns< ::cmall_order, id_pgsql, A >::
+  kuaidifei (A::table_name, "\"kuaidifei\"", "(?)::numeric");
+
+  template <typename A>
   const typename query_columns< ::cmall_order, id_pgsql, A >::stage_type_
   query_columns< ::cmall_order, id_pgsql, A >::
   stage (A::table_name, "\"stage\"", 0);
@@ -2601,6 +2618,12 @@ namespace odb
       details::buffer pay_amount_value;
       std::size_t pay_amount_size;
       bool pay_amount_null;
+
+      // kuaidifei
+      //
+      details::buffer kuaidifei_value;
+      std::size_t kuaidifei_size;
+      bool kuaidifei_null;
 
       // stage_
       //
@@ -2953,7 +2976,7 @@ namespace odb
 
     typedef pgsql::query_base query_base_type;
 
-    static const std::size_t column_count = 14UL;
+    static const std::size_t column_count = 15UL;
     static const std::size_t id_column_count = 1UL;
     static const std::size_t inverse_column_count = 0UL;
     static const std::size_t readonly_column_count = 0UL;
