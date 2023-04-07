@@ -108,8 +108,8 @@ struct goods_description_grammer : qi::grammar<Iterator, goods_description()>
 
 		line = title_line  [ at_c<0>(qi::_val) = qi::_1 ]
 			| price_line  [ at_c<1>(qi::_val) = qi::_1 ]
-			| description_line  [ at_c<2>(qi::_val) = qi::_1 ]
-			| kuaidife_line [ at_c<3>(qi::_val) = qi::_1 ]
+			| kuaidife_line [ at_c<2>(qi::_val) = qi::_1 ]
+			| description_line  [ at_c<3>(qi::_val) = qi::_1 ]
 			| picture_line [ at_c<4>(qi::_val) += qi::_1 ]
 			| keyword_line [ at_c<5>(qi::_val) += qi::_1 ]
 			| pair_line [ at_c<6>(qi::_val) += qi::_1 ];
