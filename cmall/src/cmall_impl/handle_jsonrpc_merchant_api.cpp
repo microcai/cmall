@@ -96,6 +96,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api
         {
             auto orderid = jsutil::json_accessor(params).get_string("orderid");
             auto new_price = jsutil::json_accessor(params).get_string("new_price");
+            auto new_kuaidifei = jsutil::json_accessor(params).get_string("new_kuaidifei");
 
             std::vector<cmall_order> orders;
             using query_t = odb::query<cmall_order>;
@@ -106,7 +107,11 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_merchant_api
             if (orders.size() != 1)
                 throw boost::system::system_error(cmall::error::order_not_found);
 
-            orders[0].price_ = cpp_numeric(new_price);
+            if (!new_price.empty())
+                orders[0].price_ = cpp_numeric(new_price);
+
+            if (!new_kuaidifei.empty())
+                orders[0].kuaidifei = cpp_numeric(new_kuaidifei);
 
             reply_message["result"] = co_await m_database.async_update<cmall_order>(orders[0]);
         }
