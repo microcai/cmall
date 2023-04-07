@@ -62,7 +62,7 @@ namespace services
 		awaitable<std::string> gongzhonghao_get_wx_openid(std::string jscode);
 
 		// 获取 prepay_id
-		awaitable<std::string> get_prepay_id(std::string sub_mchid, std::string out_trade_no, cpp_numeric amount, std::string goods_description, std::string payer_openid);
+		awaitable<std::string> get_prepay_id(std::string sub_mchid, std::string out_trade_no, cpp_numeric amount, std::string goods_description, std::string payer_openid, bool profit_sharing = false);
 
 		// 这个返回的接口, 客户端调用 wx.requestPayment(OBJECT) 发起支付.
 		// 在小程序的前端页面, 调用 payobj = await cmallsdk.get_wx_pay_object(prepay_id) 获取 payobj

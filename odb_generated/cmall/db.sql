@@ -2,6 +2,8 @@
  * compiler for C++.
  */
 
+DROP TABLE IF EXISTS "cmall_wx_fenzhang" CASCADE;
+
 DROP TABLE IF EXISTS "cmall_index_page_goods" CASCADE;
 
 DROP TABLE IF EXISTS "cmall_3rd_public_kv_store" CASCADE;
@@ -286,9 +288,17 @@ CREATE TABLE "cmall_index_page_goods" (
   "goods" TEXT NOT NULL,
   "order" INTEGER NOT NULL);
 
+CREATE TABLE "cmall_wx_fenzhang" (
+  "id" BIGSERIAL NOT NULL PRIMARY KEY,
+  "type" TEXT NOT NULL,
+  "account" TEXT NOT NULL,
+  "name" TEXT NOT NULL,
+  "relation_type" TEXT NOT NULL,
+  "percent" TEXT NOT NULL);
+
 INSERT INTO "schema_version" (
   "name", "version", "migration")
-  SELECT '', 30, FALSE
+  SELECT '', 31, FALSE
   WHERE NOT EXISTS (
     SELECT 1 FROM "schema_version" WHERE "name" = '');
 

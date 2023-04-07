@@ -617,6 +617,48 @@ namespace odb
     static void
     callback (database&, view_type&, callback_event);
   };
+
+  // cmall_wx_fenzhang
+  //
+  template <>
+  struct class_traits< ::cmall_wx_fenzhang >
+  {
+    static const class_kind kind = class_object;
+  };
+
+  template <>
+  class access::object_traits< ::cmall_wx_fenzhang >
+  {
+    public:
+    typedef ::cmall_wx_fenzhang object_type;
+    typedef ::boost::shared_ptr< ::cmall_wx_fenzhang > pointer_type;
+    typedef odb::pointer_traits<pointer_type> pointer_traits;
+
+    static const bool polymorphic = false;
+
+    typedef long int id_type;
+
+    static const bool auto_id = true;
+
+    static const bool abstract = false;
+
+    static id_type
+    id (const object_type&);
+
+    typedef
+    no_op_pointer_cache_traits<pointer_type>
+    pointer_cache_traits;
+
+    typedef
+    no_op_reference_cache_traits<object_type>
+    reference_cache_traits;
+
+    static void
+    callback (database&, object_type&, callback_event);
+
+    static void
+    callback (database&, const object_type&, callback_event);
+  };
 }
 
 #include <odb/details/buffer.hxx>
@@ -4813,6 +4855,289 @@ namespace odb
   {
   };
 
+  // cmall_wx_fenzhang
+  //
+  template <typename A>
+  struct query_columns< ::cmall_wx_fenzhang, id_pgsql, A >
+  {
+    // id
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        long int,
+        pgsql::id_bigint >::query_type,
+      pgsql::id_bigint >
+    id_type_;
+
+    static const id_type_ id;
+
+    // type
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::std::string,
+        pgsql::id_string >::query_type,
+      pgsql::id_string >
+    type_type_;
+
+    static const type_type_ type;
+
+    // account
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::std::string,
+        pgsql::id_string >::query_type,
+      pgsql::id_string >
+    account_type_;
+
+    static const account_type_ account;
+
+    // name
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::std::string,
+        pgsql::id_string >::query_type,
+      pgsql::id_string >
+    name_type_;
+
+    static const name_type_ name;
+
+    // relation_type
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::std::string,
+        pgsql::id_string >::query_type,
+      pgsql::id_string >
+    relation_type_type_;
+
+    static const relation_type_type_ relation_type;
+
+    // percent
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::std::string,
+        pgsql::id_string >::query_type,
+      pgsql::id_string >
+    percent_type_;
+
+    static const percent_type_ percent;
+  };
+
+  template <typename A>
+  const typename query_columns< ::cmall_wx_fenzhang, id_pgsql, A >::id_type_
+  query_columns< ::cmall_wx_fenzhang, id_pgsql, A >::
+  id (A::table_name, "\"id\"", 0);
+
+  template <typename A>
+  const typename query_columns< ::cmall_wx_fenzhang, id_pgsql, A >::type_type_
+  query_columns< ::cmall_wx_fenzhang, id_pgsql, A >::
+  type (A::table_name, "\"type\"", 0);
+
+  template <typename A>
+  const typename query_columns< ::cmall_wx_fenzhang, id_pgsql, A >::account_type_
+  query_columns< ::cmall_wx_fenzhang, id_pgsql, A >::
+  account (A::table_name, "\"account\"", 0);
+
+  template <typename A>
+  const typename query_columns< ::cmall_wx_fenzhang, id_pgsql, A >::name_type_
+  query_columns< ::cmall_wx_fenzhang, id_pgsql, A >::
+  name (A::table_name, "\"name\"", 0);
+
+  template <typename A>
+  const typename query_columns< ::cmall_wx_fenzhang, id_pgsql, A >::relation_type_type_
+  query_columns< ::cmall_wx_fenzhang, id_pgsql, A >::
+  relation_type (A::table_name, "\"relation_type\"", 0);
+
+  template <typename A>
+  const typename query_columns< ::cmall_wx_fenzhang, id_pgsql, A >::percent_type_
+  query_columns< ::cmall_wx_fenzhang, id_pgsql, A >::
+  percent (A::table_name, "\"percent\"", 0);
+
+  template <typename A>
+  struct pointer_query_columns< ::cmall_wx_fenzhang, id_pgsql, A >:
+    query_columns< ::cmall_wx_fenzhang, id_pgsql, A >
+  {
+  };
+
+  template <>
+  class access::object_traits_impl< ::cmall_wx_fenzhang, id_pgsql >:
+    public access::object_traits< ::cmall_wx_fenzhang >
+  {
+    public:
+    struct id_image_type
+    {
+      long long id_value;
+      bool id_null;
+
+      std::size_t version;
+    };
+
+    struct image_type
+    {
+      // id
+      //
+      long long id_value;
+      bool id_null;
+
+      // type
+      //
+      details::buffer type_value;
+      std::size_t type_size;
+      bool type_null;
+
+      // account
+      //
+      details::buffer account_value;
+      std::size_t account_size;
+      bool account_null;
+
+      // name
+      //
+      details::buffer name_value;
+      std::size_t name_size;
+      bool name_null;
+
+      // relation_type
+      //
+      details::buffer relation_type_value;
+      std::size_t relation_type_size;
+      bool relation_type_null;
+
+      // percent
+      //
+      details::buffer percent_value;
+      std::size_t percent_size;
+      bool percent_null;
+
+      std::size_t version;
+    };
+
+    struct extra_statement_cache_type;
+
+    using object_traits<object_type>::id;
+
+    static id_type
+    id (const id_image_type&);
+
+    static id_type
+    id (const image_type&);
+
+    static bool
+    grow (image_type&,
+          bool*);
+
+    static void
+    bind (pgsql::bind*,
+          image_type&,
+          pgsql::statement_kind);
+
+    static void
+    bind (pgsql::bind*, id_image_type&);
+
+    static bool
+    init (image_type&,
+          const object_type&,
+          pgsql::statement_kind);
+
+    static void
+    init (object_type&,
+          const image_type&,
+          database*);
+
+    static void
+    init (id_image_type&, const id_type&);
+
+    typedef pgsql::object_statements<object_type> statements_type;
+
+    typedef pgsql::query_base query_base_type;
+
+    static const std::size_t column_count = 6UL;
+    static const std::size_t id_column_count = 1UL;
+    static const std::size_t inverse_column_count = 0UL;
+    static const std::size_t readonly_column_count = 0UL;
+    static const std::size_t managed_optimistic_column_count = 0UL;
+
+    static const std::size_t separate_load_column_count = 0UL;
+    static const std::size_t separate_update_column_count = 0UL;
+
+    static const bool versioned = false;
+
+    static const char persist_statement[];
+    static const char find_statement[];
+    static const char update_statement[];
+    static const char erase_statement[];
+    static const char query_statement[];
+    static const char erase_query_statement[];
+
+    static const char table_name[];
+
+    static void
+    persist (database&, object_type&);
+
+    static pointer_type
+    find (database&, const id_type&);
+
+    static bool
+    find (database&, const id_type&, object_type&);
+
+    static bool
+    reload (database&, object_type&);
+
+    static void
+    update (database&, const object_type&);
+
+    static void
+    erase (database&, const id_type&);
+
+    static void
+    erase (database&, const object_type&);
+
+    static result<object_type>
+    query (database&, const query_base_type&);
+
+    static unsigned long long
+    erase_query (database&, const query_base_type&);
+
+    static const char persist_statement_name[];
+    static const char find_statement_name[];
+    static const char update_statement_name[];
+    static const char erase_statement_name[];
+    static const char query_statement_name[];
+    static const char erase_query_statement_name[];
+
+    static const unsigned int persist_statement_types[];
+    static const unsigned int find_statement_types[];
+    static const unsigned int update_statement_types[];
+
+    static const std::size_t batch = 1UL;
+
+    public:
+    static bool
+    find_ (statements_type&,
+           const id_type*);
+
+    static void
+    load_ (statements_type&,
+           object_type&,
+           bool reload);
+  };
+
+  template <>
+  class access::object_traits_impl< ::cmall_wx_fenzhang, id_common >:
+    public access::object_traits_impl< ::cmall_wx_fenzhang, id_pgsql >
+  {
+  };
+
   // cmall_config
   //
   // cmall_user
@@ -5122,6 +5447,9 @@ namespace odb
       odb::access::object_traits_impl< ::cmall_index_page_goods, id_pgsql > >
   {
   };
+
+  // cmall_wx_fenzhang
+  //
 }
 
 #include "cmall/db-odb.ihh"

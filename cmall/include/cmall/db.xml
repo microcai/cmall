@@ -1,4 +1,18 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
+  <changeset version="31">
+    <add-table name="cmall_wx_fenzhang" kind="object">
+      <column name="id" type="BIGINT" null="false"/>
+      <column name="type" type="TEXT" null="false"/>
+      <column name="account" type="TEXT" null="false"/>
+      <column name="name" type="TEXT" null="false"/>
+      <column name="relation_type" type="TEXT" null="false"/>
+      <column name="percent" type="TEXT" null="false"/>
+      <primary-key auto="true">
+        <column name="id"/>
+      </primary-key>
+    </add-table>
+  </changeset>
+
   <changeset version="30">
     <alter-table name="cmall_order">
       <add-column name="kuaidifei" type="numeric" null="false" default="'0'"/>

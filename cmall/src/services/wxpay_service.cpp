@@ -353,7 +353,7 @@ namespace services
 		}
 
 		// verify the user input verify_code against verify_session
-		awaitable<std::string> get_prepay_id(std::string sub_mchid, std::string out_trade_no, cpp_numeric amount, std::string goods_description, std::string payer_openid)
+		awaitable<std::string> get_prepay_id(std::string sub_mchid, std::string out_trade_no, cpp_numeric amount, std::string goods_description, std::string payer_openid, bool profit_sharing)
 		{
 			static const std::string api_uri = "https://api.mch.weixin.qq.com/v3/pay/partner/transactions/jsapi";
 
@@ -370,6 +370,10 @@ namespace services
 				{ "total"s, ammount_in_cents },
 			};
 
+			boost::json::object settle_info = {
+				{ "profit_sharing"s, true },
+			};
+
 			boost::json::object params = {
 				{ "sp_mchid"s, sp_mchid },
 				{ "sp_appid"s, sp_appid },
@@ -380,6 +384,9 @@ namespace services
 				{ "payer"s, payer_obj },
 				{ "amount"s, amount_obj },
 			};
+
+			if (profit_sharing)
+				params.insert({ "settle_info"s, settle_info });
 
 			httpc::request_options_t option;
 			option.url = api_uri;
@@ -663,9 +670,9 @@ V739kLuz6XvUpJo3EzM0OGT1TjikmyUcNkNQjZj/yEeQwRkp+lVoew==
 
 
 	// verify the user input verify_code against verify_session
-	awaitable<std::string> wxpay_service::get_prepay_id(std::string sub_mchid, std::string out_trade_no, cpp_numeric amount, std::string goods_description, std::string payer_openid)
+	awaitable<std::string> wxpay_service::get_prepay_id(std::string sub_mchid, std::string out_trade_no, cpp_numeric amount, std::string goods_description, std::string payer_openid, bool profit_sharing)
 	{
-		co_return co_await impl().get_prepay_id(sub_mchid, out_trade_no, amount, goods_description, payer_openid);
+		co_return co_await impl().get_prepay_id(sub_mchid, out_trade_no, amount, goods_description, payer_openid, profit_sharing);
 	}
 
 	awaitable<boost::json::object> wxpay_service::get_pay_object(std::string prepay_id)

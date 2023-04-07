@@ -41,7 +41,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(28, 30, closed)
+#pragma db model version(28, 31, closed)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -377,4 +377,16 @@ struct cmall_index_page_goods_max_order
 {
 	#pragma db column("max(" + cmall_index_page_goods::order +")")
 	int max_order;
+};
+
+#pragma db object
+struct cmall_wx_fenzhang
+{
+	#pragma db id auto
+	long id;
+	std::string type;//: 'PERSONAL_OPENID' | 'MERCHANT_ID'; //": "MERCHANT_ID",
+	std::string account; //": "190001001",
+	std::string name; //": "张三网络公司",
+	std::string relation_type;// 'SUPPLIER' | 'DISTRIBUTOR' | 'SERVICE_PROVIDER' | 'PLATFORM' | 'OTHERS'; //": "SUPPLIER"
+	std::string percent;// string; // "3%"
 };
