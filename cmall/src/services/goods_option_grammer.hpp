@@ -84,7 +84,7 @@ struct goods_options_grammer : qi::grammar<Iterator, goods_options()>
 
 		selections = select >> * select;
 
-		select = key [ at_c<0>(qi::_val) = qi::_1 ] >> qi::lit(' ') >> *qi::space >> value [ at_c<1>(qi::_val) = qi::_1 ] >> *qi::space >> newline;
+		select = key [ at_c<0>(qi::_val) = qi::_1 ] >> qi::lit(' ') >> *qi::space >>  -(value [ at_c<1>(qi::_val) = qi::_1 ] >> *qi::space) >> newline;
 
 		key = simple_key | quoted_key;
 
