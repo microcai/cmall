@@ -60,7 +60,7 @@ namespace services
 		awaitable<client_session> load(std::string session_id) const;
 		awaitable<void> save(const client_session& session, std::chrono::duration<int> lifetime = std::chrono::seconds(86400 * 30));
 		awaitable<void> save(std::string session_id, const client_session& session, std::chrono::duration<int> lifetime = std::chrono::seconds(86400 * 30));
-		awaitable<void> update_lifetime(std::string session_id, std::chrono::duration<int> lifetime = std::chrono::seconds(86400 * 30));
+		awaitable<void> update_lifetime(std::string session_id);
 
 	private:
 		const persist_session_impl& impl() const;

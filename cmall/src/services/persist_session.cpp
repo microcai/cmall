@@ -104,7 +104,7 @@ namespace services
 			co_await db.async_upset(s);
 		}
 
-		awaitable<void> update_lifetime(std::string session_id, std::chrono::duration<int> lifetime)
+		awaitable<void> update_lifetime(std::string session_id)
 		{
 			co_await db.async_update<cmall_session>(odb::query<cmall_session>::cache_key == session_id, [](cmall_session s){
 				s.updated_at_ = boost::posix_time::second_clock::local_time();
@@ -142,9 +142,9 @@ namespace services
 		co_return co_await impl().save(session_id, session, lifetime);
 	}
 
-	awaitable<void> persist_session::update_lifetime(std::string session_id, std::chrono::duration<int> lifetime)
+	awaitable<void> persist_session::update_lifetime(std::string session_id)
 	{
-		co_return co_await impl().update_lifetime(session_id, lifetime);
+		co_return co_await impl().update_lifetime(session_id);
 	}
 
 	const persist_session_impl& persist_session::impl() const
