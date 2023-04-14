@@ -84,7 +84,7 @@ namespace services
 			co_return cs;
 		}
 
-		awaitable<void> save(std::string session_id, const client_session& session, std::chrono::duration<int> lifetime)
+		awaitable<void> save(std::string session_id, const client_session& session, std::string current_ip_address)
 		{
 			// TODO, 用　mdbx 保存 session
 
@@ -100,14 +100,16 @@ namespace services
 			s.cache_key = session_id;
 			s.updated_at_ = boost::posix_time::second_clock::local_time();
 			s.cache_content = json_to_string(ser);
+			s.ip_address = current_ip_address;
 
 			co_await db.async_upset(s);
 		}
 
-		awaitable<void> update_lifetime(std::string session_id)
+		awaitable<void> update_lifetime(std::string session_id, std::string current_ip_address)
 		{
-			co_await db.async_update<cmall_session>(odb::query<cmall_session>::cache_key == session_id, [](cmall_session s){
+			co_await db.async_update<cmall_session>(odb::query<cmall_session>::cache_key == session_id, [current_ip_address](cmall_session s){
 				s.updated_at_ = boost::posix_time::second_clock::local_time();
+				s.ip_address = current_ip_address;
 				return s;
 			});
 			co_return;
@@ -132,19 +134,19 @@ namespace services
 		co_return co_await impl().load(session_id);
 	}
 
-	awaitable<void> persist_session::save(const client_session& session, std::chrono::duration<int> lifetime)
+	awaitable<void> persist_session::save(const client_session& session, std::string current_ip_address)
 	{
-		co_return co_await impl().save(session.session_id, session, lifetime);
+		co_return co_await impl().save(session.session_id, session, current_ip_address);
 	}
 
-	awaitable<void> persist_session::save(std::string session_id, const client_session& session, std::chrono::duration<int> lifetime)
+	awaitable<void> persist_session::save(std::string session_id, const client_session& session, std::string current_ip_address)
 	{
-		co_return co_await impl().save(session_id, session, lifetime);
+		co_return co_await impl().save(session_id, session, current_ip_address);
 	}
 
-	awaitable<void> persist_session::update_lifetime(std::string session_id)
+	awaitable<void> persist_session::update_lifetime(std::string session_id, std::string current_ip_address)
 	{
-		co_return co_await impl().update_lifetime(session_id);
+		co_return co_await impl().update_lifetime(session_id, current_ip_address);
 	}
 
 	const persist_session_impl& persist_session::impl() const

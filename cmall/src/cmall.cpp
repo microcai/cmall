@@ -586,7 +586,7 @@ namespace cmall
 		this_client.session_info = std::make_shared<services::client_session>();
 
 		this_client.session_info->session_id = gen_uuid();
-		co_await session_cache_map.save(*this_client.session_info);
+		co_await session_cache_map.save(*this_client.session_info, connection_ptr->x_real_ip);
 	}
 
 	awaitable<void> cmall_service::load_user_info(client_connection_ptr connection_ptr)
@@ -700,7 +700,7 @@ namespace cmall
 							this_client.session_info
 								= std::make_shared<services::client_session>(co_await session_cache_map.load(sessionid));
 
-							co_await session_cache_map.update_lifetime(sessionid);
+							co_await session_cache_map.update_lifetime(sessionid, connection_ptr->x_real_ip);
 						}
 					}
 

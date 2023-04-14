@@ -1,4 +1,10 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
+  <changeset version="34">
+    <alter-table name="cmall_session">
+      <add-column name="ip_address" type="TEXT" null="true"/>
+    </alter-table>
+  </changeset>
+
   <changeset version="33">
     <alter-table name="cmall_session">
       <drop-foreign-key name="owner_fk"/>

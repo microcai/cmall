@@ -78,7 +78,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 		}
 		session_info.verify_session_cookie = {};
 		// 认证成功后， sessionid 写入 mdbx 数据库以便日后恢复.
-		co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info);
+		co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info, this_client.x_real_ip);
 		reply_message["result"] = {
 			{ "login", "success" },
 			{ "isMerchant", session_info.isMerchant },
@@ -116,7 +116,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 			verify_session_cookie		  = co_await telephone_verifier.send_verify_code(tel);
 			// 验证码发送后, sessionid 写入 mdbx 数据库以便日后恢复.
 			session_info.verify_session_cookie = verify_session_cookie;
-			co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info);
+			co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info, this_client.x_real_ip);
 			reply_message["result"]			   = true;
 		}
 		break;
@@ -165,7 +165,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_user_api(
 				active_users.get<1>().erase(connection_ptr->connection_id_);
 			}
 			this_client.session_info->clear();
-			co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info);
+			co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info, this_client.x_real_ip);
 			reply_message["result"] = { "status", "success" };
 		}
 		break;

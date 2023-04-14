@@ -301,6 +301,7 @@ CREATE TABLE "cmall_wx_fenzhang" (
 CREATE TABLE "cmall_session" (
   "cache_key" TEXT NOT NULL PRIMARY KEY,
   "cache_content" TEXT NOT NULL,
+  "ip_address" TEXT NULL,
   "created_at" TIMESTAMP NULL DEFAULT 'now()',
   "updated_at" TIMESTAMP NULL);
 
@@ -309,7 +310,7 @@ CREATE INDEX "cmall_session_updated_at_i"
 
 INSERT INTO "schema_version" (
   "name", "version", "migration")
-  SELECT '', 33, FALSE
+  SELECT '', 34, FALSE
   WHERE NOT EXISTS (
     SELECT 1 FROM "schema_version" WHERE "name" = '');
 

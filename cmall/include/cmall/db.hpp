@@ -41,7 +41,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(28, 33, closed)
+#pragma db model version(28, 34, closed)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -398,6 +398,8 @@ struct cmall_session
 	std::string cache_key;
 
 	std::string cache_content;
+
+	odb::nullable<std::string> ip_address;
 
 	#pragma db default("now()")
 	boost::posix_time::ptime created_at_{ boost::posix_time::second_clock::local_time() };

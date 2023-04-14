@@ -5209,6 +5209,18 @@ namespace odb
 
     static const cache_content_type_ cache_content;
 
+    // ip_address
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::std::basic_string< char >,
+        pgsql::id_string >::query_type,
+      pgsql::id_string >
+    ip_address_type_;
+
+    static const ip_address_type_ ip_address;
+
     // created_at
     //
     typedef
@@ -5243,6 +5255,11 @@ namespace odb
   const typename query_columns< ::cmall_session, id_pgsql, A >::cache_content_type_
   query_columns< ::cmall_session, id_pgsql, A >::
   cache_content (A::table_name, "\"cache_content\"", 0);
+
+  template <typename A>
+  const typename query_columns< ::cmall_session, id_pgsql, A >::ip_address_type_
+  query_columns< ::cmall_session, id_pgsql, A >::
+  ip_address (A::table_name, "\"ip_address\"", 0);
 
   template <typename A>
   const typename query_columns< ::cmall_session, id_pgsql, A >::created_at_type_
@@ -5287,6 +5304,12 @@ namespace odb
       details::buffer cache_content_value;
       std::size_t cache_content_size;
       bool cache_content_null;
+
+      // ip_address
+      //
+      details::buffer ip_address_value;
+      std::size_t ip_address_size;
+      bool ip_address_null;
 
       // created_at_
       //
@@ -5337,7 +5360,7 @@ namespace odb
 
     typedef pgsql::query_base query_base_type;
 
-    static const std::size_t column_count = 4UL;
+    static const std::size_t column_count = 5UL;
     static const std::size_t id_column_count = 1UL;
     static const std::size_t inverse_column_count = 0UL;
     static const std::size_t readonly_column_count = 0UL;

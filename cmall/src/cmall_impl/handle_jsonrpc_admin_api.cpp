@@ -273,7 +273,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
                     session_info.merchant_info = target_merchant;
                     session_info.user_info = target_user;
 
-                    co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info);
+                    co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info, this_client.x_real_ip);
                     reply_message["result"] = {
                         { "sudo", "success" },
                         { "isMerchant", session_info.isMerchant },
@@ -294,7 +294,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
                     session_info.merchant_info.reset();
                     session_info.user_info = target_user;
 
-                    co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info);
+                    co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info, this_client.x_real_ip);
                     reply_message["result"] = {
                         { "sudo", "success" },
                         { "isMerchant", session_info.isMerchant },
@@ -325,7 +325,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
             else
                 session_info.merchant_info.reset();
             session_info.original_user.reset();
-            co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info);
+            co_await session_cache_map.save(this_client.session_info->session_id, *this_client.session_info, this_client.x_real_ip);
             reply_message["result"] = {
                 { "sudo", "success" },
                 { "isMerchant", session_info.isMerchant },
@@ -403,6 +403,11 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
             reply_message["result"] = true;
             break;
         }
+        case req_method::admin_set_profit_sharing:
+        {
+            // TODO 配置分账功能.
+        }
+        break;
         default:
             throw "this should never be executed";
     }
