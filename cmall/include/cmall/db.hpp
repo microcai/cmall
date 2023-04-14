@@ -41,7 +41,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(28, 31, closed)
+#pragma db model version(28, 32, closed)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -389,4 +389,25 @@ struct cmall_wx_fenzhang
 	std::string name; //": "张三网络公司",
 	std::string relation_type;// 'SUPPLIER' | 'DISTRIBUTOR' | 'SERVICE_PROVIDER' | 'PLATFORM' | 'OTHERS'; //": "SUPPLIER"
 	std::string percent;// string; // "3%"
+};
+
+#pragma db object
+struct cmall_session
+{
+	#pragma db id auto
+	long id;
+
+	#pragma db index
+	std::string cache_key;
+
+	#pragma db index
+	std::shared_ptr<cmall_user> owner;
+
+	std::string cache_content;
+
+	#pragma db default("now()")
+	boost::posix_time::ptime created_at_{ boost::posix_time::second_clock::local_time() };
+
+	#pragma db index
+	boost::posix_time::ptime updated_at_{ boost::posix_time::second_clock::local_time() };
 };

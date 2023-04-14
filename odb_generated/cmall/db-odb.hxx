@@ -659,6 +659,48 @@ namespace odb
     static void
     callback (database&, const object_type&, callback_event);
   };
+
+  // cmall_session
+  //
+  template <>
+  struct class_traits< ::cmall_session >
+  {
+    static const class_kind kind = class_object;
+  };
+
+  template <>
+  class access::object_traits< ::cmall_session >
+  {
+    public:
+    typedef ::cmall_session object_type;
+    typedef ::boost::shared_ptr< ::cmall_session > pointer_type;
+    typedef odb::pointer_traits<pointer_type> pointer_traits;
+
+    static const bool polymorphic = false;
+
+    typedef long int id_type;
+
+    static const bool auto_id = true;
+
+    static const bool abstract = false;
+
+    static id_type
+    id (const object_type&);
+
+    typedef
+    no_op_pointer_cache_traits<pointer_type>
+    pointer_cache_traits;
+
+    typedef
+    no_op_reference_cache_traits<object_type>
+    reference_cache_traits;
+
+    static void
+    callback (database&, object_type&, callback_event);
+
+    static void
+    callback (database&, const object_type&, callback_event);
+  };
 }
 
 #include <odb/details/buffer.hxx>
@@ -5138,6 +5180,282 @@ namespace odb
   {
   };
 
+  // cmall_session
+  //
+  template <typename A>
+  struct pointer_query_columns< ::cmall_session, id_pgsql, A >
+  {
+    // id
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        long int,
+        pgsql::id_bigint >::query_type,
+      pgsql::id_bigint >
+    id_type_;
+
+    static const id_type_ id;
+
+    // cache_key
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::std::string,
+        pgsql::id_string >::query_type,
+      pgsql::id_string >
+    cache_key_type_;
+
+    static const cache_key_type_ cache_key;
+
+    // owner
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::uint64_t,
+        pgsql::id_bigint >::query_type,
+      pgsql::id_bigint >
+    owner_type_;
+
+    static const owner_type_ owner;
+
+    // cache_content
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::std::string,
+        pgsql::id_string >::query_type,
+      pgsql::id_string >
+    cache_content_type_;
+
+    static const cache_content_type_ cache_content;
+
+    // created_at
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::boost::posix_time::ptime,
+        pgsql::id_timestamp >::query_type,
+      pgsql::id_timestamp >
+    created_at_type_;
+
+    static const created_at_type_ created_at;
+
+    // updated_at
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::boost::posix_time::ptime,
+        pgsql::id_timestamp >::query_type,
+      pgsql::id_timestamp >
+    updated_at_type_;
+
+    static const updated_at_type_ updated_at;
+  };
+
+  template <typename A>
+  const typename pointer_query_columns< ::cmall_session, id_pgsql, A >::id_type_
+  pointer_query_columns< ::cmall_session, id_pgsql, A >::
+  id (A::table_name, "\"id\"", 0);
+
+  template <typename A>
+  const typename pointer_query_columns< ::cmall_session, id_pgsql, A >::cache_key_type_
+  pointer_query_columns< ::cmall_session, id_pgsql, A >::
+  cache_key (A::table_name, "\"cache_key\"", 0);
+
+  template <typename A>
+  const typename pointer_query_columns< ::cmall_session, id_pgsql, A >::owner_type_
+  pointer_query_columns< ::cmall_session, id_pgsql, A >::
+  owner (A::table_name, "\"owner\"", 0);
+
+  template <typename A>
+  const typename pointer_query_columns< ::cmall_session, id_pgsql, A >::cache_content_type_
+  pointer_query_columns< ::cmall_session, id_pgsql, A >::
+  cache_content (A::table_name, "\"cache_content\"", 0);
+
+  template <typename A>
+  const typename pointer_query_columns< ::cmall_session, id_pgsql, A >::created_at_type_
+  pointer_query_columns< ::cmall_session, id_pgsql, A >::
+  created_at (A::table_name, "\"created_at\"", 0);
+
+  template <typename A>
+  const typename pointer_query_columns< ::cmall_session, id_pgsql, A >::updated_at_type_
+  pointer_query_columns< ::cmall_session, id_pgsql, A >::
+  updated_at (A::table_name, "\"updated_at\"", 0);
+
+  template <>
+  class access::object_traits_impl< ::cmall_session, id_pgsql >:
+    public access::object_traits< ::cmall_session >
+  {
+    public:
+    struct id_image_type
+    {
+      long long id_value;
+      bool id_null;
+
+      std::size_t version;
+    };
+
+    struct image_type
+    {
+      // id
+      //
+      long long id_value;
+      bool id_null;
+
+      // cache_key
+      //
+      details::buffer cache_key_value;
+      std::size_t cache_key_size;
+      bool cache_key_null;
+
+      // owner
+      //
+      long long owner_value;
+      bool owner_null;
+
+      // cache_content
+      //
+      details::buffer cache_content_value;
+      std::size_t cache_content_size;
+      bool cache_content_null;
+
+      // created_at_
+      //
+      long long created_at_value;
+      bool created_at_null;
+
+      // updated_at_
+      //
+      long long updated_at_value;
+      bool updated_at_null;
+
+      std::size_t version;
+    };
+
+    struct extra_statement_cache_type;
+
+    struct owner_tag;
+
+    using object_traits<object_type>::id;
+
+    static id_type
+    id (const id_image_type&);
+
+    static id_type
+    id (const image_type&);
+
+    static bool
+    grow (image_type&,
+          bool*);
+
+    static void
+    bind (pgsql::bind*,
+          image_type&,
+          pgsql::statement_kind);
+
+    static void
+    bind (pgsql::bind*, id_image_type&);
+
+    static bool
+    init (image_type&,
+          const object_type&,
+          pgsql::statement_kind);
+
+    static void
+    init (object_type&,
+          const image_type&,
+          database*);
+
+    static void
+    init (id_image_type&, const id_type&);
+
+    typedef pgsql::object_statements<object_type> statements_type;
+
+    typedef pgsql::query_base query_base_type;
+
+    static const std::size_t column_count = 6UL;
+    static const std::size_t id_column_count = 1UL;
+    static const std::size_t inverse_column_count = 0UL;
+    static const std::size_t readonly_column_count = 0UL;
+    static const std::size_t managed_optimistic_column_count = 0UL;
+
+    static const std::size_t separate_load_column_count = 0UL;
+    static const std::size_t separate_update_column_count = 0UL;
+
+    static const bool versioned = false;
+
+    static const char persist_statement[];
+    static const char find_statement[];
+    static const char update_statement[];
+    static const char erase_statement[];
+    static const char query_statement[];
+    static const char erase_query_statement[];
+
+    static const char table_name[];
+
+    static void
+    persist (database&, object_type&);
+
+    static pointer_type
+    find (database&, const id_type&);
+
+    static bool
+    find (database&, const id_type&, object_type&);
+
+    static bool
+    reload (database&, object_type&);
+
+    static void
+    update (database&, const object_type&);
+
+    static void
+    erase (database&, const id_type&);
+
+    static void
+    erase (database&, const object_type&);
+
+    static result<object_type>
+    query (database&, const query_base_type&);
+
+    static unsigned long long
+    erase_query (database&, const query_base_type&);
+
+    static const char persist_statement_name[];
+    static const char find_statement_name[];
+    static const char update_statement_name[];
+    static const char erase_statement_name[];
+    static const char query_statement_name[];
+    static const char erase_query_statement_name[];
+
+    static const unsigned int persist_statement_types[];
+    static const unsigned int find_statement_types[];
+    static const unsigned int update_statement_types[];
+
+    static const std::size_t batch = 1UL;
+
+    public:
+    static bool
+    find_ (statements_type&,
+           const id_type*);
+
+    static void
+    load_ (statements_type&,
+           object_type&,
+           bool reload);
+  };
+
+  template <>
+  class access::object_traits_impl< ::cmall_session, id_common >:
+    public access::object_traits_impl< ::cmall_session, id_pgsql >
+  {
+  };
+
   // cmall_config
   //
   // cmall_user
@@ -5450,6 +5768,152 @@ namespace odb
 
   // cmall_wx_fenzhang
   //
+  // cmall_session
+  //
+  template <>
+  struct alias_traits<
+    ::cmall_user,
+    id_pgsql,
+    access::object_traits_impl< ::cmall_session, id_pgsql >::owner_tag>
+  {
+    static const char table_name[];
+  };
+
+  template <>
+  struct query_columns_base< ::cmall_session, id_pgsql >
+  {
+    // owner
+    //
+    typedef
+    odb::alias_traits<
+      ::cmall_user,
+      id_pgsql,
+      access::object_traits_impl< ::cmall_session, id_pgsql >::owner_tag>
+    owner_alias_;
+  };
+
+  template <typename A>
+  struct query_columns< ::cmall_session, id_pgsql, A >:
+    query_columns_base< ::cmall_session, id_pgsql >
+  {
+    // id
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        long int,
+        pgsql::id_bigint >::query_type,
+      pgsql::id_bigint >
+    id_type_;
+
+    static const id_type_ id;
+
+    // cache_key
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::std::string,
+        pgsql::id_string >::query_type,
+      pgsql::id_string >
+    cache_key_type_;
+
+    static const cache_key_type_ cache_key;
+
+    // owner
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::uint64_t,
+        pgsql::id_bigint >::query_type,
+      pgsql::id_bigint >
+    owner_column_type_;
+
+    typedef
+    odb::query_pointer<
+      odb::pointer_query_columns<
+        ::cmall_user,
+        id_pgsql,
+        owner_alias_ > >
+    owner_pointer_type_;
+
+    struct owner_type_: owner_pointer_type_, owner_column_type_
+    {
+      owner_type_ (const char* t, const char* c, const char* conv)
+        : owner_column_type_ (t, c, conv)
+      {
+      }
+    };
+
+    static const owner_type_ owner;
+
+    // cache_content
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::std::string,
+        pgsql::id_string >::query_type,
+      pgsql::id_string >
+    cache_content_type_;
+
+    static const cache_content_type_ cache_content;
+
+    // created_at
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::boost::posix_time::ptime,
+        pgsql::id_timestamp >::query_type,
+      pgsql::id_timestamp >
+    created_at_type_;
+
+    static const created_at_type_ created_at;
+
+    // updated_at
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::boost::posix_time::ptime,
+        pgsql::id_timestamp >::query_type,
+      pgsql::id_timestamp >
+    updated_at_type_;
+
+    static const updated_at_type_ updated_at;
+  };
+
+  template <typename A>
+  const typename query_columns< ::cmall_session, id_pgsql, A >::id_type_
+  query_columns< ::cmall_session, id_pgsql, A >::
+  id (A::table_name, "\"id\"", 0);
+
+  template <typename A>
+  const typename query_columns< ::cmall_session, id_pgsql, A >::cache_key_type_
+  query_columns< ::cmall_session, id_pgsql, A >::
+  cache_key (A::table_name, "\"cache_key\"", 0);
+
+  template <typename A>
+  const typename query_columns< ::cmall_session, id_pgsql, A >::owner_type_
+  query_columns< ::cmall_session, id_pgsql, A >::
+  owner (A::table_name, "\"owner\"", 0);
+
+  template <typename A>
+  const typename query_columns< ::cmall_session, id_pgsql, A >::cache_content_type_
+  query_columns< ::cmall_session, id_pgsql, A >::
+  cache_content (A::table_name, "\"cache_content\"", 0);
+
+  template <typename A>
+  const typename query_columns< ::cmall_session, id_pgsql, A >::created_at_type_
+  query_columns< ::cmall_session, id_pgsql, A >::
+  created_at (A::table_name, "\"created_at\"", 0);
+
+  template <typename A>
+  const typename query_columns< ::cmall_session, id_pgsql, A >::updated_at_type_
+  query_columns< ::cmall_session, id_pgsql, A >::
+  updated_at (A::table_name, "\"updated_at\"", 0);
 }
 
 #include "cmall/db-odb.ihh"

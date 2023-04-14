@@ -2,6 +2,8 @@
  * compiler for C++.
  */
 
+DROP TABLE IF EXISTS "cmall_session" CASCADE;
+
 DROP TABLE IF EXISTS "cmall_wx_fenzhang" CASCADE;
 
 DROP TABLE IF EXISTS "cmall_index_page_goods" CASCADE;
@@ -296,9 +298,30 @@ CREATE TABLE "cmall_wx_fenzhang" (
   "relation_type" TEXT NOT NULL,
   "percent" TEXT NOT NULL);
 
+CREATE TABLE "cmall_session" (
+  "id" BIGSERIAL NOT NULL PRIMARY KEY,
+  "cache_key" TEXT NOT NULL,
+  "owner" BIGINT NULL,
+  "cache_content" TEXT NOT NULL,
+  "created_at" TIMESTAMP NULL DEFAULT 'now()',
+  "updated_at" TIMESTAMP NULL,
+  CONSTRAINT "owner_fk"
+    FOREIGN KEY ("owner")
+    REFERENCES "cmall_user" ("uid")
+    INITIALLY DEFERRED);
+
+CREATE INDEX "cmall_session_cache_key_i"
+  ON "cmall_session" ("cache_key");
+
+CREATE INDEX "cmall_session_owner_i"
+  ON "cmall_session" ("owner");
+
+CREATE INDEX "cmall_session_updated_at_i"
+  ON "cmall_session" ("updated_at");
+
 INSERT INTO "schema_version" (
   "name", "version", "migration")
-  SELECT '', 31, FALSE
+  SELECT '', 32, FALSE
   WHERE NOT EXISTS (
     SELECT 1 FROM "schema_version" WHERE "name" = '');
 

@@ -1,4 +1,33 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
+  <changeset version="32">
+    <add-table name="cmall_session" kind="object">
+      <column name="id" type="BIGINT" null="false"/>
+      <column name="cache_key" type="TEXT" null="false"/>
+      <column name="owner" type="BIGINT" null="true"/>
+      <column name="cache_content" type="TEXT" null="false"/>
+      <column name="created_at" type="TIMESTAMP" null="true" default="'now()'"/>
+      <column name="updated_at" type="TIMESTAMP" null="true"/>
+      <primary-key auto="true">
+        <column name="id"/>
+      </primary-key>
+      <foreign-key name="owner_fk" deferrable="DEFERRED">
+        <column name="owner"/>
+        <references table="cmall_user">
+          <column name="uid"/>
+        </references>
+      </foreign-key>
+      <index name="cmall_session_cache_key_i">
+        <column name="cache_key"/>
+      </index>
+      <index name="cmall_session_owner_i">
+        <column name="owner"/>
+      </index>
+      <index name="cmall_session_updated_at_i">
+        <column name="updated_at"/>
+      </index>
+    </add-table>
+  </changeset>
+
   <changeset version="31">
     <add-table name="cmall_wx_fenzhang" kind="object">
       <column name="id" type="BIGINT" null="false"/>

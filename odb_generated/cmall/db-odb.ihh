@@ -418,6 +418,35 @@ namespace odb
     ODB_POTENTIALLY_UNUSED (x);
     ODB_POTENTIALLY_UNUSED (e);
   }
+
+  // cmall_session
+  //
+
+  inline
+  access::object_traits< ::cmall_session >::id_type
+  access::object_traits< ::cmall_session >::
+  id (const object_type& o)
+  {
+    return o.id;
+  }
+
+  inline
+  void access::object_traits< ::cmall_session >::
+  callback (database& db, object_type& x, callback_event e)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (x);
+    ODB_POTENTIALLY_UNUSED (e);
+  }
+
+  inline
+  void access::object_traits< ::cmall_session >::
+  callback (database& db, const object_type& x, callback_event e)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (x);
+    ODB_POTENTIALLY_UNUSED (e);
+  }
 }
 
 #include <odb/schema-version.hxx>
@@ -815,6 +844,28 @@ namespace odb
 
   inline
   void access::object_traits_impl< ::cmall_wx_fenzhang, id_pgsql >::
+  load_ (statements_type& sts,
+         object_type& obj,
+         bool)
+  {
+    ODB_POTENTIALLY_UNUSED (sts);
+    ODB_POTENTIALLY_UNUSED (obj);
+  }
+
+  // cmall_session
+  //
+
+  inline
+  void access::object_traits_impl< ::cmall_session, id_pgsql >::
+  erase (database& db, const object_type& obj)
+  {
+    callback (db, obj, callback_event::pre_erase);
+    erase (db, id (obj));
+    callback (db, obj, callback_event::post_erase);
+  }
+
+  inline
+  void access::object_traits_impl< ::cmall_session, id_pgsql >::
   load_ (statements_type& sts,
          object_type& obj,
          bool)
