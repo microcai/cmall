@@ -43,7 +43,7 @@ namespace cmall
 		, m_config(config)
 		, m_database(m_config.dbcfg_)
 		, background_task_thread_pool(8)
-		, session_cache_map(m_config.session_cache_file)
+		, session_cache_map(m_database)
 		, telephone_verifier(m_io_context)
 		, payment_service(m_io_context)
 		, script_runner(m_io_context)

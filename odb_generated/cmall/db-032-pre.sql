@@ -3,15 +3,11 @@
  */
 
 CREATE TABLE "cmall_session" (
-  "id" BIGSERIAL NOT NULL PRIMARY KEY,
-  "cache_key" TEXT NOT NULL,
+  "cache_key" TEXT NOT NULL PRIMARY KEY,
   "owner" BIGINT NULL,
   "cache_content" TEXT NOT NULL,
   "created_at" TIMESTAMP NULL DEFAULT 'now()',
   "updated_at" TIMESTAMP NULL);
-
-CREATE INDEX "cmall_session_cache_key_i"
-  ON "cmall_session" ("cache_key");
 
 CREATE INDEX "cmall_session_owner_i"
   ON "cmall_session" ("owner");

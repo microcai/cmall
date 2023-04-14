@@ -394,10 +394,7 @@ struct cmall_wx_fenzhang
 #pragma db object
 struct cmall_session
 {
-	#pragma db id auto
-	long id;
-
-	#pragma db index
+	#pragma db id
 	std::string cache_key;
 
 	#pragma db index

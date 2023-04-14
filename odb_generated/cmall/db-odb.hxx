@@ -678,9 +678,9 @@ namespace odb
 
     static const bool polymorphic = false;
 
-    typedef long int id_type;
+    typedef ::std::string id_type;
 
-    static const bool auto_id = true;
+    static const bool auto_id = false;
 
     static const bool abstract = false;
 
@@ -5185,18 +5185,6 @@ namespace odb
   template <typename A>
   struct pointer_query_columns< ::cmall_session, id_pgsql, A >
   {
-    // id
-    //
-    typedef
-    pgsql::query_column<
-      pgsql::value_traits<
-        long int,
-        pgsql::id_bigint >::query_type,
-      pgsql::id_bigint >
-    id_type_;
-
-    static const id_type_ id;
-
     // cache_key
     //
     typedef
@@ -5259,11 +5247,6 @@ namespace odb
   };
 
   template <typename A>
-  const typename pointer_query_columns< ::cmall_session, id_pgsql, A >::id_type_
-  pointer_query_columns< ::cmall_session, id_pgsql, A >::
-  id (A::table_name, "\"id\"", 0);
-
-  template <typename A>
   const typename pointer_query_columns< ::cmall_session, id_pgsql, A >::cache_key_type_
   pointer_query_columns< ::cmall_session, id_pgsql, A >::
   cache_key (A::table_name, "\"cache_key\"", 0);
@@ -5295,7 +5278,8 @@ namespace odb
     public:
     struct id_image_type
     {
-      long long id_value;
+      details::buffer id_value;
+      std::size_t id_size;
       bool id_null;
 
       std::size_t version;
@@ -5303,11 +5287,6 @@ namespace odb
 
     struct image_type
     {
-      // id
-      //
-      long long id_value;
-      bool id_null;
-
       // cache_key
       //
       details::buffer cache_key_value;
@@ -5345,9 +5324,6 @@ namespace odb
     using object_traits<object_type>::id;
 
     static id_type
-    id (const id_image_type&);
-
-    static id_type
     id (const image_type&);
 
     static bool
@@ -5379,7 +5355,7 @@ namespace odb
 
     typedef pgsql::query_base query_base_type;
 
-    static const std::size_t column_count = 6UL;
+    static const std::size_t column_count = 5UL;
     static const std::size_t id_column_count = 1UL;
     static const std::size_t inverse_column_count = 0UL;
     static const std::size_t readonly_column_count = 0UL;
@@ -5400,7 +5376,7 @@ namespace odb
     static const char table_name[];
 
     static void
-    persist (database&, object_type&);
+    persist (database&, const object_type&);
 
     static pointer_type
     find (database&, const id_type&);
@@ -5796,18 +5772,6 @@ namespace odb
   struct query_columns< ::cmall_session, id_pgsql, A >:
     query_columns_base< ::cmall_session, id_pgsql >
   {
-    // id
-    //
-    typedef
-    pgsql::query_column<
-      pgsql::value_traits<
-        long int,
-        pgsql::id_bigint >::query_type,
-      pgsql::id_bigint >
-    id_type_;
-
-    static const id_type_ id;
-
     // cache_key
     //
     typedef
@@ -5884,11 +5848,6 @@ namespace odb
 
     static const updated_at_type_ updated_at;
   };
-
-  template <typename A>
-  const typename query_columns< ::cmall_session, id_pgsql, A >::id_type_
-  query_columns< ::cmall_session, id_pgsql, A >::
-  id (A::table_name, "\"id\"", 0);
 
   template <typename A>
   const typename query_columns< ::cmall_session, id_pgsql, A >::cache_key_type_

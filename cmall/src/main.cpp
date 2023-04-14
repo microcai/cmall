@@ -138,27 +138,9 @@ static std::string version_info()
 	return oss.str();
 }
 
-static awaitable<std::string> get_default_cache_dir()
-{
-#ifndef WIN32
-	if (::access("/var/lib/cmall", W_OK | R_OK | X_OK) ==  0)
-		co_return "/var/lib/cmall";
-#endif
-	std::error_code ec;
-	if (std::filesystem::create_directory("session_cache", ec))
-	{
-		co_return "session_cache";
-	}
-
-	if (std::filesystem::exists("session_cache"))
-		co_return "session_cache";
-	co_return ".";
-}
-
 awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 {
 	std::vector<std::string> ws_listens, wss_listens, ws_unix_listens;
-	std::string session_cache;
 
 	std::string db_name;
 	std::string db_host;
@@ -181,8 +163,6 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 	desc.add_options()
 		("help,h", "Help message.")
 		("version", "Current version.")
-
-		("session_cache", po::value<std::string>(&session_cache)->default_value(co_await get_default_cache_dir())->value_name("dir"), "the dir for session cache")
 
 		("ws", po::value<std::vector<std::string>>(&ws_listens)->multitoken()->value_name("ip:port [ip:port ...]"), "For websocket server listen.")
 		("wss", po::value<std::vector<std::string>>(&wss_listens)->multitoken()->value_name("ip:port [ip:port ...]"), "For SSL websocket server listen.")
@@ -271,7 +251,6 @@ awaitable<int> co_main(int argc, char** argv, io_context_pool& ios)
 	cfg.ws_listens_ = ws_listens;
 	cfg.wss_listens_ = wss_listens;
 	cfg.ws_unix_listens_ = ws_unix_listens;
-	cfg.session_cache_file = session_cache;
 	cfg.repo_root = repo_root;
 	cfg.gitea_api = gitea_api_path;
 	cfg.gitea_template_user = gitea_template_user;

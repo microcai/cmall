@@ -299,8 +299,7 @@ CREATE TABLE "cmall_wx_fenzhang" (
   "percent" TEXT NOT NULL);
 
 CREATE TABLE "cmall_session" (
-  "id" BIGSERIAL NOT NULL PRIMARY KEY,
-  "cache_key" TEXT NOT NULL,
+  "cache_key" TEXT NOT NULL PRIMARY KEY,
   "owner" BIGINT NULL,
   "cache_content" TEXT NOT NULL,
   "created_at" TIMESTAMP NULL DEFAULT 'now()',
@@ -309,9 +308,6 @@ CREATE TABLE "cmall_session" (
     FOREIGN KEY ("owner")
     REFERENCES "cmall_user" ("uid")
     INITIALLY DEFERRED);
-
-CREATE INDEX "cmall_session_cache_key_i"
-  ON "cmall_session" ("cache_key");
 
 CREATE INDEX "cmall_session_owner_i"
   ON "cmall_session" ("owner");

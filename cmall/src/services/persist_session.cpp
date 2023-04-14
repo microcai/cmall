@@ -13,10 +13,10 @@
 #include "utils/logging.hpp"
 #include "utils/time_clock.hpp"
 
-#include "persist_map.hpp"
 #include "services/persist_session.hpp"
 
 #include "cmall/js_util.hpp"
+#include "cmall/database.hpp"
 
 static inline std::string json_to_string(const boost::json::value& jv, bool lf = true)
 {
@@ -28,25 +28,30 @@ namespace services
 {
 	struct persist_session_impl
 	{
-		persist_map mdbx_db;
+		cmall::cmall_database& db;
 
-		persist_session_impl(std::filesystem::path session_cache_file)
-			: mdbx_db(session_cache_file)
+		persist_session_impl(cmall::cmall_database& db)
+			: db(db)
 		{
 		}
 
 		~persist_session_impl() { }
-		awaitable<bool> exist(std::string_view session_id) const
+		awaitable<bool> exist(std::string session_id) const
 		{
-			co_return co_await mdbx_db.has_key(session_id);
+			cmall_session s;
+			co_return co_await db.async_load<cmall_session>(odb::query<cmall_session>::cache_key == session_id, s);
 		}
 
-		awaitable<client_session> load(std::string_view session_id) const
+		awaitable<client_session> load(std::string session_id) const
 		{
 			client_session cs;
 			boost::json::object jv;
 
-			jv = boost::json::parse(co_await mdbx_db.get(session_id), {}, { 64, false, false, true }).as_object();
+			cmall_session cached_session;
+
+			co_await db.async_load<cmall_session>(odb::query<cmall_session>::cache_key == session_id , cached_session);
+
+			jv = boost::json::parse(cached_session.cache_content, {}, { 64, false, false, true }).as_object();
 
 			// TODO reload saved info from jv
 			cs.session_id = session_id;
@@ -79,8 +84,7 @@ namespace services
 			co_return cs;
 		}
 
-		awaitable<void> save(
-			std::string_view session_id, const client_session& session, std::chrono::duration<int> lifetime)
+		awaitable<void> save(std::string session_id, const client_session& session, std::chrono::duration<int> lifetime)
 		{
 			// TODO, 用　mdbx 保存 session
 
@@ -92,30 +96,39 @@ namespace services
 			if (session.original_user)
 				ser["original_user"] =  session.original_user->uid_;
 
-			co_await mdbx_db.put(session_id, json_to_string(ser) );
+			cmall_session s;
+			s.cache_key = session_id;
+			s.updated_at_ = boost::posix_time::second_clock::local_time();
+			s.cache_content = json_to_string(ser);
+			s.owner = std::make_shared<cmall_user>(*session.user_info);
+
+			co_await db.async_upset(s);
 		}
 
-		awaitable<void> update_lifetime(std::string_view session_id, std::chrono::duration<int> lifetime)
+		awaitable<void> update_lifetime(std::string session_id, std::chrono::duration<int> lifetime)
 		{
-			// TODO, 更新　mdbx 里保存的 session
+			co_await db.async_update<cmall_session>(odb::query<cmall_session>::cache_key == session_id, [](cmall_session s){
+				s.updated_at_ = boost::posix_time::second_clock::local_time();
+				return s;
+			});
 			co_return;
 		}
 	};
 
 	persist_session::~persist_session() { impl().~persist_session_impl(); }
 
-	persist_session::persist_session(std::filesystem::path persist_file)
+	persist_session::persist_session(cmall::cmall_database& db)
 	{
 		static_assert(sizeof(obj_stor) >= sizeof(persist_session_impl));
-		std::construct_at<persist_session_impl>(reinterpret_cast<persist_session_impl*>(obj_stor.data()), persist_file);
+		std::construct_at<persist_session_impl>(reinterpret_cast<persist_session_impl*>(obj_stor.data()), db);
 	}
 
-	awaitable<bool> persist_session::exist(std::string_view key) const
+	awaitable<bool> persist_session::exist(std::string key) const
 	{
 		co_return co_await impl().exist(key);
 	}
 
-	awaitable<client_session> persist_session::load(std::string_view session_id) const
+	awaitable<client_session> persist_session::load(std::string session_id) const
 	{
 		co_return co_await impl().load(session_id);
 	}
@@ -125,14 +138,12 @@ namespace services
 		co_return co_await impl().save(session.session_id, session, lifetime);
 	}
 
-	awaitable<void> persist_session::save(
-		std::string_view session_id, const client_session& session, std::chrono::duration<int> lifetime)
+	awaitable<void> persist_session::save(std::string session_id, const client_session& session, std::chrono::duration<int> lifetime)
 	{
 		co_return co_await impl().save(session_id, session, lifetime);
 	}
 
-	awaitable<void> persist_session::update_lifetime(
-		std::string_view session_id, std::chrono::duration<int> lifetime)
+	awaitable<void> persist_session::update_lifetime(std::string session_id, std::chrono::duration<int> lifetime)
 	{
 		co_return co_await impl().update_lifetime(session_id, lifetime);
 	}

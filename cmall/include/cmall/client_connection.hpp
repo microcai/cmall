@@ -9,7 +9,6 @@
 
 #include "cmall/error_code.hpp"
 #include "cmall/misc.hpp"
-#include "persist_map.hpp"
 #include "services/verifycode.hpp"
 #include "services/persist_session.hpp"
 #include "services/payment_service.hpp"

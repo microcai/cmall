@@ -344,12 +344,6 @@ else()
 	set_target_properties(git2 PROPERTIES FOLDER "third_party/")
 endif()
 
-set(MDBX_BUILD_TOOLS OFF)
-set(MDBX_BUILD_SHARED_LIBRARY OFF)
-set(MDBX_TXN_CHECKOWNER OFF) # 受 coroutine 影响, coroutine 会转移协程到不同线程执行.
-set(MDBX_ENV_CHECKPID OFF)
-add_subdirectory(third_party/libmdbx EXCLUDE_FROM_ALL)
-
 add_subdirectory(third_party/cmark EXCLUDE_FROM_ALL)
 
 set(MAGIC_ENUM_OPT_INSTALL OFF)
@@ -370,7 +364,6 @@ link_libraries(
 		libodb-pgsql
 		libodb-boost
 
-		mdbx-static
 		cmark_static
 		magic_enum
 

@@ -27,7 +27,6 @@
 
 #include "cmall/error_code.hpp"
 #include "cmall/misc.hpp"
-#include "persist_map.hpp"
 #include "services/verifycode.hpp"
 #include "services/persist_session.hpp"
 #include "services/payment_service.hpp"
@@ -59,7 +58,6 @@ namespace cmall {
 
 		cmall::db_config dbcfg_;
 
-		std::filesystem::path session_cache_file;
 		std::filesystem::path repo_root; // repos dir for gitea
 
 		std::string gitea_api;

@@ -14468,18 +14468,17 @@ namespace odb
   const unsigned int access::object_traits_impl< ::cmall_session, id_pgsql >::
   find_statement_types[] =
   {
-    pgsql::int8_oid
+    pgsql::text_oid
   };
 
   const unsigned int access::object_traits_impl< ::cmall_session, id_pgsql >::
   update_statement_types[] =
   {
-    pgsql::text_oid,
     pgsql::int8_oid,
     pgsql::text_oid,
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
-    pgsql::int8_oid
+    pgsql::text_oid
   };
 
   const char alias_traits<  ::cmall_user,
@@ -14503,26 +14502,6 @@ namespace odb
 
   access::object_traits_impl< ::cmall_session, id_pgsql >::id_type
   access::object_traits_impl< ::cmall_session, id_pgsql >::
-  id (const id_image_type& i)
-  {
-    pgsql::database* db (0);
-    ODB_POTENTIALLY_UNUSED (db);
-
-    id_type id;
-    {
-      pgsql::value_traits<
-          long int,
-          pgsql::id_bigint >::set_value (
-        id,
-        i.id_value,
-        i.id_null);
-    }
-
-    return id;
-  }
-
-  access::object_traits_impl< ::cmall_session, id_pgsql >::id_type
-  access::object_traits_impl< ::cmall_session, id_pgsql >::
   id (const image_type& i)
   {
     pgsql::database* db (0);
@@ -14531,11 +14510,12 @@ namespace odb
     id_type id;
     {
       pgsql::value_traits<
-          long int,
-          pgsql::id_bigint >::set_value (
+          ::std::string,
+          pgsql::id_string >::set_value (
         id,
-        i.id_value,
-        i.id_null);
+        i.cache_key_value,
+        i.cache_key_size,
+        i.cache_key_null);
     }
 
     return id;
@@ -14550,13 +14530,9 @@ namespace odb
 
     bool grew (false);
 
-    // id
-    //
-    t[0UL] = 0;
-
     // cache_key
     //
-    if (t[1UL])
+    if (t[0UL])
     {
       i.cache_key_value.capacity (i.cache_key_size);
       grew = true;
@@ -14564,11 +14540,11 @@ namespace odb
 
     // owner
     //
-    t[2UL] = 0;
+    t[1UL] = 0;
 
     // cache_content
     //
-    if (t[3UL])
+    if (t[2UL])
     {
       i.cache_content_value.capacity (i.cache_content_size);
       grew = true;
@@ -14576,11 +14552,11 @@ namespace odb
 
     // created_at_
     //
-    t[4UL] = 0;
+    t[3UL] = 0;
 
     // updated_at_
     //
-    t[5UL] = 0;
+    t[4UL] = 0;
 
     return grew;
   }
@@ -14596,24 +14572,17 @@ namespace odb
 
     std::size_t n (0);
 
-    // id
-    //
-    if (sk != statement_insert && sk != statement_update)
-    {
-      b[n].type = pgsql::bind::bigint;
-      b[n].buffer = &i.id_value;
-      b[n].is_null = &i.id_null;
-      n++;
-    }
-
     // cache_key
     //
-    b[n].type = pgsql::bind::text;
-    b[n].buffer = i.cache_key_value.data_ptr ();
-    b[n].capacity = i.cache_key_value.capacity ();
-    b[n].size = &i.cache_key_size;
-    b[n].is_null = &i.cache_key_null;
-    n++;
+    if (sk != statement_update)
+    {
+      b[n].type = pgsql::bind::text;
+      b[n].buffer = i.cache_key_value.data_ptr ();
+      b[n].capacity = i.cache_key_value.capacity ();
+      b[n].size = &i.cache_key_size;
+      b[n].is_null = &i.cache_key_null;
+      n++;
+    }
 
     // owner
     //
@@ -14650,8 +14619,10 @@ namespace odb
   bind (pgsql::bind* b, id_image_type& i)
   {
     std::size_t n (0);
-    b[n].type = pgsql::bind::bigint;
-    b[n].buffer = &i.id_value;
+    b[n].type = pgsql::bind::text;
+    b[n].buffer = i.id_value.data_ptr ();
+    b[n].capacity = i.id_value.capacity ();
+    b[n].size = &i.id_size;
     b[n].is_null = &i.id_null;
   }
 
@@ -14670,6 +14641,7 @@ namespace odb
 
     // cache_key
     //
+    if (sk == statement_insert)
     {
       ::std::string const& v =
         o.cache_key;
@@ -14775,20 +14747,6 @@ namespace odb
     ODB_POTENTIALLY_UNUSED (i);
     ODB_POTENTIALLY_UNUSED (db);
 
-    // id
-    //
-    {
-      long int& v =
-        o.id;
-
-      pgsql::value_traits<
-          long int,
-          pgsql::id_bigint >::set_value (
-        v,
-        i.id_value,
-        i.id_null);
-    }
-
     // cache_key
     //
     {
@@ -14882,56 +14840,62 @@ namespace odb
   void access::object_traits_impl< ::cmall_session, id_pgsql >::
   init (id_image_type& i, const id_type& id)
   {
+    bool grew (false);
     {
       bool is_null (false);
+      std::size_t size (0);
+      std::size_t cap (i.id_value.capacity ());
       pgsql::value_traits<
-          long int,
-          pgsql::id_bigint >::set_image (
-        i.id_value, is_null, id);
+          ::std::string,
+          pgsql::id_string >::set_image (
+        i.id_value,
+        size,
+        is_null,
+        id);
       i.id_null = is_null;
+      i.id_size = size;
+      grew = grew || (cap != i.id_value.capacity ());
     }
+
+    if (grew)
+      i.version++;
   }
 
   const char access::object_traits_impl< ::cmall_session, id_pgsql >::persist_statement[] =
   "INSERT INTO \"cmall_session\" "
-  "(\"id\", "
-  "\"cache_key\", "
+  "(\"cache_key\", "
   "\"owner\", "
   "\"cache_content\", "
   "\"created_at\", "
   "\"updated_at\") "
   "VALUES "
-  "(DEFAULT, $1, $2, $3, $4, $5) "
-  "RETURNING \"id\"";
+  "($1, $2, $3, $4, $5)";
 
   const char access::object_traits_impl< ::cmall_session, id_pgsql >::find_statement[] =
   "SELECT "
-  "\"cmall_session\".\"id\", "
   "\"cmall_session\".\"cache_key\", "
   "\"cmall_session\".\"owner\", "
   "\"cmall_session\".\"cache_content\", "
   "\"cmall_session\".\"created_at\", "
   "\"cmall_session\".\"updated_at\" "
   "FROM \"cmall_session\" "
-  "WHERE \"cmall_session\".\"id\"=$1";
+  "WHERE \"cmall_session\".\"cache_key\"=$1";
 
   const char access::object_traits_impl< ::cmall_session, id_pgsql >::update_statement[] =
   "UPDATE \"cmall_session\" "
   "SET "
-  "\"cache_key\"=$1, "
-  "\"owner\"=$2, "
-  "\"cache_content\"=$3, "
-  "\"created_at\"=$4, "
-  "\"updated_at\"=$5 "
-  "WHERE \"id\"=$6";
+  "\"owner\"=$1, "
+  "\"cache_content\"=$2, "
+  "\"created_at\"=$3, "
+  "\"updated_at\"=$4 "
+  "WHERE \"cache_key\"=$5";
 
   const char access::object_traits_impl< ::cmall_session, id_pgsql >::erase_statement[] =
   "DELETE FROM \"cmall_session\" "
-  "WHERE \"id\"=$1";
+  "WHERE \"cache_key\"=$1";
 
   const char access::object_traits_impl< ::cmall_session, id_pgsql >::query_statement[] =
   "SELECT\n"
-  "\"cmall_session\".\"id\",\n"
   "\"cmall_session\".\"cache_key\",\n"
   "\"cmall_session\".\"owner\",\n"
   "\"cmall_session\".\"cache_content\",\n"
@@ -14947,7 +14911,7 @@ namespace odb
   "\"cmall_session\"";
 
   void access::object_traits_impl< ::cmall_session, id_pgsql >::
-  persist (database& db, object_type& obj)
+  persist (database& db, const object_type& obj)
   {
     using namespace pgsql;
 
@@ -14957,7 +14921,7 @@ namespace odb
       conn.statement_cache ().find_object<object_type> ());
 
     callback (db,
-              static_cast<const object_type&> (obj),
+              obj,
               callback_event::pre_persist);
 
     image_type& im (sts.image ());
@@ -14974,25 +14938,12 @@ namespace odb
       imb.version++;
     }
 
-    {
-      id_image_type& i (sts.id_image ());
-      binding& b (sts.id_image_binding ());
-      if (i.version != sts.id_image_version () || b.version == 0)
-      {
-        bind (b.bind, i);
-        sts.id_image_version (i.version);
-        b.version++;
-      }
-    }
-
     insert_statement& st (sts.persist_statement ());
     if (!st.execute ())
       throw object_already_persistent ();
 
-    obj.id = id (sts.id_image ());
-
     callback (db,
-              static_cast<const object_type&> (obj),
+              obj,
               callback_event::post_persist);
   }
 
@@ -15599,8 +15550,7 @@ namespace odb
                       "  \"relation_type\" TEXT NOT NULL,\n"
                       "  \"percent\" TEXT NOT NULL)");
           db.execute ("CREATE TABLE \"cmall_session\" (\n"
-                      "  \"id\" BIGSERIAL NOT NULL PRIMARY KEY,\n"
-                      "  \"cache_key\" TEXT NOT NULL,\n"
+                      "  \"cache_key\" TEXT NOT NULL PRIMARY KEY,\n"
                       "  \"owner\" BIGINT NULL,\n"
                       "  \"cache_content\" TEXT NOT NULL,\n"
                       "  \"created_at\" TIMESTAMP NULL DEFAULT 'now()',\n"
@@ -15609,8 +15559,6 @@ namespace odb
                       "    FOREIGN KEY (\"owner\")\n"
                       "    REFERENCES \"cmall_user\" (\"uid\")\n"
                       "    INITIALLY DEFERRED)");
-          db.execute ("CREATE INDEX \"cmall_session_cache_key_i\"\n"
-                      "  ON \"cmall_session\" (\"cache_key\")");
           db.execute ("CREATE INDEX \"cmall_session_owner_i\"\n"
                       "  ON \"cmall_session\" (\"owner\")");
           db.execute ("CREATE INDEX \"cmall_session_updated_at_i\"\n"
@@ -15830,14 +15778,11 @@ namespace odb
         case 1:
         {
           db.execute ("CREATE TABLE \"cmall_session\" (\n"
-                      "  \"id\" BIGSERIAL NOT NULL PRIMARY KEY,\n"
-                      "  \"cache_key\" TEXT NOT NULL,\n"
+                      "  \"cache_key\" TEXT NOT NULL PRIMARY KEY,\n"
                       "  \"owner\" BIGINT NULL,\n"
                       "  \"cache_content\" TEXT NOT NULL,\n"
                       "  \"created_at\" TIMESTAMP NULL DEFAULT 'now()',\n"
                       "  \"updated_at\" TIMESTAMP NULL)");
-          db.execute ("CREATE INDEX \"cmall_session_cache_key_i\"\n"
-                      "  ON \"cmall_session\" (\"cache_key\")");
           db.execute ("CREATE INDEX \"cmall_session_owner_i\"\n"
                       "  ON \"cmall_session\" (\"owner\")");
           db.execute ("CREATE INDEX \"cmall_session_updated_at_i\"\n"

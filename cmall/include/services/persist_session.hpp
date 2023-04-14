@@ -8,7 +8,7 @@
 #include <set>
 #include <boost/asio/awaitable.hpp>
 #include "services/verifycode.hpp"
-#include "cmall/db.hpp"
+#include "cmall/database.hpp"
 
 using boost::asio::awaitable;
 
@@ -53,14 +53,14 @@ namespace services
 	class persist_session
 	{
 	public:
-		persist_session(std::filesystem::path persist_file);
+		persist_session(cmall::cmall_database& db);
 		~persist_session();
 
-		awaitable<bool> exist(std::string_view session_id) const;
-		awaitable<client_session> load(std::string_view session_id) const;
+		awaitable<bool> exist(std::string session_id) const;
+		awaitable<client_session> load(std::string session_id) const;
 		awaitable<void> save(const client_session& session, std::chrono::duration<int> lifetime = std::chrono::seconds(86400 * 30));
-		awaitable<void> save(std::string_view session_id, const client_session& session, std::chrono::duration<int> lifetime = std::chrono::seconds(86400 * 30));
-		awaitable<void> update_lifetime(std::string_view session_id, std::chrono::duration<int> lifetime = std::chrono::seconds(86400 * 30));
+		awaitable<void> save(std::string session_id, const client_session& session, std::chrono::duration<int> lifetime = std::chrono::seconds(86400 * 30));
+		awaitable<void> update_lifetime(std::string session_id, std::chrono::duration<int> lifetime = std::chrono::seconds(86400 * 30));
 
 	private:
 		const persist_session_impl& impl() const;
