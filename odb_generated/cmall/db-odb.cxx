@@ -14459,7 +14459,6 @@ namespace odb
   persist_statement_types[] =
   {
     pgsql::text_oid,
-    pgsql::int8_oid,
     pgsql::text_oid,
     pgsql::timestamp_oid,
     pgsql::timestamp_oid
@@ -14474,17 +14473,11 @@ namespace odb
   const unsigned int access::object_traits_impl< ::cmall_session, id_pgsql >::
   update_statement_types[] =
   {
-    pgsql::int8_oid,
     pgsql::text_oid,
     pgsql::timestamp_oid,
     pgsql::timestamp_oid,
     pgsql::text_oid
   };
-
-  const char alias_traits<  ::cmall_user,
-    id_pgsql,
-    access::object_traits_impl< ::cmall_session, id_pgsql >::owner_tag>::
-  table_name[] = "\"owner\"";
 
   struct access::object_traits_impl< ::cmall_session, id_pgsql >::extra_statement_cache_type
   {
@@ -14538,13 +14531,9 @@ namespace odb
       grew = true;
     }
 
-    // owner
-    //
-    t[1UL] = 0;
-
     // cache_content
     //
-    if (t[2UL])
+    if (t[1UL])
     {
       i.cache_content_value.capacity (i.cache_content_size);
       grew = true;
@@ -14552,11 +14541,11 @@ namespace odb
 
     // created_at_
     //
-    t[3UL] = 0;
+    t[2UL] = 0;
 
     // updated_at_
     //
-    t[4UL] = 0;
+    t[3UL] = 0;
 
     return grew;
   }
@@ -14583,13 +14572,6 @@ namespace odb
       b[n].is_null = &i.cache_key_null;
       n++;
     }
-
-    // owner
-    //
-    b[n].type = pgsql::bind::bigint;
-    b[n].buffer = &i.owner_value;
-    b[n].is_null = &i.owner_null;
-    n++;
 
     // cache_content
     //
@@ -14659,31 +14641,6 @@ namespace odb
       i.cache_key_null = is_null;
       i.cache_key_size = size;
       grew = grew || (cap != i.cache_key_value.capacity ());
-    }
-
-    // owner
-    //
-    {
-      ::std::shared_ptr< ::cmall_user > const& v =
-        o.owner;
-
-      typedef object_traits< ::cmall_user > obj_traits;
-      typedef odb::pointer_traits< ::std::shared_ptr< ::cmall_user > > ptr_traits;
-
-      bool is_null (ptr_traits::null_ptr (v));
-      if (!is_null)
-      {
-        const obj_traits::id_type& ptr_id (
-          obj_traits::id (ptr_traits::get_ref (v)));
-
-        pgsql::value_traits<
-            obj_traits::id_type,
-            pgsql::id_bigint >::set_image (
-          i.owner_value, is_null, ptr_id);
-        i.owner_null = is_null;
-      }
-      else
-        i.owner_null = true;
     }
 
     // cache_content
@@ -14762,37 +14719,6 @@ namespace odb
         i.cache_key_null);
     }
 
-    // owner
-    //
-    {
-      ::std::shared_ptr< ::cmall_user >& v =
-        o.owner;
-
-      typedef object_traits< ::cmall_user > obj_traits;
-      typedef odb::pointer_traits< ::std::shared_ptr< ::cmall_user > > ptr_traits;
-
-      if (i.owner_null)
-        v = ptr_traits::pointer_type ();
-      else
-      {
-        obj_traits::id_type ptr_id;
-        pgsql::value_traits<
-            obj_traits::id_type,
-            pgsql::id_bigint >::set_value (
-          ptr_id,
-          i.owner_value,
-          i.owner_null);
-
-        // If a compiler error points to the line below, then
-        // it most likely means that a pointer used in a member
-        // cannot be initialized from an object pointer.
-        //
-        v = ptr_traits::pointer_type (
-          static_cast<pgsql::database*> (db)->load<
-            obj_traits::object_type > (ptr_id));
-      }
-    }
-
     // cache_content
     //
     {
@@ -14864,17 +14790,15 @@ namespace odb
   const char access::object_traits_impl< ::cmall_session, id_pgsql >::persist_statement[] =
   "INSERT INTO \"cmall_session\" "
   "(\"cache_key\", "
-  "\"owner\", "
   "\"cache_content\", "
   "\"created_at\", "
   "\"updated_at\") "
   "VALUES "
-  "($1, $2, $3, $4, $5)";
+  "($1, $2, $3, $4)";
 
   const char access::object_traits_impl< ::cmall_session, id_pgsql >::find_statement[] =
   "SELECT "
   "\"cmall_session\".\"cache_key\", "
-  "\"cmall_session\".\"owner\", "
   "\"cmall_session\".\"cache_content\", "
   "\"cmall_session\".\"created_at\", "
   "\"cmall_session\".\"updated_at\" "
@@ -14884,25 +14808,22 @@ namespace odb
   const char access::object_traits_impl< ::cmall_session, id_pgsql >::update_statement[] =
   "UPDATE \"cmall_session\" "
   "SET "
-  "\"owner\"=$1, "
-  "\"cache_content\"=$2, "
-  "\"created_at\"=$3, "
-  "\"updated_at\"=$4 "
-  "WHERE \"cache_key\"=$5";
+  "\"cache_content\"=$1, "
+  "\"created_at\"=$2, "
+  "\"updated_at\"=$3 "
+  "WHERE \"cache_key\"=$4";
 
   const char access::object_traits_impl< ::cmall_session, id_pgsql >::erase_statement[] =
   "DELETE FROM \"cmall_session\" "
   "WHERE \"cache_key\"=$1";
 
   const char access::object_traits_impl< ::cmall_session, id_pgsql >::query_statement[] =
-  "SELECT\n"
-  "\"cmall_session\".\"cache_key\",\n"
-  "\"cmall_session\".\"owner\",\n"
-  "\"cmall_session\".\"cache_content\",\n"
-  "\"cmall_session\".\"created_at\",\n"
-  "\"cmall_session\".\"updated_at\"\n"
-  "FROM \"cmall_session\"\n"
-  "LEFT JOIN \"cmall_user\" AS \"owner\" ON \"owner\".\"uid\"=\"cmall_session\".\"owner\"";
+  "SELECT "
+  "\"cmall_session\".\"cache_key\", "
+  "\"cmall_session\".\"cache_content\", "
+  "\"cmall_session\".\"created_at\", "
+  "\"cmall_session\".\"updated_at\" "
+  "FROM \"cmall_session\"";
 
   const char access::object_traits_impl< ::cmall_session, id_pgsql >::erase_query_statement[] =
   "DELETE FROM \"cmall_session\"";
@@ -15231,7 +15152,7 @@ namespace odb
     std::string text (query_statement);
     if (!q.empty ())
     {
-      text += "\n";
+      text += " ";
       text += q.clause ();
     }
 
@@ -15241,7 +15162,7 @@ namespace odb
         sts.connection (),
         query_statement_name,
         text,
-        true,
+        false,
         true,
         q.parameter_types (),
         q.parameter_count (),
@@ -15551,16 +15472,9 @@ namespace odb
                       "  \"percent\" TEXT NOT NULL)");
           db.execute ("CREATE TABLE \"cmall_session\" (\n"
                       "  \"cache_key\" TEXT NOT NULL PRIMARY KEY,\n"
-                      "  \"owner\" BIGINT NULL,\n"
                       "  \"cache_content\" TEXT NOT NULL,\n"
                       "  \"created_at\" TIMESTAMP NULL DEFAULT 'now()',\n"
-                      "  \"updated_at\" TIMESTAMP NULL,\n"
-                      "  CONSTRAINT \"owner_fk\"\n"
-                      "    FOREIGN KEY (\"owner\")\n"
-                      "    REFERENCES \"cmall_user\" (\"uid\")\n"
-                      "    INITIALLY DEFERRED)");
-          db.execute ("CREATE INDEX \"cmall_session_owner_i\"\n"
-                      "  ON \"cmall_session\" (\"owner\")");
+                      "  \"updated_at\" TIMESTAMP NULL)");
           db.execute ("CREATE INDEX \"cmall_session_updated_at_i\"\n"
                       "  ON \"cmall_session\" (\"updated_at\")");
           return true;
@@ -15573,7 +15487,7 @@ namespace odb
                       "  \"migration\" BOOLEAN NOT NULL)");
           db.execute ("INSERT INTO \"schema_version\" (\n"
                       "  \"name\", \"version\", \"migration\")\n"
-                      "  SELECT '', 32, FALSE\n"
+                      "  SELECT '', 33, FALSE\n"
                       "  WHERE NOT EXISTS (\n"
                       "    SELECT 1 FROM \"schema_version\" WHERE \"name\" = '')");
           return false;
@@ -15830,6 +15744,63 @@ namespace odb
     "",
     32ULL,
     &migrate_schema_32);
+
+  static bool
+  migrate_schema_33 (database& db, unsigned short pass, bool pre)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (pass);
+    ODB_POTENTIALLY_UNUSED (pre);
+
+    if (pre)
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          db.execute ("ALTER TABLE \"cmall_session\"\n"
+                      "  DROP CONSTRAINT \"owner_fk\"");
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"version\" = 33, \"migration\" = TRUE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+    else
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          db.execute ("DROP INDEX \"cmall_session_owner_i\"");
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("ALTER TABLE \"cmall_session\"\n"
+                      "  DROP COLUMN \"owner\"");
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"migration\" = FALSE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  static const schema_catalog_migrate_entry
+  migrate_schema_entry_33_ (
+    id_pgsql,
+    "",
+    33ULL,
+    &migrate_schema_33);
 }
 
 #include <odb/post.hxx>

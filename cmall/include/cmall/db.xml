@@ -1,4 +1,12 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
+  <changeset version="33">
+    <alter-table name="cmall_session">
+      <drop-foreign-key name="owner_fk"/>
+      <drop-index name="cmall_session_owner_i"/>
+      <drop-column name="owner"/>
+    </alter-table>
+  </changeset>
+
   <changeset version="32">
     <add-table name="cmall_session" kind="object">
       <column name="cache_key" type="TEXT" null="false"/>

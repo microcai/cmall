@@ -300,24 +300,16 @@ CREATE TABLE "cmall_wx_fenzhang" (
 
 CREATE TABLE "cmall_session" (
   "cache_key" TEXT NOT NULL PRIMARY KEY,
-  "owner" BIGINT NULL,
   "cache_content" TEXT NOT NULL,
   "created_at" TIMESTAMP NULL DEFAULT 'now()',
-  "updated_at" TIMESTAMP NULL,
-  CONSTRAINT "owner_fk"
-    FOREIGN KEY ("owner")
-    REFERENCES "cmall_user" ("uid")
-    INITIALLY DEFERRED);
-
-CREATE INDEX "cmall_session_owner_i"
-  ON "cmall_session" ("owner");
+  "updated_at" TIMESTAMP NULL);
 
 CREATE INDEX "cmall_session_updated_at_i"
   ON "cmall_session" ("updated_at");
 
 INSERT INTO "schema_version" (
   "name", "version", "migration")
-  SELECT '', 32, FALSE
+  SELECT '', 33, FALSE
   WHERE NOT EXISTS (
     SELECT 1 FROM "schema_version" WHERE "name" = '');
 

@@ -41,7 +41,7 @@ using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 #	pragma warning (disable:4068)
 #endif // _MSC_VER
 
-#pragma db model version(28, 32, closed)
+#pragma db model version(28, 33, closed)
 
 #pragma db map type("numeric")			\
 			as("TEXT")				\
@@ -396,9 +396,6 @@ struct cmall_session
 {
 	#pragma db id
 	std::string cache_key;
-
-	#pragma db index
-	std::shared_ptr<cmall_user> owner;
 
 	std::string cache_content;
 
