@@ -177,6 +177,7 @@ namespace cmall
 						{
 							co_await load_user_info(client_ptr);
 						}
+						co_await session_cache_map.update_lifetime(sessionid);
 						break;
 					}
 				}
