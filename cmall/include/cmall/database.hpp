@@ -164,6 +164,8 @@ namespace cmall
 					{
 						T oldvalue = value;
 						m_db->reload(oldvalue);
+						if constexpr (SupportUpdateAt<T>)
+							value.updated_at_ = boost::posix_time::second_clock::local_time();
 						// 如果存在, 就 update.
 						// 不存在就抛, 下面接住.
 						m_db->update(value);
@@ -190,7 +192,7 @@ namespace cmall
 					// 不存在就抛, 下面接住.
 					for (T value: values)
 						m_db->persist<T>(value);
-				
+
 					t.commit();
 					return true;
 				});
