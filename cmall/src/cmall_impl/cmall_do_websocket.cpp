@@ -117,27 +117,16 @@ awaitable<void> cmall::cmall_service::do_ws_write(size_t connection_id, client_c
 {
 	auto& message_deque = connection_ptr->ws_client->message_channel;
 	auto& ws			= connection_ptr->ws_client->ws_stream_;
-	auto& t = connection_ptr->ws_client->message_channel_timer;
 
 	using namespace boost::asio::experimental::awaitable_operators;
 
 	for (;;)
 	{
-		t.expires_from_now(std::chrono::seconds(connection_ptr->ws_client->m_disable_ping ? 30 : 15));
-		std::variant<std::monostate, std::string> awaited_result
-			= co_await (t.async_wait() || message_deque.async_receive(use_awaitable));
-		if (awaited_result.index() == 0)
-		{
-			LOG_DBG << "coro: do_ws_write: [" << connection_id << "], send ping to client";
-			co_await ws.async_ping("", use_awaitable); // timed out
-		}
-		else
-		{
-			auto message = std::get<1>(awaited_result);
-			if (message.empty())
-				co_return;
-			co_await ws.async_write(boost::asio::buffer(message), use_awaitable);
-		}
+		std::string message = co_await message_deque.async_receive(use_awaitable);
+
+		if (message.empty())
+			co_return;
+		co_await ws.async_write(boost::asio::buffer(message), use_awaitable);
 	}
 }
 

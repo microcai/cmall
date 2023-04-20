@@ -235,6 +235,10 @@ namespace cmall
 				permessage_deflate_opt.server_enable = true; // for servers
 				client_ptr->ws_client->ws_stream_.set_option(permessage_deflate_opt);
 
+				auto timeout_opt = boost::beast::websocket::stream_base::timeout::suggested(boost::beast::role_type::server);
+				timeout_opt.idle_timeout = std::chrono::seconds(45);
+				client_ptr->ws_client->ws_stream_.set_option(timeout_opt);
+
 				client_ptr->ws_client->ws_stream_.set_option(
 					boost::beast::websocket::stream_base::decorator([&sec_websocket_protocol, &cookie_line](auto& res)
 					{

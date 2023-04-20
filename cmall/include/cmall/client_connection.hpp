@@ -30,7 +30,6 @@ namespace cmall {
 
 		websocket_connection(httpd::http_any_stream& tcp_stream_)
 			: ws_stream_(tcp_stream_)
-			, message_channel_timer(tcp_stream_.get_executor())
 			, message_channel(tcp_stream_.get_executor(), 1)
 		{}
 
@@ -40,11 +39,9 @@ namespace cmall {
 
 			boost::system::error_code ignore_ec;
 			message_channel.close();
-			message_channel_timer.cancel(ignore_ec);
 		}
 
 		websocket::stream<httpd::http_any_stream&> ws_stream_;
-		awaitable_timer message_channel_timer;
 		boost::asio::experimental::concurrent_channel<void(boost::system::error_code, std::string)> message_channel;
 		bool m_disable_ping = false;
 		std::string baseurl_;
