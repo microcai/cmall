@@ -230,6 +230,11 @@ namespace cmall
 					LOG_WARN << "Non broswer accessed cmall with UA:" << user_agent;
 				}
 
+				boost::beast::websocket::permessage_deflate permessage_deflate_opt;
+				permessage_deflate_opt.client_enable = true; // for clients
+				permessage_deflate_opt.server_enable = true; // for servers
+				client_ptr->ws_client->ws_stream_.set_option(permessage_deflate_opt);
+
 				client_ptr->ws_client->ws_stream_.set_option(
 					boost::beast::websocket::stream_base::decorator([&sec_websocket_protocol, &cookie_line](auto& res)
 					{
