@@ -1,70 +1,5 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
-  <changeset version="34">
-    <alter-table name="cmall_session">
-      <add-column name="ip_address" type="TEXT" null="true"/>
-    </alter-table>
-  </changeset>
-
-  <changeset version="33">
-    <alter-table name="cmall_session">
-      <drop-foreign-key name="owner_fk"/>
-      <drop-index name="cmall_session_owner_i"/>
-      <drop-column name="owner"/>
-    </alter-table>
-  </changeset>
-
-  <changeset version="32">
-    <add-table name="cmall_session" kind="object">
-      <column name="cache_key" type="TEXT" null="false"/>
-      <column name="owner" type="BIGINT" null="true"/>
-      <column name="cache_content" type="TEXT" null="false"/>
-      <column name="created_at" type="TIMESTAMP" null="true" default="'now()'"/>
-      <column name="updated_at" type="TIMESTAMP" null="true"/>
-      <primary-key>
-        <column name="cache_key"/>
-      </primary-key>
-      <foreign-key name="owner_fk" deferrable="DEFERRED">
-        <column name="owner"/>
-        <references table="cmall_user">
-          <column name="uid"/>
-        </references>
-      </foreign-key>
-      <index name="cmall_session_owner_i">
-        <column name="owner"/>
-      </index>
-      <index name="cmall_session_updated_at_i">
-        <column name="updated_at"/>
-      </index>
-    </add-table>
-  </changeset>
-
-  <changeset version="31">
-    <add-table name="cmall_wx_fenzhang" kind="object">
-      <column name="id" type="BIGINT" null="false"/>
-      <column name="type" type="TEXT" null="false"/>
-      <column name="account" type="TEXT" null="false"/>
-      <column name="name" type="TEXT" null="false"/>
-      <column name="relation_type" type="TEXT" null="false"/>
-      <column name="percent" type="TEXT" null="false"/>
-      <primary-key auto="true">
-        <column name="id"/>
-      </primary-key>
-    </add-table>
-  </changeset>
-
-  <changeset version="30">
-    <alter-table name="cmall_order">
-      <add-column name="kuaidifei" type="numeric" null="false" default="'0'"/>
-    </alter-table>
-  </changeset>
-
-  <changeset version="29">
-    <alter-table name="cmall_merchant">
-      <drop-column name="repo_path"/>
-    </alter-table>
-  </changeset>
-
-  <model version="28">
+  <model version="34">
     <table name="cmall_config" kind="object">
       <column name="id" type="BIGINT" null="false"/>
       <column name="config_name" type="TEXT" null="false"/>
@@ -134,16 +69,38 @@
         <column name="index"/>
       </index>
     </table>
+    <table name="administrators" kind="object">
+      <column name="uid" type="BIGINT" null="false"/>
+      <column name="user" type="BIGINT" null="true"/>
+      <primary-key auto="true">
+        <column name="uid"/>
+      </primary-key>
+      <foreign-key name="user_fk" deferrable="DEFERRED">
+        <column name="user"/>
+        <references table="cmall_user">
+          <column name="uid"/>
+        </references>
+      </foreign-key>
+    </table>
+    <table name="cmall_apptoken" kind="object">
+      <column name="apptoken" type="TEXT" null="false"/>
+      <column name="uid" type="BIGINT" null="false"/>
+      <primary-key>
+        <column name="apptoken"/>
+      </primary-key>
+      <index name="cmall_apptoken_uid_i">
+        <column name="uid"/>
+      </index>
+    </table>
     <table name="cmall_merchant" kind="object">
       <column name="uid" type="BIGINT" null="false"/>
       <column name="name" type="TEXT" null="false"/>
       <column name="state" type="SMALLINT" null="false"/>
       <column name="desc" type="TEXT" null="true"/>
+      <column name="gitea_password" type="TEXT" null="true"/>
       <column name="created_at" type="TIMESTAMP" null="true"/>
       <column name="updated_at" type="TIMESTAMP" null="true"/>
       <column name="deleted_at" type="TIMESTAMP" null="true"/>
-      <column name="repo_path" type="TEXT" null="false"/>
-      <column name="gitea_password" type="TEXT" null="true"/>
       <column name="exinfo_wx_mchid" type="TEXT" null="true"/>
       <primary-key>
         <column name="uid"/>
@@ -156,17 +113,18 @@
       <column name="id" type="BIGINT" null="false"/>
       <column name="oid" type="TEXT" null="false"/>
       <column name="buyer" type="BIGINT" null="false"/>
+      <column name="seller" type="BIGINT" null="false"/>
       <column name="price" type="NUMERIC" null="false"/>
       <column name="pay_amount" type="numeric" null="false" default="'0'"/>
+      <column name="kuaidifei" type="numeric" null="false" default="'0'"/>
       <column name="stage" type="SMALLINT" null="false"/>
       <column name="payed_at" type="TIMESTAMP" null="true"/>
       <column name="close_at" type="TIMESTAMP" null="true"/>
+      <column name="snap_git_version" type="TEXT" null="false" default="''"/>
       <column name="ext" type="TEXT" null="true"/>
       <column name="created_at" type="TIMESTAMP" null="true"/>
       <column name="updated_at" type="TIMESTAMP" null="true"/>
       <column name="deleted_at" type="TIMESTAMP" null="true"/>
-      <column name="seller" type="BIGINT" null="false"/>
-      <column name="snap_git_version" type="TEXT" null="false" default="''"/>
       <primary-key auto="true">
         <column name="id"/>
       </primary-key>
@@ -210,12 +168,12 @@
     <table name="cmall_order_bought_goods" kind="container">
       <column name="object_id" type="BIGINT" null="false"/>
       <column name="index" type="BIGINT" null="false"/>
+      <column name="value_merchant_id" type="BIGINT" null="false"/>
+      <column name="value_goods_id" type="TEXT" null="false"/>
       <column name="value_name" type="TEXT" null="false"/>
       <column name="value_price" type="NUMERIC" null="false"/>
       <column name="value_description" type="TEXT" null="false"/>
       <column name="value_good_version_git" type="TEXT" null="false"/>
-      <column name="value_merchant_id" type="BIGINT" null="false"/>
-      <column name="value_goods_id" type="TEXT" null="false"/>
       <foreign-key name="object_id_fk" on-delete="CASCADE">
         <column name="object_id"/>
         <references table="cmall_order">
@@ -227,6 +185,24 @@
       </index>
       <index name="cmall_order_bought_goods_index_i">
         <column name="index"/>
+      </index>
+    </table>
+    <table name="cmall_order_kuaidi" kind="container">
+      <column name="object_id" type="BIGINT" null="false"/>
+      <column name="kuaidihao" type="BIGINT" null="false"/>
+      <column name="value_kuaidihao" type="TEXT" null="false"/>
+      <column name="value_kuaidigongsi" type="TEXT" null="false"/>
+      <foreign-key name="object_id_fk" on-delete="CASCADE">
+        <column name="object_id"/>
+        <references table="cmall_order">
+          <column name="id"/>
+        </references>
+      </foreign-key>
+      <index name="cmall_order_kuaidi_object_id_i">
+        <column name="object_id"/>
+      </index>
+      <index name="cmall_order_kuaidi_kuaidihao_i">
+        <column name="kuaidihao"/>
       </index>
     </table>
     <table name="cmall_cart" kind="object">
@@ -244,15 +220,28 @@
         <column name="uid"/>
       </index>
     </table>
+    <table name="cmall_user_fav" kind="object">
+      <column name="id" type="BIGINT" null="false"/>
+      <column name="uid" type="BIGINT" null="false"/>
+      <column name="merchant_id" type="BIGINT" null="false"/>
+      <column name="created_at" type="TIMESTAMP" null="true"/>
+      <column name="updated_at" type="TIMESTAMP" null="true"/>
+      <primary-key auto="true">
+        <column name="id"/>
+      </primary-key>
+      <index name="cmall_user_fav_uid_i">
+        <column name="uid"/>
+      </index>
+    </table>
     <table name="cmall_apply_for_mechant" kind="object">
       <column name="id" type="BIGINT" null="false"/>
       <column name="applicant" type="BIGINT" null="true"/>
+      <column name="seq" type="BIGINT" null="true"/>
+      <column name="state" type="SMALLINT" null="false" default="0"/>
       <column name="ext" type="TEXT" null="false"/>
       <column name="created_at" type="TIMESTAMP" null="true"/>
       <column name="updated_at" type="TIMESTAMP" null="true"/>
       <column name="deleted_at" type="TIMESTAMP" null="true"/>
-      <column name="state" type="SMALLINT" null="false" default="0"/>
-      <column name="seq" type="BIGINT" null="true"/>
       <primary-key auto="true">
         <column name="id"/>
       </primary-key>
@@ -273,47 +262,6 @@
         <column name="seq"/>
       </index>
     </table>
-    <table name="administrators" kind="object">
-      <column name="uid" type="BIGINT" null="false"/>
-      <column name="user" type="BIGINT" null="true"/>
-      <primary-key auto="true">
-        <column name="uid"/>
-      </primary-key>
-      <foreign-key name="user_fk" deferrable="DEFERRED">
-        <column name="user"/>
-        <references table="cmall_user">
-          <column name="uid"/>
-        </references>
-      </foreign-key>
-    </table>
-    <table name="cmall_order_kuaidi" kind="container">
-      <column name="object_id" type="BIGINT" null="false"/>
-      <column name="kuaidihao" type="BIGINT" null="false"/>
-      <column name="value_kuaidihao" type="TEXT" null="false"/>
-      <column name="value_kuaidigongsi" type="TEXT" null="false"/>
-      <foreign-key name="object_id_fk" on-delete="CASCADE">
-        <column name="object_id"/>
-        <references table="cmall_order">
-          <column name="id"/>
-        </references>
-      </foreign-key>
-      <index name="cmall_order_kuaidi_object_id_i">
-        <column name="object_id"/>
-      </index>
-      <index name="cmall_order_kuaidi_kuaidihao_i">
-        <column name="kuaidihao"/>
-      </index>
-    </table>
-    <table name="cmall_apptoken" kind="object">
-      <column name="apptoken" type="TEXT" null="false"/>
-      <column name="uid" type="BIGINT" null="false"/>
-      <primary-key>
-        <column name="apptoken"/>
-      </primary-key>
-      <index name="cmall_apptoken_uid_i">
-        <column name="uid"/>
-      </index>
-    </table>
     <table name="cmall_3rd_kv_store" kind="object">
       <column name="uid" type="BIGINT" null="false"/>
       <column name="key_value" type="TEXT" null="false"/>
@@ -332,19 +280,6 @@
         <column name="key_value"/>
       </primary-key>
     </table>
-    <table name="cmall_user_fav" kind="object">
-      <column name="id" type="BIGINT" null="false"/>
-      <column name="uid" type="BIGINT" null="false"/>
-      <column name="merchant_id" type="BIGINT" null="false"/>
-      <column name="created_at" type="TIMESTAMP" null="true"/>
-      <column name="updated_at" type="TIMESTAMP" null="true"/>
-      <primary-key auto="true">
-        <column name="id"/>
-      </primary-key>
-      <index name="cmall_user_fav_uid_i">
-        <column name="uid"/>
-      </index>
-    </table>
     <table name="cmall_index_page_goods" kind="object">
       <column name="id" type="BIGINT" null="false"/>
       <column name="merchant_id" type="BIGINT" null="false"/>
@@ -353,6 +288,30 @@
       <primary-key auto="true">
         <column name="id"/>
       </primary-key>
+    </table>
+    <table name="cmall_wx_fenzhang" kind="object">
+      <column name="id" type="BIGINT" null="false"/>
+      <column name="type" type="TEXT" null="false"/>
+      <column name="account" type="TEXT" null="false"/>
+      <column name="name" type="TEXT" null="false"/>
+      <column name="relation_type" type="TEXT" null="false"/>
+      <column name="percent" type="TEXT" null="false"/>
+      <primary-key auto="true">
+        <column name="id"/>
+      </primary-key>
+    </table>
+    <table name="cmall_session" kind="object">
+      <column name="cache_key" type="TEXT" null="false"/>
+      <column name="cache_content" type="TEXT" null="false"/>
+      <column name="ip_address" type="TEXT" null="true"/>
+      <column name="created_at" type="TIMESTAMP" null="true" default="'now()'"/>
+      <column name="updated_at" type="TIMESTAMP" null="true"/>
+      <primary-key>
+        <column name="cache_key"/>
+      </primary-key>
+      <index name="cmall_session_updated_at_i">
+        <column name="updated_at"/>
+      </index>
     </table>
   </model>
 </changelog>
