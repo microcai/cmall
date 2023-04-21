@@ -1,4 +1,10 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
+  <changeset version="35">
+    <alter-table name="cmall_session">
+      <add-column name="uid" type="BIGINT" null="true"/>
+    </alter-table>
+  </changeset>
+
   <model version="34">
     <table name="cmall_config" kind="object">
       <column name="id" type="BIGINT" null="false"/>

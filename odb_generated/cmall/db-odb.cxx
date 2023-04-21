@@ -14459,6 +14459,7 @@ namespace odb
   persist_statement_types[] =
   {
     pgsql::text_oid,
+    pgsql::int8_oid,
     pgsql::text_oid,
     pgsql::text_oid,
     pgsql::timestamp_oid,
@@ -14474,6 +14475,7 @@ namespace odb
   const unsigned int access::object_traits_impl< ::cmall_session, id_pgsql >::
   update_statement_types[] =
   {
+    pgsql::int8_oid,
     pgsql::text_oid,
     pgsql::text_oid,
     pgsql::timestamp_oid,
@@ -14533,9 +14535,13 @@ namespace odb
       grew = true;
     }
 
+    // uid
+    //
+    t[1UL] = 0;
+
     // cache_content
     //
-    if (t[1UL])
+    if (t[2UL])
     {
       i.cache_content_value.capacity (i.cache_content_size);
       grew = true;
@@ -14543,7 +14549,7 @@ namespace odb
 
     // ip_address
     //
-    if (t[2UL])
+    if (t[3UL])
     {
       i.ip_address_value.capacity (i.ip_address_size);
       grew = true;
@@ -14551,11 +14557,11 @@ namespace odb
 
     // created_at_
     //
-    t[3UL] = 0;
+    t[4UL] = 0;
 
     // updated_at_
     //
-    t[4UL] = 0;
+    t[5UL] = 0;
 
     return grew;
   }
@@ -14582,6 +14588,13 @@ namespace odb
       b[n].is_null = &i.cache_key_null;
       n++;
     }
+
+    // uid
+    //
+    b[n].type = pgsql::bind::bigint;
+    b[n].buffer = &i.uid_value;
+    b[n].is_null = &i.uid_null;
+    n++;
 
     // cache_content
     //
@@ -14660,6 +14673,20 @@ namespace odb
       i.cache_key_null = is_null;
       i.cache_key_size = size;
       grew = grew || (cap != i.cache_key_value.capacity ());
+    }
+
+    // uid
+    //
+    {
+      ::odb::nullable< long int > const& v =
+        o.uid;
+
+      bool is_null (true);
+      pgsql::value_traits<
+          ::odb::nullable< long int >,
+          pgsql::id_bigint >::set_image (
+        i.uid_value, is_null, v);
+      i.uid_null = is_null;
     }
 
     // cache_content
@@ -14759,6 +14786,20 @@ namespace odb
         i.cache_key_null);
     }
 
+    // uid
+    //
+    {
+      ::odb::nullable< long int >& v =
+        o.uid;
+
+      pgsql::value_traits<
+          ::odb::nullable< long int >,
+          pgsql::id_bigint >::set_value (
+        v,
+        i.uid_value,
+        i.uid_null);
+    }
+
     // cache_content
     //
     {
@@ -14845,16 +14886,18 @@ namespace odb
   const char access::object_traits_impl< ::cmall_session, id_pgsql >::persist_statement[] =
   "INSERT INTO \"cmall_session\" "
   "(\"cache_key\", "
+  "\"uid\", "
   "\"cache_content\", "
   "\"ip_address\", "
   "\"created_at\", "
   "\"updated_at\") "
   "VALUES "
-  "($1, $2, $3, $4, $5)";
+  "($1, $2, $3, $4, $5, $6)";
 
   const char access::object_traits_impl< ::cmall_session, id_pgsql >::find_statement[] =
   "SELECT "
   "\"cmall_session\".\"cache_key\", "
+  "\"cmall_session\".\"uid\", "
   "\"cmall_session\".\"cache_content\", "
   "\"cmall_session\".\"ip_address\", "
   "\"cmall_session\".\"created_at\", "
@@ -14865,11 +14908,12 @@ namespace odb
   const char access::object_traits_impl< ::cmall_session, id_pgsql >::update_statement[] =
   "UPDATE \"cmall_session\" "
   "SET "
-  "\"cache_content\"=$1, "
-  "\"ip_address\"=$2, "
-  "\"created_at\"=$3, "
-  "\"updated_at\"=$4 "
-  "WHERE \"cache_key\"=$5";
+  "\"uid\"=$1, "
+  "\"cache_content\"=$2, "
+  "\"ip_address\"=$3, "
+  "\"created_at\"=$4, "
+  "\"updated_at\"=$5 "
+  "WHERE \"cache_key\"=$6";
 
   const char access::object_traits_impl< ::cmall_session, id_pgsql >::erase_statement[] =
   "DELETE FROM \"cmall_session\" "
@@ -14878,6 +14922,7 @@ namespace odb
   const char access::object_traits_impl< ::cmall_session, id_pgsql >::query_statement[] =
   "SELECT "
   "\"cmall_session\".\"cache_key\", "
+  "\"cmall_session\".\"uid\", "
   "\"cmall_session\".\"cache_content\", "
   "\"cmall_session\".\"ip_address\", "
   "\"cmall_session\".\"created_at\", "
@@ -15531,6 +15576,7 @@ namespace odb
                       "  \"percent\" TEXT NOT NULL)");
           db.execute ("CREATE TABLE \"cmall_session\" (\n"
                       "  \"cache_key\" TEXT NOT NULL PRIMARY KEY,\n"
+                      "  \"uid\" BIGINT NULL,\n"
                       "  \"cache_content\" TEXT NOT NULL,\n"
                       "  \"ip_address\" TEXT NULL,\n"
                       "  \"created_at\" TIMESTAMP NULL DEFAULT 'now()',\n"
@@ -15547,7 +15593,7 @@ namespace odb
                       "  \"migration\" BOOLEAN NOT NULL)");
           db.execute ("INSERT INTO \"schema_version\" (\n"
                       "  \"name\", \"version\", \"migration\")\n"
-                      "  SELECT '', 34, FALSE\n"
+                      "  SELECT '', 35, FALSE\n"
                       "  WHERE NOT EXISTS (\n"
                       "    SELECT 1 FROM \"schema_version\" WHERE \"name\" = '')");
           return false;
@@ -15570,6 +15616,60 @@ namespace odb
     "",
     34ULL,
     0);
+
+  static bool
+  migrate_schema_35 (database& db, unsigned short pass, bool pre)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (pass);
+    ODB_POTENTIALLY_UNUSED (pre);
+
+    if (pre)
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          db.execute ("ALTER TABLE \"cmall_session\"\n"
+                      "  ADD COLUMN \"uid\" BIGINT NULL");
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"version\" = 35, \"migration\" = TRUE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+    else
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"migration\" = FALSE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  static const schema_catalog_migrate_entry
+  migrate_schema_entry_35_ (
+    id_pgsql,
+    "",
+    35ULL,
+    &migrate_schema_35);
 }
 
 #include <odb/post.hxx>

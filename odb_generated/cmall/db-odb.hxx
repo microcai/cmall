@@ -5197,6 +5197,18 @@ namespace odb
 
     static const cache_key_type_ cache_key;
 
+    // uid
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        long int,
+        pgsql::id_bigint >::query_type,
+      pgsql::id_bigint >
+    uid_type_;
+
+    static const uid_type_ uid;
+
     // cache_content
     //
     typedef
@@ -5252,6 +5264,11 @@ namespace odb
   cache_key (A::table_name, "\"cache_key\"", 0);
 
   template <typename A>
+  const typename query_columns< ::cmall_session, id_pgsql, A >::uid_type_
+  query_columns< ::cmall_session, id_pgsql, A >::
+  uid (A::table_name, "\"uid\"", 0);
+
+  template <typename A>
   const typename query_columns< ::cmall_session, id_pgsql, A >::cache_content_type_
   query_columns< ::cmall_session, id_pgsql, A >::
   cache_content (A::table_name, "\"cache_content\"", 0);
@@ -5298,6 +5315,11 @@ namespace odb
       details::buffer cache_key_value;
       std::size_t cache_key_size;
       bool cache_key_null;
+
+      // uid
+      //
+      long long uid_value;
+      bool uid_null;
 
       // cache_content
       //
@@ -5360,7 +5382,7 @@ namespace odb
 
     typedef pgsql::query_base query_base_type;
 
-    static const std::size_t column_count = 5UL;
+    static const std::size_t column_count = 6UL;
     static const std::size_t id_column_count = 1UL;
     static const std::size_t inverse_column_count = 0UL;
     static const std::size_t readonly_column_count = 0UL;
