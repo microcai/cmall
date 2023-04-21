@@ -505,11 +505,6 @@ namespace cmall
 						co_await http_simple_error_page(R"json({"code": "FAIL", "message": "失败"})json", 500, req.version());
 					continue;
 				}
-				else
-				{
-					co_await http_simple_error_page("ERRORED", 403, req.version());
-					continue;
-				}
 
 
 				// 这里使用 zip 里打包的 angular 页面. 对不存在的地址其实直接替代性的返回 index.html 因此此
@@ -518,7 +513,9 @@ namespace cmall
 
 				if (status_code != 200)
 				{
-					co_await http_simple_error_page("internal server error", status_code, req.version());
+					co_await http_simple_error_page("ERRORED", 404, req.version());
+					keep_alive &= !req.need_eof();
+					continue;
 				}
 
 				keep_alive &= !req.need_eof();
