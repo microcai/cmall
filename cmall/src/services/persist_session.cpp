@@ -97,6 +97,8 @@ namespace services
 				ser["original_user"] =  session.original_user->uid_;
 
 			cmall_session s;
+			if (session.user_info)
+				s.uid = session.user_info->uid_;
 			s.cache_key = session_id;
 			s.updated_at_ = boost::posix_time::second_clock::local_time();
 			s.cache_content = json_to_string(ser);
