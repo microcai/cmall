@@ -605,7 +605,7 @@ namespace odb
     r = r && i.price_null;
     r = r && i.description_null;
     r = r && i.good_version_git_null;
-    r = r && i.selections_null;
+    r = r && i.selection_null;
     return r;
   }
 
@@ -624,7 +624,7 @@ namespace odb
     i.price_null = true;
     i.description_null = true;
     i.good_version_git_null = true;
-    i.selections_null = true;
+    i.selection_null = true;
   }
 
   // cmall_kuaidi_info

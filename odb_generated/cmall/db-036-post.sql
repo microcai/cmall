@@ -3,7 +3,7 @@
  */
 
 ALTER TABLE "cmall_order_bought_goods"
-  ALTER COLUMN "value_selections" SET NOT NULL;
+  ALTER COLUMN "value_selection" SET NOT NULL;
 
 UPDATE "schema_version"
   SET "migration" = FALSE

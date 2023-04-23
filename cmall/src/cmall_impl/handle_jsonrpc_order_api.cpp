@@ -127,7 +127,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_order_api(
                             throw boost::system::system_error(cmall::error::good_option_invalid);
 
                         good_snap.price_ += s_it->selection_price;
-                        good_snap.selections += fmt::format("{}:{};", option.option_title, s_it->selection_price);
+                        good_snap.selection += fmt::format("{}:{};", option.option_title, s_it->selection_price);
                     }
                 }
 

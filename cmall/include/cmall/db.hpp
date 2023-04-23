@@ -193,7 +193,7 @@ struct goods_snapshot
 	cpp_numeric price_;
 	std::string description_; // 商品描述
 	std::string good_version_git;
-	std::string selections;
+	std::string selection;
 };
 
 enum order_status_t

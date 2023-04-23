@@ -7,7 +7,7 @@
 
   <changeset version="36">
     <alter-table name="cmall_order_bought_goods">
-      <add-column name="value_selections" type="TEXT" null="false"/>
+      <add-column name="value_selection" type="TEXT" null="false"/>
     </alter-table>
   </changeset>
 

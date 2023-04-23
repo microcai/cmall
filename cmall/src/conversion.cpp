@@ -133,7 +133,7 @@ inline namespace conversion
 
 		std::vector<std::string> r;
 
-		boost::split(r, g.selections, boost::is_any_of(";"));
+		boost::split(r, g.selection, boost::is_any_of(";"));
 
 		for (auto l : r)
 		{

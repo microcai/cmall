@@ -2306,11 +2306,11 @@ namespace odb
       std::size_t good_version_git_size;
       bool good_version_git_null;
 
-      // selections
+      // selection
       //
-      details::buffer selections_value;
-      std::size_t selections_size;
-      bool selections_null;
+      details::buffer selection_value;
+      std::size_t selection_size;
+      bool selection_null;
     };
 
     static bool

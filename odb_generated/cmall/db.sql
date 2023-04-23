@@ -196,7 +196,7 @@ CREATE TABLE "cmall_order_bought_goods" (
   "value_price" NUMERIC NOT NULL,
   "value_description" TEXT NOT NULL,
   "value_good_version_git" TEXT NOT NULL,
-  "value_selections" TEXT NOT NULL,
+  "value_selection" TEXT NOT NULL,
   CONSTRAINT "object_id_fk"
     FOREIGN KEY ("object_id")
     REFERENCES "cmall_order" ("id")

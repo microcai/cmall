@@ -5386,11 +5386,11 @@ namespace odb
       grew = true;
     }
 
-    // selections
+    // selection
     //
     if (t[6UL])
     {
-      i.selections_value.capacity (i.selections_size);
+      i.selection_value.capacity (i.selection_size);
       grew = true;
     }
 
@@ -5463,13 +5463,13 @@ namespace odb
     b[n].is_null = &i.good_version_git_null;
     n++;
 
-    // selections
+    // selection
     //
     b[n].type = pgsql::bind::text;
-    b[n].buffer = i.selections_value.data_ptr ();
-    b[n].capacity = i.selections_value.capacity ();
-    b[n].size = &i.selections_size;
-    b[n].is_null = &i.selections_null;
+    b[n].buffer = i.selection_value.data_ptr ();
+    b[n].capacity = i.selection_value.capacity ();
+    b[n].size = &i.selection_size;
+    b[n].is_null = &i.selection_null;
     n++;
   }
 
@@ -5605,25 +5605,25 @@ namespace odb
       grew = grew || (cap != i.good_version_git_value.capacity ());
     }
 
-    // selections
+    // selection
     //
     {
       ::std::string const& v =
-        o.selections;
+        o.selection;
 
       bool is_null (false);
       std::size_t size (0);
-      std::size_t cap (i.selections_value.capacity ());
+      std::size_t cap (i.selection_value.capacity ());
       pgsql::value_traits<
           ::std::string,
           pgsql::id_string >::set_image (
-        i.selections_value,
+        i.selection_value,
         size,
         is_null,
         v);
-      i.selections_null = is_null;
-      i.selections_size = size;
-      grew = grew || (cap != i.selections_value.capacity ());
+      i.selection_null = is_null;
+      i.selection_size = size;
+      grew = grew || (cap != i.selection_value.capacity ());
     }
 
     return grew;
@@ -5727,19 +5727,19 @@ namespace odb
         i.good_version_git_null);
     }
 
-    // selections
+    // selection
     //
     {
       ::std::string& v =
-        o.selections;
+        o.selection;
 
       pgsql::value_traits<
           ::std::string,
           pgsql::id_string >::set_value (
         v,
-        i.selections_value,
-        i.selections_size,
-        i.selections_null);
+        i.selection_value,
+        i.selection_size,
+        i.selection_null);
     }
   }
 
@@ -6341,7 +6341,7 @@ namespace odb
   "\"cmall_order_bought_goods\".\"value_price\"::TEXT, "
   "\"cmall_order_bought_goods\".\"value_description\", "
   "\"cmall_order_bought_goods\".\"value_good_version_git\", "
-  "\"cmall_order_bought_goods\".\"value_selections\" "
+  "\"cmall_order_bought_goods\".\"value_selection\" "
   "FROM \"cmall_order_bought_goods\" "
   "WHERE \"cmall_order_bought_goods\".\"object_id\"=$1 ORDER BY \"cmall_order_bought_goods\".\"index\"";
 
@@ -6356,7 +6356,7 @@ namespace odb
   "\"value_price\", "
   "\"value_description\", "
   "\"value_good_version_git\", "
-  "\"value_selections\") "
+  "\"value_selection\") "
   "VALUES "
   "($1, $2, $3, $4, $5, $6::numeric, $7, $8, $9)";
 
@@ -15605,7 +15605,7 @@ namespace odb
                       "  \"value_price\" NUMERIC NOT NULL,\n"
                       "  \"value_description\" TEXT NOT NULL,\n"
                       "  \"value_good_version_git\" TEXT NOT NULL,\n"
-                      "  \"value_selections\" TEXT NOT NULL,\n"
+                      "  \"value_selection\" TEXT NOT NULL,\n"
                       "  CONSTRAINT \"object_id_fk\"\n"
                       "    FOREIGN KEY (\"object_id\")\n"
                       "    REFERENCES \"cmall_order\" (\"id\")\n"
@@ -15802,7 +15802,7 @@ namespace odb
         case 1:
         {
           db.execute ("ALTER TABLE \"cmall_order_bought_goods\"\n"
-                      "  ADD COLUMN \"value_selections\" TEXT NULL");
+                      "  ADD COLUMN \"value_selection\" TEXT NULL");
           return true;
         }
         case 2:
@@ -15825,7 +15825,7 @@ namespace odb
         case 2:
         {
           db.execute ("ALTER TABLE \"cmall_order_bought_goods\"\n"
-                      "  ALTER COLUMN \"value_selections\" SET NOT NULL");
+                      "  ALTER COLUMN \"value_selection\" SET NOT NULL");
           db.execute ("UPDATE \"schema_version\"\n"
                       "  SET \"migration\" = FALSE\n"
                       "  WHERE \"name\" = ''");
