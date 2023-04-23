@@ -48,6 +48,7 @@ namespace cmall
 			nofity_message_signature_invalid,
 			nofity_message_decode_failed,
 			good_option_needed,
+			good_option_invalid,
 		};
 
 		class cmall_category : public boost::system::error_category
