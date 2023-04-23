@@ -6,9 +6,9 @@
 #include "cmark.h"
 #include "buffer.h"
 
-int cmark_version() { return CMARK_VERSION; }
+int cmark_version(void) { return CMARK_VERSION; }
 
-const char *cmark_version_string() { return CMARK_VERSION_STRING; }
+const char *cmark_version_string(void) { return CMARK_VERSION_STRING; }
 
 static void *xcalloc(size_t nmem, size_t size) {
   void *ptr = calloc(nmem, size);
