@@ -216,8 +216,10 @@ namespace services
 						to_be_append.git_version = commit_version.as_sha1_string();
 						to_be_append.product_id = entry_filename.stem().string();
 
-						std::string good_option_content = get_file_content(parent_path / ( goods_id + ".option"), ec);
-						if (!ec)
+						boost::system::error_code fc_ec;
+
+						std::string good_option_content = get_file_content(parent_path / ( goods_id + ".option"), fc_ec);
+						if (!fc_ec)
 						{
 							to_be_append.options = to_product_options(good_option_content, ec);
 						}
