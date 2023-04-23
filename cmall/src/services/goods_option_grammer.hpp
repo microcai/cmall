@@ -35,21 +35,12 @@ BOOST_FUSION_ADAPT_STRUCT(
 struct goods_option {
 	std::string option_name; // 选配
 	magic_vector<selection> selections;
-
-	// 赋值是合并的操作.
-	goods_option& operator = (const goods_option& other)
-	{
-		if (option_name.empty())
-			option_name = other.option_name;
-		selections += other.selections;
-		return *this;
-	}
 };
 
 BOOST_FUSION_ADAPT_STRUCT(
 	goods_option,
 	(std::string, option_name)
-	(magic_vector<goods_option>, selections)
+	(magic_vector<selection>, selections)
 )
 
 typedef magic_vector<goods_option> goods_options;
@@ -62,11 +53,11 @@ struct goods_options_grammer : qi::grammar<Iterator, goods_options()>
 		using qi::debug;
 		using namespace boost::phoenix;
 
-		document = option_block >> *option_block;
+		document = option_block[qi::_val += qi::_1] >> *option_block[qi::_val += qi::_1];
 
 		option_block = qi::lit('#') >> option_name[ at_c<0>(qi::_val) = qi::_1 ] >> newline >> selections [ at_c<1>(qi::_val) = qi::_1 ] ;
 
-		selections = select >> * select;
+		selections = select[qi::_val += qi::_1] >> * select[qi::_val += qi::_1];
 
 		select = key [ at_c<0>(qi::_val) = qi::_1 ] >> qi::lit(' ') >> *qi::space >>  -(value [ at_c<1>(qi::_val) = qi::_1 ] >> *qi::space) >> newline;
 
@@ -96,7 +87,7 @@ struct goods_options_grammer : qi::grammar<Iterator, goods_options()>
 	qi::rule<Iterator, std::string()> key, value, simple_key, quoted_key;
 };
 
-inline std::optional<goods_options> parse_goods_option(const std::string_view& document) noexcept
+inline std::optional<goods_options> parse_goods_option(std::string_view document) noexcept
 {
 	goods_options ast;
 

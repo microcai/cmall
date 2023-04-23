@@ -22,6 +22,7 @@
 #include "gitpp/gitpp.hpp"
 
 #include "goods_md_metadata_grammer.hpp"
+#include "goods_option_grammer.hpp"
 #include "md_transpile.hpp"
 #include "md_render.hpp"
 #include "cmall/error_code.hpp"
@@ -110,6 +111,32 @@ namespace services
 			return std::make_tuple(std::string_view(), std::string_view());
 		}
 
+		std::vector<product_option> to_product_options(std::string_view options_content, boost::system::error_code& ec)
+		{
+			std::vector<product_option> ret;
+			auto result = parse_goods_option(options_content);
+			if (result)
+			{
+				for (const goods_option& go : *result)
+				{
+					product_option po;
+					po.option_title = go.option_name;
+					std::transform(go.selections.begin(), go.selections.end(), std::back_inserter(po.selections),
+						[](auto s){
+							product_option_select ret;
+							ret.selection_price = 0;
+							ret.selection_name = s.select_name;
+							if (!s.select_price.empty())
+								ret.selection_price = cpp_numeric{s.select_price};
+							return ret;
+						});
+					ret.push_back(po);
+				}
+
+			}
+			return ret;
+		}
+
 		product to_product(std::string_view markdown_content, std::string_view merchant_name, std::string baseurl, boost::system::error_code& ec)
 		{
 			auto [meta, body] = split_markdown(markdown_content, ec);
@@ -174,7 +201,7 @@ namespace services
 			auto goods = repo_tree.by_path("goods");
 
 			if (!goods.empty())
-				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), std::filesystem::path(""), [baseurl, merchant_name, goods_id, &commit_version, &ret, &ec, this](const gitpp::tree_entry & tree_entry, std::filesystem::path) mutable
+				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), std::filesystem::path(""), [baseurl, merchant_name, goods_id, &commit_version, &ret, &ec, this](const gitpp::tree_entry & tree_entry, std::filesystem::path parent_path) mutable
 				{
 					std::filesystem::path entry_filename(tree_entry.name());
 
@@ -188,6 +215,12 @@ namespace services
 							return false;
 						to_be_append.git_version = commit_version.as_sha1_string();
 						to_be_append.product_id = entry_filename.stem().string();
+
+						std::string good_option_content = get_file_content(parent_path / ( goods_id + ".option"), ec);
+						if (!ec)
+						{
+							to_be_append.options = to_product_options(good_option_content, ec);
+						}
 
 						ret.push_back(to_be_append);
 						return true;
