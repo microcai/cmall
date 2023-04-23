@@ -35,8 +35,6 @@ file(GLOB cmall_SRCS
 if (USE_BUNDLED_SITE)
 find_package(Embed REQUIRED)
 EMBED_TARGET(SITE site.zip)
-else()
-set(EMBED_SITE_OUTPUTS "" FORCE)
 endif()
 
 GOURP_FILES(${CMAKE_CURRENT_SOURCE_DIR})
