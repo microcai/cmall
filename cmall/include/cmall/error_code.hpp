@@ -47,6 +47,7 @@ namespace cmall
 			wxpay_server_error,
 			nofity_message_signature_invalid,
 			nofity_message_decode_failed,
+			good_option_needed,
 		};
 
 		class cmall_category : public boost::system::error_category
