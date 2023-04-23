@@ -1,4 +1,16 @@
 <changelog xmlns="http://www.codesynthesis.com/xmlns/odb/changelog" database="pgsql" version="1">
+  <changeset version="37">
+    <alter-table name="cmall_cart">
+      <add-column name="selection" type="TEXT" null="false"/>
+    </alter-table>
+  </changeset>
+
+  <changeset version="36">
+    <alter-table name="cmall_order_bought_goods">
+      <add-column name="value_selections" type="TEXT" null="false"/>
+    </alter-table>
+  </changeset>
+
   <changeset version="35">
     <alter-table name="cmall_session">
       <add-column name="uid" type="BIGINT" null="true"/>

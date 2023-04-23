@@ -80,6 +80,8 @@ std::string cmall::error::cmall_category::message(int ev) const
 			return (const char*) u8"验签错误";
 		case good_option_needed:
 			return (const char*) u8"需要选择商品子选项";
+		case good_option_invalid:
+			return (const char*) u8"商品子选项不正确";
 	}
 	return "error message";
 }
