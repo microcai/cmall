@@ -6,12 +6,37 @@
 
 #include "cmall/conversion.hpp"
 
+
+void services::tag_invoke(const boost::json::value_from_tag&, boost::json::value& jv, const services::product_option_select& p)
+{
+	jv = {
+		{ "select", p.selection_name },
+		{ "price",  to_string(p.selection_price) },
+	};
+}
+
+void services::tag_invoke(const boost::json::value_from_tag&, boost::json::value& jv, const services::product_option& p)
+{
+	boost::json::array selections;
+
+	for (auto & p : p.selections)
+		selections.push_back(boost::json::value_from(p));
+
+	jv = {
+		{ "option", p.option_title },
+		{ "selections", selections },
+	};
+}
+
 void services::tag_invoke(const boost::json::value_from_tag&, boost::json::value& jv, const services::product& p)
 {
-	boost::json::array pics;
+	boost::json::array pics, options;
 
 	for (auto & p : p.pics)
 		pics.push_back(boost::json::value(p));
+
+	for (auto & p : p.options)
+		options.push_back(boost::json::value_from(p));
 
 	jv = {
 		{ "goods_id", p.product_id },
@@ -22,6 +47,7 @@ void services::tag_invoke(const boost::json::value_from_tag&, boost::json::value
 		{ "description", p.product_description },
 		{ "kuaidifei", p.kuaidifei },
 		{ "pictures", pics },
+		{ "options", options },
 	};
 }
 

@@ -10,7 +10,11 @@
 
 namespace services{
 	struct product;
+	struct product_option_select;
+	struct product_option;
 	void tag_invoke(const boost::json::value_from_tag&, boost::json::value& jv, const product& p);
+	void tag_invoke(const boost::json::value_from_tag&, boost::json::value& jv, const product_option_select& p);
+	void tag_invoke(const boost::json::value_from_tag&, boost::json::value& jv, const product_option& p);
 }
 
 inline namespace conversion
