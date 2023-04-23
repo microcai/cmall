@@ -5386,6 +5386,14 @@ namespace odb
       grew = true;
     }
 
+    // selections
+    //
+    if (t[6UL])
+    {
+      i.selections_value.capacity (i.selections_size);
+      grew = true;
+    }
+
     return grew;
   }
 
@@ -5453,6 +5461,15 @@ namespace odb
     b[n].capacity = i.good_version_git_value.capacity ();
     b[n].size = &i.good_version_git_size;
     b[n].is_null = &i.good_version_git_null;
+    n++;
+
+    // selections
+    //
+    b[n].type = pgsql::bind::text;
+    b[n].buffer = i.selections_value.data_ptr ();
+    b[n].capacity = i.selections_value.capacity ();
+    b[n].size = &i.selections_size;
+    b[n].is_null = &i.selections_null;
     n++;
   }
 
@@ -5588,6 +5605,27 @@ namespace odb
       grew = grew || (cap != i.good_version_git_value.capacity ());
     }
 
+    // selections
+    //
+    {
+      ::std::string const& v =
+        o.selections;
+
+      bool is_null (false);
+      std::size_t size (0);
+      std::size_t cap (i.selections_value.capacity ());
+      pgsql::value_traits<
+          ::std::string,
+          pgsql::id_string >::set_image (
+        i.selections_value,
+        size,
+        is_null,
+        v);
+      i.selections_null = is_null;
+      i.selections_size = size;
+      grew = grew || (cap != i.selections_value.capacity ());
+    }
+
     return grew;
   }
 
@@ -5687,6 +5725,21 @@ namespace odb
         i.good_version_git_value,
         i.good_version_git_size,
         i.good_version_git_null);
+    }
+
+    // selections
+    //
+    {
+      ::std::string& v =
+        o.selections;
+
+      pgsql::value_traits<
+          ::std::string,
+          pgsql::id_string >::set_value (
+        v,
+        i.selections_value,
+        i.selections_size,
+        i.selections_null);
     }
   }
 
@@ -6274,6 +6327,7 @@ namespace odb
     pgsql::text_oid,
     pgsql::text_oid,
     pgsql::text_oid,
+    pgsql::text_oid,
     pgsql::text_oid
   };
 
@@ -6286,7 +6340,8 @@ namespace odb
   "\"cmall_order_bought_goods\".\"value_name\", "
   "\"cmall_order_bought_goods\".\"value_price\"::TEXT, "
   "\"cmall_order_bought_goods\".\"value_description\", "
-  "\"cmall_order_bought_goods\".\"value_good_version_git\" "
+  "\"cmall_order_bought_goods\".\"value_good_version_git\", "
+  "\"cmall_order_bought_goods\".\"value_selections\" "
   "FROM \"cmall_order_bought_goods\" "
   "WHERE \"cmall_order_bought_goods\".\"object_id\"=$1 ORDER BY \"cmall_order_bought_goods\".\"index\"";
 
@@ -6300,9 +6355,10 @@ namespace odb
   "\"value_name\", "
   "\"value_price\", "
   "\"value_description\", "
-  "\"value_good_version_git\") "
+  "\"value_good_version_git\", "
+  "\"value_selections\") "
   "VALUES "
-  "($1, $2, $3, $4, $5, $6::numeric, $7, $8)";
+  "($1, $2, $3, $4, $5, $6::numeric, $7, $8, $9)";
 
   const char access::object_traits_impl< ::cmall_order, id_pgsql >::bought_goods_traits::
   delete_statement[] =
@@ -8407,6 +8463,7 @@ namespace odb
     pgsql::int8_oid,
     pgsql::int8_oid,
     pgsql::text_oid,
+    pgsql::text_oid,
     pgsql::int8_oid,
     pgsql::timestamp_oid,
     pgsql::timestamp_oid
@@ -8423,6 +8480,7 @@ namespace odb
   {
     pgsql::int8_oid,
     pgsql::int8_oid,
+    pgsql::text_oid,
     pgsql::text_oid,
     pgsql::int8_oid,
     pgsql::timestamp_oid,
@@ -8513,17 +8571,25 @@ namespace odb
       grew = true;
     }
 
-    // count_
+    // selection
     //
-    t[4UL] = 0;
+    if (t[4UL])
+    {
+      i.selection_value.capacity (i.selection_size);
+      grew = true;
+    }
 
-    // created_at_
+    // count_
     //
     t[5UL] = 0;
 
-    // updated_at_
+    // created_at_
     //
     t[6UL] = 0;
+
+    // updated_at_
+    //
+    t[7UL] = 0;
 
     return grew;
   }
@@ -8570,6 +8636,15 @@ namespace odb
     b[n].capacity = i.goods_id_value.capacity ();
     b[n].size = &i.goods_id_size;
     b[n].is_null = &i.goods_id_null;
+    n++;
+
+    // selection
+    //
+    b[n].type = pgsql::bind::text;
+    b[n].buffer = i.selection_value.data_ptr ();
+    b[n].capacity = i.selection_value.capacity ();
+    b[n].size = &i.selection_size;
+    b[n].is_null = &i.selection_null;
     n++;
 
     // count_
@@ -8663,6 +8738,27 @@ namespace odb
       i.goods_id_null = is_null;
       i.goods_id_size = size;
       grew = grew || (cap != i.goods_id_value.capacity ());
+    }
+
+    // selection
+    //
+    {
+      ::std::string const& v =
+        o.selection;
+
+      bool is_null (false);
+      std::size_t size (0);
+      std::size_t cap (i.selection_value.capacity ());
+      pgsql::value_traits<
+          ::std::string,
+          pgsql::id_string >::set_image (
+        i.selection_value,
+        size,
+        is_null,
+        v);
+      i.selection_null = is_null;
+      i.selection_size = size;
+      grew = grew || (cap != i.selection_value.capacity ());
     }
 
     // count_
@@ -8776,6 +8872,21 @@ namespace odb
         i.goods_id_null);
     }
 
+    // selection
+    //
+    {
+      ::std::string& v =
+        o.selection;
+
+      pgsql::value_traits<
+          ::std::string,
+          pgsql::id_string >::set_value (
+        v,
+        i.selection_value,
+        i.selection_size,
+        i.selection_null);
+    }
+
     // count_
     //
     {
@@ -8838,11 +8949,12 @@ namespace odb
   "\"uid\", "
   "\"merchant_id\", "
   "\"goods_id\", "
+  "\"selection\", "
   "\"count\", "
   "\"created_at\", "
   "\"updated_at\") "
   "VALUES "
-  "(DEFAULT, $1, $2, $3, $4, $5, $6) "
+  "(DEFAULT, $1, $2, $3, $4, $5, $6, $7) "
   "RETURNING \"id\"";
 
   const char access::object_traits_impl< ::cmall_cart, id_pgsql >::find_statement[] =
@@ -8851,6 +8963,7 @@ namespace odb
   "\"cmall_cart\".\"uid\", "
   "\"cmall_cart\".\"merchant_id\", "
   "\"cmall_cart\".\"goods_id\", "
+  "\"cmall_cart\".\"selection\", "
   "\"cmall_cart\".\"count\", "
   "\"cmall_cart\".\"created_at\", "
   "\"cmall_cart\".\"updated_at\" "
@@ -8863,10 +8976,11 @@ namespace odb
   "\"uid\"=$1, "
   "\"merchant_id\"=$2, "
   "\"goods_id\"=$3, "
-  "\"count\"=$4, "
-  "\"created_at\"=$5, "
-  "\"updated_at\"=$6 "
-  "WHERE \"id\"=$7";
+  "\"selection\"=$4, "
+  "\"count\"=$5, "
+  "\"created_at\"=$6, "
+  "\"updated_at\"=$7 "
+  "WHERE \"id\"=$8";
 
   const char access::object_traits_impl< ::cmall_cart, id_pgsql >::erase_statement[] =
   "DELETE FROM \"cmall_cart\" "
@@ -8878,6 +8992,7 @@ namespace odb
   "\"cmall_cart\".\"uid\", "
   "\"cmall_cart\".\"merchant_id\", "
   "\"cmall_cart\".\"goods_id\", "
+  "\"cmall_cart\".\"selection\", "
   "\"cmall_cart\".\"count\", "
   "\"cmall_cart\".\"created_at\", "
   "\"cmall_cart\".\"updated_at\" "
@@ -15490,6 +15605,7 @@ namespace odb
                       "  \"value_price\" NUMERIC NOT NULL,\n"
                       "  \"value_description\" TEXT NOT NULL,\n"
                       "  \"value_good_version_git\" TEXT NOT NULL,\n"
+                      "  \"value_selections\" TEXT NOT NULL,\n"
                       "  CONSTRAINT \"object_id_fk\"\n"
                       "    FOREIGN KEY (\"object_id\")\n"
                       "    REFERENCES \"cmall_order\" (\"id\")\n"
@@ -15516,6 +15632,7 @@ namespace odb
                       "  \"uid\" BIGINT NOT NULL,\n"
                       "  \"merchant_id\" BIGINT NOT NULL,\n"
                       "  \"goods_id\" TEXT NOT NULL,\n"
+                      "  \"selection\" TEXT NOT NULL,\n"
                       "  \"count\" BIGINT NOT NULL,\n"
                       "  \"created_at\" TIMESTAMP NULL,\n"
                       "  \"updated_at\" TIMESTAMP NULL)");
@@ -15593,7 +15710,7 @@ namespace odb
                       "  \"migration\" BOOLEAN NOT NULL)");
           db.execute ("INSERT INTO \"schema_version\" (\n"
                       "  \"name\", \"version\", \"migration\")\n"
-                      "  SELECT '', 35, FALSE\n"
+                      "  SELECT '', 37, FALSE\n"
                       "  WHERE NOT EXISTS (\n"
                       "    SELECT 1 FROM \"schema_version\" WHERE \"name\" = '')");
           return false;
@@ -15670,6 +15787,118 @@ namespace odb
     "",
     35ULL,
     &migrate_schema_35);
+
+  static bool
+  migrate_schema_36 (database& db, unsigned short pass, bool pre)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (pass);
+    ODB_POTENTIALLY_UNUSED (pre);
+
+    if (pre)
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          db.execute ("ALTER TABLE \"cmall_order_bought_goods\"\n"
+                      "  ADD COLUMN \"value_selections\" TEXT NULL");
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"version\" = 36, \"migration\" = TRUE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+    else
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("ALTER TABLE \"cmall_order_bought_goods\"\n"
+                      "  ALTER COLUMN \"value_selections\" SET NOT NULL");
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"migration\" = FALSE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  static const schema_catalog_migrate_entry
+  migrate_schema_entry_36_ (
+    id_pgsql,
+    "",
+    36ULL,
+    &migrate_schema_36);
+
+  static bool
+  migrate_schema_37 (database& db, unsigned short pass, bool pre)
+  {
+    ODB_POTENTIALLY_UNUSED (db);
+    ODB_POTENTIALLY_UNUSED (pass);
+    ODB_POTENTIALLY_UNUSED (pre);
+
+    if (pre)
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          db.execute ("ALTER TABLE \"cmall_cart\"\n"
+                      "  ADD COLUMN \"selection\" TEXT NULL");
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"version\" = 37, \"migration\" = TRUE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+    else
+    {
+      switch (pass)
+      {
+        case 1:
+        {
+          return true;
+        }
+        case 2:
+        {
+          db.execute ("ALTER TABLE \"cmall_cart\"\n"
+                      "  ALTER COLUMN \"selection\" SET NOT NULL");
+          db.execute ("UPDATE \"schema_version\"\n"
+                      "  SET \"migration\" = FALSE\n"
+                      "  WHERE \"name\" = ''");
+          return false;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  static const schema_catalog_migrate_entry
+  migrate_schema_entry_37_ (
+    id_pgsql,
+    "",
+    37ULL,
+    &migrate_schema_37);
 }
 
 #include <odb/post.hxx>

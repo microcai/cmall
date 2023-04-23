@@ -2305,6 +2305,12 @@ namespace odb
       details::buffer good_version_git_value;
       std::size_t good_version_git_size;
       bool good_version_git_null;
+
+      // selections
+      //
+      details::buffer selections_value;
+      std::size_t selections_size;
+      bool selections_null;
     };
 
     static bool
@@ -2333,7 +2339,7 @@ namespace odb
     set_null (image_type&,
               pgsql::statement_kind);
 
-    static const std::size_t column_count = 6UL;
+    static const std::size_t column_count = 7UL;
   };
 
   // cmall_kuaidi_info
@@ -2856,7 +2862,7 @@ namespace odb
       static const unsigned int insert_types[];
 
       static const std::size_t id_column_count = 1UL;
-      static const std::size_t data_column_count = 8UL;
+      static const std::size_t data_column_count = 9UL;
 
       static const bool versioned = false;
 
@@ -3244,6 +3250,18 @@ namespace odb
 
     static const goods_id_type_ goods_id;
 
+    // selection
+    //
+    typedef
+    pgsql::query_column<
+      pgsql::value_traits<
+        ::std::string,
+        pgsql::id_string >::query_type,
+      pgsql::id_string >
+    selection_type_;
+
+    static const selection_type_ selection;
+
     // count
     //
     typedef
@@ -3302,6 +3320,11 @@ namespace odb
   goods_id (A::table_name, "\"goods_id\"", 0);
 
   template <typename A>
+  const typename query_columns< ::cmall_cart, id_pgsql, A >::selection_type_
+  query_columns< ::cmall_cart, id_pgsql, A >::
+  selection (A::table_name, "\"selection\"", 0);
+
+  template <typename A>
   const typename query_columns< ::cmall_cart, id_pgsql, A >::count_type_
   query_columns< ::cmall_cart, id_pgsql, A >::
   count (A::table_name, "\"count\"", 0);
@@ -3357,6 +3380,12 @@ namespace odb
       details::buffer goods_id_value;
       std::size_t goods_id_size;
       bool goods_id_null;
+
+      // selection
+      //
+      details::buffer selection_value;
+      std::size_t selection_size;
+      bool selection_null;
 
       // count_
       //
@@ -3415,7 +3444,7 @@ namespace odb
 
     typedef pgsql::query_base query_base_type;
 
-    static const std::size_t column_count = 7UL;
+    static const std::size_t column_count = 8UL;
     static const std::size_t id_column_count = 1UL;
     static const std::size_t inverse_column_count = 0UL;
     static const std::size_t readonly_column_count = 0UL;

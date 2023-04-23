@@ -196,6 +196,7 @@ CREATE TABLE "cmall_order_bought_goods" (
   "value_price" NUMERIC NOT NULL,
   "value_description" TEXT NOT NULL,
   "value_good_version_git" TEXT NOT NULL,
+  "value_selections" TEXT NOT NULL,
   CONSTRAINT "object_id_fk"
     FOREIGN KEY ("object_id")
     REFERENCES "cmall_order" ("id")
@@ -228,6 +229,7 @@ CREATE TABLE "cmall_cart" (
   "uid" BIGINT NOT NULL,
   "merchant_id" BIGINT NOT NULL,
   "goods_id" TEXT NOT NULL,
+  "selection" TEXT NOT NULL,
   "count" BIGINT NOT NULL,
   "created_at" TIMESTAMP NULL,
   "updated_at" TIMESTAMP NULL);
@@ -311,7 +313,7 @@ CREATE INDEX "cmall_session_updated_at_i"
 
 INSERT INTO "schema_version" (
   "name", "version", "migration")
-  SELECT '', 35, FALSE
+  SELECT '', 37, FALSE
   WHERE NOT EXISTS (
     SELECT 1 FROM "schema_version" WHERE "name" = '');
 
