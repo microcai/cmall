@@ -40,9 +40,10 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_goods_api(
 					co_await m_database.async_load<cmall_merchant>(gr.merchant_id, m);
 					cache.emplace(gr.merchant_id, m);
 				}
-				final_result.push_back(
-					co_await get_merchant_git_repo(gr.merchant_id)
-						->get_product(gr.goods_id, cache[gr.merchant_id].name_, this_client.ws_client->baseurl_));
+				if (cache[gr.merchant_id].state_ == merchant_state_t::normal)
+					final_result.push_back(
+						co_await get_merchant_git_repo(gr.merchant_id)
+							->get_product(gr.goods_id, cache[gr.merchant_id].name_, this_client.ws_client->baseurl_));
 			}
 
 			reply_message["result"] = boost::json::value_from(final_result);
