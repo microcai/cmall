@@ -30,7 +30,7 @@ static void *xrealloc(void *ptr, size_t size) {
 
 cmark_mem DEFAULT_MEM_ALLOCATOR = {xcalloc, xrealloc, free};
 
-cmark_mem *cmark_get_default_mem_allocator() {
+cmark_mem *cmark_get_default_mem_allocator(void) {
   return &DEFAULT_MEM_ALLOCATOR;
 }
 
