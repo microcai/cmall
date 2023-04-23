@@ -2,7 +2,6 @@
 #include "stdafx.hpp"
 
 #include "cmall/http_static_file_handle.hpp"
-#include "bundle_file.hpp"
 #include "cmall/internal.hpp"
 
 #include "httpd/header_helper.hpp"
@@ -11,11 +10,16 @@
 
 #include "utils/uawaitable.hpp"
 
+#ifdef EMBED_SITE
+#include "bundle_file.hpp"
+#endif
+
 using boost::asio::awaitable;
 using boost::asio::use_awaitable;
 
 awaitable<int> cmall::http_handle_static_file(size_t connection_id, boost::beast::http::request<boost::beast::http::string_body>& req, httpd::http_any_stream& client)
 {
+#ifdef EMBED_SITE
 	unzFile zip_file = ::unzOpen2_64("internel_bundled_exe", &exe_bundled_file_ops);
 	std::shared_ptr<void> auto_cleanup((void*)zip_file, unzClose);
 	unz_global_info64 unzip_global_info64;
@@ -133,5 +137,7 @@ awaitable<int> cmall::http_handle_static_file(size_t connection_id, boost::beast
 	unzCloseCurrentFile(zip_file);
 
 	co_return 200;
-
+#else
+	co_return 404;
+#endif
 }

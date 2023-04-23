@@ -46,6 +46,8 @@ include(CheckLibraryExists)
 include(CheckCXXSymbolExists)
 include(CheckCXXLinkerFlag)
 
+option(USE_BUNDLED_SITE "Build with bundled asserts" ON)
+
 option(ENABLE_SYSTEM_BOOST "Build with system boost support" OFF)
 
 if (WIN32)

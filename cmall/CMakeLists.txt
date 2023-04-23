@@ -32,8 +32,10 @@ file(GLOB cmall_SRCS
 
 )
 
+if (USE_BUNDLED_SITE)
 find_package(Embed REQUIRED)
 EMBED_TARGET(SITE site.zip)
+endif()
 
 GOURP_FILES(${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -43,6 +45,9 @@ add_library(libcmall OBJECT ${cmall_SRCS}
 	${ODB_GENERATED}
 	${EMBED_SITE_OUTPUTS}
 )
+if (USE_BUNDLED_SITE)
+	target_compile_definitions(libcmall PRIVATE -DEMBED_SITE)
+endif()
 set_target_properties(libcmall PROPERTIES PREFIX "")
 
 target_link_libraries(libcmall gitpp httpd dirmon)
