@@ -10,6 +10,7 @@
 #include <boost/config/warning_disable.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix.hpp>
+#include "magic_vector.hpp"
 
 #ifdef _MSC_VER
 #	pragma warning(push)
@@ -29,24 +30,6 @@ BOOST_FUSION_ADAPT_STRUCT(
 	(std::string, k)
 	(std::string, v)
 )
-
-template<typename T>
-struct magic_vector : public std::vector<T>
-{
-public:
-	magic_vector& operator += (const T& element)
-	{
-		std::vector<T>::push_back(element);
-		return *this;
-	}
-
-	magic_vector& operator += (const magic_vector<T>& other_vector)
-	{
-		for (const T& element : other_vector)
-			std::vector<T>::push_back(element);
-		return *this;
-	}
-};
 
 struct goods_description {
 	std::string title;

@@ -11,30 +11,14 @@
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix.hpp>
 
+#include "magic_vector.hpp"
+
 #ifdef _MSC_VER
 #	pragma warning(push)
 #	pragma warning(disable: 4244 4459)
 #endif // _MSC_VER
 
 namespace qi = boost::spirit::qi;
-
-template<typename T>
-struct magic_vector : public std::vector<T>
-{
-public:
-	magic_vector& operator += (const T& element)
-	{
-		std::vector<T>::push_back(element);
-		return *this;
-	}
-
-	magic_vector& operator += (const magic_vector<T>& other_vector)
-	{
-		for (const T& element : other_vector)
-			std::vector<T>::push_back(element);
-		return *this;
-	}
-};
 
 struct selection
 {
