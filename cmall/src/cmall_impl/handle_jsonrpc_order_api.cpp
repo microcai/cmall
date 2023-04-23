@@ -63,6 +63,11 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_order_api(
                 auto merchant_id_of_goods	  = goods_ref["merchant_id"].as_int64();
                 auto goods_id_of_goods		  = jsutil::json_as_string(goods_ref["goods_id"].as_string(), "");
 
+                boost::json::array options_of_goods;
+
+                if (goods_ref.contains("options"))
+                    options_of_goods = goods_ref["options"].as_array();
+
                 if (!cache.contains(merchant_id_of_goods))
                 {
                     cmall_merchant m;
@@ -97,6 +102,35 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_order_api(
                 good_snap.merchant_id	   = merchant_id_of_goods;
                 good_snap.goods_id		   = product_in_mall.product_id;
                 good_snap.price_		   = cpp_numeric(product_in_mall.product_price);
+
+                if (!product_in_mall.options.empty())
+                {
+                    if (options_of_goods.size() != product_in_mall.options.size())
+                        throw boost::system::system_error(cmall::error::good_option_needed);
+
+                    for (auto option : product_in_mall.options)
+                    {
+                        // 选择和商品提供的选择, 必须相同.
+                        auto o_it = std::find_if(options_of_goods.begin(), options_of_goods.end(), [option](const boost::json::value& v){
+                            return v.as_object().at("option").as_string() == option.option_title;
+                        });
+                        if (o_it == options_of_goods.end())
+                            throw boost::system::system_error(cmall::error::good_option_invalid);
+                        // option.option_title
+                        std::string user_select = jsutil::json_as_string(o_it->as_object().at("select"), "");
+
+                        auto s_it = std::find_if(option.selections.begin(), option.selections.end(), [&](auto s){
+                            return s.selection_name == user_select;
+                        });
+
+                        if (s_it == option.selections.end())
+                            throw boost::system::system_error(cmall::error::good_option_invalid);
+
+                        good_snap.price_ += s_it->selection_price;
+                        good_snap.selections += fmt::format("{}:{};", option.option_title, s_it->selection_price);
+                    }
+                }
+
                 new_order.bought_goods.push_back(good_snap);
 
                 total_price += good_snap.price_;

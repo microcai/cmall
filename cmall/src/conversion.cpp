@@ -129,24 +129,64 @@ inline namespace conversion
 
 	void tag_invoke(const value_from_tag&, value& jv, const goods_snapshot& g)
 	{
+		boost::json::array selection;
+
+		std::vector<std::string> r;
+
+		boost::split(r, g.selections, boost::is_any_of(";"));
+
+		for (auto l : r)
+		{
+			std::vector<std::string> s;
+			boost::split(s, l, boost::is_any_of(":"));
+
+			boost::json::value v = {
+				{"option", s[0]},
+				{"select", s[1]},
+			};
+
+			selection.push_back(v);
+		}
+
 		jv = {
 			{ "merchant_id", g.merchant_id },
 			{ "goods_id", g.goods_id },
 			{ "name", g.name_ },
 			{ "price", ::to_string(g.price_) },
 			{ "description", g.description_ },
+			{ "selection", selection },
 			{ "git_version", g.good_version_git },
 		};
 	}
 
 	void tag_invoke(const value_from_tag&, value& jv, const cmall_cart& c)
 	{
+		boost::json::array selection;
+
+		std::vector<std::string> r;
+
+		boost::split(r, c.selection, boost::is_any_of(";"));
+
+		for (auto l : r)
+		{
+			std::vector<std::string> s;
+			boost::split(s, l, boost::is_any_of(":"));
+
+			boost::json::value v = {
+				{"option", s[0]},
+				{"select", s[1]},
+			};
+
+			selection.push_back(v);
+		}
+
 		jv = {
 			{ "item_id", c.id_ },
 			{ "merchant_id", c.merchant_id_ },
 			{ "merchant_name", c.merchant_name_ },
 			{ "goods_id", c.goods_id_ },
 			{ "count", c.count_ },
+			{ "selection", selection },
 			{ "created_at", to_string(c.created_at_) },
 		};
 	}

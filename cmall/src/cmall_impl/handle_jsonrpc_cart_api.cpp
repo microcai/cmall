@@ -20,13 +20,22 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_cart_api(cli
         {
             auto merchant_id = jsutil::json_accessor(params).get("merchant_id", -1).as_int64();
             auto goods_id	 = jsutil::json_accessor(params).get_string("goods_id");
+            boost::json::array selections;
+
             if (merchant_id < 0 || goods_id.empty())
                 throw boost::system::system_error(cmall::error::invalid_params);
+
+            if (params.contains("selection"))
+                selections = params["selection"].as_array();
+
+            std::string selection_string;
+            for (auto s : selections)
+                selection_string += fmt::format("{}:{};", jsutil::json_as_string(s.as_object()["option"]), jsutil::json_as_string(s.as_object()["select"]));
 
             cmall_cart item;
             using query_t = odb::query<cmall_cart>;
             auto query(query_t::uid == this_user.uid_ && query_t::merchant_id == merchant_id
-                && query_t::goods_id == goods_id);
+                && query_t::goods_id == goods_id && query_t::selection == selection_string);
             if (co_await m_database.async_load<cmall_cart>(query, item))
             {
                 item.count_ += 1;
@@ -38,6 +47,7 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_cart_api(cli
                 item.merchant_id_ = merchant_id;
                 item.goods_id_	  = goods_id;
                 item.count_		  = 1;
+                item.selection    = selection_string;
 
                 co_await m_database.async_add(item);
             }
