@@ -11,8 +11,10 @@
 #include <memory>
 #include <string>
 #include <boost/asio.hpp>
+#include <boost/multiprecision/cpp_dec_float.hpp>
 
 using boost::asio::awaitable;
+using cpp_numeric = boost::multiprecision::cpp_dec_float_100;
 
 namespace services
 {
@@ -20,6 +22,18 @@ namespace services
 	{
 		std::string keyword;
 		double rank;
+	};
+
+	struct product_option_select
+	{
+		std::string selection_name;
+		cpp_numeric selection_price;
+	};
+
+	struct product_option
+	{
+		std::string option_title;
+		std::vector<product_option_select> selections;
 	};
 
 	struct product
@@ -44,6 +58,8 @@ namespace services
 		std::string merchant_name;
 
 		std::vector<product_keyword> keywords;
+
+		std::vector<product_option> options;
 	};
 
 	struct merchant_git_repo_impl;
