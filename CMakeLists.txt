@@ -303,7 +303,8 @@ endif()
 set(ODB_PGSQL_LIB_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libodb-pgsql)
 set(ODB_BOOST_LIB_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libodb-boost)
 set(ODB_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libodb)
-include(cmake/odb.cmake)
+
+find_package(odb)
 
 include(cmake/FileGroup.cmake)
 
