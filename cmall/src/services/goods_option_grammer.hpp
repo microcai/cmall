@@ -53,13 +53,18 @@ struct goods_options_grammer : qi::grammar<Iterator, goods_options()>
 		using qi::debug;
 		using namespace boost::phoenix;
 
-		document = option_block[qi::_val += qi::_1] >> *option_block[qi::_val += qi::_1];
+		document = option_block[qi::_val += qi::_1] >> * ( newline >> option_block[qi::_val += qi::_1] );
 
 		option_block = qi::lit('#') >> option_name[ at_c<0>(qi::_val) = qi::_1 ] >> newline >> selections [ at_c<1>(qi::_val) = qi::_1 ] ;
 
-		selections = select[qi::_val += qi::_1] >> * select[qi::_val += qi::_1];
+		selections = select[qi::_val += qi::_1] >> * ( newline >> select[qi::_val += qi::_1] );
 
-		select = key [ at_c<0>(qi::_val) = qi::_1 ] >> qi::lit(' ') >> *qi::space >>  -(value [ at_c<1>(qi::_val) = qi::_1 ] >> *qi::space) >> newline;
+		select = select_no_price | select_with_price;
+
+		select_with_price = key [ at_c<0>(qi::_val) = qi::_1 ]
+				>> qi::lit(' ') >> *qi::space >>  value [ at_c<1>(qi::_val) = qi::_1 ] >> *qi::space;
+
+		select_no_price = key [ at_c<0>(qi::_val) = qi::_1 ] ;
 
 		key = simple_key | quoted_key;
 
@@ -81,6 +86,8 @@ struct goods_options_grammer : qi::grammar<Iterator, goods_options()>
 
 	qi::rule<Iterator, magic_vector<selection>()> selections;
 	qi::rule<Iterator, selection()> select;
+	qi::rule<Iterator, selection()> select_with_price;
+	qi::rule<Iterator, selection()> select_no_price;
 
 	qi::rule<Iterator> newline;
 
