@@ -37,6 +37,11 @@ namespace services
 		bool sudo_mode = false;
 		std::optional<administrators> original_user;
 
+		client_session()
+		{
+			session_id = gen_uuid();
+		}
+
 		void clear()
 		{
 			user_info.reset();

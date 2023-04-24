@@ -584,8 +584,6 @@ namespace cmall
 	{
 		client_connection& this_client = *connection_ptr;
 		this_client.session_info = std::make_shared<services::client_session>();
-
-		this_client.session_info->session_id = gen_uuid();
 		co_await session_cache_map.save(*this_client.session_info, connection_ptr->x_real_ip);
 	}
 
