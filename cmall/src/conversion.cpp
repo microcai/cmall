@@ -6,6 +6,7 @@
 
 #include "cmall/conversion.hpp"
 
+#include "selection_parser.hpp"
 
 void services::tag_invoke(const boost::json::value_from_tag&, boost::json::value& jv, const services::product_option_select& p)
 {
@@ -131,20 +132,15 @@ inline namespace conversion
 	{
 		boost::json::array selection;
 
-		std::vector<std::string> r;
+		auto r = parse_selection_description_string(g.selection);
 
-		if (g.selection.length())
+		if (r)
 		{
-			boost::split(r, g.selection, boost::is_any_of(";"));
-
-			for (auto l : r)
+			for (auto l : *r)
 			{
-				std::vector<std::string> s;
-				boost::split(s, l, boost::is_any_of(":"));
-
 				boost::json::value v = {
-					{"option", s[0]},
-					{"select", s[1]},
+					{"option", l.option},
+					{"select", l.select},
 				};
 
 				selection.push_back(v);
@@ -166,20 +162,15 @@ inline namespace conversion
 	{
 		boost::json::array selection;
 
-		std::vector<std::string> r;
+		auto r = parse_selection_description_string(c.selection);
 
-		if (c.selection.length())
+		if (r)
 		{
-			boost::split(r, c.selection, boost::is_any_of(";"));
-
-			for (auto l : r)
+			for (auto l : *r)
 			{
-				std::vector<std::string> s;
-				boost::split(s, l, boost::is_any_of(":"));
-
 				boost::json::value v = {
-					{"option", s[0]},
-					{"select", s[1]},
+					{"option", l.option},
+					{"select", l.select},
 				};
 
 				selection.push_back(v);
