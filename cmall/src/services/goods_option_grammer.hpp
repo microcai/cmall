@@ -53,11 +53,11 @@ struct goods_options_grammer : qi::grammar<Iterator, goods_options()>
 		using qi::debug;
 		using namespace boost::phoenix;
 
-		document = option_block[qi::_val += qi::_1] >> * ( newline >> option_block[qi::_val += qi::_1] );
+		document = *(+newline) >>  option_block[qi::_val += qi::_1] >> * ( +newline >> option_block[qi::_val += qi::_1] );
 
 		option_block = qi::lit('#') >> option_name[ at_c<0>(qi::_val) = qi::_1 ] >> newline >> selections [ at_c<1>(qi::_val) = qi::_1 ] ;
 
-		selections = select[qi::_val += qi::_1] >> * ( newline >> select[qi::_val += qi::_1] );
+		selections = select[qi::_val += qi::_1] >> * ( +newline >> select[qi::_val += qi::_1] ) >> *(+newline);
 
 		select = select_no_price | select_with_price;
 
