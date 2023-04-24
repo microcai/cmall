@@ -133,19 +133,22 @@ inline namespace conversion
 
 		std::vector<std::string> r;
 
-		boost::split(r, g.selection, boost::is_any_of(";"));
-
-		for (auto l : r)
+		if (g.selection.length())
 		{
-			std::vector<std::string> s;
-			boost::split(s, l, boost::is_any_of(":"));
+			boost::split(r, g.selection, boost::is_any_of(";"));
 
-			boost::json::value v = {
-				{"option", s[0]},
-				{"select", s[1]},
-			};
+			for (auto l : r)
+			{
+				std::vector<std::string> s;
+				boost::split(s, l, boost::is_any_of(":"));
 
-			selection.push_back(v);
+				boost::json::value v = {
+					{"option", s[0]},
+					{"select", s[1]},
+				};
+
+				selection.push_back(v);
+			}
 		}
 
 		jv = {
@@ -165,19 +168,22 @@ inline namespace conversion
 
 		std::vector<std::string> r;
 
-		boost::split(r, c.selection, boost::is_any_of(";"));
-
-		for (auto l : r)
+		if (c.selection.length())
 		{
-			std::vector<std::string> s;
-			boost::split(s, l, boost::is_any_of(":"));
+			boost::split(r, c.selection, boost::is_any_of(";"));
 
-			boost::json::value v = {
-				{"option", s[0]},
-				{"select", s[1]},
-			};
+			for (auto l : r)
+			{
+				std::vector<std::string> s;
+				boost::split(s, l, boost::is_any_of(":"));
 
-			selection.push_back(v);
+				boost::json::value v = {
+					{"option", s[0]},
+					{"select", s[1]},
+				};
+
+				selection.push_back(v);
+			}
 		}
 
 		jv = {

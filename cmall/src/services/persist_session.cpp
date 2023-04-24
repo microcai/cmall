@@ -141,11 +141,6 @@ namespace services
 		co_return co_await impl().save(session.session_id, session, current_ip_address);
 	}
 
-	awaitable<void> persist_session::save(std::string session_id, const client_session& session, std::string current_ip_address)
-	{
-		co_return co_await impl().save(session_id, session, current_ip_address);
-	}
-
 	awaitable<void> persist_session::update_lifetime(std::string session_id, std::string current_ip_address)
 	{
 		co_return co_await impl().update_lifetime(session_id, current_ip_address);

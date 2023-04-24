@@ -59,7 +59,6 @@ namespace services
 		awaitable<bool> exist(std::string session_id) const;
 		awaitable<client_session> load(std::string session_id) const;
 		awaitable<void> save(const client_session& session, std::string current_ip_address);
-		awaitable<void> save(std::string session_id, const client_session& session, std::string current_ip_address);
 		awaitable<void> update_lifetime(std::string session_id, std::string current_ip_address);
 
 	private:

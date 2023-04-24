@@ -162,8 +162,6 @@ namespace cmall
 					odb::transaction t(m_db->begin());
 					try
 					{
-						T oldvalue = value;
-						m_db->reload(oldvalue);
 						if constexpr (SupportUpdateAt<T>)
 							value.updated_at_ = boost::posix_time::second_clock::local_time();
 						// 如果存在, 就 update.
