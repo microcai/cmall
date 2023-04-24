@@ -68,7 +68,7 @@ struct goods_options_grammer : qi::grammar<Iterator, goods_options()>
 
 		key = simple_key | quoted_key;
 
-		simple_key = qi::lexeme[ +(qi::char_ - '#' - ':' - ' ' - '\"') ];
+		simple_key = qi::lexeme[ +(qi::char_ - '#' - ':' - ' ' - '\"' -'\r' - '\n') ];
 
 		quoted_key = qi::lit('\"') >> simple_key >> qi::lit('\"');
 
