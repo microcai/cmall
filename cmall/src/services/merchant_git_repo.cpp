@@ -43,18 +43,18 @@ namespace services
 		}
 
 		template<typename WalkHandler>
-		void treewalk(const gitpp::tree& tree, std::filesystem::path parent_dir_in_git, WalkHandler walker)
+		void treewalk(const gitpp::tree& tree, WalkHandler walker)
 		{
 			for (const gitpp::tree_entry & tree_entry : tree)
 			{
 				switch (tree_entry.type())
 				{
 					case GIT_OBJECT_TREE:
-						treewalk(git_repo.get_tree_by_treeid(tree_entry.get_oid()), parent_dir_in_git / tree_entry.name(), walker);
+						treewalk(git_repo.get_tree_by_treeid(tree_entry.get_oid()), walker);
 						break;
 					case GIT_OBJECT_BLOB:
 					{
-						if (walker(tree_entry, parent_dir_in_git))
+						if (walker(tree_entry, tree))
 							break;
 					}
 					break;
@@ -201,7 +201,7 @@ namespace services
 			auto goods = repo_tree.by_path("goods");
 
 			if (!goods.empty())
-				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), std::filesystem::path(""), [baseurl, merchant_name, goods_id, &commit_version, &ret, &ec, this](const gitpp::tree_entry & tree_entry, std::filesystem::path parent_path) mutable
+				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), [baseurl, merchant_name, goods_id, &commit_version, &ret, &ec, this](const gitpp::tree_entry & tree_entry, const gitpp::tree& parent_path) mutable
 				{
 					std::filesystem::path entry_filename(tree_entry.name());
 
@@ -218,10 +218,16 @@ namespace services
 
 						boost::system::error_code fc_ec;
 
-						std::string good_option_content = get_file_content(parent_path / ( goods_id + ".option"), fc_ec);
-						if (!fc_ec)
+						auto goods_option_file = parent_path.by_path(goods_id + ".option");
+
+						if (!goods_option_file.empty())
 						{
-							to_be_append.options = to_product_options(good_option_content, ec);
+							auto file_blob = git_repo.get_blob(goods_option_file.get_oid());
+							if (file_blob.size() < 10000000)
+							{
+								auto good_option_content = file_blob.get_content();
+								to_be_append.options = to_product_options(good_option_content, ec);
+							}
 						}
 
 						ret.push_back(to_be_append);
@@ -244,7 +250,7 @@ namespace services
 			auto goods = repo_tree.by_path("goods");
 
 			if (!goods.empty())
-				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), std::filesystem::path(""), [&, baseurl, this](const gitpp::tree_entry & tree_entry, std::filesystem::path parent_dir_in_git)
+				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), [&, baseurl, this](const gitpp::tree_entry & tree_entry, const gitpp::tree& parent_dir_in_git)
 				{
 					std::filesystem::path entry_filename(tree_entry.name());
 					if (entry_filename.has_extension() && entry_filename.extension() == ".md")
@@ -299,7 +305,7 @@ namespace services
 			auto goods = repo_tree.by_path("goods");
 
 			if (!goods.empty())
-				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), std::filesystem::path(""), [baseurl, goods_id, &ret, &ec, this](const gitpp::tree_entry & tree_entry, std::filesystem::path) mutable -> bool
+				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), [baseurl, goods_id, &ret, &ec, this](const gitpp::tree_entry & tree_entry, const gitpp::tree&) mutable -> bool
 				{
 					std::filesystem::path entry_filename(tree_entry.name());
 
@@ -332,7 +338,7 @@ namespace services
 			auto goods = repo_tree.by_path("goods");
 
 			if (!goods.empty())
-				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), std::filesystem::path(""), [baseurl, goods_id, &ret, &ec, this](const gitpp::tree_entry & tree_entry, std::filesystem::path) mutable -> bool
+				treewalk(git_repo.get_tree_by_treeid(goods.get_oid()), [baseurl, goods_id, &ret, &ec, this](const gitpp::tree_entry & tree_entry, const gitpp::tree&) mutable -> bool
 				{
 					std::filesystem::path entry_filename(tree_entry.name());
 
