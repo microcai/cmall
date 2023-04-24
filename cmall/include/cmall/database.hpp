@@ -60,6 +60,12 @@ namespace cmall
 		{ t.updated_at_ } -> std::convertible_to<boost::posix_time::ptime>;
 	};
 
+	template <typename T>
+	concept SupportCreateAt = requires(T t)
+	{
+		{ t.created_at_ } -> std::convertible_to<boost::posix_time::ptime>;
+	};
+
 	class cmall_database
 	{
 		// c++11 noncopyable.
@@ -162,16 +168,20 @@ namespace cmall
 					odb::transaction t(m_db->begin());
 					try
 					{
+						T oldvalue = value;
+						m_db->reload<T>(oldvalue);
 						if constexpr (SupportUpdateAt<T>)
 							value.updated_at_ = boost::posix_time::second_clock::local_time();
+						if constexpr (SupportCreateAt<T>)
+							value.created_at_ = oldvalue.created_at_;
 						// 如果存在, 就 update.
 						// 不存在就抛, 下面接住.
-						m_db->update(value);
+						m_db->update<T>(value);
 					}
 					catch (odb::object_not_persistent&)
 					{
 						// 不存在就用 persist 调用.
-						m_db->persist(value);
+						m_db->persist<T>(value);
 					}
 					t.commit();
 					return true;
