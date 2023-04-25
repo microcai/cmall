@@ -117,7 +117,7 @@ namespace services
 			auto result = parse_goods_option(options_content);
 			if (result)
 			{
-				for (const goods_option& go : *result)
+				for (const auto& go : *result)
 				{
 					product_option po;
 					po.option_title = go.option_name;

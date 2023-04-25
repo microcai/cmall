@@ -7,113 +7,78 @@
 #include <vector>
 
 #include <iostream>
-#include <boost/config/warning_disable.hpp>
-#include <boost/spirit/include/qi.hpp>
-#include <boost/spirit/include/phoenix.hpp>
 
 #include "magic_vector.hpp"
 
-#ifdef _MSC_VER
-#	pragma warning(push)
-#	pragma warning(disable: 4244 4459)
-#endif // _MSC_VER
 
-namespace qi = boost::spirit::qi;
-
-struct selection
+struct goods_options_parser
 {
-	std::string select_name;
-	std::string select_price;
-};
-
-BOOST_FUSION_ADAPT_STRUCT(
-	selection,
-	(std::string, select_name)
-	(std::string, select_price)
-)
-
-struct goods_option {
-	std::string option_name; // 选配
-	magic_vector<selection> selections;
-};
-
-BOOST_FUSION_ADAPT_STRUCT(
-	goods_option,
-	(std::string, option_name)
-	(magic_vector<selection>, selections)
-)
-
-typedef magic_vector<goods_option> goods_options;
-
-template <typename Iterator>
-struct goods_options_grammer : qi::grammar<Iterator, goods_options()>
-{
-	goods_options_grammer() : goods_options_grammer::base_type(document)
+	struct selection
 	{
-		using qi::debug;
-		using namespace boost::phoenix;
-
-		empty_block = +newline;
-
-		document = option_block[qi::_val += qi::_1] >> * ( option_block[qi::_val += qi::_1] ) >> *newline;
-
-		option_block = *newline >> qi::lit('#') >> option_name[ at_c<0>(qi::_val) = qi::_1 ]
-						>> selections [ at_c<1>(qi::_val) = qi::_1 ] ;
-
-		selections = select[qi::_val += qi::_1] >> * ( select[qi::_val += qi::_1] );
-
-		select = +newline >> (select_no_price | select_with_price);
-
-		select_with_price = key [ at_c<0>(qi::_val) = qi::_1 ]
-				>> qi::lit(' ') >> *qi::space >>  value [ at_c<1>(qi::_val) = qi::_1 ] >> *qi::space;
-
-		select_no_price = key [ at_c<0>(qi::_val) = qi::_1 ] ;
-
-		key = simple_key | quoted_key;
-
-		simple_key = qi::lexeme[ +(qi::char_ - '#' - ':' - ' ' - '\"' -'\r' - '\n') ];
-
-		quoted_key = qi::lit('\"') >> simple_key >> qi::lit('\"');
-
-		value = qi::lexeme[ +(qi::char_ - ' ' - '\n') ];
-
-		option_name = qi::lexeme[ +(qi::char_ - '\n' -'\r' ) ];
-		newline = qi::lit("\r\n") | qi::lit('\n');
+		std::string select_name;
+		std::string select_price;
 	};
 
-	qi::rule<Iterator, goods_options()> document;
+	struct goods_option {
+		std::string option_name; // 选配
+		magic_vector<selection> selections;
+	};
 
-	qi::rule<Iterator, goods_option()> option_block;
+	typedef magic_vector<goods_option> goods_options;
 
-	qi::rule<Iterator, std::string()> option_name;
+	static std::optional<goods_options> parse_lines(const std::vector<std::string_view>& lines)
+	{
+		goods_options ret;
+		bool has_block = false;
+		goods_option cur_block;
 
-	qi::rule<Iterator, magic_vector<selection>()> selections;
-	qi::rule<Iterator, selection()> select;
-	qi::rule<Iterator, selection()> select_with_price;
-	qi::rule<Iterator, selection()> select_no_price;
+		for (std::string_view l : lines)
+		{
+			if (l.size() < 2)
+				continue;
+			// skip untile meet #
+			if (l[0] == '#')
+			{
+				if (has_block)
+					ret.push_back(cur_block);
+				cur_block = goods_option{};
+				cur_block.option_name = boost::algorithm::trim_copy(l.substr(1));
+				has_block = true;
+			}
+			else
+			{
+				std::vector<std::string_view> items;
+				boost::split(items, l, boost::is_any_of(" \t"));
+				if (items.size() == 1)
+				{
+					struct selection s;
+					s.select_name = items[0];
+					s.select_price = "0";
+					cur_block.selections.push_back(s);
+				}
+				else if (items.size() == 2)
+				{
+					struct selection s;
+					s.select_name = items[0];
+					s.select_price = items[1];
+					cur_block.selections.push_back(s);
+				}
+			}
 
-	qi::rule<Iterator> newline;
-	qi::rule<Iterator> empty_block;
+		}
 
-	qi::rule<Iterator, std::string()> key, value, simple_key, quoted_key;
+		if (has_block)
+			ret.push_back(cur_block);
+		if (ret.size() == 0)
+			return {};
+		return ret;
+	}
 };
 
-inline std::optional<goods_options> parse_goods_option(std::string_view document) noexcept
+inline std::optional<goods_options_parser::goods_options> parse_goods_option(std::string_view document) noexcept
 {
-	goods_options ast;
+	std::vector<std::string_view> lines;
+	boost::split(lines, document, boost::is_any_of("\r\n"));
 
-	goods_options_grammer<std::string_view::const_iterator> gramer;
-
-	auto first = document.begin();
-
-	std::cerr << "parse:" << document;
-
-	bool r = boost::spirit::qi::parse(first, document.end(), gramer, ast);
-
-	if (!r)
-	{
-		return {};
-	}
-
-	return ast;
+	return goods_options_parser::parse_lines(lines);
 }
