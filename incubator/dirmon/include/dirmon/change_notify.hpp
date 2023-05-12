@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <boost/asio.hpp>
 
 namespace dirmon {
@@ -16,6 +17,6 @@ namespace dirmon {
 	struct dir_change_notify
 	{
 		dir_change_type_t change_type;
-		std::string file_name;
+		std::filesystem::path file_name;
 	};
 }

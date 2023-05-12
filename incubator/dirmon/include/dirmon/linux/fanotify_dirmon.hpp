@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <boost/asio.hpp>
 #include <boost/asio/posix/stream_descriptor.hpp>
 #include <boost/asio/awaitable.hpp>
@@ -17,10 +18,10 @@ namespace dirmon {
 	{
 	public:
 		template<typename ExecutionContext>
-		fanotify_dirmon(ExecutionContext&& e, std::string dirname)
-			: m_fanotify_handle(std::forward<ExecutionContext>(e), fanotify_init(FAN_CLASS_NOTIF|FAN_CLOEXEC|FAN_NONBLOCK, 0))
+		fanotify_dirmon(ExecutionContext&& e, std::filesystem::path dirname)
+			: m_fanotify_handle(std::forward<ExecutionContext>(e), fanotify_init(FAN_CLASS_NOTIF|FAN_CLOEXEC, O_RDONLY|O_CLOEXEC))
 		{
-            auto ret = fanotify_mark(m_fanotify_handle.native_handle(), FAN_MARK_ADD, FAN_CLOSE_WRITE|FAN_EVENT_ON_CHILD, AT_FDCWD, dirname.c_str());
+            auto ret = fanotify_mark(m_fanotify_handle.native_handle(), FAN_MARK_ADD, FAN_CLOSE_WRITE|FAN_EVENT_ON_CHILD, AT_FDCWD, dirname.string().c_str());
 			if (ret < 0)
 			{
 				perror("fanotify_dirmon");

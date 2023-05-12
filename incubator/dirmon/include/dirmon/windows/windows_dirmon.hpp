@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <boost/asio.hpp>
 #include <boost/asio/windows/overlapped_handle.hpp>
 #include <boost/asio/awaitable.hpp>
@@ -13,8 +14,8 @@ namespace dirmon {
 	{
 	public:
 		template<typename ExecutionContext>
-		windows_dirmon(ExecutionContext&& e, std::string dirname)
-			: m_dirhandle(std::forward<ExecutionContext>(e), dirname)
+		windows_dirmon(ExecutionContext&& e, std::filesystem::path dirname)
+			: m_dirhandle(std::forward<ExecutionContext>(e), dirname.string())
 		{}
 
 		boost::asio::awaitable<std::vector<dir_change_notify>> async_wait_dirchange()
