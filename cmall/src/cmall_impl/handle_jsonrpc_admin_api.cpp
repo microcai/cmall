@@ -279,8 +279,6 @@ awaitable<boost::json::object> cmall::cmall_service::handle_jsonrpc_admin_api(cl
                         { "isMerchant", session_info.isMerchant },
                         { "isAdmin", session_info.isAdmin },
                     };
-                    co_await load_merchant_git(target_merchant);
-
                     break;
                 }
                 else
